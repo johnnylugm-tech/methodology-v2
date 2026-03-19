@@ -1,6 +1,6 @@
 # methodology-v2
 
-> Multi-Agent Collaboration Development Methodology v2.2
+> Multi-Agent Collaboration Development Methodology v2.4
 
 ## 概述
 
@@ -238,6 +238,54 @@ print(gate.generate_report("markdown"))
 |------|------|
 | `auto_fix=True` (預設) | 掃描後自動修復可解決問題 |
 | `auto_fix=False` | 僅掃描，需手動執行 `gate.fix(report)` |
+
+---
+
+### Smart Router
+
+基於 Model Router 的智慧路由，根據任務自動選擇最適合的 LLM。
+
+```python
+from smart_router import SmartRouter, TaskType, BudgetLevel
+
+# 初始化 (預設 medium 預算)
+router = SmartRouter()
+
+# 或指定預算
+router = SmartRouter(budget="low")   # 低成本
+router = SmartRouter(budget="high")  # 高品質
+
+# 路由任務
+result = router.route("幫我寫一個 Python 函數")
+print(f"Model: {result.model}")
+print(f"Provider: {result.provider}")
+print(f"Est. Cost: ${result.estimated_cost}")
+
+# 強制使用模型
+result = router.route(task, force_model="gpt-4")
+
+# 列出可用模型
+models = router.list_models()
+```
+
+#### 任務類型
+
+| 類型 | 關鍵詞 |
+|------|--------|
+| CODING | code, program, function, debug |
+| REVIEW | review, critique, check |
+| WRITING | write, draft, compose |
+| ANALYSIS | analyze, compare, evaluate |
+| TRANSLATION | translate, convert |
+| CREATIVE | idea, brainstorm, creative |
+
+#### 預算等級
+
+| 等級 | 說明 |
+|------|------|
+| LOW | 低成本模型 |
+| MEDIUM | 平衡成本與品質 |
+| HIGH | 高品質模型 |
 
 #### 命令列
 

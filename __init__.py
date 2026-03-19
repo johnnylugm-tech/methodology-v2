@@ -20,8 +20,9 @@ from .methodology import (
 )
 from .dashboard import Dashboard
 from .auto_quality_gate import AutoQualityGate, QualityReport, QualityIssue
+from .smart_router import SmartRouter, TaskType, BudgetLevel, RoutingResult
 
-__version__ = "2.3.0"
+__version__ = "2.4.0"
 
 __all__ = [
     "ErrorLevel",
@@ -40,4 +41,8 @@ __all__ = [
     "AutoQualityGate",
     "QualityReport",
     "QualityIssue",
+    "SmartRouter",
+    "TaskType",
+    "BudgetLevel",
+    "RoutingResult",
 ]
