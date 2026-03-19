@@ -132,13 +132,23 @@ methodology-v2
 
 ---
 
-## 依賴 Skills
+## 整合的 Skills
 
-- dispatching-parallel-agents
-- sessions_spawn
-- sessions_send
-- verification-before-completion
-- requesting-code-review
+| Skill | 用途 | 整合方式 |
+|-------|------|----------|
+| **Model Router** | 智慧模型路由 | 整合進 SmartRouter |
+| **Agent Monitor** | 監控儀表板 | 整合進 Dashboard |
+| **Agent Quality Guard** | 品質把關 | 整合進 AutoQualityGate |
+| **dispatching-parallel-agents** | 任務分配 | 方法論引用 |
+| **sessions_spawn** | 建立子 Agent | OpenClawAdapter |
+| **sessions_send** | 跨 Agent 溝通 | OpenClawAdapter |
+| **verification-before-completion** | 交付前驗證 | AutoQualityGate |
+| **requesting-code-review** | 程式碼審查 | 品質把關 |
+| **agent-task-manager** | 任務管理 | 整合到 TaskSplitter |
+| **long-term-memory** | 長期記憶 | 可與 Storage 搭配 |
+| **executing-plans** | 執行計劃 | TaskLifecycle 引用 |
+| **planning-with-files** | 規劃管理 | 任務規劃參考 |
+| **finishing-a-development-branch** | 開發分支完成 | 發布流程參考 |
 
 ---
 
