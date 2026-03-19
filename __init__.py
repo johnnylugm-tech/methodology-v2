@@ -19,8 +19,9 @@ from .methodology import (
     Monitor,
 )
 from .dashboard import Dashboard
+from .auto_quality_gate import AutoQualityGate, QualityReport, QualityIssue
 
-__version__ = "2.2.0"
+__version__ = "2.3.0"
 
 __all__ = [
     "ErrorLevel",
@@ -36,4 +37,7 @@ __all__ = [
     "Crew",
     "Monitor",
     "Dashboard",
+    "AutoQualityGate",
+    "QualityReport",
+    "QualityIssue",
 ]

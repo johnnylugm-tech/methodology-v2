@@ -207,6 +207,42 @@ monitor.register_agent(agent)
 health = monitor.get_health_score(agent.id)
 ```
 
+### Auto Quality Gate
+
+自動運行 Agent Quality Guard 檢查並修復問題。
+
+```python
+from auto_quality_gate import AutoQualityGate
+
+gate = AutoQualityGate()
+
+# 1. 掃描
+report = gate.scan("your_code.py")
+print(f"Score: {report.score}/100")
+
+# 2. 自動修復
+result = gate.fix(report)
+print(f"Fixed: {result['success']}/{result['total']}")
+
+# 3. 生成報告
+print(gate.generate_report("markdown"))
+```
+
+#### 命令列
+
+```bash
+# 掃描
+python auto_quality_gate.py scan your_code.py
+
+# 自動修復
+python auto_quality_gate.py fix your_code.py
+
+# 生成報告
+python auto_quality_gate.py report
+```
+
+---
+
 ### 統一 Dashboard
 
 #### 方式 1: 命令列
