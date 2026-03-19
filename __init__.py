@@ -31,8 +31,12 @@ from .openclaw_adapter import (
     create_researcher_agent,
     create_developer_agent
 )
+from .task_splitter import TaskSplitter, Task, TaskStatus, TaskPriority
+from .doc_generator import DocGenerator, DocItem
+from .test_generator import TestGenerator, TestCase
+from .predictive_monitor import PredictiveMonitor, MetricPoint, Prediction
 
-__version__ = "2.5.0"
+__version__ = "2.6.0"
 
 __all__ = [
     # Core
@@ -71,4 +75,18 @@ __all__ = [
     "create_musk_agent",
     "create_researcher_agent",
     "create_developer_agent",
+    # Task Splitter
+    "TaskSplitter",
+    "TaskStatus",
+    "TaskPriority",
+    # Doc Generator
+    "DocGenerator",
+    "DocItem",
+    # Test Generator
+    "TestGenerator",
+    "TestCase",
+    # Predictive Monitor
+    "PredictiveMonitor",
+    "MetricPoint",
+    "Prediction",
 ]

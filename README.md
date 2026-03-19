@@ -74,6 +74,49 @@ agent = create_musk_agent()
 result = agent.execute("幫我完成這個任務")
 ```
 
+### 6. Task Splitter
+
+```python
+from methodology import TaskSplitter
+
+splitter = TaskSplitter()
+tasks = splitter.split_from_goal("開發一個 AI 系統")
+for task in splitter.get_execution_order():
+    print(f"{task.id}: {task.name}")
+```
+
+### 7. Doc Generator
+
+```python
+from methodology import DocGenerator
+
+generator = DocGenerator()
+items = generator.parse_file("module.py")
+print(generator.generate_markdown(items))
+```
+
+### 8. Test Generator
+
+```python
+from methodology import TestGenerator
+
+generator = TestGenerator()
+test_code = generator.generate_from_file("module.py")
+```
+
+### 9. Predictive Monitor
+
+```python
+from methodology import PredictiveMonitor
+
+monitor = PredictiveMonitor()
+monitor.record("latency", 1.5)
+monitor.set_threshold("latency", warning=2, critical=5)
+
+prediction = monitor.predict("latency")
+print(f"Predicted: {prediction.predicted_value}")
+```
+
 ---
 
 ## 核心模組
@@ -86,6 +129,10 @@ result = agent.execute("幫我完成這個任務")
 | `auto_quality_gate` | 自動品質把關 |
 | `storage` | SQLite 對話存儲 |
 | `openclaw_adapter` | OpenClaw 整合 |
+| `task_splitter` | 任務自動分解 |
+| `doc_generator` | 文檔自動生成 |
+| `test_generator` | 測試自動生成 |
+| `predictive_monitor` | 預測性監控 |
 
 ---
 
@@ -115,7 +162,7 @@ docker-compose up -d
 
 ## 版本
 
-v2.4.0
+v2.6.0
 
 ---
 
