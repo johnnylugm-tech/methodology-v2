@@ -287,6 +287,42 @@ models = router.list_models()
 | MEDIUM | 平衡成本與品質 |
 | HIGH | 高品質模型 |
 
+#### 配置開關
+
+```python
+from smart_router import SmartRouter
+
+# 預設：自動路由開啟
+router = SmartRouter()  # auto_route=True
+
+# 關閉自動路由（使用預設模型）
+router = SmartRouter(auto_route=False)
+
+# 自定義配置
+router = SmartRouter(config={
+    "auto_route": False,
+    "default_model": "claude-3-sonnet",
+    "budget": "high",
+    "fallback_model": "gpt-3.5-turbo"
+})
+```
+
+#### 預設配置
+
+```python
+DEFAULT_CONFIG = {
+    "auto_route": True,       # 自動路由（預設開）
+    "default_model": "gemini-pro",  # 預設模型
+    "budget": "medium",       # 預算等級
+    "fallback_model": "gpt-3.5-turbo",  # 備用模型
+}
+```
+
+| 設置 | 說明 |
+|------|------|
+| auto_route=True (預設) | 根據任務自動選擇模型 |
+| auto_route=False | 使用 default_model 設定 |
+
 #### 命令列
 
 ```bash

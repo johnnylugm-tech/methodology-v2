@@ -54,6 +54,14 @@ class RoutingResult:
 class SmartRouter:
     """智慧路由器"""
     
+    # 預設配置
+    DEFAULT_CONFIG = {
+        "auto_route": True,       # 自動路由（預設開）
+        "default_model": "gemini-pro",  # 預設模型
+        "budget": "medium",       # 預算等級
+        "fallback_model": "gpt-3.5-turbo",  # 備用模型
+    }
+    
     # 預設模型庫
     DEFAULT_MODELS = {
         # OpenAI
@@ -132,21 +140,39 @@ class SmartRouter:
         TaskType.GENERAL: ["help", "answer", "question", "what", "how"],
     }
     
-    def __init__(self, budget: str = "medium", custom_models: Dict[str, ModelInfo] = None):
+    def __init__(self, budget: str = None, custom_models: Dict[str, ModelInfo] = None, 
+                 auto_route: bool = None, config: Dict = None):
         """
         初始化
         
         Args:
-            budget: 預算等級 (low/medium/high)
+            budget: 預算等級 (low/medium/high)，如果 auto_route=False 時忽略
             custom_models: 自定義模型
+            auto_route: 自動路由開關 (None=讀取配置)
+            config: 自定義配置 (會合併到預設配置)
         """
-        self.budget = BudgetLevel(budget)
+        # 載入配置
+        self.config = {**self.DEFAULT_CONFIG}
+        if config:
+            self.config.update(config)
+        
+        # 處理 auto_route
+        if auto_route is not None:
+            self.config["auto_route"] = auto_route
+        
+        # 處理 budget
+        actual_budget = budget if budget else self.config.get("budget", "medium")
+        self.budget = BudgetLevel(actual_budget)
+        
         self.models = {**self.DEFAULT_MODELS}
         if custom_models:
             self.models.update(custom_models)
         
         # 檢查環境變數中的 API Key
         self._check_api_keys()
+        
+        print(f"[SmartRouter] Auto-route: {'ON' if self.config['auto_route'] else 'OFF'}")
+        print(f"[SmartRouter] Default model: {self.config['default_model']}")
     
     def _check_api_keys(self):
         """檢查 API Key"""
@@ -168,6 +194,12 @@ class SmartRouter:
         Returns:
             RoutingResult
         """
+        # 如果 auto_route 關閉，使用預設模型
+        if not self.config["auto_route"]:
+            default_model = self.config["default_model"]
+            print(f"[SmartRouter] Auto-route OFF, using default: {default_model}")
+            return self._route_to_model(default_model, task)
+        
         # 如果指定模型
         if force_model:
             return self._route_to_model(force_model, task)
