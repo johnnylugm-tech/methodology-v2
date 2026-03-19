@@ -20,12 +20,21 @@ pip install -e .
 
 ---
 
+## 使用的核心 Skills (單獨維護)
+
+這三個核心 Skill 會單獨維護，methodology-v2 的專案運作會使用它們：
+
+| Skill | GitHub | 用途 |
+|-------|---------|------|
+| **Model Router** | [model-router-v2](https://github.com/johnnylugm-tech/model-router-v2) | 智慧模型路由 |
+| **Agent Monitor** | [agent-dashboard-v3](https://github.com/johnnylugm-tech/agent-dashboard-v3) | 監控儀表板 |
+| **Agent Quality Guard** | [Agent-Quality-Guard](https://github.com/johnnylugm-tech/Agent-Quality-Guard) | 品質把關 |
+
+---
+
 ## 快速開始
 
 ### 1. Dashboard
-
-```python
-from methodology import Dashboard
 
 # 完整版 (v3)
 dashboard = Dashboard()

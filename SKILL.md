@@ -132,13 +132,22 @@ methodology-v2
 
 ---
 
+## 使用的 Skills (單獨維護)
+
+這三個核心 Skill 會單獨維護，methodology-v2 的專案運作會使用它們：
+
+| Skill | GitHub | 用途 |
+|-------|---------|------|
+| **Model Router** | johnnylugm-tech/model-router-v2 | 智慧模型路由 |
+| **Agent Monitor** | johnnylugm-tech/agent-dashboard-v3 | 監控儀表板 |
+| **Agent Quality Guard** | johnnylugm-tech/Agent-Quality-Guard | 品質把關 |
+
+---
+
 ## 整合的 Skills
 
 | Skill | 用途 | 整合方式 |
 |-------|------|----------|
-| **Model Router** | 智慧模型路由 | 整合進 SmartRouter |
-| **Agent Monitor** | 監控儀表板 | 整合進 Dashboard |
-| **Agent Quality Guard** | 品質把關 | 整合進 AutoQualityGate |
 | **dispatching-parallel-agents** | 任務分配 | 方法論引用 |
 | **sessions_spawn** | 建立子 Agent | OpenClawAdapter |
 | **sessions_send** | 跨 Agent 溝通 | OpenClawAdapter |
