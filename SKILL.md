@@ -1,0 +1,246 @@
+# methodology-v2
+
+> Multi-Agent Collaboration Development Methodology v2.2
+
+## 概述
+
+這是一個標準化的多 Agent 協作開發方法論，定義了錯誤分類、開發流程、協作模式、品質把關和監控警報。
+
+整合了三個核心 Skill：
+- **ai-agent-toolkit**：工具集
+- **multi-agent-toolkit**：協作框架
+- **methodology-v2**：方法論核心
+
+---
+
+## 核心原則
+
+- **錯誤分類**：L1-L4 四級分類
+- **開發流程**：6 階段標準化
+- **協作模式**：Sequential / Parallel / Hierarchical
+- **品質把關**：Agent Quality Guard
+- **監控警報**：健康評分 + 三級警報
+- **工具整合**：Model Router、Quality Guard、Monitor
+
+---
+
+## 使用方式
+
+### 錯誤分類
+
+```python
+from methodology import ErrorClassifier
+
+classifier = ErrorClassifier()
+
+# 分類錯誤
+level = classifier.classify(error)
+# 返回: L1, L2, L3, 或 L4
+```
+
+### 任務生命週期
+
+```python
+from methodology import TaskLifecycle
+
+lifecycle = TaskLifecycle()
+
+# 執行任務
+result = lifecycle.execute(task)
+# 經過: 需求 → 規劃 → 執行 → 協調 → 品質 → 完成
+```
+
+### Agent 協作
+
+```python
+from methodology import Crew, Agent
+
+crew = Crew(
+    agents=[dev, reviewer, qa],
+    process="sequential"  # 或 "parallel", "hierarchical"
+)
+
+result = crew.kickoff()
+```
+
+---
+
+## 方法論要點
+
+### L1-L4 錯誤分類
+
+| 等級 | 類型 | 處理 |
+|------|------|------|
+| L1 | 輸入錯誤 | 立即返回 |
+| L2 | 工具錯誤 | 重試 3 次 |
+| L3 | 執行錯誤 | 降級處理 |
+| L4 | 系統錯誤 | 熔斷 + 警報 |
+
+### 開發流程
+
+```
+需求 → 優先級 → 開發 → 品質 → 文檔 → 發布
+```
+
+### 發布檢查清單
+
+- [ ] 版本號更新
+- [ ] CHANGELOG 記錄
+- [ ] README 更新
+- [ ] docs/ 同步
+- [ ] 測試通過
+- [ ] GitHub Release
+- [ ] (可選) ClawHub
+
+---
+
+## 整合的專案
+
+### 專案狀態
+
+| 專案 | 版本 | 功能數 | GitHub |
+|------|------|--------|--------|
+| Agent Quality Guard | v1.0.3 | 10+ | ✅ |
+| Model Router | v1.0.1 | 12+ | ✅ |
+| Agent Monitor v2 | v2.1.0 | 12+ | ✅ |
+| Agent Monitor v3 | v3.2.0 | 18+ | ✅ |
+| ai-agent-toolkit | v2.1.0 | 6+ | ⏳ |
+
+### 架構
+
+```
+methodology-v2
+    │
+    ├── ai-agent-toolkit/     (工具集)
+    │   ├── Model Router       (智慧路由)
+    │   ├── Quality Guard      (品質把關)
+    │   └── Monitor            (監控)
+    │
+    ├── multi-agent-toolkit/   (協作框架)
+    │   ├── Planner            (規劃)
+    │   ├── Executor           (執行)
+    │   └── Communication      (通訊)
+    │
+    └── methodology.py         (核心)
+        ├── ErrorClassifier    (錯誤分類)
+        ├── ErrorHandler       (錯誤處理)
+        ├── TaskLifecycle      (生命週期)
+        ├── QualityGate        (品質把關)
+        ├── Crew               (協作)
+        └── Monitor            (監控)
+```
+
+---
+
+## 依賴 Skills
+
+- dispatching-parallel-agents
+- sessions_spawn
+- sessions_send
+- verification-before-completion
+- requesting-code-review
+
+---
+
+## 安裝
+
+```bash
+# 方式 1: 直接使用
+pip install ai-agent-toolkit
+
+# 方式 2: 開發模式
+cd skills/methodology-v2
+pip install -e .
+```
+
+---
+
+## 範例
+
+### 標準錯誤處理
+
+```python
+from methodology import ErrorHandler
+
+handler = ErrorHandler()
+
+try:
+    result = agent.execute(task)
+except Exception as e:
+    level = handler.classify(e)
+    handler.handle(e, level)
+```
+
+### 品質把關
+
+```python
+from methodology import QualityGate
+
+gate = QualityGate()
+
+if gate.check(result):
+    return result
+else:
+    return gate.fix(result)
+```
+
+### 完整工作流
+
+```python
+from methodology import ErrorClassifier, Crew, Monitor, QualityGate
+
+# 1. 錯誤處理
+classifier = ErrorClassifier()
+
+# 2. Agent 協作
+crew = Crew(agents, process="sequential")
+result = crew.kickoff()
+
+# 3. 品質把關
+gate = QualityGate()
+if not gate.check(result):
+    result = gate.fix(result)
+
+# 4. 監控
+monitor = Monitor()
+monitor.register_agent(agent)
+health = monitor.get_health_score(agent.id)
+```
+
+### 統一 Dashboard
+
+#### 方式 1: 命令列
+
+```bash
+# 輕量版 (v2)
+python dashboard.py light
+
+# 完整版 (v3)
+python dashboard.py full
+
+# 訪問 http://localhost:8080
+```
+
+#### 方式 2: Python API
+
+```python
+from methodology import Dashboard
+
+# 輕量版
+dashboard = Dashboard(mode="light")
+dashboard.run()
+
+# 完整版
+dashboard = Dashboard(mode="full")
+dashboard.run(port=9000)
+```
+
+功能：
+- 📡 Model Router 指標（請求、成本、快取命中率）
+- 🤖 Agent Monitor 指標（健康、任務、警報）
+- 📈 趨勢圖表（ECharts）
+- 🔄 統一介面封裝 v2/v3 功能
+
+---
+
+*這個方法論幫助團隊標準化多 Agent 協作開發流程*
