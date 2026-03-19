@@ -324,17 +324,17 @@ if __name__ == "__main__":
     # 1. Error Classification
     classifier = ErrorClassifier()
     level = classifier.classify_by_type("ValueError")
-#     print(f"Error level: {level.value}")
+# #     print(f"Error level: {level.value}")
     
     # 2. Error Handling
     handler = ErrorHandler()
     result = handler.handle(ValueError("invalid input"))
-#     print(f"Handle result: {result}")
+# #     print(f"Handle result: {result}")
     
     # 3. Quality Gate
     gate = QualityGate()
     result = gate.check_default({"data": "test"})
-#     print(f"Quality check: {result}")
+# #     print(f"Quality check: {result}")
     
     # 4. Crew
     agents = [
@@ -342,10 +342,10 @@ if __name__ == "__main__":
         Agent(id="a2", role="reviewer", name="Reviewer"),
     ]
     crew = Crew(agents, process="sequential")
-#     print(f"Crew process: {crew.process.value}")
+# #     print(f"Crew process: {crew.process.value}")
     
     # 5. Monitor
     monitor = Monitor()
     monitor.register_agent(Agent(id="agent-001", role="coder", name="Coder", health_score=85))
     health = monitor.get_health_score("agent-001")
-#     print(f"Health score: {health}")
+# #     print(f"Health score: {health}")

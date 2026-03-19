@@ -48,18 +48,22 @@ class AutoQualityGate:
         "fixme": "修復標記問題",
     }
     
-    def __init__(self, quality_guard_path: str = None):
+    def __init__(self, quality_guard_path: str = None, auto_fix: bool = True):
         """
         初始化
         
         Args:
             quality_guard_path: Agent Quality Guard 路徑
+            auto_fix: 自動修復開關 (預設開)
         """
         self.quality_guard_path = quality_guard_path or os.getenv(
             "QUALITY_GUARD_PATH", 
             "agent-quality-guard"
         )
+        self.auto_fix = auto_fix
         self.reports: List[QualityReport] = []
+        
+        print(f"[AutoQualityGate] Auto-fix: {'ON' if auto_fix else 'OFF'}")
     
     def scan(self, file_path: str) -> QualityReport:
         """
@@ -119,6 +123,15 @@ class AutoQualityGate:
             print(f"Scan error: {e}")
         
         self.reports.append(report)
+        
+        # 如果 auto_fix 開啟，且有可修復問題，自動修復
+        if self.auto_fix and report.issues:
+            fixable = [i for i in report.issues if i.fixable]
+            if fixable:
+                print(f"[AutoQualityGate] 自動修復 {len(fixable)} 個問題...")
+                fix_result = self.fix(report)
+                print(f"[AutoQualityGate] 已修復 {fix_result['success']}/{fix_result['total']} 個問題")
+        
         return report
     
     def _simple_scan(self, file_path: str) -> List[QualityIssue]:

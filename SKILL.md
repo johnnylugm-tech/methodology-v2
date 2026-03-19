@@ -214,19 +214,30 @@ health = monitor.get_health_score(agent.id)
 ```python
 from auto_quality_gate import AutoQualityGate
 
-gate = AutoQualityGate()
+# 預設：自動修復開啟
+gate = AutoQualityGate()  # auto_fix=True
 
-# 1. 掃描
+# 關閉自動修復（需手動執行）
+gate = AutoQualityGate(auto_fix=False)
+
+# 1. 掃描 (如果 auto_fix=True，會自動修復)
 report = gate.scan("your_code.py")
 print(f"Score: {report.score}/100")
 
-# 2. 自動修復
+# 2. 手動修復 (auto_fix=False 時使用)
 result = gate.fix(report)
 print(f"Fixed: {result['success']}/{result['total']}")
 
 # 3. 生成報告
 print(gate.generate_report("markdown"))
 ```
+
+#### 開關說明
+
+| 設置 | 行為 |
+|------|------|
+| `auto_fix=True` (預設) | 掃描後自動修復可解決問題 |
+| `auto_fix=False` | 僅掃描，需手動執行 `gate.fix(report)` |
 
 #### 命令列
 
