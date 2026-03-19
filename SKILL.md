@@ -345,11 +345,26 @@ python auto_quality_gate.py report
 ```bash
 # 輕量版 (v2)
 python dashboard.py light
+python dashboard.py v2
 
-# 完整版 (v3)
+# 完整版 (v3，預設)
 python dashboard.py full
+python dashboard.py v3
+
+# 從配置文件啟動
+python dashboard.py --config config.json
 
 # 訪問 http://localhost:8080
+```
+
+#### 預設配置
+
+```python
+DEFAULT_CONFIG = {
+    "version": "full",     # 版本：light (v2) / full (v3)
+    "port": 8080,
+    "auto_start": True,
+}
 ```
 
 #### 方式 2: Python API
@@ -357,13 +372,23 @@ python dashboard.py full
 ```python
 from methodology import Dashboard
 
-# 輕量版
-dashboard = Dashboard(mode="light")
-dashboard.run()
+# 預設：完整版 (v3)
+dashboard = Dashboard()
 
-# 完整版
+# 輕量版 (v2)
+dashboard = Dashboard(mode="light")
+dashboard = Dashboard(mode="v2")
+
+# 完整版 (v3)
 dashboard = Dashboard(mode="full")
-dashboard.run(port=9000)
+dashboard = Dashboard(mode="v3")
+
+# 自定義配置
+dashboard = Dashboard(config={
+    "version": "light",
+    "port": 9000,
+    "auto_start": True
+})
 ```
 
 功能：

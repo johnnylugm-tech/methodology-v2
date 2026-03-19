@@ -15,16 +15,35 @@ DEFAULT_PORT = 8080
 class Dashboard:
     """統一 Dashboard 介面"""
     
-    def __init__(self, mode="full"):
+    # 預設配置
+    DEFAULT_CONFIG = {
+        "version": "full",     # 版本：light (v2) / full (v3)
+        "port": 8080,
+        "auto_start": True,
+    }
+    
+    def __init__(self, mode: str = None, config: dict = None):
         """
         初始化 Dashboard
         
         Args:
-            mode: "light" (v2) 或 "full" (v3)
+            mode: 版本 "light" (v2) 或 "full" (v3)，如果 config 設定則忽略
+            config: 自定義配置 (會合併到預設配置)
         """
-        self.mode = mode
+        # 載入配置
+        self.config = {**self.DEFAULT_CONFIG}
+        if config:
+            self.config.update(config)
+        
+        # 處理 mode (如果指定，覆寫 config)
+        if mode:
+            self.config["version"] = mode
+        
+        self.mode = self.config["version"]
         self.app = Flask(__name__)
         self._setup_routes()
+        
+        print(f"[Dashboard] Version: {self.mode} (v2=light, v3=full)")
     
     def _setup_routes(self):
         """設定路由"""
@@ -166,10 +185,10 @@ class Dashboard:
 </html>
 """
     
-    def run(self, host='0.0.0.0', port=None):
+    def run(self, host='0.0.0.0', port: int = None):
         """啟動 Dashboard"""
         if port is None:
-            port = DEFAULT_PORT
+            port = self.config.get("port", DEFAULT_PORT)
         
         print(f"\n🚀 Agent Monitor Dashboard ({self.mode})")
         print(f"   URL: http://localhost:{port}\n")
@@ -184,9 +203,22 @@ class Dashboard:
 if __name__ == '__main__':
     import sys
     
-    mode = "full"
-    if len(sys.argv) > 1:
-        mode = sys.argv[1]
+    # 預設：完整版 v3
+    mode = None
+    config = None
     
-    dashboard = Dashboard(mode=mode)
+    # 解析命令列參數
+    if len(sys.argv) > 1:
+        if sys.argv[1] == "light" or sys.argv[1] == "v2":
+            mode = "light"
+        elif sys.argv[1] == "full" or sys.argv[1] == "v3":
+            mode = "full"
+        elif sys.argv[1] == "--config":
+            # 從 JSON 文件載入配置
+            import json
+            if len(sys.argv) > 2:
+                with open(sys.argv[2], 'r') as f:
+                    config = json.load(f)
+    
+    dashboard = Dashboard(mode=mode, config=config)
     dashboard.run()
