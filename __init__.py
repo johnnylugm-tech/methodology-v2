@@ -21,10 +21,21 @@ from .methodology import (
 from .dashboard import Dashboard
 from .auto_quality_gate import AutoQualityGate, QualityReport, QualityIssue
 from .smart_router import SmartRouter, TaskType, BudgetLevel, RoutingResult
+from .storage import Storage, Conversation, Message
+from .openclaw_adapter import (
+    OpenClawAdapter, 
+    OpenClawConfig, 
+    AgentType,
+    MultiAgentOrchestrator,
+    create_musk_agent,
+    create_researcher_agent,
+    create_developer_agent
+)
 
-__version__ = "2.4.0"
+__version__ = "2.5.0"
 
 __all__ = [
+    # Core
     "ErrorLevel",
     "ProcessType", 
     "AlertLevel",
@@ -37,12 +48,27 @@ __all__ = [
     "QualityGate",
     "Crew",
     "Monitor",
+    # Dashboard
     "Dashboard",
+    # Quality Gate
     "AutoQualityGate",
     "QualityReport",
     "QualityIssue",
+    # Router
     "SmartRouter",
     "TaskType",
     "BudgetLevel",
     "RoutingResult",
+    # Storage
+    "Storage",
+    "Conversation",
+    "Message",
+    # OpenClaw
+    "OpenClawAdapter",
+    "OpenClawConfig",
+    "AgentType",
+    "MultiAgentOrchestrator",
+    "create_musk_agent",
+    "create_researcher_agent",
+    "create_developer_agent",
 ]

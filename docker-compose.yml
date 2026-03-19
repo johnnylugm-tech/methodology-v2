@@ -1,0 +1,104 @@
+version: '3.8'
+
+services:
+  # Model Router API
+  model-router:
+    build: 
+      context: ./model-router
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+      - MINIMAX_API_KEY=${MINIMAX_API_KEY}
+    volumes:
+      - ./data:/app/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Agent Quality Guard
+  agent-quality-guard:
+    build:
+      context: ./agent-quality-guard
+      dockerfile: Dockerfile
+    volumes:
+      - ./code:/app/code
+      - ./reports:/app/reports
+    environment:
+      - LOG_LEVEL=INFO
+    restart: unless-stopped
+
+  # Agent Monitor (v3 Full)
+  agent-monitor:
+    build:
+      context: ./agent-monitor-v3
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - DATABASE_URL=sqlite:///data/monitor.db
+      - PORT=3000
+    volumes:
+      - ./data:/app/data
+    depends_on:
+      - model-router
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Unified Dashboard
+  unified-dashboard:
+    build:
+      context: ./methodology-v2
+      dockerfile: Dockerfile
+    ports:
+      - "8081:8080"
+    environment:
+      - MODEL_ROUTER_URL=http://model-router:8080
+      - AGENT_MONITOR_URL=http://agent-monitor:3000
+    depends_on:
+      - model-router
+      - agent-monitor
+    restart: unless-stopped
+
+  # Optional: PostgreSQL (for production)
+  # postgres:
+  #   image: postgres:15
+  #   environment:
+  #     POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-secret}
+  #     POSTGRES_DB: agent_toolkit
+  #   volumes:
+  #     - postgres_data:/var/lib/postgresql/data
+  #   restart: unless-stopped
+
+  # Optional: Weaviate (for vector storage)
+  # weaviate:
+  #   image: semitechnologies/weaviate:latest
+  #   ports:
+  #     - "8082:8080"
+  #   environment:
+  #     QUERY_DEFAULTS_LIMIT: 25
+  #     AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED: 'true'
+  #     PERSISTENCE_DATA_PATH: /var/lib/weaviate
+  #     ENABLE_MODULES: text2vec-transformers
+  #   volumes:
+  #     - weaviate_data:/var/lib/weaviate
+  #   restart: unless-stopped
+
+volumes:
+  # postgres_data:
+  # weaviate_data:
+  data:
+
+networks:
+  default:
+    name: agent-toolkit-network
