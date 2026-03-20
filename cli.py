@@ -41,7 +41,7 @@ from data_connector import DataSourceManager
 class MethodologyCLI:
     """統一 CLI 入口"""
     
-    VERSION = "5.3.0"
+    VERSION = "5.4.0"
     
     def __init__(self):
         self.progress = ProgressDashboard()

@@ -1,6 +1,6 @@
 # methodology-v2
 
-> Multi-Agent Collaboration Development Methodology v5.3
+> Multi-Agent Collaboration Development Methodology v5.4
 
 ## 概述
 
