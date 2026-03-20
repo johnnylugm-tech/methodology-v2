@@ -277,7 +277,7 @@ from .cicd_integration import CICDIntegration, Pipeline, PipelineStep
 from .multi_language import MultiLanguageSupport, Language, LanguageConfig
 from .knowledge_base import KnowledgeBase, Pattern, BestPractice
 from .agent_spawner import AgentSpawner, SpawnConfig, SpawnedAgent, SpawnPolicy
-from .version_control import VersionControl, Version, Artifact
+from .delivery_tracker import DeliveryTracker, Version, Artifact
 
 __all__ = [
     # ... (existing)
@@ -294,7 +294,7 @@ __all__ = [
     "SpawnConfig",
     "SpawnedAgent",
     "SpawnPolicy",
-    "VersionControl",
+    "DeliveryTracker",
     "Version",
     "Artifact",
 ]

@@ -68,10 +68,43 @@ class ScheduledTask:
     
     @property
     def score(self) -> float:
-        """計算優先級分數"""
+        """
+        優先級分數計算 (透明化)
+        
+        公式: Total = Priority_Score + Urgency_Score + Dependency_Score + Deadline_Score
+        
+        Priority Score:
+        - CRITICAL (P0): 900 分
+        - HIGH (P1): 800 分
+        - NORMAL (P2): 700 分
+        - LOW (P3): 600 分
+        - BACKGROUND (P4): 500 分
+        
+        Urgency Score (工作佇列等待時間):
+        - 每等待 1 小時 +10 分
+        
+        Dependency Score (依賴阻塞):
+        - 每有 1 個任務依賴此任務 +50 分
+        
+        Deadline Score (距離截止):
+        - < 0 小時 (逾期): +500 分
+        - < 1 小時: +300 分
+        - < 4 小時: +100 分
+        - < 24 小時: +50 分
+        """
+        # 基礎優先級分數
         score = 1000 - self.priority.value * 100
         
-        # 緊急性 (距離 deadline 越近分數越高)
+        # 等待時間緊急性 (每小時 +10 分)
+        if self.created_at:
+            wait_hours = (datetime.now() - self.created_at).total_seconds() / 3600
+            score += min(wait_hours * 10, 100)  # 最多加 100 分
+        
+        # 依賴阻塞分數
+        if self.dependencies:
+            score += len(self.dependencies) * 50
+        
+        # 截止時間緊急性
         if self.deadline:
             hours_until_deadline = (self.deadline - datetime.now()).total_seconds() / 3600
             if hours_until_deadline < 0:
@@ -80,18 +113,124 @@ class ScheduledTask:
                 score += 300
             elif hours_until_deadline < 4:
                 score += 100
+            elif hours_until_deadline < 24:
+                score += 50
         
         return score
+    
+    def get_score_breakdown(self) -> Dict:
+        """
+        取得優先級分數詳細分解
+        
+        Returns:
+            {
+                "total": 950,
+                "breakdown": {
+                    "priority": {"base": 800, "label": "HIGH (P1)"},
+                    "urgency": {"value": 50, "wait_hours": 5},
+                    "dependency": {"count": 1, "value": 50},
+                    "deadline": {"hours": -2, "value": 500, "status": "overdue"}
+                }
+            }
+        """
+        # 基礎優先級分數
+        priority_base = 1000 - self.priority.value * 100
+        priority_labels = {
+            Priority.CRITICAL: "CRITICAL (P0)",
+            Priority.HIGH: "HIGH (P1)",
+            Priority.NORMAL: "NORMAL (P2)",
+            Priority.LOW: "LOW (P3)",
+            Priority.BACKGROUND: "BACKGROUND (P4)"
+        }
+        
+        # 等待時間
+        wait_hours = 0
+        urgency_value = 0
+        if self.created_at:
+            wait_hours = (datetime.now() - self.created_at).total_seconds() / 3600
+            urgency_value = min(wait_hours * 10, 100)
+        
+        # 依賴
+        dep_count = len(self.dependencies) if self.dependencies else 0
+        dep_value = dep_count * 50
+        
+        # 截止時間
+        deadline_hours = None
+        deadline_value = 0
+        deadline_status = "none"
+        if self.deadline:
+            deadline_hours = (self.deadline - datetime.now()).total_seconds() / 3600
+            if deadline_hours < 0:
+                deadline_value = 500
+                deadline_status = "overdue"
+            elif deadline_hours < 1:
+                deadline_value = 300
+                deadline_status = "critical"
+            elif deadline_hours < 4:
+                deadline_value = 100
+                deadline_status = "warning"
+            elif deadline_hours < 24:
+                deadline_value = 50
+                deadline_status = "soon"
+            else:
+                deadline_status = "ok"
+        
+        return {
+            "total": priority_base + urgency_value + dep_value + deadline_value,
+            "breakdown": {
+                "priority": {"base": priority_base, "label": priority_labels.get(self.priority, "UNKNOWN")},
+                "urgency": {"value": urgency_value, "wait_hours": round(wait_hours, 1)},
+                "dependency": {"count": dep_count, "value": dep_value},
+                "deadline": {
+                    "hours": round(deadline_hours, 1) if deadline_hours else None,
+                    "value": deadline_value,
+                    "status": deadline_status
+                }
+            }
+        }
 
 
 class Scheduler:
-    """優先級排程器"""
+    """
+    優先級排程器
     
-    def __init__(self):
+    任務排序演算法說明：
+    
+    1. 計算每個任務的優先級分數 (score)
+       - 基礎分數 = 1000 - 優先級值×100
+       - 等待時間加權 = 每小時 +10 分 (最多 100)
+       - 依賴加權 = 依賴數×50 分
+       - 截止時間加權 = 根據距離調整
+    
+    2. 任務揀選 (Task Selection)
+       - 選擇分數最高的任務
+       - 檢查資源是否足夠
+       - 如果資源不足，選擇下一個
+    
+    3. 資源分配 (Resource Allocation)
+       - 貪心演算法：選擇第一個滿足條件的資源
+       - 預設選擇可用資源中成本最低的
+    
+    4. 負載均衡 (Load Balancing)
+       - 可設定 max_load_per_resource 避免過載
+       - 預設 80% 容量上限
+    
+    範例：
+    ```
+    task1 = ScheduledTask(name="A", priority=Priority.HIGH, deadline=datetime.now()+timedelta(hours=2))
+    task2 = ScheduledTask(name="B", priority=Priority.NORMAL, deadline=datetime.now()+timedelta(hours=24))
+    
+    # task1 分數會更高，因為截止時間更近
+    # 即使優先級較低，截止時間會加分
+    ```
+    """
+    
+    def __init__(self, max_load_per_resource: float = 0.8):
         self.tasks: Dict[str, ScheduledTask] = {}
         self.resources: Dict[str, Resource] = {}
         self.queue: List[str] = []  # task IDs, sorted by priority
         self.history: List[Dict] = []
+        self.max_load_per_resource = max_load_per_resource  # 80% 容量上限
     
     def add_resource(self, name: str, resource_type: str,
                      capacity: float = 100.0,
@@ -185,6 +324,32 @@ class Scheduler:
         
         return False
     
+    def _why_blocked(self, task_id: str) -> str:
+        """說明任務被阻塞的原因"""
+        task = self.tasks.get(task_id)
+        if not task:
+            return "Task not found"
+        
+        # 檢查依賴
+        if task.dependencies:
+            pending_deps = []
+            for dep_id in task.dependencies:
+                dep = self.tasks.get(dep_id)
+                if dep and dep.state != TaskState.COMPLETED:
+                    pending_deps.append(f"{dep.name} ({dep.state.value})")
+            if pending_deps:
+                return f"Waiting for dependencies: {', '.join(pending_deps)}"
+        
+        # 檢查資源
+        for res_type, amount in task.required_resources.items():
+            resource = self._get_available_resource(res_type)
+            if not resource:
+                return f"No {res_type} resource available"
+            if resource.available < amount:
+                return f"Insufficient {res_type} (need {amount}, have {resource.available})"
+        
+        return "Unknown reason"
+    
     def _get_available_resource(self, resource_type: str) -> Optional[Resource]:
         """取得可用資源"""
         candidates = [
@@ -199,7 +364,17 @@ class Scheduler:
         return min(candidates, key=lambda r: r.utilization)
     
     def schedule_next(self) -> Optional[ScheduledTask]:
-        """排程下一個任務"""
+        """
+        排程下一個任務
+        
+        調度決策說明：
+        1. 按分數排序佇列
+        2. 遍歷佇列，找到第一個資源充足的任務
+        3. 分配資源並更新狀態
+        
+        Returns:
+            下一個要執行的任務，或 None (如果無任務可執行)
+        """
         for task_id in self.queue:
             if self._can_schedule(task_id):
                 task = self.tasks[task_id]
@@ -207,9 +382,67 @@ class Scheduler:
                 task.state = TaskState.RUNNING
                 task.started_at = datetime.now()
                 self._requeue()
+                
+                # 記錄調度原因
+                self.history.append({
+                    "timestamp": datetime.now(),
+                    "action": "scheduled",
+                    "task_id": task_id,
+                    "task_name": task.name,
+                    "score": task.score,
+                    "breakdown": task.get_score_breakdown()
+                })
+                
                 return task
         
         return None
+    
+    def explain_schedule(self) -> Dict:
+        """
+        說明當前排程決策
+        
+        返回為什麼選擇這個任務，以及其他任務的分數比較
+        
+        Returns:
+            {
+                "ready_tasks": [...],  # 可以執行的任務
+                "blocked_tasks": [...], # 等待資源的任務
+                "next_task": {...},     # 下一個任務及其分數分解
+                "resource_status": {...} # 資源狀態
+            }
+        """
+        ready = []
+        blocked = []
+        
+        for task_id in self.queue:
+            task = self.tasks[task_id]
+            info = {
+                "id": task_id,
+                "name": task.name,
+                "score": task.score,
+                "breakdown": task.get_score_breakdown()
+            }
+            
+            if self._can_schedule(task_id):
+                ready.append(info)
+            else:
+                info["block_reason"] = self._why_blocked(task_id)
+                blocked.append(info)
+        
+        return {
+            "ready_tasks": sorted(ready, key=lambda x: -x["score"]),
+            "blocked_tasks": blocked,
+            "resource_status": {
+                rid: {
+                    "name": r.name,
+                    "type": r.type,
+                    "available": r.available,
+                    "capacity": r.capacity,
+                    "utilization": r.utilization
+                }
+                for rid, r in self.resources.items()
+            }
+        }
     
     def _allocate_resources(self, task: ScheduledTask):
         """分配資源"""

@@ -116,9 +116,9 @@ for bp in results:
 ### 使用方式
 
 ```python
-from methodology import VersionControl
+from methodology import DeliveryTracker
 
-vc = VersionControl()
+vc = DeliveryTracker()
 
 # 提交版本
 v1 = vc.commit(
@@ -195,5 +195,5 @@ v3: v0.0.3
 | 功能 | 模組 |
 |------|------|
 | 知識庫 | `KnowledgeBase`, `Pattern`, `BestPractice` |
-| 版本控制 | `VersionControl`, `Artifact`, `Version` |
+| 版本控制 | `DeliveryTracker`, `Artifact`, `Version` |
 | 模式庫 | 內建 15+ 種常見模式 |

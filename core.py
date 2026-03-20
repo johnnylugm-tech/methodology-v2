@@ -72,7 +72,7 @@ class MethodologyCore:
         self._extensions = None
         self._router = None
         self._spawner = None
-        self._version_control = None
+        self._delivery_tracker = None
         self._knowledge_base = None
     
     # ==================== 懶載入屬性 ====================
@@ -161,12 +161,12 @@ class MethodologyCore:
         return self._spawner
     
     @property
-    def version_control(self):
+    def delivery_tracker(self):
         """版本控制"""
-        if self._version_control is None:
-            from .version_control import VersionControl
-            self._version_control = VersionControl()
-        return self._version_control
+        if self._delivery_tracker is None:
+            from .delivery_tracker import DeliveryTracker
+            self._delivery_tracker = DeliveryTracker()
+        return self._delivery_tracker
     
     @property
     def knowledge_base(self):
@@ -235,8 +235,8 @@ class MethodologyCore:
         return self.spawner.spawn_with_retry(request)
     
     def commit_version(self, artifact_id: str, content: str, message: str = "", **kwargs):
-        """提交版本 (整合 VersionControl)"""
-        return self.version_control.commit(artifact_id, content, message=message, **kwargs)
+        """提交版本 (整合 DeliveryTracker)"""
+        return self.delivery_tracker.commit(artifact_id, content, message=message, **kwargs)
     
     # ==================== 生命週期 ====================
     
@@ -244,8 +244,8 @@ class MethodologyCore:
         """保存所有狀態"""
         if self._project:
             self._project.save()
-        if self._version_control:
-            self.version_control.save()
+        if self._delivery_tracker:
+            self.delivery_tracker.save()
         if self._knowledge_base:
             self.knowledge_base.save()
     
@@ -268,7 +268,7 @@ class MethodologyCore:
             "stats": {
                 "agents": len(self.agents.agents) if self._registry else 0,
                 "tasks": len(self.tasks.tasks) if self._tasks else 0,
-                "versions": len(self.version_control.versions) if self._version_control else 0,
+                "versions": len(self.delivery_tracker.versions) if self._delivery_tracker else 0,
             }
         }
 

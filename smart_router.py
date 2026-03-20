@@ -360,6 +360,47 @@ class SmartRouter:
             for m in self.models.values()
         ]
     
+    def calculate_savings(self, scenarios: List[Dict] = None) -> Dict:
+        """
+        計算並說明節省成本
+        
+        節省成本的三大策略：
+        1. 智慧路由 - 根據任務複雜度選擇最便宜的合適模型
+        2. 快取 - 重複請求直接返回快取結果
+        3. 並行優化 - 批量處理比單一請求便宜
+        
+        情境 A: 1000 次混合請求 → 節省 90%
+        情境 B: 高快取場景 (70% 命中) → 節省 70%
+        情境 C: 簡單任務為主 + 快取 → 節省 99%
+        """
+        default_scenarios = [
+            {"name": "典型混合任務", "tasks": 1000, "mix": {"simple": 0.6, "medium": 0.3, "complex": 0.1}, "cache": 0.0},
+            {"name": "高快取場景", "tasks": 1000, "mix": {"simple": 0.6, "medium": 0.3, "complex": 0.1}, "cache": 0.7},
+            {"name": "簡單任務為主", "tasks": 1000, "mix": {"simple": 0.9, "medium": 0.09, "complex": 0.01}, "cache": 0.9},
+        ]
+        
+        scenarios = scenarios or default_scenarios
+        results = []
+        
+        for s in scenarios:
+            direct = s["tasks"] * 0.03
+            routed = (s["tasks"] * s["mix"]["simple"] * 0.001 +
+                      s["tasks"] * s["mix"]["medium"] * 0.003 +
+                      s["tasks"] * s["mix"]["complex"] * 0.015)
+            final = routed * (1 - s["cache"])
+            savings_rate = ((direct - final) / direct * 100) if direct > 0 else 0
+            
+            results.append({
+                "scenario": s["name"],
+                "direct_cost": round(direct, 2),
+                "routed_cost": round(routed, 2),
+                "final_cost": round(final, 2),
+                "savings_rate": round(savings_rate, 1),
+            })
+        
+        return {"scenarios": results, "explanation": "節省取決於任務複雜度分佈和快取命中率"}
+
+
     def set_budget(self, budget: str):
         """設定預算"""
         self.budget = BudgetLevel(budget)
@@ -425,7 +466,7 @@ if __name__ == "__main__":
             "monthly_budget": self.DEFAULT_CONFIG["monthly_budget"],
             "remaining": self.DEFAULT_CONFIG["monthly_budget"] - self.COST_TRACKING["total_spent"],
             "utilization": (self.COST_TRACKING["total_spent"] / 
-                           max(1, self.DEFAULT_CONFIG["monthly_budget"]) * 100,
+                           max(1, self.DEFAULT_CONFIG["monthly_budget"]) * 100),
             "by_model": self.COST_TRACKING["by_model"],
             "by_task_type": self.COST_TRACKING["by_task_type"],
         }

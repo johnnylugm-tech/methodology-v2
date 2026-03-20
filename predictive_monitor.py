@@ -80,14 +80,41 @@ class PredictiveMonitor:
     
     def predict(self, metric: str, horizon: int = 5) -> Optional[Prediction]:
         """
-        預測未來
+        預測未來趨勢
+        
+        預測演算法說明：
+        
+        1. 資料收集
+           - 需要至少 10 個歷史數據點
+           - 每個數據點包含：value, timestamp, tags
+        
+        2. 線性迴歸 (Linear Regression)
+           - 使用最小平方法 (OLS) 擬合直線
+           - y = slope × x + intercept
+           - slope: 趨勢斜率 (正值=上升, 負值=下降)
+           - intercept: 截距
+        
+        3. 預測計算
+           - 未來值 = slope × (n + horizon) + intercept
+           - n = 歷史數據點數量
+           - horizon = 預測未來多少個點
+        
+        4. 置信度計算 (R²)
+           - R² = 1 - (SS_res / SS_tot)
+           - SS_res: 殘差平方和
+           - SS_tot: 總平方和
+        
+        5. 置信度等級
+           - >80%: 數據穩定，趨勢明顯 (HIGH)
+           - 50-80%: 數據有一定波動 (MEDIUM)
+           - <50%: 數據隨機性高 (LOW)
         
         Args:
             metric: 指標名稱
             horizon: 預測未來多少個點
             
         Returns:
-            Prediction 或 None
+            Prediction 或 None (數據不足時)
         """
         if metric not in self.metrics or len(self.metrics[metric]) < 10:
             return None

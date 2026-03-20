@@ -88,7 +88,7 @@ class Artifact:
         self.updated_at = datetime.now()
 
 
-class VersionControl:
+class DeliveryTracker:
     """版本控制管理器"""
     
     def __init__(self, storage_path: str = None):
