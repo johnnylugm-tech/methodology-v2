@@ -9,6 +9,7 @@ Data Quality Connector
 - 自動清理建議
 """
 
+import json
 import statistics
 import re
 from dataclasses import dataclass, field

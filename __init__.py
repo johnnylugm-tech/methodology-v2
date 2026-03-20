@@ -342,3 +342,88 @@ __all__ += [
     "OpenTelemetryConnector",
     "DataSourceManager",
 ]
+
+# Solutions A-E Exports
+from .agent_evaluator import (
+    AgentEvaluator,
+    HumanEvaluator,
+    TestCase,
+    EvaluationSuite,
+    EvaluationResult,
+    MetricType,
+    EvaluationStatus,
+)
+from .structured_output import (
+    StructuredOutputEngine,
+    OutputSchema,
+    FieldDefinition,
+    ParseResult,
+    OutputFormat,
+    ParseStrategy,
+)
+from .data_quality import (
+    DataQualityChecker,
+    QualityReport,
+    FieldProfile,
+    QualityIssue,
+    QualityLevel,
+    IssueType,
+)
+from .enterprise_hub import (
+    EnterpriseHub,
+    Authenticator,
+    AuditLogger,
+    SlackMessenger,
+    TeamsMessenger,
+    User,
+    AuditEntry,
+    AuthProvider,
+)
+from .langgraph_migrator import (
+    LangGraphMigrationTool,
+    MigrationResult,
+    PatternMapping,
+    ASTNode,
+    NodeType,
+)
+
+__all__ = [
+    # Core
+    "MethodologyCore",
+    "MethodologyConfig",
+    "Methodology",
+    # ... existing exports
+    # Solutions A-E
+    "AgentEvaluator",
+    "HumanEvaluator",
+    "TestCase",
+    "EvaluationSuite",
+    "EvaluationResult",
+    "MetricType",
+    "EvaluationStatus",
+    "StructuredOutputEngine",
+    "OutputSchema",
+    "FieldDefinition",
+    "ParseResult",
+    "OutputFormat",
+    "ParseStrategy",
+    "DataQualityChecker",
+    "QualityReport",
+    "FieldProfile",
+    "QualityIssue",
+    "QualityLevel",
+    "IssueType",
+    "EnterpriseHub",
+    "Authenticator",
+    "AuditLogger",
+    "SlackMessenger",
+    "TeamsMessenger",
+    "User",
+    "AuditEntry",
+    "AuthProvider",
+    "LangGraphMigrationTool",
+    "MigrationResult",
+    "PatternMapping",
+    "ASTNode",
+    "NodeType",
+]

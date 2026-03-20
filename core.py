@@ -342,3 +342,87 @@ if __name__ == "__main__":
         print(f"Routed to: {result.model if hasattr(result, 'model') else 'N/A'}")
     
     print("\n=== Done ===")
+
+# ==================== Solutions A-E Integration ====================
+
+    @property
+    def evaluator(self):
+        """Solution A: Agent Evaluation Framework"""
+        if not hasattr(self, '_evaluator'):
+            from agent_evaluator import AgentEvaluator, HumanEvaluator
+            self._evaluator = AgentEvaluator()
+            self._hitl = HumanEvaluator()
+        return self._evaluator
+    
+    @property
+    def structured_output(self):
+        """Solution B: Structured Output Engine"""
+        if not hasattr(self, '_structured_output'):
+            from structured_output import StructuredOutputEngine
+            self._structured_output = StructuredOutputEngine()
+        return self._structured_output
+    
+    @property
+    def data_quality(self):
+        """Solution C: Data Quality Connector"""
+        if not hasattr(self, '_data_quality'):
+            from data_quality import DataQualityChecker
+            self._data_quality = DataQualityChecker()
+        return self._data_quality
+    
+    @property
+    def enterprise(self):
+        """Solution D: Enterprise Integration Hub"""
+        if not hasattr(self, '_enterprise'):
+            from enterprise_hub import EnterpriseHub
+            self._enterprise = EnterpriseHub()
+        return self._enterprise
+    
+    @property
+    def migrator(self):
+        """Solution E: LangGraph Migration Tool"""
+        if not hasattr(self, '_migrator'):
+            from langgraph_migrator import LangGraphMigrationTool
+            self._migrator = LangGraphMigrationTool()
+        return self._migrator
+
+    def run_full_evaluation(self, agent_fn, test_cases):
+        """執行完整評估流程 (Solution A)"""
+        from agent_evaluator import TestCase
+        
+        suite = self.evaluator.create_suite(
+            name="Full Evaluation",
+            iterations=1
+        )
+        
+        for tc in test_cases:
+            self.evaluator.add_test_case(
+                suite.id,
+                name=tc.get('name', 'Test'),
+                input_prompt=tc.get('prompt', ''),
+                expected_output=tc.get('expected')
+            )
+        
+        self.evaluator.run_suite(suite.id, agent_fn)
+        return self.evaluator.generate_report(suite.id)
+    
+    def validate_and_parse_output(self, prompt, llm_call, schema_name):
+        """驗證並解析輸出 (Solution B)"""
+        return self.structured_output.parse(
+            prompt=prompt,
+            llm_call=llm_call,
+            schema_name=schema_name
+        )
+    
+    def check_data_quality(self, data, field_types=None):
+        """檢查資料品質 (Solution C)"""
+        return self.data_quality.analyze(data, field_types)
+    
+    def migrate_to_langgraph(self, file_path):
+        """遷移到 LangGraph (Solution E)"""
+        result = self.migrator.analyze_file(file_path)
+        self.migrator.generate_langgraph_code(result)
+        return result
+
+# Alias for backward compatibility
+Methodology = MethodologyCore

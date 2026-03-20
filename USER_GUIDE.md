@@ -1,17 +1,18 @@
-# Methodology v2 使用手冊
+# Methodology v2 - 完整使用手冊
 
-> AI Agent 開發框架 - 從 PoC 到 Production-Ready
+> 從 PoC 到 Production-Ready 的 AI Agent 開發框架
 
 ---
 
 ## 目錄
 
 1. [快速開始](#快速開始)
-2. [核心模組](#核心模組)
-3. [CLI 命令](#cli-命令)
-4. [範例](#範例)
-5. [模組 API](#模組-api)
-6. [測試](#測試)
+2. [核心架構](#核心架構)
+3. [Solutions A-E 完整指南](#solutions-a-e-完整指南)
+4. [統一 CLI](#統一-cli)
+5. [完整工作流程](#完整工作流程)
+6. [範例](#範例)
+7. [API 參考](#api-參考)
 
 ---
 
@@ -26,563 +27,484 @@ cd /Users/johnny/.openclaw/workspace-musk/skills/methodology-v2
 ### 基本使用
 
 ```python
-from progress_dashboard import ProgressDashboard
-from message_bus import MessageBus
-from gantt_chart import GanttChart
+from methodology import MethodologyCore
 
 # 初始化
-dashboard = ProgressDashboard()
+core = MethodologyCore()
 
-# 建立 Sprint
-sprint_id = dashboard.create_sprint(
-    name="Sprint 1",
-    goal="完成核心功能",
-    capacity=50
-)
-
-# 加入任務
-item_id = dashboard.add_to_backlog(
-    title="用戶登入功能",
-    story_points=5,
-    priority=1
-)
-
-# 標記完成
-dashboard.mark_item_completed(item_id)
-
-# 查詢
-print(dashboard.get_sprint_completed_points(sprint_id))
+# 使用各模組
+core.tasks.split_from_goal("新任務")
+core.costs.track(...)
 ```
 
 ---
 
-## 核心模組
+## 核心架構
 
-### 1. Progress Dashboard - 進度追蹤
-
-追蹤 Sprint、Backlog、Burndown。
-
-```python
-from progress_dashboard import ProgressDashboard, BacklogItem, Sprint
-
-dashboard = ProgressDashboard()
-
-# Sprint 管理
-sprint_id = dashboard.create_sprint(
-    name="Sprint 5",
-    goal="發布支付功能",
-    capacity=40
-)
-dashboard.start_sprint(sprint_id)
-
-# Backlog 管理
-item_id = dashboard.add_to_backlog(
-    title="開發 REST API",
-    description="實作 CRUD 操作",
-    story_points=8,
-    priority=2
-)
-
-# 加入 Sprint
-dashboard.add_item_to_sprint(item_id, sprint_id)
-
-# 標記完成
-dashboard.mark_item_completed(item_id)
-
-# 取得 Sprint 進度
-total = dashboard.get_sprint_total_points(sprint_id)
-completed = dashboard.get_sprint_completed_points(sprint_id)
-velocity = dashboard.get_sprint_velocity(sprint_id)
-
-print(f"Sprint 進度: {completed}/{total} ({velocity:.1f} 點)")
+```
+methodology-v2/
+├── core.py                 # 統一入口
+├── progress_dashboard.py   # Sprint/Backlog 追蹤
+├── cost_allocator.py      # 成本管控
+├── message_bus.py         # 訊息系統
+├── gantt_chart.py         # 甘特圖
+├── pm_mode.py             # PM Mode
+├── pm_terminology.py       # 術語對照
+├── resource_dashboard.py   # 資源儀表板
+│
+├── # Solutions A-E
+├── agent_evaluator.py     # Solution A: Agent 評估
+├── structured_output.py   # Solution B: 結構化輸出
+├── data_quality.py        # Solution C: 資料品質
+├── enterprise_hub.py       # Solution D: 企業整合
+└── langgraph_migrator.py  # Solution E: LangGraph 遷移
 ```
 
-### 2. Cost Allocator - 成本管控
+---
 
-追蹤 API 使用成本、計算資源。
+## Solutions A-E 完整指南
 
-```python
-from cost_allocator import CostAllocator, CostType, Budget
+### Solution A: Agent Evaluation Framework
 
-allocator = CostAllocator()
-
-# 建立預算
-allocator.create_budget(
-    name="AI Project",
-    total_amount=1000.0,
-    period="monthly"
-)
-
-# 記錄成本
-allocator.add_entry(
-    project_id="AI Project",
-    user_id="user-1",
-    cost_type=CostType.API_CALL,
-    amount=50.0,
-    model="gpt-4"
-)
-
-# 查詢成本
-costs = allocator.get_project_costs("AI Project")
-print(f"總成本: ${costs['total']:.2f}")
-print(f"按模型: {costs['by_model']}")
-
-# 預算狀態
-status = allocator.get_budget_status()
-for b in status:
-    print(f"{b['name']}: ${b['spent']:.2f} / ${b['total']:.2f}")
-```
-
-### 3. Message Bus - 訊息系統
-
-Pub/Sub 訊息系統。
+**用途**：自動化 Agent 行為評估、A/B 測試
 
 ```python
-from message_bus import MessageBus, MessagePriority
+from methodology import AgentEvaluator, TestCase
 
-bus = MessageBus()
+evaluator = AgentEvaluator()
 
-# 發布訊息
-bus.publish("tasks/completed", {
-    "task_id": "task-1",
-    "user": "alice"
-}, MessagePriority.HIGH)
-
-# 訂閱主題
-def handle_completed(message):
-    print(f"任務完成: {message['task_id']}")
-
-bus.subscribe("tasks/completed", handle_completed)
-
-# 查詢狀態
-status = bus.get_queue_status()
-print(f"佇列大小: {status['queue_size']}")
-print(f"已發送: {status['stats']['messages_sent']}")
-
-# CLI 輸出
-print(bus.to_cli())
-```
-
-### 4. Gantt Chart - 甘特圖
-
-視覺化專案時程。
-
-```python
-from gantt_chart import GanttChart, TaskStatus
-
-gantt = GanttChart()
-
-# 加入任務
-gantt.add_task(
-    task_id="task-1",
-    name="需求分析",
-    start_date="2026-03-20",
-    duration=5,
-    status=TaskStatus.COMPLETED,
-    assignee="Alice"
+# 建立測試套件
+suite = evaluator.create_suite(
+    name="Login Flow",
+    iterations=3,
+    version_a_name="GPT-4",
+    version_b_name="Claude-3"
 )
 
-gantt.add_task(
-    task_id="task-2",
-    name="系統設計",
-    start_date="2026-03-25",
-    duration=3,
-    depends_on=["task-1"]
+# 加入測試用例
+evaluator.add_test_case(
+    suite.id,
+    name="Valid Login",
+    input_prompt="User logs in with correct credentials",
+    expected_output="Login successful"
 )
 
-# 輸出
-print(gantt.to_rich_ascii())
+# 定義 Agent
+def agent_v1(prompt, context=None, timeout=30):
+    # 呼叫你的 Agent
+    return f"[Agent] Response to: {prompt}"
 
-# CSV 匯出
-print(gantt.to_csv())
-
-# HTML 匯出
-gantt.export_interactive_html("/tmp/gantt.html")
-```
-
-### 5. PM Mode - PM 日常
-
-晨間報告、成本預測、健康狀況。
-
-```python
-from pm_mode import PMMode
-
-pm = PMMode()
-
-# 生成晨間報告
-report = pm.generate_morning_report(
-    sprint_name="Sprint 5",
-    sprint_progress=65.0,
-    completed_yesterday=["完成登入", "修復 Bug #123"],
-    planned_today=["開發儀表板", "撰寫文件"],
-    blockers=["等不及第三方 API 文件"],
-    velocity=42.0
-)
-print(report.to_markdown())
-
-# 成本預測
-forecast = pm.predict_cost(
-    project_name="AI Assistant",
-    current_cost=500.0,
-    budget=2000.0,
-    daily_burn_rate=85.0,
-    days_remaining=18
-)
-print(forecast.to_markdown())
-
-# Sprint 健康狀況
-health = pm.get_sprint_health(
-    velocity=35,
-    planned=50,
-    completed=30
-)
-print(f"狀態: {health['health']}")
-print(f"分數: {health['health_score']}/10")
-```
-
-### 6. PM Terminology - 術語對照
-
-統一 PM/開發/Scrum 術語。
-
-```python
-from pm_terminology import PMTerminologyMapper, Role
-
-mapper = PMTerminologyMapper()
-
-# 搜尋術語
-results = mapper.search("sprint")
-for r in results:
-    print(f"## {r.pm_term}")
-    print(f"- Developer: {r.dev_term}")
-    print(f"- Scrum: {r.scrum_term}")
-    print(f"- 定義: {r.definition}")
-
-# 翻譯術語
-pm_term = mapper.translate("velocity", Role.DEV, Role.PM)
-print(f"Dev → PM: {pm_term}")
+# 執行評估
+evaluator.run_suite(suite.id, agent_v1)
 
 # 產生報告
-print(mapper.to_markdown_table())
+print(evaluator.generate_report(suite.id))
 ```
 
-### 7. Resource Dashboard - 資源管理
-
-管理工具、API、團隊成員。
-
-```python
-from resource_dashboard import ResourceDashboard, ResourceType, SkillLevel
-
-dashboard = ResourceDashboard()
-
-# 新增資源
-dashboard.add_resource(
-    id="openai-api",
-    name="OpenAI API",
-    type=ResourceType.API,
-    description="GPT 模型 API",
-    cost=100.0,
-    tags=["ai", "llm"]
-)
-
-# 加入團隊成員
-dashboard.add_team_member(
-    resource_id="member-alice",
-    name="Alice",
-    role="Senior Developer",
-    skills={"python": SkillLevel.EXPERT, "ai": SkillLevel.ADVANCED}
-)
-
-# 輸出
-print(dashboard.to_table())
-
-# 摘要
-summary = dashboard.get_resource_summary()
-print(f"總資源: {summary['total']}")
-print(f"月成本: ${summary['total_monthly_cost']:.2f}")
-
-# 團隊技能矩陣
-matrix = dashboard.get_team_skills_matrix()
-for skill, members in matrix.items():
-    print(f"{skill}: {', '.join(members)}")
+**CLI**：
+```bash
+python cli.py eval create "Login Tests"
+python cli.py eval add <suite_id> "Valid Login" --prompt "User login"
+python cli.py eval run <suite_id>
+python cli.py eval report <suite_id>
 ```
 
 ---
 
-## CLI 命令
+### Solution B: Structured Output Engine
 
-使用 `cli.py` 統一介面：
+**用途**：確保 LLM 輸出穩定性、JSON 解析
+
+```python
+from methodology import StructuredOutputEngine
+
+engine = StructuredOutputEngine()
+
+# 定義 Schema
+from methodology import OutputSchema, FieldDefinition
+
+user_schema = OutputSchema(
+    name="user",
+    fields={
+        "id": FieldDefinition("id", int),
+        "name": FieldDefinition("name", str),
+        "email": FieldDefinition("email", str),
+    },
+    required_fields=["id", "email"]
+)
+engine.register_schema(user_schema)
+
+# 解析 LLM 輸出
+def mock_llm(prompt):
+    return '{"id": 123, "name": "John", "email": "john@test.com"}'
+
+result = engine.parse(
+    prompt="Extract user info",
+    llm_call=mock_llm,
+    schema_name="user",
+    max_retries=3
+)
+
+print(f"Success: {result.success}")
+print(f"Data: {result.data}")
+print(f"Validation: {result.validation.valid if result.validation else None}")
+```
+
+**解析策略**：
+1. **Direct** - 直接 JSON parse
+2. **Regex** - 從 Markdown/code block 提取
+3. **Repair** - Key-value 提取
+4. **Retry** - 重試 LLM
+
+**CLI**：
+```bash
+python cli.py parse
+```
+
+---
+
+### Solution C: Data Quality Connector
+
+**用途**：資料驗證、異常偵測、品質評分
+
+```python
+from methodology import DataQualityChecker
+
+checker = DataQualityChecker()
+
+# 測試資料
+data = [
+    {"id": 1, "name": "Alice", "email": "alice@test.com", "age": 30},
+    {"id": 2, "name": "Bob", "email": "bob@test.com", "age": 25},
+    {"id": 3, "name": "", "email": "invalid-email", "age": None},
+    {"id": 4, "name": "Diana", "email": "diana@test.com", "age": 150},  # Outlier
+]
+
+field_types = {"id": int, "name": str, "email": str, "age": int}
+
+# 分析
+report = checker.analyze(data, field_types)
+
+# 產生報告
+print(checker.generate_report_markdown(report))
+
+# 清理
+cleaned, _ = checker.clean_data(data, strategy="remove")
+```
+
+**問題偵測**：
+- Missing Value - 缺失值
+- Outlier - 異常值 (3σ 外)
+- Duplicate - 重複資料
+- Invalid Format - 格式錯誤
+
+**CLI**：
+```bash
+python cli.py quality check
+python cli.py quality report
+```
+
+---
+
+### Solution D: Enterprise Integration Hub
+
+**用途**：企業單一登入、審計日誌、Slack/Teams 通知
+
+```python
+from methodology import EnterpriseHub, SlackMessenger, AuditLevel
+
+hub = EnterpriseHub()
+
+# 設定 Slack
+hub.add_slack("alerts", webhook_url="https://hooks.slack.com/...")
+
+# 審計日誌
+hub.audit.log_access(
+    user_id="user-123",
+    username="john.doe",
+    resource="/api/tasks",
+    method="GET"
+)
+
+# 發送警報
+hub.alert(
+    title="High CPU Usage",
+    message="Server CPU at 95%",
+    severity="warning"
+)
+
+# 認證
+user = hub.auth.create_user(
+    username="john.doe",
+    email="john@company.com",
+    role="developer",
+    permissions=["read", "write"]
+)
+api_key = hub.auth.create_api_key(user.id)
+```
+
+**支援的認證**：
+- Okta (OIDC/SAML)
+- Azure AD (OAuth2)
+- LDAP
+- API Key
+- Basic Auth
+
+**CLI**：
+```bash
+python cli.py enterprise status
+python cli.py enterprise audit
+```
+
+---
+
+### Solution E: LangGraph Migration Tool
+
+**用途**：將現有 Agent 遷移到 LangGraph
+
+```python
+from methodology import LangGraphMigrationTool
+
+tool = LangGraphMigrationTool()
+
+# 分析檔案
+result = tool.analyze_file("my_agent.py")
+
+# 產生報告
+print(tool.generate_report(result))
+
+# 遷移
+result = tool.migrate_file("my_agent.py", "my_agent_langgraph.py")
+
+print(f"Output: {result.output_file}")
+print(f"Risk: {result.overall_risk}")
+```
+
+**風險評估**：
+- 🟢 Low - 可自動遷移
+- 🟡 Medium - 需要部分手動調整
+- 🔴 High - 需要完整重構
+
+**CLI**：
+```bash
+python cli.py migrate my_agent.py
+```
+
+---
+
+## 統一 CLI
 
 ```bash
-# 初始化專案
+# 專案管理
 python cli.py init "my-project"
-
-# 任務管理
-python cli.py task add "新功能" --points 5 --priority 2
+python cli.py task add "新功能" --points 5
 python cli.py task list
-python cli.py task complete task-1
+python cli.py sprint create "Sprint 1"
 
-# Sprint 管理
-python cli.py sprint create "Sprint 1" --start 2026-03-20 --end 2026-04-02 --capacity 40
-python cli.py sprint list
-
-# 視覺化看板
+# 視覺化
 python cli.py board
-
-# 報告
 python cli.py report --type weekly
 
-# 狀態
-python cli.py status
-
-# Message Bus
-python cli.py bus status
-python cli.py bus tree
-
-# 術語查詢
-python cli.py term velocity
-
-# 資源儀表板
-python cli.py resources list
-python cli.py resources stats
-python cli.py resources skills
-
 # PM Mode
-python cli.py pm report      # 晨間報告
-python cli.py pm forecast    # 成本預測
-python cli.py pm health      # Sprint 健康
+python cli.py pm report
+python cli.py pm forecast
+python cli.py pm health
 
-# 版本
-python cli.py version
+# Solutions A-E
+python cli.py eval create "Tests"
+python cli.py quality check
+python cli.py enterprise status
+python cli.py migrate my_agent.py
+python cli.py parse
+python cli.py term velocity
+python cli.py resources list
+```
+
+---
+
+## 完整工作流程
+
+### 開發流程
+
+```
+1. 需求 → Task拆分
+   core.tasks.split_from_goal("開發登入功能")
+       ↓
+2. 規劃 → Sprint排程
+   core.sprints.create_sprint(...)
+       ↓
+3. 執行 → Agent開發
+   core.evaluator.run_suite(...)
+       ↓
+4. 評估 → 品質把關
+   core.structured.parse(...)
+       ↓
+5. 部署 → 企業整合
+   core.enterprise.notify(...)
+```
+
+### 評估流程
+
+```
+1. 定義測試用例
+   evaluator.add_test_case(suite.id, "Valid Login", ...)
+       ↓
+2. 執行評估
+   evaluator.run_suite(suite.id, agent_fn)
+       ↓
+3. 人類審查 (可選)
+   hitl.submit_for_review(result)
+       ↓
+4. 產生報告
+   evaluator.generate_report(suite.id)
+```
+
+### 資料品質流程
+
+```
+1. 收集資料
+   data = [...]
+       ↓
+2. 分析品質
+   report = checker.analyze(data)
+       ↓
+3. 檢視問題
+   checker.generate_report_markdown(report)
+       ↓
+4. 清理資料
+   cleaned, _ = checker.clean_data(data)
 ```
 
 ---
 
 ## 範例
 
-### 完整工作流
+### 完整專案開發
 
 ```python
-from progress_dashboard import ProgressDashboard
-from message_bus import MessageBus
-from gantt_chart import GanttChart, TaskStatus
-from cost_allocator import CostAllocator, CostType
-from pm_mode import PMMode
+from methodology import MethodologyCore
 
-# 初始化所有模組
-dashboard = ProgressDashboard()
-bus = MessageBus()
-gantt = GanttChart()
-allocator = CostAllocator()
-pm = PMMode()
+core = MethodologyCore(config={
+    "project_name": "AI Assistant",
+    "monthly_budget": 1000
+})
 
-# 1. 建立 Sprint
-sprint_id = dashboard.create_sprint(
-    name="Sprint 5",
-    goal="發布 AI Assistant v1.0",
-    capacity=50
+# 1. 規劃
+core.tasks.split_from_goal("開發 AI 助手")
+
+# 2. 建立 Sprint
+core.sprints.create_sprint(
+    name="Sprint 1",
+    capacity=40
 )
-dashboard.start_sprint(sprint_id)
 
-# 2. 加入任務到 Backlog 和 Gantt
-tasks = [
-    ("需求分析", 3, "2026-03-20"),
-    ("系統設計", 5, "2026-03-23"),
-    ("開發登入", 8, "2026-03-26"),
-    ("開發儀表板", 13, "2026-04-02"),
-    ("測試部署", 5, "2026-04-09"),
+# 3. Agent 評估
+def my_agent(prompt, context=None, timeout=30):
+    # Agent 實作
+    return "Agent response"
+
+test_cases = [
+    {"name": "問答", "prompt": "什麼是 AI?", "expected": "AI 是..."},
+    {"name": "翻譯", "prompt": "翻譯 hello 為中文", "expected": "你好"},
 ]
 
-for i, (name, points, start) in enumerate(tasks):
-    task_id = f"task-{i+1}"
-    dashboard.add_to_backlog(title=name, story_points=points)
-    gantt.add_task(
-        task_id=task_id,
-        name=name,
-        start_date=start,
-        duration=points,
-        status=TaskStatus.PLANNED
-    )
-    bus.publish("tasks/created", {"task_id": task_id, "name": name})
+report = core.run_full_evaluation(my_agent, test_cases)
 
-# 3. 模擬開發過程
-for i in range(3):
-    item_id = f"item-{i+1}"
-    dashboard.mark_item_completed(item_id)
-    bus.publish("tasks/completed", {"task_id": item_id})
+# 4. 資料驗證
+data = [{"id": 1, "name": "Alice"}, {"id": 2, "name": ""}]
+quality_report = core.check_data_quality(data)
 
-# 4. 記錄成本
-allocator.create_budget("AI Assistant", 2000.0, "project")
-allocator.add_entry("AI Assistant", "user-1", CostType.API_CALL, 150.0)
-
-# 5. 生成報告
-report = pm.generate_morning_report(
-    sprint_name="Sprint 5",
-    sprint_progress=60.0,
-    completed_yesterday=["需求分析", "系統設計"],
-    planned_today=["開發登入功能"],
-    blockers=[],
-    velocity=45.0
-)
-
-print(report.to_markdown())
-print(gantt.to_rich_ascii())
-print(allocator.generate_report())
+# 5. 部署通知
+core.enterprise.alert("Deployment Complete", "Sprint 1 done", "info")
 ```
 
-### 多人協作
+### 企業級整合
 
 ```python
-from message_bus import MessageBus, MessagePriority
-from resource_dashboard import ResourceDashboard, SkillLevel
+from methodology import EnterpriseHub
 
-# 初始化
-bus = MessageBus()
-resources = ResourceDashboard()
+hub = EnterpriseHub()
 
-# 團隊成員
-resources.add_team_member(
-    resource_id="alice",
-    name="Alice",
-    role="Tech Lead",
-    skills={"python": SkillLevel.EXPERT, "architecture": SkillLevel.ADVANCED}
-)
-resources.add_team_member(
-    resource_id="bob",
-    name="Bob",
-    role="Developer",
-    skills={"python": SkillLevel.ADVANCED, "testing": SkillLevel.INTERMEDIATE}
+# 設定認證
+hub.auth.configure_okta(
+    domain="company.okta.com",
+    client_id="xxx",
+    client_secret="yyy"
 )
 
-# 事件訂閱
-def on_task_assigned(message):
-    print(f"任務分配: {message['task_id']} → {message['assignee']}")
+# 設定 Slack
+hub.add_slack("deployments", webhook_url="https://hooks.slack.com/...")
 
-bus.subscribe("tasks/assigned", on_task_assigned)
+# 設定 Teams
+hub.add_teams("alerts", webhook_url="https://company.webhook.teams...")
 
-# 分發任務
-bus.publish("tasks/assigned", {
-    "task_id": "task-1",
-    "assignee": "alice",
-    "story_points": 5
-}, MessagePriority.HIGH)
+# 審計
+hub.audit.log_access(user_id, username, "/api/deploy", "POST")
+hub.audit.log_auth(user_id, username, "success")
 
-bus.publish("tasks/assigned", {
-    "task_id": "task-2",
-    "assignee": "bob",
-    "story_points": 3
-}, MessagePriority.NORMAL)
-
-# 技能矩陣
-print(resources.to_table())
+# 部署時通知
+hub.alert("Deployment", "v1.2.0 deployed to production", "info")
 ```
 
 ---
 
-## 模組 API
+## API 參考
 
-### ProgressDashboard
+### MethodologyCore
 
-| 方法 | 說明 |
-|------|------|
-| `create_sprint(name, goal, capacity)` | 建立 Sprint |
-| `start_sprint(sprint_id)` | 開始 Sprint |
-| `add_to_backlog(title, story_points, priority)` | 加入 Backlog |
-| `add_item_to_sprint(item_id, sprint_id)` | 指派到 Sprint |
-| `mark_item_completed(item_id)` | 標記完成 |
-| `get_sprint_total_points(sprint_id)` | 取得總點數 |
-| `get_sprint_completed_points(sprint_id)` | 取得完成點數 |
-| `get_sprint_velocity(sprint_id)` | 取得速度 |
-| `save(path)` / `load(path)` | 持久化 |
+| 屬性 | 模組 | 用途 |
+|------|------|------|
+| `core.tasks` | TaskSplitter | 任務拆分 |
+| `core.sprints` | SprintPlanner | Sprint 管理 |
+| `core.costs` | CostAllocator | 成本追蹤 |
+| `core.bus` | MessageBus | 訊息系統 |
+| `core.evaluator` | AgentEvaluator | Agent 評估 |
+| `core.structured_output` | StructuredOutputEngine | 輸出解析 |
+| `core.data_quality` | DataQualityChecker | 資料品質 |
+| `core.enterprise` | EnterpriseHub | 企業整合 |
+| `core.migrator` | LangGraphMigrationTool | 框架遷移 |
 
-### CostAllocator
-
-| 方法 | 說明 |
-|------|------|
-| `create_budget(name, total_amount, period)` | 建立預算 |
-| `add_entry(project_id, user_id, cost_type, amount)` | 新增成本 |
-| `get_project_costs(project_id)` | 專案成本 |
-| `get_user_costs(user_id)` | 用戶成本 |
-| `get_budget_status()` | 預算狀態 |
-| `generate_report()` | 生成報告 |
-
-### MessageBus
+### AgentEvaluator
 
 | 方法 | 說明 |
 |------|------|
-| `publish(topic, payload, priority)` | 發布訊息 |
-| `subscribe(topic, callback)` | 訂閱主題 |
-| `get_queue_status()` | 佇列狀態 |
-| `to_cli()` / `to_tree()` | CLI 輸出 |
+| `create_suite(name)` | 建立測試套件 |
+| `add_test_case(suite_id, name, input_prompt, expected)` | 加入測試 |
+| `run_suite(suite_id, agent_fn)` | 執行評估 |
+| `generate_report(suite_id)` | 產生報告 |
+| `compare_versions(suite_id)` | 比較 A/B |
 
-### GanttChart
-
-| 方法 | 說明 |
-|------|------|
-| `add_task(task_id, name, start_date, duration)` | 加入任務 |
-| `to_rich_ascii()` | ASCII 輸出 |
-| `to_csv()` | CSV 輸出 |
-| `to_interactive_html(filename)` | HTML 輸出 |
-| `get_summary()` | 摘要統計 |
-
-### PMMode
+### StructuredOutputEngine
 
 | 方法 | 說明 |
 |------|------|
-| `generate_morning_report(...)` | 生成晨間報告 |
-| `predict_cost(...)` | 成本預測 |
-| `get_sprint_health(...)` | 健康狀況 |
+| `parse(prompt, llm_call, schema_name)` | 解析輸出 |
+| `register_schema(schema)` | 註冊 Schema |
+| `generate_report()` | 穩定性報告 |
 
-### PMTerminologyMapper
-
-| 方法 | 說明 |
-|------|------|
-| `search(query)` | 搜尋術語 |
-| `get(term_id)` | 依 ID 取得 |
-| `translate(term, from_role, to_role)` | 翻譯 |
-| `to_markdown_table()` | Markdown 表格 |
-
-### ResourceDashboard
+### DataQualityChecker
 
 | 方法 | 說明 |
 |------|------|
-| `add_resource(...)` | 新增資源 |
-| `get_resources_by_type(type)` | 依類型取得 |
-| `add_team_member(...)` | 加入團隊成員 |
-| `get_resource_summary()` | 資源摘要 |
-| `to_table()` | 表格輸出 |
+| `analyze(data, field_types)` | 分析品質 |
+| `clean_data(data, strategy)` | 清理資料 |
+| `generate_report_markdown(report)` | 產生報告 |
 
----
+### EnterpriseHub
 
-## 測試
+| 屬性 | 說明 |
+|------|------|
+| `auth` | 認證管理器 |
+| `audit` | 審計日誌 |
+| `messengers` | 訊息系統 |
 
-### 執行測試
+### LangGraphMigrationTool
 
-```bash
-# 所有測試
-python -m unittest tests.test_modules -v
-
-# 個別模組測試
-python -m unittest tests.test_modules.TestProgressDashboard -v
-python -m unittest tests.test_modules.TestCostAllocator -v
-python -m unittest tests.test_modules.TestMessageBus -v
-python -m unittest tests.test_modules.TestGanttChart -v
-python -m unittest tests.test_modules.TestPMMode -v
-python -m unittest tests.test_modules.TestPMTerminology -v
-python -m unittest tests.test_modules.TestResourceDashboard -v
-```
-
-### 測試覆蓋
-
-| 模組 | 測試數 |
-|------|--------|
-| ProgressDashboard | 5 |
-| CostAllocator | 4 |
-| MessageBus | 5 |
-| GanttChart | 4 |
-| PMMode | 4 |
-| PMTerminology | 4 |
-| ResourceDashboard | 5 |
-| **總計** | **32** |
+| 方法 | 說明 |
+|------|------|
+| `analyze_file(path)` | 分析檔案 |
+| `migrate_file(path, output)` | 遷移檔案 |
+| `generate_report(result)` | 產生報告 |
 
 ---
 
@@ -590,11 +512,12 @@ python -m unittest tests.test_modules.TestResourceDashboard -v
 
 | 版本 | 日期 | 說明 |
 |------|------|------|
-| v5.0.0 | 2026-03-20 | PM Mode + Real Data Connectors |
-| v4.9.0 | 2026-03-20 | PM Terminology + Resource Dashboard |
-| v4.8.0 | 2026-03-20 | CLI Interface |
+| v5.3.0 | 2026-03-20 | Solutions A-E 發布 |
+| v5.2.0 | 2026-03-20 | Agent Evaluation |
+| v5.1.0 | 2026-03-20 | 單元測試 + 文件 |
+| v5.0.0 | 2026-03-20 | PM Mode + Real Data |
+| v4.9.0 | 2026-03-20 | PM Terminology + Resources |
 | v4.7.0 | 2026-03-20 | P1 Visualizations |
-| v4.6.2 | 2026-03-20 | P0 Bug Fixes |
 
 ---
 

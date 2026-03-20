@@ -28,13 +28,17 @@ from pm_terminology import PMTerminologyMapper
 from resource_dashboard import ResourceDashboard
 from pm_mode import PMMode
 from agent_evaluator import AgentEvaluator, HumanEvaluator, TestCase, EvaluationSuite
+from structured_output import StructuredOutputEngine
+from data_quality import DataQualityChecker
+from enterprise_hub import EnterpriseHub
+from langgraph_migrator import LangGraphMigrationTool
 from data_connector import DataSourceManager
 
 
 class MethodologyCLI:
     """統一 CLI 入口"""
     
-    VERSION = "5.1.0"
+    VERSION = "5.3.0"
     
     def __init__(self):
         self.progress = ProgressDashboard()
@@ -45,6 +49,10 @@ class MethodologyCLI:
         self.pm_mode = PMMode()
         self.evaluator = AgentEvaluator()
         self.hitl = HumanEvaluator()
+        self.structured = StructuredOutputEngine()
+        self.data_quality = DataQualityChecker()
+        self.enterprise = EnterpriseHub()
+        self.migrator = LangGraphMigrationTool()
         self.resources = ResourceDashboard()
         self.data_manager = DataSourceManager()
     
@@ -76,6 +84,14 @@ class MethodologyCLI:
             return self.cmd_pm(args)
         elif command == "eval":
             return self.cmd_eval(args)
+        elif command == "quality":
+            return self.cmd_quality(args)
+        elif command == "enterprise":
+            return self.cmd_enterprise(args)
+        elif command == "migrate":
+            return self.cmd_migrate(args)
+        elif command == "parse":
+            return self.cmd_parse(args)
         elif command == "resources":
             return self.cmd_resources(args)
         else:
@@ -407,6 +423,57 @@ class MethodologyCLI:
         print(f"Unknown action: {action}")
         return 1
     
+    def cmd_quality(self, args):
+        """Data Quality Checker"""
+        action = args.action
+        
+        if action == "check":
+            print("📊 Data Quality Checker")
+            print("=" * 50)
+            # Generate sample data
+            sample_data = [
+                {"id": 1, "name": "Alice", "email": "alice@test.com", "age": 30},
+                {"id": 2, "name": "Bob", "email": "bob@test.com", "age": 25},
+                {"id": 3, "name": "", "email": "invalid", "age": None},
+            ]
+            report = self.data_quality.analyze(sample_data)
+            print(self.data_quality.generate_report_markdown(report))
+        elif action == "report":
+            print(self.data_quality.generate_report())
+        return 0
+    
+    def cmd_enterprise(self, args):
+        """Enterprise Integration Hub"""
+        action = args.action
+        
+        if action == "status":
+            print("🏢 Enterprise Integration Hub")
+            print("=" * 50)
+            status = self.enterprise.get_status()
+            for k, v in status.items():
+                print(f"  {k}: {v}")
+        elif action == "audit":
+            print(self.enterprise.audit.generate_report())
+        return 0
+    
+    def cmd_migrate(self, args):
+        """LangGraph Migration Tool"""
+        if not args.file:
+            print("Usage: python cli.py migrate <file.py>")
+            return 1
+        
+        print(f"🔄 Analyzing {args.file}...")
+        result = self.migrator.analyze_file(args.file)
+        print(self.migrator.generate_report(result))
+        return 0
+    
+    def cmd_parse(self, args):
+        """Structured Output Engine"""
+        print("📝 Structured Output Engine")
+        print("=" * 50)
+        print(self.structured.generate_report())
+        return 0
+    
     def cmd_pm(self, args):
         """PM Mode"""
         action = args.action
@@ -581,6 +648,22 @@ def main():
     
     # eval hitl
     eval_sub.add_parser("hitl", help="Human-in-the-Loop status")
+    
+    # quality
+    quality_parser = subparsers.add_parser("quality", help="Data Quality Checker")
+    quality_parser.add_argument("action", choices=["check", "report"], default="check")
+    
+    # enterprise
+    enterprise_parser = subparsers.add_parser("enterprise", help="Enterprise Hub")
+    enterprise_parser.add_argument("action", choices=["status", "audit"], default="status")
+    
+    # migrate
+    migrate_parser = subparsers.add_parser("migrate", help="LangGraph Migration")
+    migrate_parser.add_argument("file", help="File to migrate")
+    
+    # parse
+    parse_parser = subparsers.add_parser("parse", help="Structured Output Engine")
+    parse_parser.add_argument("--schema", help="Schema name")
     
     # version
     subparsers.add_parser("version", help="Show version")
