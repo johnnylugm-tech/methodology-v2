@@ -50,7 +50,7 @@ from .dashboard_cost_trend import CostTrendAnalyzer, CostSnapshot, CostTrend, Co
 from .failover_manager import FailoverManager, CircuitBreaker, ModelEndpoint, FailoverEvent
 from .parallel_executor import ParallelExecutor, ParallelTask, Worker, ExecutionResult
 
-__version__ = "3.3.0"
+__version__ = "4.0.0"
 
 __all__ = [
     # Core
@@ -218,4 +218,40 @@ __all__ = [
     "ApprovalRequest",
     "ApprovalStatus",
     "ApprovalLevel",
+
+    # Extensions (v4.0)
+    # MCP Adapter
+    "MCPAdapter",
+    "MCPClient",
+    "MCPConfig",
+    "ServiceConnection",
+    "ServiceStatus",
+
+    # Cost Optimizer
+    "CostOptimizer",
+    "CostRecord",
+    "CostAlert",
+    "MODEL_PRICING",
+    "TASK_MODEL_MAP",
+
+    # Vertical Templates
+    "CustomerServiceAgent",
+    "LegalAgent",
+
+    # Security Audit
+    "SecurityAuditor",
+    "APIKeyScanner",
+    "SQLInjectionScanner",
+    "DataLeakScanner",
+
+    # LangChain Adapter
+    "ChainMigrator",
+    "MethodologyLLMWrapper",
+
+    # Local Deployment
+    "LocalDeploy",
+    "OllamaManager",
+
+    # Workflow Visualizer
+    "WorkflowVisualizer",
 ]
