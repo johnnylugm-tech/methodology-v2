@@ -26,6 +26,7 @@ from message_bus import MessageBus
 from sprint_planner import SprintPlanner
 from pm_terminology import PMTerminologyMapper
 from resource_dashboard import ResourceDashboard
+from pm_mode import PMMode
 from data_connector import DataSourceManager
 
 
@@ -40,6 +41,7 @@ class MethodologyCLI:
         self.bus = MessageBus()
         self.sprint_planner = SprintPlanner()
         self.terminology = PMTerminologyMapper()
+        self.pm_mode = PMMode()
         self.resources = ResourceDashboard()
         self.data_manager = DataSourceManager()
     
@@ -67,6 +69,8 @@ class MethodologyCLI:
             return self.cmd_version(args)
         elif command == "term":
             return self.cmd_term(args)
+        elif command == "pm":
+            return self.cmd_pm(args)
         elif command == "resources":
             return self.cmd_resources(args)
         else:
@@ -313,6 +317,37 @@ class MethodologyCLI:
         
         return 0
     
+    def cmd_pm(self, args):
+        """PM Mode"""
+        action = args.action
+        
+        if action == "report":
+            report = self.pm_mode.generate_morning_report(
+                sprint_name="Sprint 5",
+                sprint_progress=65.0,
+                completed_yesterday=["完成登入功能", "修復認證 Bug"],
+                planned_today=["開發儀表板", "API 文件"],
+                blockers=["等不及第三方 API 文件"],
+                velocity=42.0
+            )
+            print(report.to_markdown())
+        elif action == "forecast":
+            forecast = self.pm_mode.predict_cost(
+                project_name="AI Assistant",
+                current_cost=500.0,
+                budget=2000.0,
+                daily_burn_rate=85.0,
+                days_remaining=18
+            )
+            print(forecast.to_markdown())
+        elif action == "health":
+            health = self.pm_mode.get_sprint_health(velocity=35, planned=50, completed=30)
+            print(f"\n## Sprint Health")
+            print(f"Status: {health['health']}")
+            print(f"Score: {health['health_score']}/10")
+            print(f"Completion: {health['completion_rate']:.1f}%")
+        return 0
+    
     def cmd_term(self, args):
         """術語查詢"""
         query = args.query
@@ -419,6 +454,11 @@ def main():
     # term
     term_parser = subparsers.add_parser("term", help="PM terminology")
     term_parser.add_argument("query", nargs="?", help="Search term")
+    
+    # pm
+    pm_parser = subparsers.add_parser("pm", help="PM Mode")
+    pm_parser.add_argument("action", choices=["report", "forecast", "health"],
+                         help="PM action")
     
     # version
     subparsers.add_parser("version", help="Show version")

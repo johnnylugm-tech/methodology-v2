@@ -462,3 +462,196 @@ if __name__ == "__main__":
     print("\n=== Docker Compose ===")
     compose = config.generate_docker_compose()
     print(compose or "No services configured")
+
+# ==================== No-Code Extension Generator ====================
+
+class NoCodeExtensionGenerator:
+    """無代碼 Extension 生成器"""
+    
+    TEMPLATES = {
+        "slack_notification": {
+            "name": "Slack Notification",
+            "type": ExtensionType.SLACK,
+            "events": ["task_completed", "sprint_started", "sprint_ended"],
+            "config": {
+                "channel": "#project-alerts",
+                "mention_on_error": True,
+            }
+        },
+        "notion_sync": {
+            "name": "Notion Sync",
+            "type": ExtensionType.NOTION,
+            "events": ["backlog_updated", "task_status_changed"],
+            "config": {
+                "database_id": "",
+                "sync_direction": "bidirectional",
+            }
+        },
+        "github_integration": {
+            "name": "GitHub Integration",
+            "type": ExtensionType.GITHUB,
+            "events": ["pr_created", "pr_merged", "issue_opened"],
+            "config": {
+                "repo": "",
+                "auto_assign_reviewers": True,
+            }
+        },
+        "jenkins_pipeline": {
+            "name": "Jenkins Pipeline",
+            "type": ExtensionType.JENKINS,
+            "events": ["build_triggered", "build_completed", "build_failed"],
+            "config": {
+                "job_name": "",
+                "auto_trigger_on_deploy": True,
+            }
+        },
+        "prometheus_metrics": {
+            "name": "Prometheus Metrics",
+            "type": ExtensionType.PROMETHEUS,
+            "events": ["metric_recorded"],
+            "config": {
+                "pushgateway_url": "http://localhost:9091",
+                "job_name": "methodology",
+            }
+        },
+        "grafana_dashboard": {
+            "name": "Grafana Dashboard",
+            "type": ExtensionType.GRAFANA,
+            "events": ["dashboard_update"],
+            "config": {
+                "dashboard_uid": "",
+                "auto_refresh": True,
+            }
+        },
+    }
+    
+    def list_templates(self) -> str:
+        """列出所有範本"""
+        lines = []
+        lines.append("# 📦 Extension Templates\n")
+        for template_id, template in self.TEMPLATES.items():
+            lines.append(f"## {template_id}")
+            lines.append(f"- **Name**: {template['name']}")
+            lines.append(f"- **Type**: {template['type'].value}")
+            lines.append(f"- **Events**: {', '.join(template['events'])}")
+            lines.append("")
+        return "\n".join(lines)
+    
+    def generate_from_template(self, template_id: str, **kwargs) -> ExtensionConfig:
+        """從範本生成 Extension"""
+        if template_id not in self.TEMPLATES:
+            raise ValueError(f"Template '{template_id}' not found")
+        
+        template = self.TEMPLATES[template_id]
+        
+        config = ExtensionConfig(
+            name=kwargs.get("name", template["name"]),
+            type=template["type"],
+            events=template["events"].copy(),
+            custom=template["config"].copy()
+        )
+        
+        # 應用自訂參數
+        for key, value in kwargs.items():
+            if hasattr(config, key):
+                setattr(config, key, value)
+            elif key in config.custom:
+                config.custom[key] = value
+        
+        return config
+    
+    def generate_yaml(self, config: ExtensionConfig) -> str:
+        """生成 YAML 設定"""
+        import yaml
+        
+        data = {
+            "name": config.name,
+            "type": config.type.value,
+            "enabled": config.enabled,
+            "webhook_url": config.webhook_url,
+            "api_key": config.api_key,
+            "channel": config.channel,
+            "events": config.events,
+            "custom": config.custom,
+        }
+        
+        return yaml.dump(data, default_flow_style=False)
+    
+    def generate_json(self, config: ExtensionConfig) -> str:
+        """生成 JSON 設定"""
+        data = {
+            "name": config.name,
+            "type": config.type.value,
+            "enabled": config.enabled,
+            "webhook_url": config.webhook_url,
+            "api_key": config.api_key,
+            "channel": config.channel,
+            "events": config.events,
+            "custom": config.custom,
+        }
+        return json.dumps(data, indent=2)
+    
+    def save_config(self, config: ExtensionConfig, path: str):
+        """儲存設定檔"""
+        with open(path, 'w') as f:
+            if path.endswith('.yaml') or path.endswith('.yml'):
+                f.write(self.generate_yaml(config))
+            else:
+                f.write(self.generate_json(config))
+        print(f"✅ Config saved to {path}")
+    
+    def load_config(self, path: str) -> ExtensionConfig:
+        """載入設定檔"""
+        import yaml
+        
+        with open(path, 'r') as f:
+            if path.endswith('.yaml') or path.endswith('.yml'):
+                data = yaml.safe_load(f)
+            else:
+                data = json.load(f)
+        
+        return ExtensionConfig(
+            name=data["name"],
+            type=ExtensionType(data["type"]),
+            enabled=data.get("enabled", True),
+            webhook_url=data.get("webhook_url", ""),
+            api_key=data.get("api_key", ""),
+            channel=data.get("channel", "#general"),
+            events=data.get("events", []),
+            custom=data.get("custom", {}),
+        )
+
+
+# ==================== Main ====================
+
+if __name__ == "__main__":
+    import sys
+    
+    generator = NoCodeExtensionGenerator()
+    
+    if len(sys.argv) > 1:
+        command = sys.argv[1]
+        
+        if command == "list":
+            print(generator.list_templates())
+        
+        elif command == "generate" and len(sys.argv) > 2:
+            template_id = sys.argv[2]
+            config = generator.generate_from_template(
+                template_id,
+                name=input("Extension name: ") or None
+            )
+            print("\n" + generator.generate_yaml(config))
+        
+        elif command == "save" and len(sys.argv) > 3:
+            template_id = sys.argv[2]
+            path = sys.argv[3]
+            config = generator.generate_from_template(template_id)
+            generator.save_config(config, path)
+    else:
+        print("No-Code Extension Generator")
+        print("=" * 40)
+        print("Commands:")
+        print("  list              - List all templates")
+        print("  generate <id>     - Generate from template")
+        print("  save <id> <path>  - Generate and save config")

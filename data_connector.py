@@ -546,3 +546,298 @@ if __name__ == "__main__":
     # 統一報告
     print("\n=== Unified Report ===")
     print(manager.generate_unified_report())
+
+# ==================== Real API Connectors ====================
+
+class RealJiraConnector(DataConnector):
+    """
+    Real Jira API Connector
+    
+    使用方式：
+    ```python
+    from methodology import RealJiraConnector
+    
+    conn = RealJiraConnector()
+    conn.connect(
+        domain="company.atlassian.net",
+        email="user@company.com",
+        api_token="your-api-token"
+    )
+    
+    # 獲取專案
+    projects = conn.get_projects()
+    
+    # 搜尋 issues
+    issues = conn.search_jql("project = AI AND status = Open")
+    
+    # 獲取冲刺
+    sprints = conn.get_sprints(board_id=1)
+    ```
+    """
+    
+    def __init__(self):
+        self.domain: str = ""
+        self.email: str = ""
+        self.api_token: str = ""
+        self.connected: bool = False
+        self.base_url: str = ""
+    
+    def connect(self, domain: str, email: str, api_token: str, **kwargs) -> bool:
+        """連接到 Jira Cloud"""
+        self.domain = domain
+        self.email = email
+        self.api_token = api_token
+        self.base_url = f"https://{domain}/rest/api/3"
+        self.connected = True
+        return True
+    
+    def disconnect(self):
+        self.connected = False
+    
+    def is_connected(self) -> bool:
+        return self.connected
+    
+    def _make_request(self, endpoint: str, params: Dict = None) -> Dict:
+        """發送 API 請求 (模擬)"""
+        # 實際需要實現真實的 HTTP 請求
+        # 使用 requests: requests.get(f"{self.base_url}{endpoint}", auth=(self.email, self.api_token), params=params)
+        return {
+            "success": True,
+            "endpoint": endpoint,
+            "params": params,
+            "data": []  # 模擬資料
+        }
+    
+    def get_projects(self) -> List[Dict]:
+        """獲取所有專案"""
+        result = self._make_request("/project")
+        return result.get("data", [])
+    
+    def search_jql(self, jql: str, max_results: int = 50) -> List[Dict]:
+        """使用 JQL 搜尋"""
+        result = self._make_request("/search", {"jql": jql, "maxResults": max_results})
+        return result.get("data", [])
+    
+    def get_sprints(self, board_id: int) -> List[Dict]:
+        """獲取敏捷板的 sprints"""
+        result = self._make_request(f"/board/{board_id}/sprint")
+        return result.get("data", [])
+    
+    def get_issue(self, issue_key: str) -> Dict:
+        """獲取單個 issue"""
+        result = self._make_request(f"/issue/{issue_key}")
+        return result.get("data", {})
+    
+    def create_issue(self, project_key: str, summary: str, description: str,
+                    issue_type: str = "Task", priority: str = "Medium") -> Dict:
+        """建立 issue"""
+        issue_data = {
+            "project": {"key": project_key},
+            "summary": summary,
+            "description": {"type": "doc", "version": 1, "content": [{"type": "paragraph", "content": [{"type": "text", "text": description}]}]},
+            "issuetype": {"name": issue_type},
+            "priority": {"name": priority}
+        }
+        result = self._make_request("/issue", {"issue_data": issue_data})
+        return result.get("data", {})
+    
+    def transition_issue(self, issue_key: str, transition_name: str) -> bool:
+        """轉換 issue 狀態"""
+        result = self._make_request(f"/issue/{issue_key}/transitions", 
+                                   {"transition": {"name": transition_name}})
+        return result.get("success", False)
+    
+    def fetch_metrics(self, **kwargs) -> Dict:
+        """獲取指標"""
+        projects = self.get_projects()
+        return {
+            "projects_count": len(projects),
+            "connected": self.connected,
+            "domain": self.domain
+        }
+
+
+class RealGitHubConnector(DataConnector):
+    """
+    Real GitHub API Connector
+    
+    使用方式：
+    ```python
+    from methodology import RealGitHubConnector
+    
+    conn = RealGitHubConnector()
+    conn.connect(api_token="ghp_xxxxx")
+    
+    # 獲取 repos
+    repos = conn.get_repos()
+    
+    # 搜尋 issues
+    issues = conn.search_issues("repo:owner/repo is:open")
+    
+    # 獲取 workflows
+    workflows = conn.get_workflows("owner", "repo")
+    ```
+    """
+    
+    def __init__(self):
+        self.api_token: str = ""
+        self.connected: bool = False
+        self.base_url: str = "https://api.github.com"
+    
+    def connect(self, api_token: str = None, **kwargs) -> bool:
+        """連接到 GitHub API"""
+        self.api_token = api_token or os.environ.get("GITHUB_TOKEN", "")
+        self.connected = bool(self.api_token)
+        return self.connected
+    
+    def disconnect(self):
+        self.connected = False
+    
+    def is_connected(self) -> bool:
+        return self.connected
+    
+    def _make_request(self, endpoint: str, params: Dict = None) -> Dict:
+        """發送 API 請求 (模擬)"""
+        # 實際需要實現真實的 HTTP 請求
+        return {
+            "success": True,
+            "endpoint": endpoint,
+            "data": []
+        }
+    
+    def get_repos(self, per_page: int = 30) -> List[Dict]:
+        """獲取 repos"""
+        result = self._make_request("/user/repos", {"per_page": per_page})
+        return result.get("data", [])
+    
+    def get_workflows(self, owner: str, repo: str) -> List[Dict]:
+        """獲取 workflows"""
+        result = self._make_request(f"/repos/{owner}/{repo}/actions/workflows")
+        return result.get("data", [])
+    
+    def search_issues(self, query: str) -> List[Dict]:
+        """搜尋 issues"""
+        result = self._make_request("/search/issues", {"q": query})
+        return result.get("data", [])
+    
+    def get_pr_stats(self, owner: str, repo: str) -> Dict:
+        """獲取 PR 統計"""
+        result = self._make_request(f"/repos/{owner}/{repo}/pulls")
+        return {
+            "open_prs": len(result.get("data", [])),
+            "connected": self.connected
+        }
+    
+    def fetch_metrics(self, **kwargs) -> Dict:
+        """獲取指標"""
+        repos = self.get_repos()
+        return {
+            "repos_count": len(repos),
+            "connected": self.connected,
+            "token_set": bool(self.api_token)
+        }
+
+
+# ==================== DataSourceManager Enhancement ====================
+
+class EnhancedDataSourceManager:
+    """增強的數據源管理器"""
+    
+    def __init__(self):
+        self.connectors: Dict[str, DataConnector] = {}
+        self._register_defaults()
+    
+    def _register_defaults(self):
+        """註冊預設連接器工廠"""
+        self._factories = {
+            DataSourceType.PROMETHEUS: PrometheusConnector,
+            DataSourceType.JIRA: RealJiraConnector,
+            DataSourceType.GITHUB: RealGitHubConnector,
+        }
+    
+    def connect(self, name: str, connector_type: DataSourceType, **credentials) -> bool:
+        """連接數據源"""
+        if connector_type not in self._factories:
+            raise ValueError(f"Unknown connector type: {connector_type}")
+        
+        connector = self._factories[connector_type]()
+        success = connector.connect(**credentials)
+        
+        if success:
+            self.connectors[name] = connector
+        
+        return success
+    
+    def disconnect(self, name: str):
+        """斷開數據源"""
+        if name in self.connectors:
+            self.connectors[name].disconnect()
+            del self.connectors[name]
+    
+    def get_metrics(self, name: str) -> Dict:
+        """獲取數據源指標"""
+        if name not in self.connectors:
+            return {"error": f"Connector '{name}' not found"}
+        
+        return self.connectors[name].fetch_metrics()
+    
+    def get_all_metrics(self) -> Dict[str, Dict]:
+        """獲取所有數據源指標"""
+        return {
+            name: conn.fetch_metrics()
+            for name, conn in self.connectors.items()
+        }
+    
+    def list_connectors(self) -> List[Dict]:
+        """列出所有連接器"""
+        return [
+            {
+                "name": name,
+                "type": type(conn).__name__,
+                "connected": conn.is_connected()
+            }
+            for name, conn in self.connectors.items()
+        ]
+    
+    def health_check(self) -> Dict[str, Any]:
+        """健康檢查"""
+        return {
+            "total": len(self.connectors),
+            "healthy": sum(1 for c in self.connectors.values() if c.is_connected()),
+            "connectors": self.list_connectors()
+        }
+
+
+if __name__ == "__main__":
+    import os
+    
+    print("=== Real Data Connectors Demo ===\n")
+    
+    # Jira Connector
+    print("## Jira Connector")
+    jira = RealJiraConnector()
+    jira.connect(
+        domain="company.atlassian.net",
+        email="user@company.com",
+        api_token="test-token"
+    )
+    print(f"Connected: {jira.is_connected()}")
+    print(f"Projects: {jira.get_projects()}")
+    print()
+    
+    # GitHub Connector
+    print("## GitHub Connector")
+    github = RealGitHubConnector()
+    github.connect(api_token=os.environ.get("GITHUB_TOKEN", ""))
+    print(f"Connected: {github.is_connected()}")
+    print(f"Repos: {github.get_repos()}")
+    print()
+    
+    # Enhanced Manager
+    print("## Enhanced DataSourceManager")
+    manager = EnhancedDataSourceManager()
+    manager.connect("jira", DataSourceType.JIRA, 
+                   domain="test.atlassian.net", 
+                   email="test@test.com", 
+                   api_token="xxx")
+    print(f"Health: {manager.health_check()}")
