@@ -5,7 +5,7 @@
 
 ---
 
-[![Version](https://img.shields.io/badge/version-v4.1.0-blue.svg)](https://github.com/johnnylugm-tech/methodology-v2)
+[![Version](https://img.shields.io/badge/version-v4.3.0-blue.svg)](https://github.com/johnnylugm-tech/methodology-v2)
 [![Python](https://img.shields.io/badge/python-3.8+-green.svg)](https://python.org)
 
 ---
@@ -34,25 +34,39 @@ pip install -e .
 from methodology import MethodologyCore
 
 core = MethodologyCore()
+
+# 任務分解
 core.tasks.split_from_goal("開發 AI 客服系統")
+
+# Agent 注册
 core.agents.register("dev-1", "Developer", AgentType.DEVELOPER)
+
+# 發布事件
 core.publish_event("project:started", {})
+
+# 安全掃描
+core.scan_security("src/code.py")
+
+# 版本控制
+core.commit_version("login-module", "def login(): pass", message="init")
 ```
 
 ---
 
 ## 📚 功能概覽
 
-### 核心模組 (37+)
+### 核心模組 (44+)
 
 | 類別 | 模組 | 功能 |
 |------|------|------|
-| **Agent 協調** | AgentTeam, AgentRegistry, MessageBus | 定義、注册、通訊 |
+| **Agent 協調** | AgentTeam, AgentRegistry, AgentSpawner, MessageBus | 定義、注册、Spawn、通訊 |
 | **執行** | WorkflowGraph, Scheduler, ParallelExecutor | DAG 工作流、排程 |
 | **品質** | AutoQualityGate, SmartRouter, TaskSplitterV2 | 把關、路由、分解 |
 | **監控** | Dashboard, PredictiveMonitor, ProgressDashboard | 進度、成本、風險 |
 | **交付** | DeliveryManager, DocGenerator, TestGenerator | 版本、文檔、測試 |
 | **安全** | SecurityAuditor, RBAC, AuditLogger | 審計、權限、軌跡 |
+| **企業整合** | CICDIntegration, MultiLanguage, KnowledgeBase | CI/CD、多語言、知識庫 |
+| **版本控制** | VersionControl | 版本、Rollback、Diff |
 
 ### Extensions (7)
 
@@ -73,15 +87,89 @@ core.publish_event("project:started", {})
 ```
 MethodologyCore (統一入口)
     │
-    ├── AgentTeam       → Agent 定義
-    ├── AgentRegistry   → Agent 注册
-    ├── MessageBus      → Agent 通訊
-    ├── WorkflowGraph   → 工作流引擎
-    ├── Scheduler      → 任務排程
-    ├── AutoQualityGate → 品質把關
-    ├── SmartRouter    → 模型路由
-    ├── Dashboard      → 監控儀表板
-    └── Extensions     → 企業整合
+    ├── tasks              → 任務分解
+    ├── costs              → 成本追蹤
+    ├── project            → 專案管理
+    ├── workflow           → 工作流引擎
+    ├── agents             → Agent Registry
+    ├── bus                → Message Bus
+    ├── audit              → 審計日誌
+    ├── router             → Smart Router + Cost Optimizer
+    ├── spawner            → Agent Spawner
+    ├── version_control    → 版本控制
+    ├── knowledge_base     → 知識庫
+    └── extensions         → 企業整合
+```
+
+---
+
+## 💡 使用範例
+
+### 完整工作流
+
+```python
+from methodology import MethodologyCore, MethodologyConfig
+
+# 初始化
+config = MethodologyConfig(
+    project_name="AI 客服系統",
+    monthly_budget=500
+)
+core = MethodologyCore(config=config)
+
+# 1. 任務規劃
+tasks = core.tasks.split_from_goal("開發 AI 客服系統")
+print(f"建立 {len(tasks)} 個子任務")
+
+# 2. Spawn Agents
+agent_id = core.spawn_agent("developer", "task-1", "實作登入功能")
+print(f"Spawned: {agent_id}")
+
+# 3. 版本控制
+v1 = core.commit_version("login-module", "def login(): pass", message="init")
+print(f"Version: {v1}")
+
+# 4. 安全掃描
+report = core.scan_security("src/login.py")
+print(f"Security: {report}")
+
+# 5. 成本追蹤
+core.track_cost_usage("gpt-4o", 1000, 500)
+
+# 6. 生成工作流圖表
+diagram = core.generate_workflow_diagram()
+
+# 7. 保存
+core.save()
+```
+
+### CI/CD 整合
+
+```python
+from methodology import CICDIntegration
+
+cicd = CICDIntegration()
+cicd.setup_all("github")  # GitHub Actions + Docker Compose
+```
+
+### 多語言支援
+
+```python
+from methodology import MultiLanguageSupport
+
+ml = MultiLanguageSupport()
+lang = ml.detect_language("app.py")  # python
+route = ml.route_to_agent("build a Go microservice")
+```
+
+### 知識庫
+
+```python
+from methodology import KnowledgeBase
+
+kb = KnowledgeBase()
+pattern = kb.find_similar_scenario("multi-agent coordination")
+recs = kb.get_recommendations("debugging")
 ```
 
 ---
@@ -97,66 +185,28 @@ MethodologyCore (統一入口)
 
 ---
 
-## 💡 使用範例
+## 🎯 關鍵亮點
 
-### 任務管理
+| # | 亮點 | 說明 |
+|---|------|------|
+| 1 | **統一入口** | `MethodologyCore()` 一行初始化 |
+| 2 | **AgentCoordination** | 四大核心 (Team/Registry/Communication/State) |
+| 3 | **三大核心工具** | Model Router · Agent Monitor · Agent Quality Guard |
+| 4 | **成本優化** | 省 70-93% |
+| 5 | **企業整合** | MCP + Extensions |
+| 6 | **預測監控** | 趨勢預測 + 異常檢測 |
+| 7 | **版本控制** | Rollback + Diff |
+| 8 | **CI/CD** | GitHub Actions / Jenkins / GitLab CI |
+| 9 | **多語言** | Python / JS / Go / Rust |
+| 10 | **知識庫** | Pattern + Best Practice |
 
-```python
-from methodology import TaskSplitterV2
+### 三大核心工具
 
-splitter = TaskSplitterV2()
-tasks = splitter.split_from_goal("開發 AI 系統")
-
-for task in splitter.get_execution_order():
-    print(f"{task.id}: {task.name}")
-```
-
-### 工作流
-
-```python
-from methodology import WorkflowGraph
-
-wf = WorkflowGraph(name="AI 開發")
-wf.add_node("design", "系統設計")
-wf.add_node("backend", "後端", depends_on=["design"])
-execution = wf.execute()
-```
-
-### 成本追蹤
-
-```python
-from methodology import CostOptimizer
-
-optimizer = CostOptimizer(monthly_budget=100)
-optimizer.track(model="gpt-4o", prompt_tokens=1000, completion_tokens=500)
-```
-
-### MCP 整合
-
-```python
-from methodology import MCPAdapter
-
-adapter = MCPAdapter()
-adapter.connect("slack", token="xoxb-xxx")
-result = adapter.execute("發送訊息")
-```
-
----
-
-## 🔧 配置
-
-```python
-from methodology import MethodologyCore, MethodologyConfig
-
-config = MethodologyConfig(
-    project_name="My Project",
-    monthly_budget=500,
-    enable_audit=True,
-    enable_monitoring=True,
-)
-
-core = MethodologyCore(config=config)
-```
+| 工具 | GitHub |
+|------|--------|
+| **Model Router** | [model-router-v2](https://github.com/johnnylugm-tech/model-router-v2) |
+| **Agent Monitor** | [agent-dashboard-v3](https://github.com/johnnylugm-tech/agent-dashboard-v3) |
+| **Agent Quality Guard** | [Agent-Quality-Guard](https://github.com/johnnylugm-tech/Agent-Quality-Guard) |
 
 ---
 
@@ -164,33 +214,12 @@ core = MethodologyCore(config=config)
 
 | 版本 | 日期 | 功能 |
 |------|------|------|
-| v4.1.0 | 2026-03-20 | Extensions 整合、統一入口 |
-| v4.0.0 | 2026-03-20 | 企業 Extensions |
-| v3.3.0 | 2026-03-20 | AgentCoordination 四核心 |
-| v3.0.0 | 2026-03-20 | Phase 1-3 完整實作 |
-
----
-
-## 關鍵亮點
-
-| # | 亮點 | 說明 |
-|---|------|------|
-| 1 | **統一入口** | `MethodologyCore()` 一行初始化 |
-| 2 | **AgentCoordination** | Registry + MessageBus + WorkflowGraph + ApprovalFlow |
-| 3 | **三大核心工具** | Model Router · Agent Monitor · Agent Quality Guard |
-| 4 | **成本優化** | 省 70-93% 費用 |
-| 5 | **企業整合** | MCP 支援 Slack/GitHub/Notion |
-| 6 | **預測監控** | 趨勢預測 + 風險預警 |
-| 7 | **持久化** | SQLite / PostgreSQL |
-| 8 | **開關配置** | 每個功能可獨立開關 |
-
-### 三大核心工具
-
-| 工具 | GitHub | 功能 |
-|------|--------|------|
-| **Model Router** | [model-router-v2](https://github.com/johnnylugm-tech/model-router-v2) | 智慧路由，省 70-93% |
-| **Agent Monitor** | [agent-dashboard-v3](https://github.com/johnnylugm-tech/agent-dashboard-v3) | 監控儀表板 |
-| **Agent Quality Guard** | [Agent-Quality-Guard](https://github.com/johnnylugm-tech/Agent-Quality-Guard) | 品質把關 |
+| v4.3.0 | 2026-03-20 | PM 缺口改善 (15/15) |
+| v4.2.0 | 2026-03-20 | Extensions 整合 |
+| v4.1.0 | 2026-03-20 | 架構優化 + 統一入口 |
+| v4.0.0 | 2026-03-20 | AgentCoordination 核心 |
+| v3.3.0 | 2026-03-20 | 風險儀表板 |
+| v3.2.0 | 2026-03-20 | 交付管理 |
 
 ---
 
@@ -209,5 +238,4 @@ MIT
 ## 🔗 連結
 
 - [GitHub](https://github.com/johnnylugm-tech/methodology-v2)
-- [PyPI](https://pypi.org/project/methodology-v2)
-- [文件](https://github.com/johnnylugm-tech/methodology-v2#readme)
+- [Releases](https://github.com/johnnylugm-tech/methodology-v2/releases)

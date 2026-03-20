@@ -53,7 +53,7 @@ class MethodologyCore:
     ))
     
     # 使用各模組
-    core.tasks.add("新任務")
+    core.tasks.split_from_goal("新任務")
     core.costs.track(...)
     ```
     """
@@ -69,6 +69,11 @@ class MethodologyCore:
         self._registry = None
         self._bus = None
         self._audit = None
+        self._extensions = None
+        self._router = None
+        self._spawner = None
+        self._version_control = None
+        self._knowledge_base = None
     
     # ==================== 懶載入屬性 ====================
     
@@ -131,6 +136,46 @@ class MethodologyCore:
             self._audit = AuditLogger()
         return self._audit
     
+    @property
+    def router(self):
+        """Smart Router (含 Cost Optimizer)"""
+        if self._router is None:
+            from .smart_router import SmartRouter
+            self._router = SmartRouter()
+        return self._router
+    
+    @property
+    def extensions(self):
+        """Extensions 整合層"""
+        if self._extensions is None:
+            from .extensions import create_extensions
+            self._extensions = create_extensions(core=self)
+        return self._extensions
+    
+    @property
+    def spawner(self):
+        """Agent Spawner"""
+        if self._spawner is None:
+            from .agent_spawner import AgentSpawner
+            self._spawner = AgentSpawner()
+        return self._spawner
+    
+    @property
+    def version_control(self):
+        """版本控制"""
+        if self._version_control is None:
+            from .version_control import VersionControl
+            self._version_control = VersionControl()
+        return self._version_control
+    
+    @property
+    def knowledge_base(self):
+        """知識庫"""
+        if self._knowledge_base is None:
+            from .knowledge_base import KnowledgeBase
+            self._knowledge_base = KnowledgeBase()
+        return self._knowledge_base
+    
     # ==================== 快捷方法 ====================
     
     def create_task(self, name: str, **kwargs):
@@ -158,12 +203,51 @@ class MethodologyCore:
             from .audit_logger import ActionType, ResourceType
             self.audit.log(ActionType.UPDATE, ResourceType(resource), "", kwargs)
     
+    # ==================== 整合方法 ====================
+    
+    def scan_security(self, target: str):
+        """安全掃描 (整合 SecurityAuditor)"""
+        return self.extensions.scan_security(target)
+    
+    def track_cost_usage(self, model: str, input_tokens: int, output_tokens: int):
+        """成本追蹤 (整合 CostOptimizer)"""
+        # 使用 SmartRouter 的追蹤功能
+        if hasattr(self.router, 'track_usage'):
+            self.router.track_usage(model, input_tokens, output_tokens)
+        # 同時使用 Extensions
+        self.extensions.track_cost(model, input_tokens, output_tokens)
+    
+    def generate_workflow_diagram(self, workflow=None):
+        """生成工作流圖表 (整合 WorkflowVisualizer)"""
+        wf = workflow or self.workflow
+        return self.extensions.visualize.generate_diagram_from_workflow(wf)
+    
+    def spawn_agent(self, role: str, task_id: str, task_description: str, **kwargs):
+        """Spawn Agent (整合 AgentSpawner)"""
+        from .agent_spawner import SpawnRequest, SpawnPolicy
+        request = SpawnRequest(
+            role=role,
+            task_id=task_id,
+            task_description=task_description,
+            policy=SpawnPolicy.EAGER,
+            **kwargs
+        )
+        return self.spawner.spawn_with_retry(request)
+    
+    def commit_version(self, artifact_id: str, content: str, message: str = "", **kwargs):
+        """提交版本 (整合 VersionControl)"""
+        return self.version_control.commit(artifact_id, content, message=message, **kwargs)
+    
     # ==================== 生命週期 ====================
     
     def save(self):
         """保存所有狀態"""
         if self._project:
             self._project.save()
+        if self._version_control:
+            self.version_control.save()
+        if self._knowledge_base:
+            self.knowledge_base.save()
     
     def load(self, project_id: str):
         """載入專案"""
@@ -184,6 +268,7 @@ class MethodologyCore:
             "stats": {
                 "agents": len(self.agents.agents) if self._registry else 0,
                 "tasks": len(self.tasks.tasks) if self._tasks else 0,
+                "versions": len(self.version_control.versions) if self._version_control else 0,
             }
         }
 
@@ -194,7 +279,6 @@ class MethodologyCore:
 
 def create_pm_setup() -> MethodologyCore:
     """建立 PM 常用配置"""
-    from .MethodologyConfig
     config = MethodologyConfig(
         project_name="AI 開發專案",
         debug=False,
@@ -251,29 +335,10 @@ if __name__ == "__main__":
     core.log_action("test", "system")
     print(f"Total messages: {len(core.audit.get_statistics())}")
     
+    # Router
+    print("\n--- Router ---")
+    if hasattr(core.router, 'route'):
+        result = core.router.route("Hello world")
+        print(f"Routed to: {result.model if hasattr(result, 'model') else 'N/A'}")
+    
     print("\n=== Done ===")
-
-# ==================== Extensions 整合 ====================
-
-@property
-def extensions(self):
-    """Extensions 整合層"""
-    if self._extensions is None:
-        from .extensions import create_extensions
-        self._extensions = create_extensions(core=self)
-    return self._extensions
-
-def scan_security(self, target: str):
-    """安全掃描 (整合 SecurityAuditor)"""
-    return self.extensions.scan_security(target)
-
-def track_cost(self, model: str, input_tokens: int, output_tokens: int):
-    """成本追蹤 (整合 CostOptimizer)"""
-    self.extensions.track_cost(model, input_tokens, output_tokens)
-    # 同時更新 router
-    if hasattr(self, '_router'):
-        self._router.track_usage(model, input_tokens, output_tokens)
-
-def generate_workflow_diagram(self, workflow):
-    """生成工作流圖表 (整合 WorkflowVisualizer)"""
-    return self.extensions.visualize.generate_diagram(workflow)
