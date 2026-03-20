@@ -239,10 +239,10 @@ class ProgressDashboard:
     
     def _is_item_completed(self, item_id: str) -> bool:
         """檢查項目是否完成"""
-        # 在真實系統中會有狀態追蹤
-        # 這裡用隨機模擬
-        import random
-        return random.choice([True, False])
+        item = self.backlog.get(item_id)
+        if not item:
+            return False
+        return getattr(item, 'completed', False)
     
     # ==================== Burndown Chart ====================
     

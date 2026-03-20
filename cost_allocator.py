@@ -175,14 +175,20 @@ class CostAllocator:
         )
         self.allocations.append(allocation)
     
-    def _update_budget_spent(self, project_id: str, user_id: str, amount: float):
+    def _update_budget_spent(self, project_id: str = None, user_id: str = None, amount: float = 0):
         """更新預算支出"""
         for budget in self.budgets.values():
-            # 檢查是否匹配
+            should_update = False
+            
             if budget.period == "project":
-                if budget.name == project_id:
-                    budget.spent += amount
+                # 專案預算只更新匹配的
+                should_update = (budget.name == project_id)
             else:
+                # 非專案預算（daily/weekly/monthly）根據 entity 判斷
+                # 這裡簡化為更新所有，實際應該根據 user_id/project_id 匹配
+                should_update = True
+            
+            if should_update:
                 budget.spent += amount
     
     def get_user_costs(self, user_id: str, 

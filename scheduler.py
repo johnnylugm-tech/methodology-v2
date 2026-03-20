@@ -224,9 +224,10 @@ class Scheduler:
         for res_id in task.assigned_resources:
             resource = self.resources.get(res_id)
             if resource:
-                # 計算實際使用量並釋放
-                resource.available = min(resource.capacity, resource.available + 
-                    (resource.capacity * 0.1))  # 簡化：每次釋放 10%
+                # 根據任務需求的資源量釋放
+                required = task.required_resources.get(resource.type, 0)
+                # 釋放實際使用的量
+                resource.available = min(resource.capacity, resource.available + required)
     
     def complete_task(self, task_id: str, success: bool = True):
         """完成任務"""
