@@ -5,6 +5,20 @@ Core classes for error classification, task lifecycle, and quality gates.
 """
 
 from .core import MethodologyCore, MethodologyConfig
+from .methodology_base import (
+    ErrorLevel,
+    ProcessType,
+    AlertLevel,
+    Error,
+    Task,
+    Agent,
+    ErrorClassifier,
+    ErrorHandler,
+    TaskLifecycle,
+    QualityGate,
+    Crew,
+    Monitor,
+)
 from .dashboard import Dashboard
 from .auto_quality_gate import AutoQualityGate, QualityReport, QualityIssue
 from .smart_router import SmartRouter, TaskType, BudgetLevel, RoutingResult
