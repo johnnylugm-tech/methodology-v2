@@ -395,78 +395,111 @@ class MessageBus:
 # Main
 # ============================================================================
 
-if __name__ == "__main__":
-    bus = MessageBus()
     
-    print("=== Subscribing to Topics ===")
+    # ==================== CLI 視覺化 ====================
     
-    # 訂閱架構師主題
-    arch_sub_id = bus.subscribe(
-        "architect",
-        lambda msg: print(f"📋 Architect received: {msg.payload}")
-    )
+    def to_cli(self) -> str:
+        """
+        產生 CLI 視覺化輸出
+        
+        Returns:
+            CLI 格式字串
+        """
+        status = self.get_queue_status()
+        
+        lines = []
+        lines.append("╔" + "═" * 60 + "╗")
+        lines.append("║" + " MESSAGE BUS STATUS ".center(60) + "║")
+        lines.append("╚" + "═" * 60 + "╝")
+        lines.append("")
+        
+        # 統計
+        lines.append(f"  Messages Sent:     {status['stats']['messages_sent']}")
+        lines.append(f"  Processed:         {status['stats']['messages_processed']}")
+        lines.append(f"  Failed:            {status['stats']['messages_failed']}")
+        lines.append(f"  Queue Size:        {status['queue_size']}")
+        lines.append(f"  Subscriptions:     {status['subscriptions_count']}")
+        lines.append(f"  Dead Letter Q:    {status['dead_letter_queue_size']}")
+        lines.append("")
+        
+        # Queue items
+        lines.append("  Queue Items:")
+        lines.append("  " + "─" * 56)
+        for i, env in enumerate(self.queue[:10]):
+            priority_icon = {"high": "🔴", "normal": "🟡", "low": "🟢"}.get(env.priority.value, "⚪")
+            lines.append(f"    {priority_icon} [{env.type.value:8}] {env.topic} - {str(env.payload)[:30]}")
+        
+        if len(self.queue) > 10:
+            lines.append(f"    ... and {len(self.queue) - 10} more")
+        
+        return "\n".join(lines)
     
-    # 訂閱所有錯誤
-    error_sub_id = bus.subscribe_all(
-        lambda msg: print(f"🔴 Error handler: {msg.topic} -> {msg.payload}") if msg.type.value == "error" else None,
-    )
+    def to_tree(self) -> str:
+        """
+        產生樹狀結構輸出
+        
+        Returns:
+            樹狀格式字串
+        """
+        lines = []
+        lines.append("message-bus")
+        
+        status = self.get_queue_status()
+        
+        # Topics tree
+        lines.append("├── topics")
+        for i, (topic, count) in enumerate(sorted(status['topics'].items())):
+            last = i == len(status['topics']) - 1
+            prefix = "└── " if last else "├── "
+            lines.append(f"│   {prefix}{topic} ({count} messages)")
+        
+        # Publishers
+        lines.append("├── publishers")
+        for pub in sorted(status.get('publishers', [])):
+            lines.append(f"│   └── {pub}")
+        
+        # Subscriptions
+        lines.append("└── subscriptions")
+        sub_count = status['subscription_count']
+        lines.append(f"    └── {sub_count} active subscriptions")
+        
+        return "\n".join(lines)
     
-    # 訂閱帶過濾器
-    critical_sub_id = bus.subscribe(
-        "tasks",
-        lambda msg: print(f"🔴 Critical task: {msg.payload}"),
-        filter_func=lambda m: m.priority.value >= 2
-    )
-    
-    print(f"Subscribed: arch_sub, error_sub, critical_sub")
-    
-    # 發布訊息
-    print("\n=== Publishing Messages ===")
-    
-    bus.publish(
-        topic="architect",
-        payload={"action": "design_review", "project": "AI System"},
-        source="pm"
-    )
-    
-    bus.publish(
-        topic="tasks",
-        payload={"task": "deploy", "priority": "high"},
-        priority=MessagePriority.HIGH,
-        source="scheduler"
-    )
-    
-    bus.publish(
-        topic="tasks",
-        payload={"task": "backup", "priority": "low"},
-        priority=MessagePriority.LOW,
-        source="scheduler"
-    )
-    
-    bus.publish(
-        topic="errors",
-        payload={"error": "timeout", "service": "api"},
-        message_type=MessageType.ERROR,
-        source="system"
-    )
-    
-    # 命令
-    print("\n=== Sending Commands ===")
-    
-    correlation_id = bus.send_command(
-        destination="dev-1",
-        command="execute_task",
-        payload={"task_id": "task-123"}
-    )
-    print(f"Command sent with correlation_id: {correlation_id}")
-    
-    # 佇列狀態
-    print("\n=== Queue Status ===")
-    status = bus.get_queue_status()
-    print(f"Queue size: {status['queue_size']}")
-    print(f"Messages sent: {status['stats']['messages_sent']}")
-    print(f"Processed: {status['stats']['messages_processed']}")
-    
-    # 報告
-    print("\n=== Report ===")
-    print(bus.generate_report())
+    def watch(self, seconds: int = 10, interval: float = 1.0):
+        """
+        即時監控 Message Bus
+        
+        Args:
+            seconds: 監控時長 (秒)
+            interval: 更新間隔 (秒)
+        """
+        import time
+        import os
+        
+        start = time.time()
+        while time.time() - start < seconds:
+            # Clear screen
+            os.system('cls' if os.name == 'nt' else 'clear')
+            
+            # Print header
+            print(f"\rMonitoring Message Bus... ({int(seconds - (time.time() - start))}s remaining)", end="")
+            
+            # Print status
+            status = self.get_queue_status()
+            print(f"\n\nSent: {status['stats']['messages_sent']} | "
+                  f"Received: {status['stats']['messages_processed']} | "
+                  f"Queue: {status['queue_size']}")
+            
+            # Print topics
+            for topic, count in sorted(status['topics'].items(), key=lambda x: -x[1])[:5]:
+                print(f"  {topic}: {count}")
+            
+            time.sleep(interval)
+        
+        print("\n\nMonitoring ended.")
+
+
+# ============================================================================
+# Main
+# ============================================================================
+

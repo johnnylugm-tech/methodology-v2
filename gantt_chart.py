@@ -486,8 +486,114 @@ class GanttChart:
                     progress_width = width * (task.progress / 100)
                     svg += f'    <rect x="{x}" y="{y + 5}" width="{progress_width}" height="20" rx="4" fill="#2563EB" />\n'
         
-        svg += "</svg>"
-        return svg
+    
+    # ==================== 增強視覺化 ====================
+    
+    def to_rich_ascii(self) -> str:
+        """產生豐富的 ASCII 甘特圖"""
+        if not self.tasks:
+            return "No tasks"
+        
+        dates = self.get_timeline()
+        lines = []
+        
+        lines.append("╔" + "═" * 70 + "╗")
+        lines.append("║" + " GANTT CHART ".center(70) + "║")
+        lines.append("╚" + "═" * 70 + "╝")
+        lines.append("")
+        
+        # Date header
+        date_str = "│" + "Task".ljust(18)
+        for d in dates:
+            date_str += d.strftime(" %m/%d")
+        lines.append(date_str + " │")
+        lines.append("├" + "─" * 19 + "┼" + "─" * (len(dates) * 6) + "┤")
+        
+        for task_id in self.task_order:
+            task = self.tasks[task_id]
+            status_icons = {
+                TaskStatus.PLANNED: "○",
+                TaskStatus.IN_PROGRESS: "◔",
+                TaskStatus.COMPLETED: "●",
+                TaskStatus.DELAYED: "◐",
+                TaskStatus.BLOCKED: "⛔",
+            }
+            icon = status_icons.get(task.status, "?")
+            name = task.name[:16].ljust(16)
+            row = f"│ {icon} {name} │"
+            
+            for d in dates:
+                if task.duration_days == 0:
+                    row += "  ◆  " if d.date() == task.start_date.date() else "     "
+                elif task.start_date.date() <= d.date() < task.end_date.date():
+                    row += " █ "
+                else:
+                    row += "  .  "
+            lines.append(row)
+            
+            if task.duration_days > 0 and task.progress > 0:
+                prog = "█" * int(task.progress / 10)
+                empty = " " * (10 - len(prog))
+                lines.append(f"│   └[{prog}{empty}] {task.progress:3.0f}% │")
+        
+        lines.append("")
+        lines.append("○ Planned  ◔ In Progress  ● Completed  ◐ Delayed  ⛔ Blocked  ◆ Milestone")
+        return "\n".join(lines)
+    
+    def to_csv(self) -> str:
+        """產生 CSV 格式"""
+        lines = ["id,name,start_date,end_date,duration,status,progress,assignee"]
+        for task_id in self.task_order:
+            task = self.tasks[task_id]
+            deps = ",".join(task.dependencies) if task.dependencies else ""
+            lines.append(f"{task.id},{task.name},{task.start_date.strftime('%Y-%m-%d')},{task.end_date.strftime('%Y-%m-%d')},{task.duration_days},{task.status.value},{task.progress},{task.assignee},{deps}")
+        return "\n".join(lines)
+    
+    def export_csv(self, filename: str = "gantt.csv"):
+        """匯出 CSV"""
+        with open(filename, 'w') as f:
+            f.write(self.to_csv())
+        return filename
+    
+    def to_interactive_html(self) -> str:
+        """產生互動式 HTML (Plotly.js)"""
+        task_names = [t.name for t in self.tasks.values()]
+        durations = [t.duration_days for t in self.tasks.values()]
+        progress = [t.progress for t in self.tasks.values()]
+        colors = ["#10B981" if t.status == TaskStatus.COMPLETED else "#3B82F6" for t in self.tasks.values()]
+        
+        return f"""<!DOCTYPE html>
+<html><head><title>Gantt Chart</title>
+<script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+<style>body{{font-family:Arial;margin:20px}}#chart{{width:100%;height:500px}}</style>
+</head><body>
+<h1>📊 Gantt Chart</h1>
+<div id="chart"></div>
+<script>
+var data=[{{type:'bar',x:{durations},y:{task_names},orientation:'h',marker:{{color:'{colors}'}},text:{progress},textposition:'outside'}}];
+Plotly.newPlot('chart',data,{{title:'Project Timeline',xaxis:{{title:'Days'}},yaxis:{{title:'',automargin:true}},height:500,margin:{{l:150}}}});
+</script></body></html>"""
+    
+    def export_interactive_html(self, filename: str = "gantt_interactive.html"):
+        """匯出互動式 HTML"""
+        with open(filename, 'w') as f:
+            f.write(self.to_interactive_html())
+        return filename
+    
+    def get_summary(self) -> Dict:
+        """取得甘特圖摘要"""
+        if not self.tasks:
+            return {}
+        dates = self.get_timeline()
+        return {
+            "total_tasks": len(self.tasks),
+            "total_days": len(dates),
+            "start_date": dates[0].strftime('%Y-%m-%d') if dates else None,
+            "end_date": dates[-1].strftime('%Y-%m-%d') if dates else None,
+            "completed": sum(1 for t in self.tasks.values() if t.status == TaskStatus.COMPLETED),
+            "in_progress": sum(1 for t in self.tasks.values() if t.status == TaskStatus.IN_PROGRESS),
+            "total_progress": sum(t.progress for t in self.tasks.values()) / len(self.tasks) if self.tasks else 0,
+        }
 
 
 # ============================================================================
@@ -496,23 +602,15 @@ class GanttChart:
 
 if __name__ == "__main__":
     gantt = GanttChart()
+    gantt.add_task('design', 'System Design', start_date='2026-03-20', duration=2, assignee='Alice')
+    gantt.add_task('backend', 'Backend Dev', start_date='2026-03-22', duration=3, depends_on=['design'], assignee='Bob')
+    gantt.tasks['design'].status = TaskStatus.COMPLETED
+    gantt.tasks['design'].progress = 100
+    gantt.tasks['backend'].status = TaskStatus.IN_PROGRESS
+    gantt.tasks['backend'].progress = 50
     
-    # 加入任務
-    gantt.add_task("design", "System Design", start="2026-03-20", duration=2, assignee="Alice")
-    gantt.add_task("backend", "Backend Development", start="2026-03-22", duration=3, depends_on=["design"], assignee="Bob")
-    gantt.add_task("frontend", "Frontend Development", start="2026-03-22", duration=4, assignee="Charlie")
-    gantt.add_task("api", "API Integration", start="2026-03-25", duration=2, depends_on=["backend"], assignee="Bob")
-    gantt.add_task("testing", "Testing", start="2026-03-27", duration=2, depends_on=["api", "frontend"], assignee="Diana")
-    gantt.add_milestone("m1", "Beta Release", "2026-03-27", depends_on=["testing"])
-    
-    # 更新狀態
-    gantt.tasks["design"].status = TaskStatus.COMPLETED
-    gantt.tasks["design"].progress = 100
-    gantt.tasks["backend"].status = TaskStatus.IN_PROGRESS
-    gantt.tasks["backend"].progress = 50
-    
-    print("=== ASCII Gantt ===")
-    print(gantt.to_ascii())
-    
-    print("\n=== Mermaid ===")
-    print(gantt.to_mermaid())
+    print("=== Rich ASCII ===")
+    print(gantt.to_rich_ascii())
+    print("\n=== Summary ===")
+    import json
+    print(json.dumps(gantt.get_summary(), indent=2))
