@@ -300,6 +300,9 @@
 ---
 
 ## ⭐ 關鍵亮點
+### 🆕 強化 Guardrails 安全模組 (2026-03-20)
+- 新增更多安全檢測規則
+
 
 ### 1. 統一入口 (MethodologyCore)
 
@@ -533,6 +536,7 @@ class MethodologyCore:
 
 | 版本 | 日期 | 說明 |
 |------|------|------|
+| v5.5.0 | 2026-03-20 | Trend Optimization: 強化 Guardrails 安全模組 |
 | v5.4.0 | 2026-03-20 | v4.5.0 Extensions 整合 |
 | v5.3.1 | 2026-03-20 | 工作流程案例 |
 | v5.3.0 | 2026-03-20 | Solutions A-E 完整整合 |
