@@ -239,3 +239,27 @@ MIT
 
 - [GitHub](https://github.com/johnnylugm-tech/methodology-v2)
 - [Releases](https://github.com/johnnylugm-tech/methodology-v2/releases)
+
+---
+
+## 📚 案例文檔
+
+完整的實作案例，涵蓋 6 大情境：
+
+| 情境 | 案例數 | 檔案 |
+|------|--------|------|
+| PM 日常管理 | 3 | [docs/cases/case01_pm_daily.md](docs/cases/case01_pm_daily.md) |
+| 軟體開發團隊 | 3 | [docs/cases/case02_development.md](docs/cases/case02_development.md) |
+| Multi-Agent 協作 | 3 | [docs/cases/case03_multi_agent.md](docs/cases/case03_multi_agent.md) |
+| 企業整合 | 3 | [docs/cases/case04_enterprise.md](docs/cases/case04_enterprise.md) |
+| 錯誤處理與監控 | 3 | [docs/cases/case05_monitoring.md](docs/cases/case05_monitoring.md) |
+| 知識管理 | 3 | [docs/cases/case06_knowledge.md](docs/cases/case06_knowledge.md) |
+
+### 快速索引
+
+- [PM 案例索引](docs/cases/README.md#我是-pm-想要)
+- [Developer 案例索引](docs/cases/README.md#我是-developer-想要)
+- [Multi-Agent 案例索引](docs/cases/README.md#我需要-multi-agent-協作)
+- [企業功能案例索引](docs/cases/README.md#我需要企業功能)
+- [監控案例索引](docs/cases/README.md#我需要監控和錯誤處理)
+- [知識管理案例索引](docs/cases/README.md#我需要知識管理)
