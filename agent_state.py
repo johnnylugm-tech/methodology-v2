@@ -440,89 +440,105 @@ class StateManager:
         
         return report
 
+        return report
+    
+    # ==================== 持久化 ====================
+    
+    def save(self, path: str = "~/.methodology/agent_state.json"):
+        """保存 Agent 狀態到檔案"""
+        import json
+        import os
+        
+        path = os.path.expanduser(path)
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        
+        data = {
+            "tasks": {
+                tid: {
+                    "id": t.id,
+                    "description": t.description,
+                    "status": t.status.value,
+                    "assigned_to": t.assigned_to,
+                    "priority": t.priority,
+                    "created_at": t.created_at.isoformat(),
+                    "started_at": t.started_at.isoformat() if t.started_at else None,
+                    "completed_at": t.completed_at.isoformat() if t.completed_at else None,
+                    "result": t.result,
+                    "error": t.error,
+                }
+                for tid, t in self.state.tasks.items()
+            },
+            "artifacts": dict(self.state.artifacts),
+            "shared_data": dict(self.state.shared_data),
+            "approvals": [
+                {
+                    "id": a.id,
+                    "task_id": a.task_id,
+                    "approver": a.approver,
+                    "reason": a.reason,
+                    "status": a.status.value,
+                    "created_at": a.created_at.isoformat(),
+                    "reviewed_at": a.reviewed_at.isoformat() if a.reviewed_at else None,
+                }
+                for a in self.state.approvals
+            ],
+            "version": self.state.version,
+        }
+        
+        with open(path, 'w') as f:
+            json.dump(data, f, indent=2)
+    
+    def load(self, path: str = "~/.methodology/agent_state.json") -> bool:
+        """從檔案載入 Agent 狀態"""
+        import json
+        import os
+        
+        path = os.path.expanduser(path)
+        if not os.path.exists(path):
+            return False
+        
+        with open(path, 'r') as f:
+            data = json.load(f)
+        
+        # 恢復 tasks
+        self.state.tasks = {
+            tid: AgentTask(
+                id=tdata["id"],
+                description=tdata["description"],
+                status=TaskStatus(tdata["status"]),
+                assigned_to=tdata.get("assigned_to"),
+                priority=tdata.get("priority", 3),
+                created_at=datetime.fromisoformat(tdata["created_at"]),
+                started_at=datetime.fromisoformat(tdata["started_at"]) if tdata.get("started_at") else None,
+                completed_at=datetime.fromisoformat(tdata["completed_at"]) if tdata.get("completed_at") else None,
+                result=tdata.get("result"),
+                error=tdata.get("error"),
+            )
+            for tid, tdata in data.get("tasks", {}).items()
+        }
+        
+        # 恢復 artifacts
+        self.state.artifacts = dict(data.get("artifacts", {}))
+        
+        # 恢復 shared_data
+        self.state.shared_data = dict(data.get("shared_data", {}))
+        
+        # 恢復 approvals
+        self.state.approvals = [
+            Approval(
+                id=adata["id"],
+                task_id=adata["task_id"],
+                approver=adata["approver"],
+                reason=adata["reason"],
+                status=ApprovalStatus(adata["status"]),
+                created_at=datetime.fromisoformat(adata["created_at"]),
+                reviewed_at=datetime.fromisoformat(adata["reviewed_at"]) if adata.get("reviewed_at") else None,
+            )
+            for adata in data.get("approvals", [])
+        ]
+        
+        # 恢復 version
+        self.state.version = data.get("version", 1)
+        
+        return True
 
-# ============================================================================
-# Main
-# ============================================================================
-
-if __name__ == "__main__":
-    manager = StateManager()
-    
-    print("=== Adding Tasks ===")
-    
-    # 新增任務
-    task1 = AgentTask(
-        id="task-1",
-        description="設計系統架構",
-        priority=3,
-        created_by="pm"
-    )
-    
-    task2 = AgentTask(
-        id="task-2",
-        description="實現登入功能",
-        priority=2,
-        depends_on=["task-1"],
-        created_by="pm"
-    )
-    
-    task3 = AgentTask(
-        id="task-3",
-        description="編寫測試",
-        priority=1,
-        depends_on=["task-2"],
-        created_by="pm"
-    )
-    
-    manager.add_task(task1)
-    manager.add_task(task2)
-    manager.add_task(task3)
-    
-    print(f"Added 3 tasks")
-    
-    # 指派任務
-    print("\n=== Assigning Tasks ===")
-    manager.assign_task("task-1", "architect")
-    
-    # 完成任務 1
-    manager.complete_task("task-1", result={"architecture": "REST API"})
-    
-    # 檢查可開始的任務
-    print("\n=== Ready Tasks ===")
-    ready = manager.get_ready_tasks("developer")
-    for task in ready:
-        print(f"  {task.id}: {task.description}")
-    
-    # 指派任務 2
-    manager.assign_task("task-2", "developer")
-    
-    # 請求審批
-    print("\n=== Approval Request ===")
-    approval_id = manager.request_approval(
-        task_id="task-2",
-        approver="architect",
-        reason="需要架構師確認設計",
-        context={"design": "OAuth2"}
-    )
-    print(f"Approval requested: {approval_id}")
-    
-    # 審批
-    manager.approve(approval_id, approved=True, comment="同意")
-    
-    # 完成任務 2
-    manager.complete_task("task-2", result={"login": "implemented"})
-    
-    # 共享資料
-    manager.update_shared_data("project_name", "AI客服系統")
-    manager.update_shared_data("deadline", "2026-04-01")
-    
-    # 快照
-    print("\n=== Snapshot ===")
-    snapshot = manager.get_snapshot()
-    print(f"Tasks: {snapshot['state']['tasks_count']}")
-    print(f"Artifacts: {snapshot['state']['artifacts_count']}")
-    print(f"Version: {snapshot['state']['version']}")
-    
-    # 報告
-    print("\n=== Report ===")
-    print(manager.generate_report())

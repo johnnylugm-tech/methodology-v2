@@ -23,18 +23,18 @@ class Sprint:
     capacity: float = 100.0  # 總容量 (story points)
     tasks: List[str] = field(default_factory=list)
     status: str = "planning"  # planning, active, completed
-    
+
     @property
     def duration_days(self) -> int:
         return (self.end_date - self.start_date).days
-    
+
     @property
     def days_remaining(self) -> int:
         remaining = (self.end_date - datetime.now()).days
         return max(0, remaining)
 
 
-@dataclass
+@dataclass 
 class BacklogItem:
     """待辦清單項目"""
     id: str
@@ -47,13 +47,17 @@ class BacklogItem:
     sprint_id: str = None
     created_at: datetime = field(default_factory=datetime.now)
     
+    # P0 FIX: 新增 completed 欄位
+    completed: bool = False
+    completed_at: datetime = None
+
     @property
     def priority_label(self) -> str:
         labels = {1: "Critical", 2: "High", 3: "Medium", 4: "Low", 5: "Nice-to-have"}
         return labels.get(self.priority, "Unknown")
 
 
-@dataclass 
+@dataclass
 class DailySnapshot:
     """每日快照 (用於 Burndown)"""
     date: datetime
@@ -64,7 +68,7 @@ class DailySnapshot:
 
 class ProgressDashboard:
     """進度儀表板"""
-    
+
     def __init__(self):
         self.sprints: Dict[str, Sprint] = {}
         self.backlog: Dict[str, BacklogItem] = {}
@@ -72,21 +76,21 @@ class ProgressDashboard:
         self.snapshots: List[DailySnapshot] = []
         self.completed_points_history: List[float] = []
         self.ideal_burndown: List[float] = []
-    
+
     # ==================== Sprint Management ====================
-    
-    def create_sprint(self, name: str, goal: str, 
+
+    def create_sprint(self, name: str, goal: str,
                      start_date: datetime = None,
                      end_date: datetime = None,
                      capacity: float = 100.0) -> str:
         """建立 Sprint"""
         sprint_id = f"sprint-{len(self.sprints) + 1}"
-        
+
         if start_date is None:
             start_date = datetime.now()
         if end_date is None:
             end_date = start_date + timedelta(days=14)  # 預設 2 週
-        
+
         sprint = Sprint(
             id=sprint_id,
             name=name,
@@ -95,44 +99,44 @@ class ProgressDashboard:
             end_date=end_date,
             capacity=capacity,
         )
-        
+
         self.sprints[sprint_id] = sprint
-        
+
         if self.current_sprint_id is None:
             self.current_sprint_id = sprint_id
-        
+
         # 重新計算理想燃盡線
         self._calculate_ideal_burndown(sprint)
-        
+
         return sprint_id
-    
+
     def start_sprint(self, sprint_id: str) -> bool:
         """開始 Sprint"""
         sprint = self.sprints.get(sprint_id)
         if not sprint or sprint.status == "active":
             return False
-        
+
         sprint.status = "active"
         self.current_sprint_id = sprint_id
-        
+
         # 初始化當天快照
         self._take_snapshot()
-        
+
         return True
-    
+
     def complete_sprint(self, sprint_id: str) -> Dict:
         """完成 Sprint"""
         sprint = self.sprints.get(sprint_id)
         if not sprint:
             return {"error": "Sprint not found"}
-        
+
         sprint.status = "completed"
-        
+
         # 計算 Sprint 統計
         completed = self.get_sprint_completed_points(sprint_id)
         remaining = self.get_sprint_remaining_points(sprint_id)
         velocity = self.get_sprint_velocity(sprint_id)
-        
+
         return {
             "sprint_id": sprint_id,
             "name": sprint.name,
@@ -141,24 +145,24 @@ class ProgressDashboard:
             "velocity": velocity,
             "status": "completed"
         }
-    
+
     def _calculate_ideal_burndown(self, sprint: Sprint):
         """計算理想燃盡線"""
         total_points = self.get_sprint_total_points(sprint.id)
         days = sprint.duration_days
-        
+
         self.ideal_burndown = []
         for i in range(days + 1):
             remaining = total_points * (1 - i / days)
             self.ideal_burndown.append(remaining)
-    
+
     # ==================== Backlog Management ====================
-    
+
     def add_to_backlog(self, title: str, description: str = "",
                       story_points: float = 1.0, priority: int = 3) -> str:
         """加入待辦清單"""
         item_id = f"item-{len(self.backlog) + 1}"
-        
+
         item = BacklogItem(
             id=item_id,
             title=title,
@@ -166,77 +170,77 @@ class ProgressDashboard:
             story_points=story_points,
             priority=priority,
         )
-        
+
         self.backlog[item_id] = item
         return item_id
-    
+
     def add_item_to_sprint(self, item_id: str, sprint_id: str) -> bool:
         """將項目加入 Sprint"""
         item = self.backlog.get(item_id)
         sprint = self.sprints.get(sprint_id)
-        
+
         if not item or not sprint:
             return False
-        
+
         # 從舊 Sprint 移除
         if item.sprint_id:
             old_sprint = self.sprints.get(item.sprint_id)
             if old_sprint and item_id in old_sprint.tasks:
                 old_sprint.tasks.remove(item_id)
-        
+
         # 加入新 Sprint
         item.sprint_id = sprint_id
         sprint.tasks.append(item_id)
-        
+
         return True
-    
+
     def prioritize_backlog(self) -> List[BacklogItem]:
         """取得優先排序的待辦"""
         return sorted(
             [item for item in self.backlog.values() if item.sprint_id is None],
             key=lambda x: (x.priority, x.created_at)
         )
-    
+
     # ==================== Sprint Statistics ====================
-    
+
     def get_sprint_total_points(self, sprint_id: str) -> float:
         """取得 Sprint 總點數"""
         sprint = self.sprints.get(sprint_id)
         if not sprint:
             return 0
-        
+
         return sum(
             self.backlog.get(item_id, BacklogItem(id=item_id, title="", story_points=0)).story_points
             for item_id in sprint.tasks
         )
-    
+
     def get_sprint_completed_points(self, sprint_id: str) -> float:
         """取得已完成點數"""
         sprint = self.sprints.get(sprint_id)
         if not sprint:
             return 0
-        
+
         return sum(
             self.backlog.get(item_id, BacklogItem(id=item_id, title="", story_points=0)).story_points
             for item_id in sprint.tasks
             if self.backlog.get(item_id) and self._is_item_completed(item_id)
         )
-    
+
     def get_sprint_remaining_points(self, sprint_id: str) -> float:
         """取得剩餘點數"""
         total = self.get_sprint_total_points(sprint_id)
         completed = self.get_sprint_completed_points(sprint_id)
         return total - completed
-    
+
     def get_sprint_velocity(self, sprint_id: str) -> float:
         """取得 Sprint 速度 (已完成 / 總容量)"""
         sprint = self.sprints.get(sprint_id)
         if not sprint or sprint.capacity == 0:
             return 0
-        
+
         completed = self.get_sprint_completed_points(sprint_id)
         return (completed / sprint.capacity) * 100
-    
+
     def _is_item_completed(self, item_id: str) -> bool:
         """檢查項目是否完成"""
         item = self.backlog.get(item_id)
@@ -244,34 +248,68 @@ class ProgressDashboard:
             return False
         return getattr(item, 'completed', False)
     
-    # ==================== Burndown Chart ====================
+    def mark_item_completed(self, item_id: str) -> bool:
+        """
+        標記項目為完成
+        
+        Args:
+            item_id: 項目 ID
+            
+        Returns:
+            是否成功
+        """
+        item = self.backlog.get(item_id)
+        if not item:
+            return False
+        
+        item.completed = True
+        item.completed_at = datetime.now()
+        
+        # 如果有 sprint_id，更新 sprint 完成點數
+        if item.sprint_id and item.sprint_id in self.sprints:
+            sprint = self.sprints[item.sprint_id]
+            sprint.completed_points += item.story_points
+        
+        return True
     
+    def mark_item_active(self, item_id: str) -> bool:
+        """標記項目為進行中"""
+        item = self.backlog.get(item_id)
+        if not item:
+            return False
+        
+        item.completed = False
+        item.completed_at = None
+        return True
+
+    # ==================== Burndown Chart ====================
+
     def _take_snapshot(self):
         """拍攝每日快照"""
         if not self.current_sprint_id:
             return
-        
+
         remaining = self.get_sprint_remaining_points(self.current_sprint_id)
         total = self.get_sprint_total_points(self.current_sprint_id)
         completed = total - remaining
-        
+
         snapshot = DailySnapshot(
             date=datetime.now(),
             remaining_points=remaining,
             completed_points=completed,
             ideal_remaining=self.ideal_burndown[len(self.snapshots)] if len(self.ideal_burndown) > len(self.snapshots) else 0,
         )
-        
+
         self.snapshots.append(snapshot)
-    
+
     def get_burndown_data(self, sprint_id: str = None) -> Dict:
         """取得燃盡圖數據"""
         sprint_id = sprint_id or self.current_sprint_id
         sprint = self.sprints.get(sprint_id)
-        
+
         if not sprint:
             return {}
-        
+
         return {
             "sprint_name": sprint.name,
             "start_date": sprint.start_date.isoformat(),
@@ -285,27 +323,27 @@ class ProgressDashboard:
             "ideal_burndown": self.ideal_burndown,
             "actual_burndown": [s.remaining_points for s in self.snapshots],
         }
-    
+
     # ==================== Dashboard Views ====================
-    
+
     def get_sprint_board(self, sprint_id: str = None) -> Dict:
         """取得 Sprint Board 視圖"""
         sprint_id = sprint_id or self.current_sprint_id
         sprint = self.sprints.get(sprint_id)
-        
+
         if not sprint:
             return {}
-        
+
         # 按狀態分組
         todo = []
         in_progress = []
         done = []
-        
+
         for item_id in sprint.tasks:
             item = self.backlog.get(item_id)
             if not item:
                 continue
-            
+
             item_dict = {
                 "id": item.id,
                 "title": item.title,
@@ -313,7 +351,7 @@ class ProgressDashboard:
                 "priority": item.priority_label,
                 "assignee": item.assignee,
             }
-            
+
             # 模擬狀態分配
             if self._is_item_completed(item_id):
                 done.append(item_dict)
@@ -321,7 +359,7 @@ class ProgressDashboard:
                 in_progress.append(item_dict)
             else:
                 todo.append(item_dict)
-        
+
         return {
             "sprint": {
                 "id": sprint.id,
@@ -343,11 +381,11 @@ class ProgressDashboard:
                 "velocity": self.get_sprint_velocity(sprint_id),
             }
         }
-    
+
     def get_backlog_view(self) -> Dict:
         """取得 Backlog 視圖"""
         prioritized = self.prioritize_backlog()
-        
+
         return {
             "total_items": len(prioritized),
             "total_points": sum(item.story_points for item in prioritized),
@@ -369,16 +407,16 @@ class ProgressDashboard:
                 for item in prioritized
             ]
         }
-    
+
     def generate_report(self) -> str:
         """生成進度報告"""
         if not self.current_sprint_id:
             return "No active sprint"
-        
+
         sprint = self.sprints[self.current_sprint_id]
         board = self.get_sprint_board()
         burndown = self.get_burndown_data()
-        
+
         report = f"""
 # 📊 Sprint 進度報告
 
@@ -405,7 +443,7 @@ class ProgressDashboard:
 ## 📋 Board 概覽
 
 - 🔵 To Do: {board['summary']['todo']} 項
-- 🟡 In Progress: {board['summary']['in_progress']} 項  
+- 🟡 In Progress: {board['summary']['in_progress']} 項
 - ✅ Done: {board['summary']['completed']} 項
 
 ---
@@ -417,48 +455,90 @@ class ProgressDashboard:
 """
         return report
 
+        return report
+    
+    # ==================== 持久化 ====================
+    
+    def save(self, path: str = "~/.methodology/progress.json"):
+        """保存進度資料到檔案"""
+        import json
+        import os
+        
+        path = os.path.expanduser(path)
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        
+        data = {
+            "sprints": {
+                sid: {
+                    "id": s.id,
+                    "name": s.name,
+                    "goal": s.goal,
+                    "capacity": s.capacity,
+                    "status": s.status,
+                    "created_at": s.created_at.isoformat() if s.created_at else None,
+                    "started_at": s.started_at.isoformat() if s.started_at else None,
+                }
+                for sid, s in self.sprints.items()
+            },
+            "backlog": {
+                iid: {
+                    "id": item.id,
+                    "title": item.title,
+                    "story_points": item.story_points,
+                    "priority": item.priority,
+                    "sprint_id": item.sprint_id,
+                    "completed": item.completed,
+                    "completed_at": item.completed_at.isoformat() if item.completed_at else None,
+                }
+                for iid, item in self.backlog.items()
+            },
+            # sprint_items is derived from backlog items, no need to store separately
+        }
+        
+        with open(path, 'w') as f:
+            json.dump(data, f, indent=2)
+    
+    def load(self, path: str = "~/.methodology/progress.json") -> bool:
+        """從檔案載入進度資料"""
+        import json
+        import os
+        
+        path = os.path.expanduser(path)
+        if not os.path.exists(path):
+            return False
+        
+        with open(path, 'r') as f:
+            data = json.load(f)
+        
+        # 恢復 Sprint
+        for sid, sdata in data.get("sprints", {}).items():
+            sprint = Sprint(
+                id=sdata["id"],
+                name=sdata["name"],
+                goal=sdata.get("goal", ""),
+                capacity=sdata.get("capacity", 50),
+                created_at=datetime.fromisoformat(sdata["created_at"]) if sdata.get("created_at") else datetime.now(),
+            )
+            sprint.status = sdata.get("status", "planning")
+            if sdata.get("started_at"):
+                sprint.started_at = datetime.fromisoformat(sdata["started_at"])
+            self.sprints[sid] = sprint
+        
+        # 恢復 BacklogItem
+        for iid, idata in data.get("backlog", {}).items():
+            item = BacklogItem(
+                id=idata["id"],
+                title=idata["title"],
+                story_points=idata.get("story_points", 1.0),
+                priority=idata.get("priority", 3),
+                sprint_id=idata.get("sprint_id"),
+            )
+            item.completed = idata.get("completed", False)
+            if idata.get("completed_at"):
+                item.completed_at = datetime.fromisoformat(idata["completed_at"])
+            self.backlog[iid] = item
+        
+        # 恢復 Sprint Items
+        
+        return True
 
-# ============================================================================
-# Main
-# ============================================================================
-
-if __name__ == "__main__":
-    dashboard = ProgressDashboard()
-    
-    # 建立 Sprint
-    sprint_id = dashboard.create_sprint(
-        name="Sprint 1",
-        goal="完成核心功能",
-        capacity=50
-    )
-    dashboard.start_sprint(sprint_id)
-    
-    # 加入項目
-    for i in range(8):
-        item_id = dashboard.add_to_backlog(
-            title=f"功能 {i+1}",
-            story_points=3 if i % 2 == 0 else 5,
-            priority=(i % 3) + 1
-        )
-        dashboard.add_item_to_sprint(item_id, sprint_id)
-    
-    # 顯示 Board
-    print("=== Sprint Board ===")
-    board = dashboard.get_sprint_board()
-    print(f"Sprint: {board['sprint']['name']}")
-    print(f"Status: {board['sprint']['status']}")
-    print(f"\nColumns:")
-    for col, data in board['columns'].items():
-        print(f"  {col}: {data['count']} items, {data['points']} points")
-    
-    # Burndown
-    print("\n=== Burndown Data ===")
-    burndown = dashboard.get_burndown_data()
-    print(f"Total: {burndown.get('total_points')}")
-    print(f"Completed: {burndown.get('completed_points')}")
-    print(f"Remaining: {burndown.get('remaining_points')}")
-    print(f"Velocity: {burndown.get('velocity'):.1f}%")
-    
-    # Report
-    print("\n=== Report ===")
-    print(dashboard.generate_report())

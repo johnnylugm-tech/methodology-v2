@@ -176,16 +176,22 @@ class CostAllocator:
         self.allocations.append(allocation)
     
     def _update_budget_spent(self, project_id: str = None, user_id: str = None, amount: float = 0):
-        """更新預算支出"""
+        """
+        更新預算支出
+        
+        根據 project_id 和 user_id 精確匹配要更新的預算
+        """
         for budget in self.budgets.values():
             should_update = False
             
             if budget.period == "project":
-                # 專案預算只更新匹配的
+                # 專案預算：只更新名稱匹配的
                 should_update = (budget.name == project_id)
-            else:
-                # 非專案預算（daily/weekly/monthly）根據 entity 判斷
-                # 這裡簡化為更新所有，實際應該根據 user_id/project_id 匹配
+            elif budget.period == "user" and user_id:
+                # 用戶預算：只更新 entity 匹配的
+                should_update = (budget.entity == user_id)
+            elif budget.period in ("daily", "weekly", "monthly"):
+                # 週期預算：更新所有該類型的（因為是全局統計）
                 should_update = True
             
             if should_update:
@@ -393,71 +399,82 @@ class CostAllocator:
         
         return report
 
+        return report
+    
+    # ==================== 持久化 ====================
+    
+    def save(self, path: str = "~/.methodology/costs.json"):
+        """保存成本資料到檔案"""
+        import json
+        import os
+        
+        path = os.path.expanduser(path)
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        
+        data = {
+            "entries": [
+                {
+                    "timestamp": e.timestamp.isoformat(),
+                    "amount": e.amount,
+                    "cost_type": e.cost_type.value if hasattr(e.cost_type, 'value') else str(e.cost_type),
+                    "project_id": e.project_id,
+                    "user_id": e.user_id,
+                    "model": e.model,
+                }
+                for e in self.entries
+            ],
+            "budgets": {
+                bid: {
+                    "id": b.id,
+                    "name": b.name,
+                    "total": b.total,
+                    "spent": b.spent,
+                    "period": b.period,
+                    "entity": b.entity,
+                }
+                for bid, b in self.budgets.items()
+            }
+        }
+        
+        with open(path, 'w') as f:
+            json.dump(data, f, indent=2)
+    
+    def load(self, path: str = "~/.methodology/costs.json") -> bool:
+        """從檔案載入成本資料"""
+        import json
+        import os
+        
+        path = os.path.expanduser(path)
+        if not os.path.exists(path):
+            return False
+        
+        with open(path, 'r') as f:
+            data = json.load(f)
+        
+        # 恢復 entries
+        self.entries = [
+            CostEntry(
+                timestamp=datetime.fromisoformat(e["timestamp"]),
+                amount=e["amount"],
+                cost_type=e["cost_type"],
+                project_id=e.get("project_id"),
+                user_id=e.get("user_id"),
+                model=e.get("model"),
+            )
+            for e in data.get("entries", [])
+        ]
+        
+        # 恢復 budgets
+        for bid, bdata in data.get("budgets", {}).items():
+            budget = Budget(
+                id=bdata["id"],
+                name=bdata["name"],
+                total=bdata["total"],
+                period=bdata.get("period", "monthly"),
+                entity=bdata.get("entity"),
+            )
+            budget.spent = bdata.get("spent", 0)
+            self.budgets[bid] = budget
+        
+        return True
 
-# ============================================================================
-# Main
-# ============================================================================
-
-if __name__ == "__main__":
-    allocator = CostAllocator()
-    
-    # 建立預算
-    pm_budget = allocator.create_budget("PM 團隊月度預算", 1000.0, "monthly")
-    dev_budget = allocator.create_budget("開發團隊月度預算", 2000.0, "monthly")
-    
-    # 記錄成本
-    print("=== Recording Costs ===")
-    
-    allocator.add_api_cost(
-        project_id="project-ai",
-        user_id="user-1",
-        model="gpt-4o",
-        input_tokens=1000,
-        output_tokens=500,
-        team_id="team-pm"
-    )
-    
-    allocator.add_api_cost(
-        project_id="project-ai",
-        user_id="user-2",
-        model="claude-4-sonnet",
-        input_tokens=2000,
-        output_tokens=1000,
-        team_id="team-dev"
-    )
-    
-    allocator.add_api_cost(
-        project_id="project-ai",
-        user_id="user-1",
-        model="minimax-m2.7",
-        input_tokens=5000,
-        output_tokens=2000,
-        team_id="team-pm"
-    )
-    
-    # 用戶成本
-    print("\n=== User Costs ===")
-    user1_costs = allocator.get_user_costs("user-1")
-    print(f"User 1: ${user1_costs['total']:.4f}")
-    print(f"  By type: {user1_costs['by_type']}")
-    
-    # 專案成本
-    print("\n=== Project Costs ===")
-    project_costs = allocator.get_project_costs("project-ai")
-    print(f"Total: ${project_costs['total']:.4f}")
-    print(f"  By user: {project_costs['by_user']}")
-    print(f"  By model: {project_costs['by_model']}")
-    
-    # 團隊成本
-    print("\n=== Team Costs ===")
-    team_costs = allocator.get_team_costs("team-pm")
-    print(f"PM Team: ${team_costs['total']:.4f}")
-    
-    # 預算狀態
-    print("\n=== Budget Status ===")
-    for status in allocator.get_budget_status():
-        print(f"{status['name']}: {status['utilization']:.1f}% used")
-    
-    # 報告
-    print("\n=== Report ===")
-    print(allocator.generate_report())
