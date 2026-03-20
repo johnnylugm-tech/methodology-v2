@@ -306,42 +306,42 @@ def create_minimal_setup() -> MethodologyCore:
 # ============================================================================
 
 if __name__ == "__main__":
-    print("=== MethodologyCore Demo ===\n")
+#     print("=== MethodologyCore Demo ===\n")
     
     # 初始化
     core = MethodologyCore()
     
-    print(f"Project: {core.config.project_name}")
+#     print(f"Project: {core.config.project_name}")
     
     # 任務
-    print("\n--- Tasks ---")
+#     print("\n--- Tasks ---")
     if hasattr(core.tasks, 'split_from_goal'):
         tasks = core.tasks.split_from_goal("開發一個 AI 客服系統")
-        print(f"Created {len(tasks)} tasks")
+#         print(f"Created {len(tasks)} tasks")
     
     # Agent
-    print("\n--- Agents ---")
+#     print("\n--- Agents ---")
     from .agent_registry import AgentType
     core.agents.register("dev-1", "Developer", AgentType.DEVELOPER)
-    print(f"Registered agents: {len(core.agents.agents)}")
+#     print(f"Registered agents: {len(core.agents.agents)}")
     
     # Event
-    print("\n--- Events ---")
+#     print("\n--- Events ---")
     core.publish_event("task:created", {"task_id": "task-1"})
-    print(f"Queue size: {core.bus.get_queue_status()['queue_size']}")
+#     print(f"Queue size: {core.bus.get_queue_status()['queue_size']}")
     
     # Audit
-    print("\n--- Audit ---")
+#     print("\n--- Audit ---")
     core.log_action("test", "system")
-    print(f"Total messages: {len(core.audit.get_statistics())}")
+#     print(f"Total messages: {len(core.audit.get_statistics())}")
     
     # Router
-    print("\n--- Router ---")
+#     print("\n--- Router ---")
     if hasattr(core.router, 'route'):
         result = core.router.route("Hello world")
-        print(f"Routed to: {result.model if hasattr(result, 'model') else 'N/A'}")
+#         print(f"Routed to: {result.model if hasattr(result, 'model') else 'N/A'}")
     
-    print("\n=== Done ===")
+#     print("\n=== Done ===")
 
 # ==================== Solutions A-E Integration ====================
 
