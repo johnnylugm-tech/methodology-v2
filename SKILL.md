@@ -138,7 +138,7 @@ methodology-v2
 
 | Skill | GitHub | 用途 |
 |-------|---------|------|
-| **Model Router** | johnnylugm-tech/model-router-v2 | 智慧模型路由 |
+| **Model Router** (v1.0.2) | johnnylugm-tech/model-router-v2 | 智慧模型路由 + M2.7 |
 | **Agent Monitor** | johnnylugm-tech/agent-dashboard-v3 | 監控儀表板 |
 | **Agent Quality Guard** | johnnylugm-tech/Agent-Quality-Guard | 品質把關 |
 
