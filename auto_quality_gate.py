@@ -421,3 +421,55 @@ if __name__ == "__main__":
     else:
         print(f"Unknown command: {command}")
         sys.exit(1)
+
+# ==================== Security Audit 整合 ====================
+
+    def scan_security(self, file_path: str = None, code: str = None) -> Dict:
+        """
+        整合 SecurityAuditor，掃描安全問題
+        
+        Args:
+            file_path: 檔案路徑
+            code: 代碼字串
+            
+        Returns:
+            安全報告
+        """
+        from security_audit import SecurityAuditor
+        
+        auditor = SecurityAuditor()
+        
+        if file_path:
+            report = auditor.scan(file_path)
+        elif code:
+            report = auditor.scan_code(code)
+        else:
+            return {"error": "需要提供 file_path 或 code"}
+        
+        return {
+            "critical_issues": len(report.critical_issues) if hasattr(report, 'critical_issues') else 0,
+            "warnings": len(report.warnings) if hasattr(report, 'warnings') else 0,
+            "suggestions": len(report.suggestions) if hasattr(report, 'suggestions') else 0,
+            "details": report.to_dict() if hasattr(report, 'to_dict') else {},
+        }
+    
+    def auto_fix_with_security(self, file_path: str) -> Dict:
+        """
+        自動修復 + 安全審計
+        
+        Args:
+            file_path: 檔案路徑
+            
+        Returns:
+            修復報告 + 安全報告
+        """
+        # 1. 自動修復品質問題
+        fix_report = self.auto_fix(file_path)
+        
+        # 2. 安全審計
+        security_report = self.scan_security(file_path)
+        
+        return {
+            "fix": fix_report,
+            "security": security_report,
+        }

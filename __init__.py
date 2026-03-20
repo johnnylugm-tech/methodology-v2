@@ -50,7 +50,7 @@ from .dashboard_cost_trend import CostTrendAnalyzer, CostSnapshot, CostTrend, Co
 from .failover_manager import FailoverManager, CircuitBreaker, ModelEndpoint, FailoverEvent
 from .parallel_executor import ParallelExecutor, ParallelTask, Worker, ExecutionResult
 
-__version__ = "4.1.0"
+__version__ = "4.2.0"
 
 __all__ = [
     # Core
@@ -260,4 +260,13 @@ __all__ = [
     "MethodologyConfig",
     "create_pm_setup",
     "create_minimal_setup",
+]
+
+# Extensions Integration (v4.2)
+from .extensions import Extensions, create_extensions
+
+__all__ = [
+    # ... (existing exports)
+    "Extensions",
+    "create_extensions",
 ]

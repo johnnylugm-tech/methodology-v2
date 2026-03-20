@@ -496,3 +496,49 @@ if __name__ == "__main__":
     
     print("\n=== Report ===")
     print(wf.generate_report())
+
+# ==================== Workflow Visualizer 整合 ====================
+
+    def generate_mermaid_diagram(self) -> str:
+        """
+        整合 WorkflowVisualizer，生成 Mermaid 圖表
+        
+        Returns:
+            Mermaid 格式的圖表
+        """
+        from workflow_visualizer import WorkflowVisualizer
+        
+        viz = WorkflowVisualizer()
+        
+        # 提取節點
+        nodes = []
+        for node_id, node in self.nodes.items():
+            nodes.append({
+                "id": node_id,
+                "name": node.name,
+                "type": node.type.value,
+                "status": node.status.value,
+            })
+        
+        # 生成圖表
+        return viz.generate_diagram_from_workflow(self, nodes)
+    
+    def visualize(self, format: str = "mermaid") -> str:
+        """
+        可視化工作流
+        
+        Args:
+            format: 格式 (mermaid/text)
+            
+        Returns:
+            圖表字串
+        """
+        if format == "mermaid":
+            return self.generate_mermaid_diagram()
+        else:
+            # 文字格式
+            lines = [f"Workflow: {self.name}", ""]
+            for node_id, node in self.nodes.items():
+                deps = ", ".join(node.depends_on) if node.depends_on else "none"
+                lines.append(f"  {node_id}: {node.name} (deps: {deps})")
+            return "\n".join(lines)

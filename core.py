@@ -252,3 +252,28 @@ if __name__ == "__main__":
     print(f"Total messages: {len(core.audit.get_statistics())}")
     
     print("\n=== Done ===")
+
+# ==================== Extensions 整合 ====================
+
+@property
+def extensions(self):
+    """Extensions 整合層"""
+    if self._extensions is None:
+        from .extensions import create_extensions
+        self._extensions = create_extensions(core=self)
+    return self._extensions
+
+def scan_security(self, target: str):
+    """安全掃描 (整合 SecurityAuditor)"""
+    return self.extensions.scan_security(target)
+
+def track_cost(self, model: str, input_tokens: int, output_tokens: int):
+    """成本追蹤 (整合 CostOptimizer)"""
+    self.extensions.track_cost(model, input_tokens, output_tokens)
+    # 同時更新 router
+    if hasattr(self, '_router'):
+        self._router.track_usage(model, input_tokens, output_tokens)
+
+def generate_workflow_diagram(self, workflow):
+    """生成工作流圖表 (整合 WorkflowVisualizer)"""
+    return self.extensions.visualize.generate_diagram(workflow)

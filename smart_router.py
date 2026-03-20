@@ -52,7 +52,7 @@ class RoutingResult:
 
 
 class SmartRouter:
-    """智慧路由器"""
+    """智慧路由器 (整合 Cost Optimizer)"""
     
     # 預設配置
     DEFAULT_CONFIG = {
@@ -60,6 +60,17 @@ class SmartRouter:
         "default_model": "gemini-pro",  # 預設模型
         "budget": "medium",       # 預算等級
         "fallback_model": "gpt-3.5-turbo",  # 備用模型
+        "enable_cost_tracking": True,  # 整合 cost_optimizer
+        "monthly_budget": 100.0,   # 月度預算
+        "cost_alert_threshold": 0.8,  # 警報閾值
+    }
+    
+    # Cost Optimizer 整合
+    COST_TRACKING = {
+        "total_spent": 0.0,
+        "by_model": {},
+        "by_task_type": {},
+        "alerts_triggered": 0,
     }
     
     # 預設模型庫
@@ -383,3 +394,78 @@ if __name__ == "__main__":
     for m in router.list_models():
         status = "✅" if m["available"] else "❌"
         print(f"{status} {m['name']} ({m['provider']}) - ${m['cost_per_1k_input']:.4f}/1k in")
+
+    # ==================== Cost Optimizer 整合 ====================
+    
+    def track_usage(self, model: str, input_tokens: int, output_tokens: int,
+                   task_type: str = None):
+        """記錄使用量 (整合 cost_optimizer)"""
+        model_info = self.models.get(model)
+        if not model_info:
+            return
+        
+        cost = (input_tokens / 1000 * model_info.cost_per_1k_input +
+                output_tokens / 1000 * model_info.cost_per_1k_output)
+        
+        self.COST_TRACKING["total_spent"] += cost
+        
+        if model not in self.COST_TRACKING["by_model"]:
+            self.COST_TRACKING["by_model"][model] = 0
+        self.COST_TRACKING["by_model"][model] += cost
+        
+        if task_type:
+            if task_type not in self.COST_TRACKING["by_task_type"]:
+                self.COST_TRACKING["by_task_type"][task_type] = 0
+            self.COST_TRACKING["by_task_type"][task_type] += cost
+    
+    def get_cost_summary(self) -> Dict:
+        """取得成本摘要"""
+        return {
+            "total_spent": self.COST_TRACKING["total_spent"],
+            "monthly_budget": self.DEFAULT_CONFIG["monthly_budget"],
+            "remaining": self.DEFAULT_CONFIG["monthly_budget"] - self.COST_TRACKING["total_spent"],
+            "utilization": (self.COST_TRACKING["total_spent"] / 
+                           max(1, self.DEFAULT_CONFIG["monthly_budget"]) * 100,
+            "by_model": self.COST_TRACKING["by_model"],
+            "by_task_type": self.COST_TRACKING["by_task_type"],
+        }
+    
+    def is_over_budget(self) -> bool:
+        """檢查是否超出預算"""
+        return (self.COST_TRACKING["total_spent"] >= 
+                self.DEFAULT_CONFIG["monthly_budget"] * 
+                self.DEFAULT_CONFIG["cost_alert_threshold"])
+    
+    def get_cost_alert(self) -> Dict:
+        """取得預算警報"""
+        summary = self.get_cost_summary()
+        
+        if self.is_over_budget():
+            return {
+                "level": "critical" if summary["utilization"] >= 100 else "warning",
+                "message": f"已使用 {summary['utilization']:.1f}% 預算",
+                "spent": summary["total_spent"],
+                "remaining": summary["remaining"],
+            }
+        return None
+    
+    def select_cost_efficient_model(self, task: str, 
+                                    required_quality: str = "medium") -> str:
+        """選擇最便宜的合適模型"""
+        quality_budget = {
+            "high": 0.05,
+            "medium": 0.01,
+            "low": 0.002,
+        }.get(required_quality, 0.01)
+        
+        candidates = [
+            (name, model) for name, model in self.models.items()
+            if (model.cost_per_1k_input + model.cost_per_1k_output) / 2 <= quality_budget
+        ]
+        
+        if not candidates:
+            return min(self.models.keys(), 
+                     key=lambda n: self.models[n].cost_per_1k_input)
+        
+        candidates.sort(key=lambda x: x[1].cost_per_1k_input)
+        return candidates[0][0]
