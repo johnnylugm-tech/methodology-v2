@@ -841,3 +841,308 @@ if __name__ == "__main__":
                    email="test@test.com", 
                    api_token="xxx")
     print(f"Health: {manager.health_check()}")
+
+# ==================== Real HTTP Implementation ====================
+
+def _http_get(url: str, headers: Dict = None, params: Dict = None) -> Dict:
+    """HTTP GET 請求"""
+    try:
+        import urllib.request
+        import json
+        
+        req = urllib.request.Request(url)
+        if headers:
+            for k, v in headers.items():
+                req.add_header(k, v)
+        
+        if params:
+            import urllib.parse
+            req.full_url = f"{url}?{urllib.parse.urlencode(params)}"
+        
+        with urllib.request.urlopen(req, timeout=10) as response:
+            return {
+                "success": True,
+                "status": response.status,
+                "data": json.loads(response.read().decode())
+            }
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e)
+        }
+
+def _http_post(url: str, data: Dict = None, headers: Dict = None) -> Dict:
+    """HTTP POST 請求"""
+    try:
+        import urllib.request
+        import json
+        
+        req = urllib.request.Request(url, data=json.dumps(data).encode() if data else None)
+        req.add_header("Content-Type", "application/json")
+        if headers:
+            for k, v in headers.items():
+                req.add_header(k, v)
+        
+        with urllib.request.urlopen(req, timeout=10) as response:
+            return {
+                "success": True,
+                "status": response.status,
+                "data": json.loads(response.read().decode())
+            }
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e)
+        }
+
+
+class RealJiraConnectorHTTP:
+    """
+    Real Jira API Connector (HTTP Implementation)
+    
+    使用方式：
+    ```python
+    conn = RealJiraConnectorHTTP(
+        domain="company.atlassian.net",
+        email="user@company.com",
+        api_token="your-api-token"
+    )
+    
+    # 搜尋 issues
+    issues = conn.search_jql("project = AI AND status = Open")
+    
+    # 建立 issue
+    conn.create_issue("AI", "新功能", "描述")
+    ```
+    """
+    
+    def __init__(self, domain: str = None, email: str = None, api_token: str = None):
+        self.domain = domain
+        self.email = email
+        self.api_token = api_token
+        self.base_url = f"https://{domain}/rest/api/3" if domain else ""
+        self.headers = {
+            "Authorization": f"Basic {self._encode_auth()}" if email and api_token else "",
+            "Content-Type": "application/json",
+            "Accept": "application/json"
+        }
+    
+    def _encode_auth(self) -> str:
+        """編碼 Basic Auth"""
+        import base64
+        credentials = f"{self.email}:{self.api_token}"
+        return base64.b64encode(credentials.encode()).decode()
+    
+    def is_configured(self) -> bool:
+        """檢查是否已配置"""
+        return bool(self.domain and self.email and self.api_token)
+    
+    def search_jql(self, jql: str, max_results: int = 50) -> List[Dict]:
+        """使用 JQL 搜尋 issues"""
+        if not self.is_configured():
+            return [{"error": "Not configured", "mock": True}]
+        
+        url = f"{self.base_url}/search"
+        params = {"jql": jql, "maxResults": max_results}
+        
+        result = _http_get(url, headers=self.headers, params=params)
+        if result.get("success"):
+            return result.get("data", {}).get("issues", [])
+        return [{"error": result.get("error", "Unknown error")}]
+    
+    def get_issue(self, issue_key: str) -> Dict:
+        """取得單個 issue"""
+        if not self.is_configured():
+            return {"error": "Not configured", "mock": True}
+        
+        url = f"{self.base_url}/issue/{issue_key}"
+        result = _http_get(url, headers=self.headers)
+        return result.get("data", {}) if result.get("success") else {"error": result.get("error")}
+    
+    def create_issue(self, project_key: str, summary: str, description: str = "",
+                    issue_type: str = "Task", priority: str = "Medium") -> Dict:
+        """建立 issue"""
+        if not self.is_configured():
+            return {"error": "Not configured", "mock": True, "id": "mock-123"}
+        
+        url = f"{self.base_url}/issue"
+        data = {
+            "project": {"key": project_key},
+            "summary": summary,
+            "description": {
+                "type": "doc",
+                "version": 1,
+                "content": [{"type": "paragraph", "content": [{"type": "text", "text": description}]}]
+            },
+            "issuetype": {"name": issue_type},
+            "priority": {"name": priority}
+        }
+        
+        result = _http_post(url, data=data, headers=self.headers)
+        return result.get("data", {}) if result.get("success") else {"error": result.get("error")}
+    
+    def transition(self, issue_key: str, status: str) -> bool:
+        """轉換 issue 狀態"""
+        if not self.is_configured():
+            return True  # Mock mode
+        
+        # 先取得可用的 transitions
+        url = f"{self.base_url}/issue/{issue_key}/transitions"
+        result = _http_get(url, headers=self.headers)
+        
+        if result.get("success"):
+            transitions = result.get("data", {}).get("transitions", [])
+            for t in transitions:
+                if t.get("name", "").lower() == status.lower():
+                    # 執行轉換
+                    post_url = f"{url}/{t['id']}"
+                    return _http_post(post_url, data={}, headers=self.headers).get("success", False)
+        
+        return False
+    
+    def get_projects(self) -> List[Dict]:
+        """取得所有專案"""
+        if not self.is_configured():
+            return [{"key": "MOCK", "name": "Mock Project"}]
+        
+        url = f"{self.base_url}/project"
+        result = _http_get(url, headers=self.headers)
+        
+        if result.get("success"):
+            return result.get("data", [])
+        return [{"error": result.get("error")}]
+    
+    def get_sprints(self, board_id: int) -> List[Dict]:
+        """取得敏捷板的 sprints"""
+        if not self.is_configured():
+            return [{"id": 1, "name": "Sprint 1", "state": "active"}]
+        
+        url = f"{self.base_url}/board/{board_id}/sprint"
+        result = _http_get(url, headers=self.headers)
+        
+        if result.get("success"):
+            return result.get("data", {}).get("values", [])
+        return [{"error": result.get("error")}]
+
+
+class RealGitHubConnectorHTTP:
+    """
+    Real GitHub API Connector (HTTP Implementation)
+    
+    使用方式：
+    ```python
+    conn = RealGitHubConnectorHTTP(api_token="ghp_xxxxx")
+    
+    # 搜尋 repos
+    repos = conn.get_repos()
+    
+    # 搜尋 issues
+    issues = conn.search_issues("repo:owner/repo is:open")
+    ```
+    """
+    
+    def __init__(self, api_token: str = None):
+        self.api_token = api_token or ""
+        self.base_url = "https://api.github.com"
+        self.headers = {
+            "Authorization": f"token {self.api_token}" if api_token else "",
+            "Accept": "application/vnd.github.v3+json"
+        }
+    
+    def is_configured(self) -> bool:
+        """檢查是否已配置"""
+        return bool(self.api_token)
+    
+    def get_repos(self, per_page: int = 30) -> List[Dict]:
+        """取得 user repos"""
+        if not self.is_configured():
+            return [{"name": "mock-repo", "full_name": "user/mock-repo"}]
+        
+        url = f"{self.base_url}/user/repos"
+        params = {"per_page": per_page, "sort": "updated"}
+        
+        result = _http_get(url, headers=self.headers, params=params)
+        if result.get("success"):
+            return result.get("data", [])
+        return [{"error": result.get("error")}]
+    
+    def get_workflows(self, owner: str, repo: str) -> List[Dict]:
+        """取得 workflows"""
+        if not self.is_configured():
+            return [{"id": 1, "name": "CI", "state": "active"}]
+        
+        url = f"{self.base_url}/repos/{owner}/{repo}/actions/workflows"
+        result = _http_get(url, headers=self.headers)
+        
+        if result.get("success"):
+            return result.get("data", {}).get("workflows", [])
+        return [{"error": result.get("error")}]
+    
+    def search_issues(self, query: str) -> List[Dict]:
+        """搜尋 issues"""
+        if not self.is_configured():
+            return [{"title": "Mock Issue", "state": "open"}]
+        
+        url = f"{self.base_url}/search/issues"
+        params = {"q": query}
+        
+        result = _http_get(url, headers=self.headers, params=params)
+        if result.get("success"):
+            return result.get("data", {}).get("items", [])
+        return [{"error": result.get("error")}]
+    
+    def get_pr_stats(self, owner: str, repo: str) -> Dict:
+        """取得 PR 統計"""
+        if not self.is_configured():
+            return {"open_prs": 0, "merged_prs": 0, "mock": True}
+        
+        url = f"{self.base_url}/repos/{owner}/{repo}/pulls"
+        result = _http_get(url, headers=self.headers)
+        
+        if result.get("success"):
+            prs = result.get("data", [])
+            return {
+                "open_prs": len([p for p in prs if p.get("state") == "open"]),
+                "merged_prs": len([p for p in prs if p.get("merged_at")]),
+                "total": len(prs)
+            }
+        return {"error": result.get("error")}
+    
+    def create_issue(self, owner: str, repo: str, title: str, body: str = "") -> Dict:
+        """建立 issue"""
+        if not self.is_configured():
+            return {"number": 1, "title": title, "mock": True}
+        
+        url = f"{self.base_url}/repos/{owner}/{repo}/issues"
+        data = {"title": title, "body": body}
+        
+        result = _http_post(url, data=data, headers=self.headers)
+        return result.get("data", {}) if result.get("success") else {"error": result.get("error")}
+
+
+# ==================== Main ====================
+
+if __name__ == "__main__":
+    print("=== Real HTTP Connectors Demo ===\n")
+    
+    # Jira HTTP Connector
+    print("## Jira HTTP Connector")
+    jira = RealJiraConnectorHTTP(
+        domain="company.atlassian.net",
+        email="user@company.com", 
+        api_token="test-token"
+    )
+    print(f"Configured: {jira.is_configured()}")
+    print(f"Projects: {jira.get_projects()}")
+    print()
+    
+    # GitHub HTTP Connector
+    print("## GitHub HTTP Connector")
+    github = RealGitHubConnectorHTTP(api_token="ghp_test_token")
+    print(f"Configured: {github.is_configured()}")
+    print(f"Repos: {github.get_repos()}")
+    print()
+    
+    # Note about real usage
+    print("ℹ️  To use real connectors, set valid credentials.")
+    print("   Mock data is returned when credentials are not configured.")
