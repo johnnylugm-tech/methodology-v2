@@ -24,6 +24,8 @@ from progress_dashboard import ProgressDashboard
 from gantt_chart import GanttChart
 from message_bus import MessageBus
 from sprint_planner import SprintPlanner
+from pm_terminology import PMTerminologyMapper
+from resource_dashboard import ResourceDashboard
 from data_connector import DataSourceManager
 
 
@@ -37,6 +39,8 @@ class MethodologyCLI:
         self.gantt = GanttChart()
         self.bus = MessageBus()
         self.sprint_planner = SprintPlanner()
+        self.terminology = PMTerminologyMapper()
+        self.resources = ResourceDashboard()
         self.data_manager = DataSourceManager()
     
     def run(self, args):
@@ -61,6 +65,10 @@ class MethodologyCLI:
             return self.cmd_bus(args)
         elif command == "version":
             return self.cmd_version(args)
+        elif command == "term":
+            return self.cmd_term(args)
+        elif command == "resources":
+            return self.cmd_resources(args)
         else:
             print(f"Unknown command: {command}")
             return 1
@@ -305,6 +313,45 @@ class MethodologyCLI:
         
         return 0
     
+    def cmd_term(self, args):
+        """術語查詢"""
+        query = args.query
+        if query:
+            results = self.terminology.search(query)
+            if results:
+                print(f"\n# Search: {query}\n")
+                for r in results[:5]:
+                    print(f"## {r.pm_term}")
+                    print(f"- **Dev**: {r.dev_term}")
+                    print(f"- **Scrum**: {r.scrum_term}")
+                    print(f"- **定義**: {r.definition}")
+                    print()
+            else:
+                print(f"No results for '{query}'")
+        else:
+            print(self.terminology.to_markdown_table())
+        return 0
+    
+    def cmd_resources(self, args):
+        """資源儀表板"""
+        action = args.action
+        
+        if action == "list":
+            print(self.resources.to_table())
+        elif action == "stats":
+            summary = self.resources.get_resource_summary()
+            print("\n📊 Resource Summary:")
+            print(f"  Total: {summary['total']}")
+            print(f"  Team Size: {summary['team_size']}")
+            print(f"  Monthly Cost: ${summary['total_monthly_cost']:.2f}")
+            print(f"  By Type: {summary['by_type']}")
+        elif action == "skills":
+            matrix = self.resources.get_team_skills_matrix()
+            print("\n👥 Team Skills:")
+            for skill, members in matrix.items():
+                print(f"  {skill}: {', '.join(members)}")
+        return 0
+    
     def cmd_version(self, args):
         """顯示版本"""
         print(f"Methodology v{self.VERSION}")
@@ -358,16 +405,20 @@ def main():
     # status
     subparsers.add_parser("status", help="Show status")
     
-    # resources
-    resources_parser = subparsers.add_parser("resources", help="Resource management")
-    resources_parser.add_argument("action", choices=["list", "add"],
-                                help="Resource action")
-    
     # bus
     bus_parser = subparsers.add_parser("bus", help="Message Bus")
     bus_parser.add_argument("action", choices=["status", "tree", "watch"],
                            help="Bus action")
     bus_parser.add_argument("--seconds", type=int, help="Watch duration")
+    
+    # resources
+    resources_parser = subparsers.add_parser("resources", help="Resource dashboard")
+    resources_parser.add_argument("action", choices=["list", "stats", "skills"],
+                                 help="Resource action")
+    
+    # term
+    term_parser = subparsers.add_parser("term", help="PM terminology")
+    term_parser.add_argument("query", nargs="?", help="Search term")
     
     # version
     subparsers.add_parser("version", help="Show version")
