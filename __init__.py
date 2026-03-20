@@ -317,3 +317,28 @@ __all__ += [
     "ResourceStatus",
     "ResourceInfo",
 ]
+
+# Phase 3 - PM Mode & Data
+from .sprint_planner import SprintPlanner, Story, StoryStatus, StorySize
+from .extension_configurator import ExtensionConfigurator, ExtensionType
+from .data_connector import (
+    DataConnector, DataSourceType,
+    PrometheusConnector, JiraConnector, OpenTelemetryConnector,
+    DataSourceManager
+)
+
+__all__ += [
+    # Phase 3
+    "SprintPlanner",
+    "Story",
+    "StoryStatus", 
+    "StorySize",
+    "ExtensionConfigurator",
+    "ExtensionType",
+    "DataConnector",
+    "DataSourceType",
+    "PrometheusConnector",
+    "JiraConnector",
+    "OpenTelemetryConnector",
+    "DataSourceManager",
+]
