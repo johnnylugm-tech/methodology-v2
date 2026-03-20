@@ -45,7 +45,12 @@ from .audit_logger import AuditLogger, AuditEntry, ActionType, ResourceType
 from .risk_dashboard import RiskDashboard, Risk, RiskLevel, RiskCategory
 from .delivery_manager import DeliveryManager, DeliveryItem, Version, DeliveryStatus
 
-__version__ = "3.0.0"
+# Gap-filling modules (v3.0.1)
+from .dashboard_cost_trend import CostTrendAnalyzer, CostSnapshot, CostTrend, CostForecast
+from .failover_manager import FailoverManager, CircuitBreaker, ModelEndpoint, FailoverEvent
+from .parallel_executor import ParallelExecutor, ParallelTask, Worker, ExecutionResult
+
+__version__ = "3.0.1"
 
 __all__ = [
     # Core
@@ -141,4 +146,17 @@ __all__ = [
     "DeliveryItem",
     "Version",
     "DeliveryStatus",
+    # Gap-filling modules (v3.0.1)
+    "CostTrendAnalyzer",
+    "CostSnapshot",
+    "CostTrend",
+    "CostForecast",
+    "FailoverManager",
+    "CircuitBreaker",
+    "ModelEndpoint",
+    "FailoverEvent",
+    "ParallelExecutor",
+    "ParallelTask",
+    "Worker",
+    "ExecutionResult",
 ]
