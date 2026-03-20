@@ -50,7 +50,7 @@ from .dashboard_cost_trend import CostTrendAnalyzer, CostSnapshot, CostTrend, Co
 from .failover_manager import FailoverManager, CircuitBreaker, ModelEndpoint, FailoverEvent
 from .parallel_executor import ParallelExecutor, ParallelTask, Worker, ExecutionResult
 
-__version__ = "4.2.0"
+__version__ = "4.3.0"
 
 __all__ = [
     # Core
@@ -269,4 +269,31 @@ __all__ = [
     # ... (existing exports)
     "Extensions",
     "create_extensions",
+]
+
+# PM Improvements (v4.3)
+from .cicd_integration import CICDIntegration, Pipeline, PipelineStep
+from .multi_language import MultiLanguageSupport, Language, LanguageConfig
+from .knowledge_base import KnowledgeBase, Pattern, BestPractice
+from .agent_spawner import AgentSpawner, SpawnConfig, SpawnedAgent, SpawnPolicy
+from .version_control import VersionControl, Version, Artifact
+
+__all__ = [
+    # ... (existing)
+    "CICDIntegration",
+    "Pipeline",
+    "PipelineStep",
+    "MultiLanguageSupport",
+    "Language",
+    "LanguageConfig",
+    "KnowledgeBase",
+    "Pattern",
+    "BestPractice",
+    "AgentSpawner",
+    "SpawnConfig",
+    "SpawnedAgent",
+    "SpawnPolicy",
+    "VersionControl",
+    "Version",
+    "Artifact",
 ]
