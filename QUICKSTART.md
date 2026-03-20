@@ -1,33 +1,16 @@
-# 🚀 Methodology-v2 快速上手指南
+# 🚀 Methodology-v2 快速上手
 
-> 5 分鐘入門，成為 AI Agent 開發專家
-
----
-
-## 📖 這份指南是什麼？
-
-**Methodology-v2** 是一套讓團隊用 AI Agent 開發軟體的完整方法論。
+> 5 分鐘學會企業級 AI Agent 開發框架
 
 ---
 
-## 🎯 你會學到
-
-| 時間 | 內容 |
-|------|------|
-| 5 分鐘 | 安裝 + 第一個範例 |
-| 15 分鐘 | 核心功能實作 |
-| 30 分鐘 | Extensions 企業整合 |
-| 60 分鐘 | 完整專案開發 |
-
----
-
-## 1️⃣ 安裝 (2 分鐘)
+## 1️⃣ 安裝 (30秒)
 
 ```bash
 pip install methodology-v2
 ```
 
-或從 GitHub：
+或：
 
 ```bash
 git clone https://github.com/johnnylugm-tech/methodology-v2
@@ -37,217 +20,332 @@ pip install -e .
 
 ---
 
-## 2️⃣ 統一入口 (3 分鐘)
+## 2️⃣ 第一個範例 (1分鐘)
 
-**最簡單的開始方式：**
+### 最簡單的使用
 
 ```python
 from methodology import MethodologyCore
 
-# 建立核心
+# 1行代碼啟動
 core = MethodologyCore()
 
-# 任務管理
-core.tasks.split_from_goal("開發 AI 客服系統")
+# 拆分任務
+tasks = core.tasks.split_from_goal("開發 AI 客服系統")
+print(f"建立了 {len(tasks)} 個子任務")
+```
 
-# Agent 注册
+### 完整工作流
+
+```python
+from methodology import MethodologyCore
+
+core = MethodologyCore()
+
+# 1. 拆分任務
+tasks = core.tasks.split_from_goal("開發 AI 客服系統")
+
+# 2. 註冊 Agent
 core.agents.register("dev-1", "Developer", AgentType.DEVELOPER)
 
-# 發布事件
-core.publish_event("task:created", {"task": "新任務"})
+# 3. 發布事件
+core.publish_event("project:started", {"tasks": len(tasks)})
 
-# 審計日誌
-core.log_action("create", "task")
+# 4. 追蹤成本
+core.track_cost_usage("gpt-4o", 1000, 500)
+
+# 5. 保存狀態
+core.save()
 ```
 
 ---
 
-## 3️⃣ 核心功能
+## 3️⃣ 十大常見情境
 
-### 3.1 任務分解
+### 情境 A：PM 日常管理
 
 ```python
-from methodology import TaskSplitterV2
+from methodology import SprintPlanner, StoryStatus
 
-splitter = TaskSplitterV2()
-tasks = splitter.split_from_goal("開發 AI 客服系統")
+# 建立 Sprint Planner
+planner = SprintPlanner()
 
-for task in splitter.get_execution_order():
-    print(f"📌 {task.name} ({task.priority.name})")
+# 建立 Sprint
+sprint = planner.create_sprint(
+    name="Sprint 1",
+    start="2026-03-20",
+    end="2026-04-02",
+    goal="完成用戶登入功能",
+    capacity=30  # 30 story points
+)
+
+# 加入 Stories
+planner.add_story("用戶登入", size="M", assignee="Alice")
+planner.add_story("用戶註冊", size="L", assignee="Bob")
+
+# 開始 Sprint
+planner.start_sprint("sprint-1")
+
+# 更新狀態
+planner.update_story_status("story-1", StoryStatus.DONE)
+
+# 生成報告
+print(planner.generate_sprint_report("sprint-1"))
 ```
 
-### 3.2 工作流程
+---
+
+### 情境 B：智慧模型選擇
 
 ```python
-from methodology import WorkflowTemplates, WorkflowType
+from methodology import SmartRouter
 
-templates = WorkflowTemplates()
-project = templates.create_project("scrum", "我的第一個專案")
+router = SmartRouter()
 
-print(f"Sprints: {[s['name'] for s in project['sprints']]}")
+# 任務自動路由
+result = router.route("幫我寫一個 Python 函數")
+print(f"選擇模型: {result.model}")
+print(f"預估成本: ${result.estimated_cost:.4f}")
+
+# 手動選擇最便宜的
+model = router.select_cost_efficient_model("翻譯任務", required_quality="low")
+print(f"選擇: {model}")
+
+# 查看節省了多少
+savings = router.calculate_savings()
+for s in savings['scenarios']:
+    print(f"{s['scenario']}: 節省 {s['savings_rate']}%")
 ```
 
-### 3.3 進度追蹤
+---
+
+### 情境 C：Agent 團隊建立
 
 ```python
-from methodology import ProgressDashboard
+from methodology import AgentTeam, AgentRole, AgentCapability
 
-dashboard = ProgressDashboard()
-sprint_id = dashboard.create_sprint("Sprint 1", "MVP 完成", capacity=50)
-dashboard.start_sprint(sprint_id)
+team = AgentTeam(name="開發團隊")
 
+# 定義 Developer
+dev = AgentDefinition(
+    name="Backend Developer",
+    role=AgentRole.DEVELOPER,
+    capabilities=[AgentCapability.CODING, AgentCapability.API_DESIGN]
+)
+
+# 定義 Reviewer
+reviewer = AgentDefinition(
+    name="Code Reviewer",
+    role=AgentRole.REVIEWER,
+    capabilities=[AgentCapability.CODE_REVIEW, AgentCapability.SECURITY]
+)
+
+team.register(dev)
+team.register(reviewer)
+
+# 查詢可用 Agent
+available = team.get_available_agents(role=AgentRole.DEVELOPER)
+print(f"可用 Developer: {len(available)}")
+```
+
+---
+
+### 情境 D：品質把關
+
+```python
+from methodology import AutoQualityGate
+
+gate = AutoQualityGate()
+
+# 掃描程式碼
+report = gate.scan("src/login.py")
+
+print(f"品質分數: {report.score}/100")
+print(f"問題數量: {len(report.issues)}")
+
+# 顯示問題
+for issue in report.issues:
+    print(f"[{issue.severity}] {issue.message}")
+
+# 自動修復
+if report.score < 80:
+    fixed = gate.fix(report)
+    print(f"已修復: {fixed['success']}/{fixed['total']}")
+```
+
+---
+
+### 情境 E：甘特圖規劃
+
+```python
+from methodology import GanttChart
+
+gantt = GanttChart()
+
+# 加入任務
+gantt.add_task("設計", start="2026-03-20", duration=2, assignee="Alice")
+gantt.add_task("開發", start="2026-03-22", duration=3, depends_on=["設計"], assignee="Bob")
+gantt.add_task("測試", start="2026-03-25", duration=2, depends_on=["開發"], assignee="Charlie")
+
+# 加入里程碑
+gantt.add_milestone("Beta", "2026-03-27", depends_on=["測試"])
+
+# 產生圖表
+print(gantt.to_ascii())
+```
+
+---
+
+### 情境 F：Agent 生命週期
+
+```python
+from methodology import AgentLifecycleViewer, AgentLifecycleState
+
+viewer = AgentLifecycleViewer()
+
+# 註冊 Agent
+viewer.register("dev-1", "Developer", "developer")
+
+# 模擬工作
+viewer.task_started("dev-1", "task-1", "實作登入")
+viewer.task_completed("dev-1", success=True)
+
+# 查看狀態
+view = viewer.get_lifecycle_view("dev-1")
+print(f"狀態: {view['current_state']}")
+print(f"完成任務: {view['tasks_completed']}")
+
+# 產生狀態圖
+print(viewer.to_mermaid())
+```
+
+---
+
+### 情境 G：資源監控
+
+```python
+from methodology import ResourceDashboard, ResourceType
+
+dashboard = ResourceDashboard()
+
+# 新增資源
+dashboard.add_resource("gpu-1", "NVIDIA A100", ResourceType.GPU, capacity=100)
+dashboard.add_resource("agent-pool", "Developer Pool", ResourceType.AGENT, capacity=20)
+
+# 更新使用量
+dashboard.update_usage("gpu-1", percentage=75)
+dashboard.update_usage("agent-pool", tasks=15)
+
+# 生成報告
 print(dashboard.generate_report())
 ```
 
 ---
 
-## 4️⃣ Extensions 企業整合
-
-### 4.1 MCP 企業服務整合
+### 情境 H：錯誤分類處理
 
 ```python
-from methodology import MCPAdapter
+from methodology_base import ErrorClassifier, ErrorLevel
 
-adapter = MCPAdapter()
-adapter.connect("slack", token="xoxb-xxx")
-result = adapter.execute("發送訊息到 #general")
+classifier = ErrorClassifier()
+
+# 分類錯誤
+errors = [
+    Exception("Invalid input: email format"),
+    Exception("Connection timeout"),
+    Exception("Database unavailable"),
+]
+
+for error in errors:
+    level = classifier.classify(error)
+    print(f"{error}: {level.value}")
 ```
 
-### 4.2 成本優化
+---
+
+### 情境 I：CI/CD 建立
 
 ```python
-from methodology import CostOptimizer
+from methodology import CICDIntegration
 
-optimizer = CostOptimizer(monthly_budget=100)
-optimizer.track(model="gpt-4o", prompt_tokens=1000, completion_tokens=500)
+cicd = CICDIntegration(project_path="/path/to/project")
 
-# 自動選擇最便宜模型
-model = optimizer.select_model("simple_summary", required_quality="medium")
-print(f"使用模型: {model}")  # 省 70-93%
-```
+# 一鍵建立 GitHub Actions
+cicd.setup_all("github")
 
-### 4.3 垂直領域模板
-
-```python
-from methodology import CustomerServiceAgent, LegalAgent
-
-# 客服機器人
-cs = CustomerServiceAgent(knowledge_base="docs/")
-result = cs.handle("我要退貨")
-
-# 法律 Agent
-legal = LegalAgent(jurisdiction="TW")
-analysis = legal.analyze_contract("合約.txt")
-```
-
-### 4.4 安全審計
-
-```python
-from methodology import SecurityAuditor
-
-auditor = SecurityAuditor()
-report = auditor.scan("code.py")
-print(f"嚴重問題: {len(report.critical_issues)}")
-```
-
-### 4.5 工作流視覺化
-
-```python
-from methodology import WorkflowVisualizer
-
-viz = WorkflowVisualizer()
-mermaid = viz.generate_diagram(
-    agents=["researcher", "coder", "reviewer"],
-    process="sequential"
+# 或手動
+cicd.create_github_actions_workflow(
+    workflow_name="CI/CD",
+    python_version="3.11"
 )
-print(mermaid)
+
+# 建立 docker-compose
+with open("docker-compose.yml", 'w') as f:
+    f.write(cicd.generate_docker_compose())
 ```
 
 ---
 
-## 5️⃣ 完整範例
+### 情境 J：版本控制與回滾
 
 ```python
-from methodology import MethodologyCore
+from methodology import DeliveryTracker
 
-# 初始化
-core = MethodologyCore()
+tracker = DeliveryTracker()
 
-# 1. 建立專案
-core.config.project_name = "AI 客服系統"
+# 提交版本
+v1 = tracker.commit("login-module", "def login(): return True", message="init")
+v2 = tracker.commit("login-module", "def login(mfa=False): return True", message="add MFA")
 
-# 2. 注册團隊
-from methodology import AgentType
-core.agents.register("architect", "架構師", AgentType.ARCHITECT)
-core.agents.register("dev-1", "開發者", AgentType.DEVELOPER)
-core.agents.register("tester", "測試員", AgentType.TESTER)
+print(f"目前版本: {tracker.get_version('login-module')}")
 
-# 3. 分解任務
-tasks = core.tasks.split_from_goal("開發 AI 客服系統")
+# 標記穩定版本
+tracker.tag_version("login-module", "v1.0.0", "stable")
 
-# 4. 建立工作流
-workflow = core.workflow
-workflow.add_node("design", "系統設計")
-workflow.add_node("backend", "後端開發", depends_on=["design"])
-workflow.add_edge("design", "backend")
-
-# 5. 追蹤成本
-core.track_cost(0.05, user_id="dev-1", model="gpt-4o")
-
-# 6. 發布事件
-core.publish_event("project:started", {"name": "AI 客服系統"})
-
-# 7. 保存
-core.save()
-
-print("✅ 專案建立完成！")
+# 回滾
+rollback = tracker.rollback("login-module", "v1.0.0", reason="Found bug")
+print(f"回滾到: {rollback}")
 ```
 
 ---
 
-## 6️⃣ 常見問題
+## 4️⃣ 速查表
 
-### Q: 需要多少 Python 經驗？
-A: 基礎即可。我們有完整的 API 文件。
+### 常用類別
 
-### Q: 可以只用一部分功能嗎？
-A: 可以！每個模組都是獨立的。
+| 類別 | 用途 |
+|------|------|
+| `MethodologyCore` | 統一入口 |
+| `SmartRouter` | 模型路由 |
+| `AutoQualityGate` | 品質把關 |
+| `SprintPlanner` | Sprint 管理 |
+| `GanttChart` | 甘特圖 |
+| `AgentLifecycleViewer` | Agent 生命週期 |
+| `ResourceDashboard` | 資源監控 |
+| `DeliveryTracker` | 版本控制 |
+| `CICDIntegration` | CI/CD |
+| `KnowledgeBase` | 知識庫 |
 
-### Q: 資料存在哪裡？
-A: SQLite (本地)，可設定 PostgreSQL。
+### 常見任務
 
-### Q: 支援哪些模型？
-A: GPT-4、Claude、Gemini、MiniMax 等 20+ 模型。
-
----
-
-## 📚 學習路徑
-
-```
-Day 1: 基礎
-├── 安裝完成
-├── 跑第一個範例
-└── 使用核心模組
-
-Day 2-3: 企業整合
-├── MCP 適配器
-├── 成本優化
-└── 安全審計
-
-Day 4-5: 進階
-├── Multi-Agent 協調
-├── 工作流自動化
-└── 部署上線
-```
+| 任務 | 一行代碼 |
+|------|----------|
+| 拆分任務 | `core.tasks.split_from_goal("...")` |
+| 註冊 Agent | `core.agents.register("id", "name", type)` |
+| 追蹤成本 | `core.track_cost_usage(model, in, out)` |
+| 安全掃描 | `core.scan_security("path")` |
+| 生成圖表 | `gantt.to_mermaid()` |
+| 查看狀態 | `viewer.get_all_status()` |
 
 ---
 
-## 🔗 相關連結
+## 5️⃣ 下一步
 
-- [完整文檔](./README.md)
-- [PM 手冊](./PM_HANDBOOK.md)
-- [GitHub](https://github.com/johnnylugm-tech/methodology-v2)
+- 📖 [完整文檔](docs/NEW_TEAM_GUIDE.md) - 新團隊入門指南
+- 📚 [案例文檔](docs/cases/README.md) - 18 個實作案例
+- 📘 [PM 手冊](PM_HANDBOOK.md) - 專案管理手冊
+- 🔧 [技術規格](SKILL.md) - API 詳細說明
 
 ---
 
-**記住：從一小步開始！** 🚀
+**準備好了嗎？從選擇你的情境開始！**

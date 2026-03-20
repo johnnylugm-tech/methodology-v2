@@ -1,549 +1,399 @@
-# 🎯 PM 手把手手冊：Methodology-v2 完整指南
+# 📊 PM 工作手冊
 
-> 讓傳統 PM 也能用 AI Agent 開發團隊
-
----
-
-## 📖 目錄
-
-1. [這份手冊是什麼？](#1-這份手冊是什麼)
-2. [第一天：基本設定](#2-第一天基本設定)
-3. [第二天：專案啟動](#3-第二天專案啟動)
-4. [第三天：日常開發](#4-第三天日常開發)
-5. [第四天：監控與彙報](#5-第四天監控與彙報)
-6. [第五天：風險管理](#6-第五天風險管理)
-7. [附錄：快速參考](#7-附錄快速參考)
+> 專案經理使用 Methodology-v2 的完整指南
 
 ---
 
-## 1. 這份手冊是什麼？
+## 1️⃣ 每日工作流
 
-### 這套系統能做什麼？
-
-```
-┌─────────────────────────────────────────┐
-│  你 (PM)                                 │
-│    ↓ 指揮                               │
-│  AI Agent 團隊                          │
-│    ↓ 執行                               │
-│  自動任務分解 → 執行 → 品質把關 → 監控  │
-└─────────────────────────────────────────┘
-```
-
-### 你的工作變成：
-
-| 傳統方式 | 用這套系統 |
-|----------|-----------|
-| 手動拆任務 | AI 自動拆解 |
-| 口頭分配 | 系統指派 |
-| 看 Log 追進度 | 儀表板監控 |
-| Excel 管預算 | 系統自動計算 |
-
----
-
-## 2. 第一天：基本設定
-
-### 2.1 安裝
-
-```bash
-pip install methodology-v2
-```
-
-### 2.2 第一次設定
+### 晨間 30 分鐘
 
 ```python
-from methodology import (
-    RBAC,              # 權限管理
-    WorkflowTemplates,  # 工作流程
+from methodology import MethodologyCore, SprintPlanner, ResourceDashboard
+
+core = MethodologyCore()
+
+# 1. 檢查團隊狀態 (5 min)
+from methodology import AgentLifecycleViewer
+viewer = AgentLifecycleViewer()
+
+print("=== Agent 狀態 ===")
+status = viewer.get_all_status()
+print(f"總數: {status['total']}")
+for state, agents in status['agents'].items():
+    if agents:
+        print(f"  {state}: {len(agents)}")
+
+# 2. 檢查資源 (5 min)
+from methodology import ResourceDashboard
+dashboard = ResourceDashboard()
+print("\n=== 資源狀態 ===")
+print(dashboard.generate_report())
+
+# 3. Sprint 進度 (10 min)
+planner = SprintPlanner()
+active_sprints = [s for s in planner.sprints.values() if s.is_active]
+for sprint in active_sprints:
+    summary = planner.get_sprint_summary(sprint.id)
+    print(f"\n{sprint.name}:")
+    print(f"  完成率: {summary['completion_rate']:.0f}%")
+    print(f"  剩餘天數: {sprint.remaining_days}")
+
+# 4. 生成晨間報告 (10 min)
+print("\n=== 晨間報告 ===")
+from datetime import datetime
+print(f"日期: {datetime.now().strftime('%Y-%m-%d')}")
+print(f"重點: 請根據上述數據填寫")
+```
+
+### 日間工作
+
+| 時間 | 任務 | 工具 |
+|------|------|------|
+| 09:00 | 晨間站會 | Dashboard |
+| 10:00 | 任務分配 | AgentTeam |
+| 12:00 | 品質審視 | AutoQualityGate |
+| 15:00 | 成本檢視 | SmartRouter |
+| 17:00 | 進度更新 | SprintPlanner |
+
+---
+
+## 2️⃣ Sprint 規劃
+
+### 建立 Sprint
+
+```python
+from methodology import SprintPlanner, StoryStatus
+
+planner = SprintPlanner()
+
+# 1. 建立 Sprint
+sprint = planner.create_sprint(
+    name="Sprint 23",
+    start="2026-03-20",
+    end="2026-04-02",
+    goal="完成用戶模組 v2",
+    capacity=40  # 40 story points
 )
 
-# 建立你的團隊
-rbac = RBAC()
+# 2. 加入 Stories
+stories = [
+    ("用戶登入", "M", "Alice"),
+    ("用戶註冊", "L", "Bob"),
+    ("密碼重置", "M", "Alice"),
+    ("個人資料", "S", "Charlie"),
+    ("頭像上傳", "M", "Bob"),
+]
 
-# 建立團隊成員
-pm = rbac.create_user("小美", "pm@company.com", Role.PROJECT_MANAGER)
-dev1 = rbac.create_user("大明", "dev1@company.com", Role.DEVELOPER)
-dev2 = rbac.create_user("小明", "dev2@company.com", Role.DEVELOPER)
+for title, size, assignee in stories:
+    story = planner.add_story(title, size=size, assignee=assignee)
+    planner.assign_to_sprint(story.id, sprint.id)
 
-print("✅ 團隊建立完成！")
+# 3. 開始 Sprint
+planner.start_sprint(sprint.id)
+
+print(f"Sprint '{sprint.name}' 已建立")
+print(f"容量: {sprint.capacity_points} points")
+print(f"Stories: {len(stories)}")
 ```
 
-### 2.3 選擇工作流程
+### Sprint 報告
 
 ```python
-# 建立 Scrum 流程
-templates = WorkflowTemplates()
-project = templates.create_project("scrum", "我的第一個專案")
+# 生成每日報告
+report = planner.generate_sprint_report(sprint.id)
+print(report)
 
-print(f"📋 專案：{project['name']}")
-print(f"📅 Sprint：{len(project['sprints'])} 個")
+# Burndown Chart
+burndown = planner.generate_burndown_chart(sprint.id)
+print(f"\n燃盡圖:")
+print(f"總點數: {burndown['total_points']}")
+print(f"標籤: {burndown['labels']}")
 ```
 
 ---
 
-## 3. 第二天：專案啟動
+## 3️⃣ 成本管理
 
-### 3.1 自動拆解任務
-
-```python
-from methodology import TaskSplitterV2
-
-# 描述你的目標
-splitter = TaskSplitterV2()
-splitter.set_project("AI 客服系統")
-
-# AI 自動拆解任務
-tasks = splitter.split_from_goal("開發一個 AI 客服系統，需要登入、知識庫、回應功能")
-
-# 看結果
-for task in tasks:
-    print(f"📌 {task.name} ({task.priority.name})")
-```
-
-**輸出範例：**
-```
-📌 需求分析 (HIGH)
-📌 系統設計 (HIGH)
-📌 登入功能 (MEDIUM)
-📌 知識庫開發 (MEDIUM)
-📌 AI 回應邏輯 (MEDIUM)
-📌 測試 (MEDIUM)
-📌 部署 (LOW)
-```
-
-### 3.2 設定里程碑
-
-```python
-from datetime import datetime, timedelta
-
-# 加入里程碑
-mvp = splitter.add_milestone(
-    "MVP 完成",
-    datetime.now() + timedelta(days=7)
-)
-
-# 把任務 assign 到里程碑
-for i, task in enumerate(tasks[:3]):
-    task.milestone = mvp
-
-print(f"🎯 里程碑已設定")
-```
-
-### 3.3 選擇 AI 模型
+### 設定預算
 
 ```python
 from methodology import SmartRouter
 
-# 選擇適合的模型
-router = SmartRouter(budget="medium")  # low/medium/high
+router = SmartRouter()
 
-# 任務會自動選擇適合的模型
-result = router.route("幫我寫登入功能")
-print(f"🤖 使用模型：{result.model}")
-print(f"💰 預估成本：${result.estimated_cost:.4f}")
+# 設定月度預算
+router.DEFAULT_CONFIG["monthly_budget"] = 5000  # $5000
+
+# 追蹤使用
+router.track_usage("gpt-4o", input_tokens=50000, output_tokens=25000)
+
+# 查看摘要
+summary = router.get_cost_summary()
+print(f"本月支出: ${summary['total_spent']:.2f}")
+print(f"剩餘預算: ${summary['remaining']:.2f}")
+print(f"使用率: {summary['utilization']:.1f}%")
+
+# 檢查超支
+if router.is_over_budget():
+    alert = router.get_cost_alert()
+    print(f"⚠️ {alert['message']}")
+```
+
+### 省錢策略
+
+```python
+# 查看節省了多少
+savings = router.calculate_savings()
+print("=== 節省成本計算 ===")
+for s in savings['scenarios']:
+    print(f"{s['scenario']}:")
+    print(f"  直接 GPT-4: ${s['direct_cost']}")
+    print(f"  優化後: ${s['final_cost']}")
+    print(f"  節省: {s['savings_rate']}%")
 ```
 
 ---
 
-## 4. 第三天：日常開發
+## 4️⃣ 品質把關
 
-### 4.1 早上：檢查任務
-
-```python
-from methodology import ProgressDashboard
-
-dashboard = ProgressDashboard()
-
-# 建立 Sprint
-sprint_id = dashboard.create_sprint(
-    "Sprint 1",
-    "完成登入功能",
-    capacity=30  # 總點數
-)
-dashboard.start_sprint(sprint_id)
-
-# 加入任務
-for task in tasks[:4]:
-    item_id = dashboard.add_to_backlog(
-        task.name,
-        story_points=task.estimated_hours
-    )
-    dashboard.add_item_to_sprint(item_id, sprint_id)
-
-# 看 Board
-board = dashboard.get_sprint_board()
-print(f"📊 Sprint: {board['sprint']['name']}")
-print(f"   To Do: {board['summary']['todo']} 項")
-print(f"   In Progress: {board['summary']['in_progress']} 項")
-print(f"   Done: {board['summary']['completed']}項")
-```
-
-### 4.2 AI 程式碼品質把關
+### 自動掃描
 
 ```python
 from methodology import AutoQualityGate
 
-gate = AutoQualityGate(auto_fix=True)  # 自動修復
+gate = AutoQualityGate()
 
-# 掃描你的程式碼
-report = gate.scan("src/login.py")
+# 掃描程式碼
+report = gate.scan("src/auth/login.py")
 
-print(f"📝 檔案：{report.file}")
-print(f"問題數：{report.total_issues}")
-print(f"嚴重：{report.critical}")
-print(f"警告：{report.warning}")
+print(f"品質分數: {report.score}/100")
+print(f"發現 {len(report.issues)} 個問題")
 
-# 如果有問題，自動修復
-if report.total_issues > 0:
-    gate.auto_fix("src/login.py")
-    print("✅ 已自動修復")
-```
+# 顯示高風險問題
+high_risk = [i for i in report.issues if i.severity == "HIGH"]
+if high_risk:
+    print(f"\n⚠️ 高風險問題 ({len(high_risk)}):")
+    for issue in high_risk:
+        print(f"  - {issue.message}")
 
-### 4.3 成本控制
-
-```python
-from methodology import CostTrendAnalyzer
-
-analyzer = CostTrendAnalyzer()
-
-# 記錄 API 成本
-analyzer.record_api_call(
-    model="gpt-4o",
-    input_tokens=1000,
-    output_tokens=500,
-    user_id="大明"
-)
-
-# 看趨勢
-trends = analyzer.get_trend(7)
-summary = analyzer.get_summary(7)
-
-print(f"💰 本週總成本：${summary['total_cost']:.4f}")
-print(f"📊 日均：${summary['avg_daily']:.4f}")
-print(f"📈 趨勢：{summary['trend_direction']}")
+# 自動修復
+if report.score < 80:
+    result = gate.auto_fix_with_security("src/auth/login.py")
+    print(f"\n修復結果: {result['fixed']}/{result['total']}")
 ```
 
 ---
 
-## 5. 第四天：監控與彙報
+## 5️⃣ 資源監控
 
-### 5.1 即時進度監控
+### 全域資源視圖
 
 ```python
-# 產生進度報告
-report = dashboard.generate_report()
-print(report)
+from methodology import ResourceDashboard, ResourceType
+
+dashboard = ResourceDashboard()
+
+# 新增資源
+dashboard.add_resource("gpu-1", "NVIDIA A100", ResourceType.GPU, 
+                      capacity=100, cost_per_hour=2.50)
+dashboard.add_resource("agent-pool", "Developer Pool", ResourceType.AGENT,
+                      capacity=20, max_concurrent_tasks=20)
+dashboard.add_resource("memory-1", "128GB RAM", ResourceType.MEMORY,
+                      capacity=128, cost_per_hour=0.30)
+
+# 更新使用量
+dashboard.update_usage("gpu-1", percentage=65)
+dashboard.update_usage("agent-pool", tasks=12)
+
+# 生成報告
+print(dashboard.generate_report())
 ```
 
-**輸出範例：**
+### Agent 生命週期
+
+```python
+from methodology import AgentLifecycleViewer, AgentLifecycleState
+
+viewer = AgentLifecycleViewer()
+
+# 註冊並管理 Agent
+viewer.register("pm-agent", "PM Assistant", "pm")
+viewer.register("dev-agent-1", "Developer 1", "developer")
+viewer.register("dev-agent-2", "Developer 2", "developer")
+viewer.register("qa-agent", "QA Engineer", "tester")
+
+# 模擬工作
+viewer.task_started("dev-agent-1", "task-1", "實作用戶模組")
+viewer.task_started("dev-agent-2", "task-2", "實作用戶介面")
+
+# 查看狀態
+print(viewer.to_ascii_diagram())
 ```
-# 📊 Sprint 進度報告
-
-## Sprint 1
-
-**狀態**: active
-**目標**: 完成登入功能
-**剩餘**: 3 天
 
 ---
 
-## 📈 統計
+## 6️⃣ 版本與交付
 
-| 指標 | 數值 |
-|------|------|
-| 總點數 | 12 |
-| 已完成 | 8 |
-| 剩餘 | 4 |
-| 速度 | 66.7% |
-```
-
-### 5.2 成本趨勢報告
+### DeliveryTracker
 
 ```python
-# 產生成本報告
-report = analyzer.generate_report()
-print(report)
+from methodology import DeliveryTracker
+
+tracker = DeliveryTracker()
+
+# 註冊交付物
+tracker.register_artifact("auth-module", "認證模組", "code")
+
+# 提交版本
+v1 = tracker.commit("auth-module", "def login(): pass", 
+                   author="dev@company.com", message="init")
+v2 = tracker.commit("auth-module", "def login(mfa=True): pass",
+                   author="dev@company.com", message="add MFA")
+v3 = tracker.commit("auth-module", "def login(mfa=True, remember=False): pass",
+                   author="dev@company.com", message="add remember")
+
+# 標記版本
+tracker.tag_version("auth-module", "v1.0.0", "stable")
+tracker.tag_version("auth-module", "v1.0.0", "release")
+
+# 版本比較
+comp = tracker.compare_versions("auth-module")
+print(f"總版本數: {comp['total_versions']}")
+
+# 回滾
+rollback = tracker.rollback("auth-module", "v1.0.0", reason="Security issue")
+print(f"已回滾到: {rollback}")
 ```
 
-### 5.3 團隊產能報告
+---
+
+## 7️⃣ 緊急應變
+
+### 問題發生時
+
+```python
+from methodology_base import ErrorClassifier, ErrorHandler
+
+classifier = ErrorClassifier()
+handler = ErrorHandler()
+
+# 分類錯誤
+error = Exception("API timeout after 30s")
+level = classifier.classify(error)
+
+print(f"錯誤等級: {level.value}")
+
+# 取得處理建議
+action = handler.get_action(level)
+print(f"建議動作: {action}")
+
+# 根據等級處理
+if level == ErrorLevel.L4:
+    # 觸發熔斷
+    from methodology import FailoverManager
+    failover = FailoverManager()
+    failover.trigger_circuitbreaker("api-service")
+    print("⚠️ 熔斷器已觸發")
+```
+
+### 監控警報
 
 ```python
 from methodology import PredictiveMonitor
 
 monitor = PredictiveMonitor()
 
-# 記錄團隊產出
-monitor.record("tasks_completed", 5)
-monitor.record("bugs_fixed", 3)
-monitor.record("code_review_time", 2.5)
+# 記錄指標
+for i in range(20):
+    monitor.record("error_rate", 0.5 + i * 0.1)
 
 # 預測
-pred = monitor.predict("tasks_completed")
-print(f"📈 明天預測完成：{pred.predicted_value:.0f} 個任務")
-print(f"💡 {pred.recommendation}")
+pred = monitor.predict("error_rate", horizon=5)
+if pred:
+    print(f"預測錯誤率: {pred.predicted_value:.2f}%")
+    print(f"置信度: {pred.confidence:.0%}")
+    print(f"趨勢: {pred.trend}")
+    
+    if pred.confidence > 0.8 and pred.predicted_value > 2.0:
+        print("⚠️ 警告: 錯誤率將顯著上升!")
 ```
 
 ---
 
-## 6. 第五天：風險管理
+## 8️⃣ PM 速查清單
 
-### 6.1 預測風險
+### 每日檢查清單
+
+- [ ] 晨間站會 (Agent 狀態)
+- [ ] Sprint 進度 (Burndown)
+- [ ] 資源使用 (Dashboard)
+- [ ] 成本追蹤 (Router)
+- [ ] 品質報告 (QualityGate)
+
+### 每週檢查清單
+
+- [ ] Sprint 回顧
+- [ ] Velocity 分析
+- [ ] 成本檢視
+- [ ] 風險評估
+- [ ] 下 Sprint 規劃
+
+### 每月檢查清單
+
+- [ ] 月度報告
+- [ ] 趨勢分析
+- [ ] 預算規劃
+- [ ] 團隊效能
+- [ ] 工具優化
+
+---
+
+## 9️⃣ 快速範例集合
+
+### 範例 1：建立專案環境
 
 ```python
-from methodology import RiskDashboard
+from methodology import MethodologyCore, SprintPlanner, ResourceDashboard
 
-dashboard = RiskDashboard()
+core = MethodologyCore()
+planner = SprintPlanner()
+dashboard = ResourceDashboard()
 
-# 更新專案指標
-dashboard.update_metrics(
-    "ai-project",
-    name="AI 客服系統",
-    planned_progress=50.0,
-    actual_progress=40.0,
-    planned_velocity=10.0,
-    actual_velocity=8.0,
-    planned_budget=50000,
-    actual_spend=22000,
-)
-
-# 看風險
-health = dashboard.get_project_health("ai-project")
-print(f"🏥 專案健康：{health['status']}")
-print(f"⏰ 進度風險：{health['schedule_risk']}")
-print(f"💰 預算風險：{health['budget_risk']}")
-
-# 風險報告
-report = dashboard.generate_report()
-print(report)
+print("✅ 環境已準備好")
 ```
 
-### 6.2 故障轉移（系統保護）
+### 範例 2：追蹤成本
 
 ```python
-from methodology import FailoverManager
+from methodology import SmartRouter
 
-manager = FailoverManager()
-
-# 設定模型
-manager.register_model("gpt-4o", "GPT-4o", "OpenAI", is_primary=True)
-manager.register_model("claude-4", "Claude 4", "Anthropic", is_primary=False)
-manager.set_fallback("gpt-4o", "claude-4")
-
-# 執行任務（自動備援）
-result = manager.execute_with_failover(
-    task_func=your_ai_task,
-    primary_model="gpt-4o"
-)
+router = SmartRouter()
+router.track_usage("gpt-4o", 1000, 500)
+print(f"本月支出: ${router.get_cost_summary()['total_spent']:.2f}")
 ```
 
-### 6.3 交付管理
+### 範例 3：建立 Sprint
 
 ```python
-from methodology import DeliveryManager
+from methodology import SprintPlanner
 
-manager = DeliveryManager()
-
-# 建立交付項目
-doc = manager.create_item(
-    "登入模組文檔",
-    "使用者認證 API 文檔",
-    DeliveryType.DOCUMENT,
-    author="大明"
-)
-
-# 版本管理
-manager.bump_version(doc, "minor")
-
-# 提交審核
-manager.submit_for_review(doc, reviewers=["小美"])
-
-# 核准
-manager.approve(doc, "小美")
-
-# 發布
-manager.release(doc)
-
-print("✅ 交付完成！")
+planner = SprintPlanner()
+sprint = planner.create_sprint("Sprint 1", "2026-03-20", "2026-04-02", capacity=30)
+print(f"✅ Sprint '{sprint.name}' 已建立")
 ```
 
 ---
 
-## 7. 附錄：快速參考
+## 📚 相關資源
 
-### 7.1 PM 一天工作流
-
-```python
-# ========== 早上 9:00 - 健康檢查 ==========
-from methodology import Dashboard, RiskDashboard
-
-dashboard = Dashboard(mode="light")
-risk = RiskDashboard()
-health = risk.get_project_health("ai-project")
-
-if health['status'] == 'critical':
-    print("🚨 需要緊急處理！")
-elif health['status'] == 'warning':
-    print("⚠️ 有些問題需要關注")
-
-# ========== 早上 10:00 - 任務分配 ==========
-from methodology import TaskSplitterV2, ParallelExecutor
-
-splitter = TaskSplitterV2()
-tasks = splitter.split_from_goal("新功能開發")
-
-executor = ParallelExecutor(max_workers=3)
-for task in tasks:
-    executor.add_task(task.name, task.execute)
-
-executor.execute_all()
-
-# ========== 中午 12:00 - 品質審視 ==========
-from methodology import AutoQualityGate
-
-gate = AutoQualityGate(auto_fix=True)
-report = gate.scan("src/")
-print(f"📊 品質報告：{report.total_issues} 個問題")
-
-# ========== 下午 3:00 - 成本檢視 ==========
-from methodology import CostTrendAnalyzer
-
-analyzer = CostTrendAnalyzer()
-summary = analyzer.get_summary(7)
-
-if summary['trend_direction'] == 'up':
-    print("📈 成本上升中，建議優化")
-
-# ========== 下午 5:00 - 進度彙報 ==========
-from methodology import ProgressDashboard
-
-dashboard = ProgressDashboard()
-report = dashboard.generate_report()
-print(report)
-```
-
-### 7.2 常用功能速查表
-
-| 情境 | 功能 | 程式碼 |
-|------|------|--------|
-| 拆任務 | TaskSplitterV2 | `split_from_goal()` |
-| 看進度 | ProgressDashboard | `get_sprint_board()` |
-| 檢查品質 | AutoQualityGate | `scan()` |
-| 控制成本 | CostTrendAnalyzer | `get_summary()` |
-| 預測風險 | RiskDashboard | `get_project_health()` |
-| 排程任務 | ParallelExecutor | `execute_all()` |
-| 故障轉移 | FailoverManager | `execute_with_failover()` |
-| 交付管理 | DeliveryManager | `release()` |
-
-### 7.3 角色權限
-
-```python
-from methodology import RBAC, Role
-
-# Admin - 全部權限
-admin = rbac.create_user("老闆", Role.ADMIN)
-
-# PM - 任務、Sprint、預算管理
-pm = rbac.create_user("小美", Role.PROJECT_MANAGER)
-
-# Developer - 任務執行
-dev = rbac.create_user("大明", Role.DEVELOPER)
-
-# Viewer - 僅檢視
-viewer = rbac.create_user("訪客", Role.VIEWER)
-```
-
-### 7.4 工作流程範本
-
-```python
-from methodology import WorkflowTemplates
-
-templates = WorkflowTemplates()
-
-# Scrum (2 週衝刺)
-scrumb = templates.get_template("scrum")
-
-# Kanban (持續流動)
-kanban = templates.get_template("kanban")
-
-# Spike (研究任務)
-spike = templates.get_template("spike")
-```
-
-### 7.5 常見問題
-
-**Q: 需要寫很多程式碼嗎？**
-A: 只要會 Python 基礎就可以。我們有完整的 API 文件。
-
-**Q: 適合多大的團隊？**
-A: 1 人到 100 人都可以。
-
-**Q: 資料存在哪裡？**
-A: 預設 SQLite本地資料庫，可設定 PostgreSQL。
-
-**Q: 可以不用 Docker 嗎？**
-A: 可以，直接 pip install 就能用。
+| 資源 | 連結 |
+|------|------|
+| 快速開始 | [QUICKSTART.md](QUICKSTART.md) |
+| 完整文檔 | [NEW_TEAM_GUIDE.md](docs/NEW_TEAM_GUIDE.md) |
+| 案例集合 | [docs/cases/README.md](docs/cases/README.md) |
+| GitHub | [methodology-v2](https://github.com/johnnylugm-tech/methodology-v2) |
 
 ---
 
-## 8. Extensions 企業整合
-
-### 8.1 MCP 企業服務整合
-
-```python
-from methodology import MCPAdapter
-
-adapter = MCPAdapter()
-adapter.connect("slack", token="xoxb-xxx")
-result = adapter.execute("發送訊息")
-```
-
-### 8.2 成本優化
-
-```python
-from methodology import CostOptimizer
-
-optimizer = CostOptimizer(monthly_budget=100)
-optimizer.track(model="gpt-4o", prompt_tokens=1000, completion_tokens=500)
-best_model = optimizer.select_model("簡單摘要", required_quality="medium")
-# 節省 70-93%
-```
-
-### 8.3 垂直領域模板
-
-```python
-from methodology import CustomerServiceAgent
-
-cs = CustomerServiceAgent(knowledge_base="docs/")
-result = cs.handle("我要退貨")
-```
-
-### 8.4 安全審計
-
-```python
-from methodology import SecurityAuditor
-
-auditor = SecurityAuditor()
-report = auditor.scan("src/")
-print(f"🔴 嚴重問題: {len(report.critical_issues)}")
-```
-
-### 8.5 工作流視覺化
-
-```python
-from methodology import WorkflowVisualizer
-
-viz = WorkflowVisualizer()
-mermaid = viz.generate_diagram(agents=["dev", "tester"])
-```
-
----
-
-## 📚 更多資源
-
-- [QUICKSTART.md](./QUICKSTART.md) - 5 分鐘快速開始
-- [README.md](./README.md) - 完整功能列表
-- [GitHub](https://github.com/johnnylugm-tech/methodology-v2) - 原始碼
-
----
-
-**記住：不用一次學會全部，從一小步開始！** 🚀
+**有任何問題？查看案例文檔或提交 Issue！**
