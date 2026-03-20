@@ -124,8 +124,16 @@ class SmartRouter:
             provider="MiniMax",
             cost_per_1k_input=0.001,
             cost_per_1k_output=0.003,
-            strengths=["speed", "cheap", "chinese"],
-            best_for=[TaskType.TRANSLATION, TaskType.WRITING]
+            strengths=["speed", "cheap", "chinese", "self-evolving"],
+            best_for=[TaskType.TRANSLATION, TaskType.WRITING, TaskType.CODING]
+        ),
+        "minimax-m2.7": ModelInfo(
+            name="minimax-m2.7",
+            provider="MiniMax",
+            cost_per_1k_input=0.0003,
+            cost_per_1k_output=0.0012,
+            strengths=["self-evolving", "reasoning", "coding", "agents"],
+            best_for=[TaskType.CODING, TaskType.ANALYSIS, TaskType.REVIEW]
         ),
     }
     
