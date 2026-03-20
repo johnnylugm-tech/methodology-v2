@@ -50,7 +50,7 @@ from .dashboard_cost_trend import CostTrendAnalyzer, CostSnapshot, CostTrend, Co
 from .failover_manager import FailoverManager, CircuitBreaker, ModelEndpoint, FailoverEvent
 from .parallel_executor import ParallelExecutor, ParallelTask, Worker, ExecutionResult
 
-__version__ = "3.2.0"
+__version__ = "3.3.0"
 
 __all__ = [
     # Core
@@ -188,4 +188,34 @@ __all__ = [
     # Project Layer (v3.2)
     "Project",
     "ProjectDatabase",
+
+    # AgentCoordination (v3.3)
+    "AgentRegistry",
+    "AgentRegistration",
+    "AgentStatus",
+    "AgentType",
+    "AgentMetadata",
+
+    # MessageBus (v3.3)
+    "MessageBus",
+    "Envelope",
+    "Subscription",
+    "MessagePriority",
+    "MessageType",
+
+    # WorkflowGraph (v3.3)
+    "WorkflowGraph",
+    "WorkflowNode",
+    "WorkflowEdge",
+    "WorkflowExecution",
+    "NodeStatus",
+    "NodeType",
+
+    # ApprovalFlow (v3.3)
+    "ApprovalFlow",
+    "ApprovalRule",
+    "ApprovalStep",
+    "ApprovalRequest",
+    "ApprovalStatus",
+    "ApprovalLevel",
 ]
