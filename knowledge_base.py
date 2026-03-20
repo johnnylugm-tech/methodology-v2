@@ -19,11 +19,11 @@ class Pattern:
     id: str
     name: str
     category: str
+    problem: str = ""
+    solution: str = ""
     
     # 內容
-    description: str
-    problem: str  # 問題描述
-    solution: str  # 解決方案
+    description: str = ""
     code_example: str = ""
     
     # 元數據
@@ -207,6 +207,190 @@ result = manager.execute_with_failover(task_func)""",
             ],
             use_cases=["系統故障", "任務卡住"],
             effectiveness=0.85
+        ))
+        
+        # ========== 企業級模式 (v2) ==========
+        
+        # DevOps 模式
+        self.add_pattern(Pattern(
+            id="pattern-010",
+            name="Zero-Downtime Deployment",
+            category="devops",
+            problem="部署時服務中斷",
+            solution="使用藍綠部署或滾動更新",
+            code_example="""spec:
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0""",
+            tags=["devops", "deployment", "zero-downtime"],
+            language="yaml",
+            rating=4.6
+        ))
+        
+        # 監控模式
+        self.add_pattern(Pattern(
+            id="pattern-011",
+            name="Three Pillars of Observability",
+            category="monitoring",
+            problem="無法快速定位問題",
+            solution="實現 Metrics + Logs + Traces 三合一可觀測性",
+            code_example="""# Prometheus Metrics
+prometheus_clientCounter('requests_total')
+# Structured Logging
+logger.info("Request processed", extra={"request_id": req_id})
+# OpenTelemetry Trace
+with tracer.start_as_current_span("process") as span:""",
+            tags=["monitoring", "observability", "tracing"],
+            language="python",
+            rating=4.4
+        ))
+        
+        # 安全模式
+        self.add_pattern(Pattern(
+            id="pattern-012",
+            name="Defense in Depth",
+            category="security",
+            problem="單一安全措施不足",
+            solution="多層安全：網路隔離 → 認證授權 → 輸入驗證 → 加密 → 審計",
+            code_example="""# 1. 網路層
+firewall.allow(internal_only)
+# 2. 認證層
+auth.require_mfa()
+# 3. 授權層
+rbac.check_permission(user, resource)
+# 4. 審計日誌
+audit.log(action, user, resource)""",
+            tags=["security", "defense", "multi-layer"],
+            language="python",
+            rating=4.8
+        ))
+        
+        # 架構模式
+        self.add_pattern(Pattern(
+            id="pattern-013",
+            name="Event-Driven Architecture",
+            category="architecture",
+            problem="服務間耦合過高",
+            solution="使用事件匯流排解耦，生產者只知道事件，不知消費者",
+            code_example="""# 生產者
+event_bus.publish("order.created", {"order_id": "123"})
+# 消費者
+@event_bus.subscribe("order.created")
+def send_confirmation(event):
+    email.send(event.customer)""",
+            tags=["architecture", "event-driven", "decoupling"],
+            language="python",
+            rating=4.5
+        ))
+        
+        # API 設計模式
+        self.add_pattern(Pattern(
+            id="pattern-014",
+            name="API Versioning Strategy",
+            category="api-design",
+            problem="API 更新影響現有用戶",
+            solution="URL versioning + 向前相容",
+            code_example="""@app.route("/api/v1/users")
+@app.route("/api/v2/users")
+def users():
+    version = request.api_version
+    if version == "v1":
+        return legacy_user_service.get_users()
+    return current_user_service.get_users()""",
+            tags=["api", "versioning", "rest"],
+            language="python",
+            rating=4.2
+        ))
+        
+        # 企業實踐 - Incident Response
+        self.add_best_practice(BestPractice(
+            id="bp-003",
+            title="Incident Response Playbook",
+            category="operations",
+            description="生產環境事故應變標準流程",
+            steps=[
+                "1. 檢測 → 警報觸發或用戶回報",
+                "2. 評估 → 確認影響範圍和嚴重性",
+                "3. 遏制 → 隔離問題防止擴大",
+                "4. 消除 → 移除根本原因",
+                "5. 恢復 → 驗證服務正常運行",
+                "6. 復原 → 確認所有功能正常",
+                "7. 會議 → 事故後檢討 (Post-mortem)"
+            ],
+            do_list=[
+                "立即通知相關團隊",
+                "保留現場日誌和錯誤訊息",
+                "記錄每個處置步驟的時間點",
+                "在解決後 24 小時內完成 Post-mortem"
+            ],
+            dont_list=[
+                "不要在未了解範圍前急於修復",
+                "不要假設問題會自動消失",
+                "不要隱瞞或淡化問題"
+            ],
+            use_cases=["生產環境故障", "安全事件", "效能問題"],
+            effectiveness=0.95
+        ))
+        
+        # 企業實踐 - Code Review
+        self.add_best_practice(BestPractice(
+            id="bp-004",
+            title="Code Review Best Practices",
+            category="development",
+            description="程式碼審查的標準流程和檢查清單",
+            steps=[
+                "1. 作者準備 → 確保程式碼通過本地測試",
+                "2. 描述變更 → 說明目的和影響範圍",
+                "3. 審查者檢視 → 依檢查清單逐項確認",
+                "4. 討論 → 在 PR 中留下評論",
+                "5. 核准/請求修改 → 依據評論決定",
+                "6. 合併 → 由作者或維護者合併"
+            ],
+            do_list=[
+                "每次審查不超過 400 行",
+                "24 小時內回應評論",
+                "使用自動化工具先檢查 (lint, test)",
+                "表揚好的程式碼設計"
+            ],
+            dont_list=[
+                "不要進行人身攻擊",
+                "不要忽視小型 PR 的審查",
+                "不要在未理解前就批准"
+            ],
+            use_cases=["Pull Request 審查", "代碼品質把關", "知識傳遞"],
+            effectiveness=0.88
+        ))
+        
+        # 企業實踐 - Database Migration
+        self.add_best_practice(BestPractice(
+            id="bp-005",
+            title="Database Migration Strategy",
+            category="data",
+            description="安全執行資料庫遷移的最佳實踐",
+            steps=[
+                "1. 備份 → 完整資料庫備份",
+                "2. 測試 → 在 staging 環境演練",
+                "3. 向前 → 創建新結構和新欄位",
+                "4. 資料遷移 → 批次遷移舊資料",
+                "5. 驗證 → 確認資料完整性",
+                "6. 向後 → 舊程式相容性 (如有)",
+                "7. 監控 → 觀察效能和錯誤"
+            ],
+            do_list=[
+                "永遠先備份",
+                "使用 transaction 包裝",
+                "分批次遷移大量資料",
+                "保留回滾計畫"
+            ],
+            dont_list=[
+                "不要在高峰時段執行遷移",
+                "不要刪除欄位，只rename",
+                "不要忽略預估的執行時間"
+            ],
+            use_cases=["Schema 變更", "索引創建", "資料清理"],
+            effectiveness=0.91
         ))
     
     def add_pattern(self, pattern: Pattern):
