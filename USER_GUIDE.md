@@ -1,128 +1,218 @@
 # Methodology v2 - 完整使用手冊
 
-> 從 PoC 到 Production-Ready 的 AI Agent 開發框架
+> 企業級 AI Agent 開發框架 - 從 PoC 到 Production-Ready
 
 ---
 
 ## 目錄
 
-1. [快速開始](#快速開始)
-2. [核心架構](#核心架構)
-3. [Solutions A-E 完整指南](#solutions-a-e-完整指南)
-4. [統一 CLI](#統一-cli)
-5. [完整工作流程](#完整工作流程)
+1. [完整工作流程](#完整工作流程)
+2. [快速開始](#快速開始)
+3. [模組使用指南](#模組使用指南)
+4. [Solutions A-E](#solutions-a-e)
+5. [CLI 參考](#cli-參考)
 6. [範例](#範例)
-7. [API 參考](#api-參考)
+
+---
+
+## 完整工作流程
+
+### 6 大核心流程
+
+```
+1️⃣  專案初始化 → Setup Wizard
+         │
+2️⃣  開發執行 → Task → Sprint → Agent → Guardrails → AutoScaler
+         │
+3️⃣  評估測試 → AgentEvaluator → HITL
+         │
+4️⃣  資料處理 → Guardrails → StructuredOutput → DataQuality
+         │
+5️⃣  企業整合 → SSO → RBAC → Audit → Notification
+         │
+6️⃣  框架遷移 → LangGraph Migration
+```
 
 ---
 
 ## 快速開始
 
-### 安裝
+### 方式一：互動式 Wizard
 
 ```bash
-cd /Users/johnny/.openclaw/workspace-musk/skills/methodology-v2
+python cli.py wizard
 ```
 
-### 基本使用
+引導步驟：
+1. 輸入專案名稱
+2. 選擇 Use Case
+3. 配置 Agent 數量
+4. 選擇安全層級
+5. 自動生成專案結構
+
+### 方式二：程式碼
 
 ```python
 from methodology import MethodologyCore
 
-# 初始化
 core = MethodologyCore()
 
-# 使用各模組
-core.tasks.split_from_goal("新任務")
-core.costs.track(...)
+# 1. 專案設定
+core.wizard.create_project("ai-assistant", "customer_service")
+
+# 2. 任務規劃
+tasks = core.tasks.split_from_goal("開發 AI 客服")
+sprint = core.sprints.create_sprint("Sprint 1", capacity=40)
+
+# 3. 安全把關
+result = core.guardrails.check(user_input)
+if not result.safe:
+    print("Blocked by Guardrails")
+    return
+
+# 4. Agent 執行
+def my_agent(prompt, context=None):
+    return call_llm(prompt)
+
+# 5. 評估
+suite = core.evaluator.create_suite("Evaluation")
+core.evaluator.run_suite(suite.id, my_agent)
+
+# 6. 自動擴展
+core.autoscaler.scale_to(replicas=5)
+
+# 7. 通知
+core.enterprise.alert("Deployment", "Sprint 1 complete", "info")
 ```
 
 ---
 
-## 核心架構
+## 模組使用指南
 
-```
-methodology-v2/
-├── core.py                 # 統一入口
-├── progress_dashboard.py   # Sprint/Backlog 追蹤
-├── cost_allocator.py      # 成本管控
-├── message_bus.py         # 訊息系統
-├── gantt_chart.py         # 甘特圖
-├── pm_mode.py             # PM Mode
-├── pm_terminology.py       # 術語對照
-├── resource_dashboard.py   # 資源儀表板
-│
-├── # Solutions A-E
-├── agent_evaluator.py     # Solution A: Agent 評估
-├── structured_output.py   # Solution B: 結構化輸出
-├── data_quality.py        # Solution C: 資料品質
-├── enterprise_hub.py       # Solution D: 企業整合
-└── langgraph_migrator.py  # Solution E: LangGraph 遷移
-```
-
----
-
-## Solutions A-E 完整指南
-
-### Solution A: Agent Evaluation Framework
-
-**用途**：自動化 Agent 行為評估、A/B 測試
+### 1. Setup Wizard
 
 ```python
-from methodology import AgentEvaluator, TestCase
+from wizard import SetupWizard, TEMPLATES
+
+wizard = SetupWizard()
+
+# 使用範本
+config = wizard.create_project(
+    name="my-agent",
+    use_case="customer_service"
+)
+
+# 自訂配置
+config = wizard.create_custom_project(
+    name="my-agent",
+    agents=[
+        {"name": "support", "model": "gpt-4"},
+        {"name": "coder", "model": "claude-3"}
+    ],
+    workflow="parallel"
+)
+```
+
+### 2. Guardrails (安全)
+
+```python
+from guardrails import Guard
+
+guard = Guard()
+
+# 檢查威脅
+result = guard.check(user_input)
+print(f"Safe: {result.safe}")
+print(f"Action: {result.action}")
+if result.threats:
+    for threat in result.threats:
+        print(f"  - {threat['type']}: {threat['message']}")
+
+# 掃描代碼
+scan_result = guard.scan_code(code_snippet)
+```
+
+### 3. AutoScaler (自動擴展)
+
+```python
+from autoscaler import AutoScaler
+
+scaler = AutoScaler()
+
+# 更新指標
+scaler.update_metrics(
+    cpu_usage=85,
+    memory_usage=70,
+    queue_length=100,
+    response_time=250,
+    error_rate=0.02
+)
+
+# 檢查並擴展
+action = scaler.check_and_scale()
+print(f"Action: {action.value}")
+
+# 獲取狀態
+status = scaler.get_status()
+print(f"Current replicas: {status['current_agents']}")
+```
+
+### 4. MAP Protocol (Agent 協調)
+
+```python
+from map_protocol import MAPProtocol
+
+protocol = MAPProtocol()
+
+# 編碼訊息
+msg = protocol.encode(
+    sender="agent-1",
+    action="request",
+    data={"task": "analyze"}
+)
+
+# 解碼訊息
+decoded = protocol.decode(msg)
+```
+
+### 5. Agent Evaluator (評估)
+
+```python
+from agent_evaluator import AgentEvaluator, TestCase
 
 evaluator = AgentEvaluator()
 
-# 建立測試套件
+# 建立套件
 suite = evaluator.create_suite(
-    name="Login Flow",
-    iterations=3,
+    name="Login Tests",
     version_a_name="GPT-4",
-    version_b_name="Claude-3"
+    version_b_name="Claude-3",
+    iterations=3
 )
 
-# 加入測試用例
+# 加入測試
 evaluator.add_test_case(
     suite.id,
     name="Valid Login",
-    input_prompt="User logs in with correct credentials",
+    input_prompt="User login with correct credentials",
     expected_output="Login successful"
 )
 
-# 定義 Agent
-def agent_v1(prompt, context=None, timeout=30):
-    # 呼叫你的 Agent
-    return f"[Agent] Response to: {prompt}"
+# 執行
+evaluator.run_suite(suite.id, agent_a_fn, agent_b_fn)
 
-# 執行評估
-evaluator.run_suite(suite.id, agent_v1)
-
-# 產生報告
+# 報告
 print(evaluator.generate_report(suite.id))
 ```
 
-**CLI**：
-```bash
-python cli.py eval create "Login Tests"
-python cli.py eval add <suite_id> "Valid Login" --prompt "User login"
-python cli.py eval run <suite_id>
-python cli.py eval report <suite_id>
-```
-
----
-
-### Solution B: Structured Output Engine
-
-**用途**：確保 LLM 輸出穩定性、JSON 解析
+### 6. Structured Output (輸出解析)
 
 ```python
-from methodology import StructuredOutputEngine
+from structured_output import StructuredOutputEngine, OutputSchema, FieldDefinition
 
 engine = StructuredOutputEngine()
 
 # 定義 Schema
-from methodology import OutputSchema, FieldDefinition
-
 user_schema = OutputSchema(
     name="user",
     fields={
@@ -134,377 +224,220 @@ user_schema = OutputSchema(
 )
 engine.register_schema(user_schema)
 
-# 解析 LLM 輸出
-def mock_llm(prompt):
-    return '{"id": 123, "name": "John", "email": "john@test.com"}'
-
+# 解析
 result = engine.parse(
     prompt="Extract user info",
-    llm_call=mock_llm,
-    schema_name="user",
-    max_retries=3
+    llm_call=llm_fn,
+    schema_name="user"
 )
-
 print(f"Success: {result.success}")
 print(f"Data: {result.data}")
-print(f"Validation: {result.validation.valid if result.validation else None}")
 ```
 
-**解析策略**：
-1. **Direct** - 直接 JSON parse
-2. **Regex** - 從 Markdown/code block 提取
-3. **Repair** - Key-value 提取
-4. **Retry** - 重試 LLM
-
-**CLI**：
-```bash
-python cli.py parse
-```
-
----
-
-### Solution C: Data Quality Connector
-
-**用途**：資料驗證、異常偵測、品質評分
+### 7. Data Quality (資料品質)
 
 ```python
-from methodology import DataQualityChecker
+from data_quality import DataQualityChecker
 
 checker = DataQualityChecker()
-
-# 測試資料
-data = [
-    {"id": 1, "name": "Alice", "email": "alice@test.com", "age": 30},
-    {"id": 2, "name": "Bob", "email": "bob@test.com", "age": 25},
-    {"id": 3, "name": "", "email": "invalid-email", "age": None},
-    {"id": 4, "name": "Diana", "email": "diana@test.com", "age": 150},  # Outlier
-]
-
-field_types = {"id": int, "name": str, "email": str, "age": int}
 
 # 分析
 report = checker.analyze(data, field_types)
 
-# 產生報告
+# 報告
 print(checker.generate_report_markdown(report))
 
 # 清理
 cleaned, _ = checker.clean_data(data, strategy="remove")
 ```
 
-**問題偵測**：
-- Missing Value - 缺失值
-- Outlier - 異常值 (3σ 外)
-- Duplicate - 重複資料
-- Invalid Format - 格式錯誤
-
-**CLI**：
-```bash
-python cli.py quality check
-python cli.py quality report
-```
-
----
-
-### Solution D: Enterprise Integration Hub
-
-**用途**：企業單一登入、審計日誌、Slack/Teams 通知
+### 8. Enterprise Hub (企業整合)
 
 ```python
-from methodology import EnterpriseHub, SlackMessenger, AuditLevel
+from enterprise_hub import EnterpriseHub
 
 hub = EnterpriseHub()
 
-# 設定 Slack
+# SSO
+hub.auth.configure_okta(domain="company.okta.com", client_id="xxx")
+
+# Slack
 hub.add_slack("alerts", webhook_url="https://hooks.slack.com/...")
 
-# 審計日誌
-hub.audit.log_access(
-    user_id="user-123",
-    username="john.doe",
-    resource="/api/tasks",
-    method="GET"
-)
+# 審計
+hub.audit.log_access(user_id, username, "/api/tasks")
 
-# 發送警報
-hub.alert(
-    title="High CPU Usage",
-    message="Server CPU at 95%",
-    severity="warning"
-)
-
-# 認證
-user = hub.auth.create_user(
-    username="john.doe",
-    email="john@company.com",
-    role="developer",
-    permissions=["read", "write"]
-)
-api_key = hub.auth.create_api_key(user.id)
+# 警報
+hub.alert("High CPU", "Server at 95%", "warning")
 ```
 
-**支援的認證**：
-- Okta (OIDC/SAML)
-- Azure AD (OAuth2)
-- LDAP
-- API Key
-- Basic Auth
-
-**CLI**：
-```bash
-python cli.py enterprise status
-python cli.py enterprise audit
-```
-
----
-
-### Solution E: LangGraph Migration Tool
-
-**用途**：將現有 Agent 遷移到 LangGraph
+### 9. LangGraph Migration (遷移)
 
 ```python
-from methodology import LangGraphMigrationTool
+from langgraph_migrator import LangGraphMigrationTool
 
 tool = LangGraphMigrationTool()
 
-# 分析檔案
+# 分析
 result = tool.analyze_file("my_agent.py")
-
-# 產生報告
 print(tool.generate_report(result))
 
 # 遷移
-result = tool.migrate_file("my_agent.py", "my_agent_langgraph.py")
-
-print(f"Output: {result.output_file}")
+result = tool.migrate_file("my_agent.py", "migrated.py")
 print(f"Risk: {result.overall_risk}")
 ```
 
-**風險評估**：
-- 🟢 Low - 可自動遷移
-- 🟡 Medium - 需要部分手動調整
-- 🔴 High - 需要完整重構
+---
 
-**CLI**：
-```bash
-python cli.py migrate my_agent.py
-```
+## Solutions A-E
+
+| 方案 | 模組 | CLI | 功能 |
+|------|------|-----|------|
+| **A** | agent_evaluator.py | eval | A/B 測試、HITL |
+| **B** | structured_output.py | parse | JSON Schema、重試 |
+| **C** | data_quality.py | quality | 品質檢查、清理 |
+| **D** | enterprise_hub.py | enterprise | SSO、審計、通知 |
+| **E** | langgraph_migrator.py | migrate | 框架遷移 |
 
 ---
 
-## 統一 CLI
+## CLI 參考
+
+### 初始化
 
 ```bash
-# 專案管理
-python cli.py init "my-project"
-python cli.py task add "新功能" --points 5
-python cli.py task list
-python cli.py sprint create "Sprint 1"
+# 互動式設定
+python cli.py wizard
 
-# 視覺化
+# 專案初始化
+python cli.py init my-project
+```
+
+### 任務管理
+
+```bash
+python cli.py task add "新功能" --points 5 --priority 2
+python cli.py task list
+python cli.py task complete task-1
+```
+
+### Sprint
+
+```bash
+python cli.py sprint create "Sprint 1" --capacity 40
+python cli.py sprint list
+python cli.py sprint start sprint-1
+```
+
+### 視覺化
+
+```bash
 python cli.py board
 python cli.py report --type weekly
+```
 
-# PM Mode
-python cli.py pm report
-python cli.py pm forecast
-python cli.py pm health
+### 安全
 
-# Solutions A-E
+```bash
+python cli.py guardrails check --text "user input"
+```
+
+### 擴展
+
+```bash
+python cli.py scale status
+python cli.py scale scale --current 3
+```
+
+### Solutions
+
+```bash
+# Agent 評估
 python cli.py eval create "Tests"
+python cli.py eval add suite-1 "Test 1" --prompt "..." --expected "..."
+python cli.py eval run suite-1
+python cli.py eval report suite-1
+
+# 資料品質
 python cli.py quality check
+python cli.py quality report
+
+# 企業整合
 python cli.py enterprise status
+python cli.py enterprise audit
+
+# 遷移
 python cli.py migrate my_agent.py
-python cli.py parse
+
+# 輸出解析
+python cli.py parse --schema user
+```
+
+### 其他
+
+```bash
 python cli.py term velocity
 python cli.py resources list
-```
-
----
-
-## 完整工作流程
-
-### 開發流程
-
-```
-1. 需求 → Task拆分
-   core.tasks.split_from_goal("開發登入功能")
-       ↓
-2. 規劃 → Sprint排程
-   core.sprints.create_sprint(...)
-       ↓
-3. 執行 → Agent開發
-   core.evaluator.run_suite(...)
-       ↓
-4. 評估 → 品質把關
-   core.structured.parse(...)
-       ↓
-5. 部署 → 企業整合
-   core.enterprise.notify(...)
-```
-
-### 評估流程
-
-```
-1. 定義測試用例
-   evaluator.add_test_case(suite.id, "Valid Login", ...)
-       ↓
-2. 執行評估
-   evaluator.run_suite(suite.id, agent_fn)
-       ↓
-3. 人類審查 (可選)
-   hitl.submit_for_review(result)
-       ↓
-4. 產生報告
-   evaluator.generate_report(suite.id)
-```
-
-### 資料品質流程
-
-```
-1. 收集資料
-   data = [...]
-       ↓
-2. 分析品質
-   report = checker.analyze(data)
-       ↓
-3. 檢視問題
-   checker.generate_report_markdown(report)
-       ↓
-4. 清理資料
-   cleaned, _ = checker.clean_data(data)
+python cli.py pm report
+python cli.py version
 ```
 
 ---
 
 ## 範例
 
-### 完整專案開發
+### 案例：完整 AI 客服系統開發
 
 ```python
 from methodology import MethodologyCore
 
-core = MethodologyCore(config={
-    "project_name": "AI Assistant",
-    "monthly_budget": 1000
-})
+core = MethodologyCore()
 
-# 1. 規劃
-core.tasks.split_from_goal("開發 AI 助手")
+# 1. 專案設定
+print("1. 初始化專案...")
+core.wizard.create_project("ai-customer-service", "customer_service")
 
-# 2. 建立 Sprint
-core.sprints.create_sprint(
-    name="Sprint 1",
-    capacity=40
-)
+# 2. 任務規劃
+print("2. 規劃任務...")
+tasks = core.tasks.split_from_goal("""
+開發 AI 客服系統：
+1. 自然語言理解
+2. 知識庫檢索
+3. 多輪對話
+4. 轉人工機制
+""")
 
-# 3. Agent 評估
-def my_agent(prompt, context=None, timeout=30):
-    # Agent 實作
-    return "Agent response"
+# 3. Sprint 設定
+sprint = core.sprints.create_sprint("Sprint 1 - MVP", capacity=40)
 
+# 4. Agent 定義
+def客服_agent(prompt, context=None):
+    # 安全的輸入
+    safe_input = core.guardrails.check(prompt)
+    if not safe_input.safe:
+        return "對不起，我無法處理這個請求"
+    
+    # Agent 邏輯
+    return call_llm(prompt)
+
+# 5. 測試定義
 test_cases = [
-    {"name": "問答", "prompt": "什麼是 AI?", "expected": "AI 是..."},
-    {"name": "翻譯", "prompt": "翻譯 hello 為中文", "expected": "你好"},
+    {"name": "問答", "prompt": "如何重置密碼?", "expected": "重置步驟"},
+    {"name": "投訴", "prompt": "我很不滿意", "expected": "道歉"},
 ]
 
-report = core.run_full_evaluation(my_agent, test_cases)
+# 6. 執行評估
+suite = core.evaluator.create_suite("客服評估")
+for tc in test_cases:
+    core.evaluator.add_test_case(suite.id, tc["name"], tc["prompt"], tc["expected"])
 
-# 4. 資料驗證
-data = [{"id": 1, "name": "Alice"}, {"id": 2, "name": ""}]
-quality_report = core.check_data_quality(data)
+core.evaluator.run_suite(suite.id, 客服_agent)
+print(core.evaluator.generate_report(suite.id))
 
-# 5. 部署通知
-core.enterprise.alert("Deployment Complete", "Sprint 1 done", "info")
+# 7. 部署
+core.autoscaler.scale_to(replicas=5)
+core.enterprise.alert("Deployment", "Sprint 1 MVP deployed", "info")
 ```
-
-### 企業級整合
-
-```python
-from methodology import EnterpriseHub
-
-hub = EnterpriseHub()
-
-# 設定認證
-hub.auth.configure_okta(
-    domain="company.okta.com",
-    client_id="xxx",
-    client_secret="yyy"
-)
-
-# 設定 Slack
-hub.add_slack("deployments", webhook_url="https://hooks.slack.com/...")
-
-# 設定 Teams
-hub.add_teams("alerts", webhook_url="https://company.webhook.teams...")
-
-# 審計
-hub.audit.log_access(user_id, username, "/api/deploy", "POST")
-hub.audit.log_auth(user_id, username, "success")
-
-# 部署時通知
-hub.alert("Deployment", "v1.2.0 deployed to production", "info")
-```
-
----
-
-## API 參考
-
-### MethodologyCore
-
-| 屬性 | 模組 | 用途 |
-|------|------|------|
-| `core.tasks` | TaskSplitter | 任務拆分 |
-| `core.sprints` | SprintPlanner | Sprint 管理 |
-| `core.costs` | CostAllocator | 成本追蹤 |
-| `core.bus` | MessageBus | 訊息系統 |
-| `core.evaluator` | AgentEvaluator | Agent 評估 |
-| `core.structured_output` | StructuredOutputEngine | 輸出解析 |
-| `core.data_quality` | DataQualityChecker | 資料品質 |
-| `core.enterprise` | EnterpriseHub | 企業整合 |
-| `core.migrator` | LangGraphMigrationTool | 框架遷移 |
-
-### AgentEvaluator
-
-| 方法 | 說明 |
-|------|------|
-| `create_suite(name)` | 建立測試套件 |
-| `add_test_case(suite_id, name, input_prompt, expected)` | 加入測試 |
-| `run_suite(suite_id, agent_fn)` | 執行評估 |
-| `generate_report(suite_id)` | 產生報告 |
-| `compare_versions(suite_id)` | 比較 A/B |
-
-### StructuredOutputEngine
-
-| 方法 | 說明 |
-|------|------|
-| `parse(prompt, llm_call, schema_name)` | 解析輸出 |
-| `register_schema(schema)` | 註冊 Schema |
-| `generate_report()` | 穩定性報告 |
-
-### DataQualityChecker
-
-| 方法 | 說明 |
-|------|------|
-| `analyze(data, field_types)` | 分析品質 |
-| `clean_data(data, strategy)` | 清理資料 |
-| `generate_report_markdown(report)` | 產生報告 |
-
-### EnterpriseHub
-
-| 屬性 | 說明 |
-|------|------|
-| `auth` | 認證管理器 |
-| `audit` | 審計日誌 |
-| `messengers` | 訊息系統 |
-
-### LangGraphMigrationTool
-
-| 方法 | 說明 |
-|------|------|
-| `analyze_file(path)` | 分析檔案 |
-| `migrate_file(path, output)` | 遷移檔案 |
-| `generate_report(result)` | 產生報告 |
 
 ---
 
@@ -512,12 +445,17 @@ hub.alert("Deployment", "v1.2.0 deployed to production", "info")
 
 | 版本 | 日期 | 說明 |
 |------|------|------|
-| v5.3.0 | 2026-03-20 | Solutions A-E 發布 |
+| v5.4.0 | 2026-03-20 | v4.5.0 Extensions 整合 |
+| v5.3.1 | 2026-03-20 | 工作流程案例 |
+| v5.3.0 | 2026-03-20 | Solutions A-E 完整整合 |
 | v5.2.0 | 2026-03-20 | Agent Evaluation |
-| v5.1.0 | 2026-03-20 | 單元測試 + 文件 |
-| v5.0.0 | 2026-03-20 | PM Mode + Real Data |
-| v4.9.0 | 2026-03-20 | PM Terminology + Resources |
-| v4.7.0 | 2026-03-20 | P1 Visualizations |
+| v5.1.0 | 2026-03-20 | 單元測試 + 手冊 |
+| v5.0.0 | 2026-03-20 | PM Mode |
+| v4.9.0 | 2026-03-20 | Terminology + Resources |
+| v4.8.0 | 2026-03-20 | CLI Interface |
+| v4.7.0 | 2026-03-20 | Visualizations |
+| v4.6.2 | 2026-03-20 | Bug Fixes |
+| v4.3.0 | 2026-03-20 | 15 缺口解決 |
 
 ---
 

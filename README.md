@@ -5,7 +5,7 @@
 
 ---
 
-[![Version](https://img.shields.io/badge/version-v5.3.0-blue.svg)](https://github.com/johnnylugm-tech/methodology-v2)
+[![Version](https://img.shields.io/badge/version-v5.4.0-blue.svg)](https://github.com/johnnylugm-tech/methodology-v2)
 [![Python](https://img.shields.io/badge/python-3.8+-green.svg)](https://python.org)
 [![Tests](https://img.shields.io/badge/tests-32%20passed-green.svg)]()
 
@@ -25,7 +25,42 @@
 
 ## 🔄 完整工作流程
 
-### 開發流程
+### 1️⃣ 專案初始化流程 (Setup Wizard)
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                   專案初始化 (Setup Wizard)                        │
+└─────────────────────────────────────────────────────────────────┘
+
+  1. 啟動 Wizard
+     │   python cli.py wizard
+     │
+     ▼
+  2. 選擇 Use Case
+     │   ├── Customer Service (客服)
+     │   ├── Coding (編程)
+     │   ├── Research (研究)
+     │   ├── Data Analysis (數據分析)
+     │   └── Custom (自訂)
+     │
+     ▼
+  3. 配置 Agent
+     │   ├── 名稱
+     │   ├── 模型
+     │   └── 工具
+     │
+     ▼
+  4. 選擇安全層級
+     │   ├── Basic (基本)
+     │   ├── Standard (標準)
+     │   └── Enterprise (企業)
+     │
+     ▼
+  5. 輸出設定檔
+         └── project.yaml
+```
+
+### 2️⃣ 開發流程 (Development Flow)
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -50,22 +85,29 @@
   4. Agent 執行 (AgentTeam)
      │   ├── 角色分配
      │   ├── 並行執行
-     │   └── 訊息協調
+     │   └── 訊息協調 (MAP Protocol)
      │
      ▼
-  5. 品質把關 (AutoQualityGate)
-     │   ├── 程式碼審查
-     │   ├── 安全掃描
-     │   └── 測試覆蓋
+  5. 安全把關 (Guardrails)
+     │   ├── Prompt Injection 檢測
+     │   ├── PII 過濾
+     │   ├── SQL Injection 檢測
+     │   └── Content Moderation
      │
      ▼
-  6. 交付追蹤 (DeliveryTracker)
+  6. 自動擴展 (AutoScaler)
+     │   ├── 負載監控
+     │   ├── 副本計算
+     │   └── K8s HPA 支援
+     │
+     ▼
+  7. 交付追蹤 (DeliveryTracker)
          ├── 版本記錄
          ├── Rollback
          └── Diff 比較
 ```
 
-### 評估流程 (Solution A)
+### 3️⃣ 評估流程 (Agent Evaluation)
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -96,7 +138,7 @@
          └── 建議
 ```
 
-### 資料流程 (Solutions B + C)
+### 4️⃣ 資料流程 (Data Flow)
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -106,63 +148,108 @@
   1. 資料輸入
      │
      ▼
-  2. 結構化解析 (StructuredOutputEngine)
+  2. 安全檢查 (Guardrails)
+     │   ├── PII 過濾
+     │   └── 威脅檢測
+     │
+     ▼
+  3. 結構化解析 (StructuredOutputEngine)
      │   ├── JSON Schema 驗證
      │   ├── 自動重試
      │   └── Fallback 機制
      │
      ▼
-  3. 品質檢查 (DataQualityChecker)
+  4. 品質檢查 (DataQualityChecker)
      │   ├── Missing Value 偵測
      │   ├── Outlier 偵測
      │   ├── Duplicate 偵測
      │   └── Format 驗證
      │
      ▼
-  4. 清理處理
+  5. 清理處理
      │   ├── Remove (移除)
      │   ├── Fill Null (填補)
      │   └── Default (預設值)
      │
      ▼
-  5. 品質報告
+  6. 品質報告
          └── Markdown 報告
 ```
 
-### 企業整合流程 (Solution D)
+### 5️⃣ 企業整合流程 (Enterprise Flow)
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                 企業整合流程 (Enterprise Flow)                    │
 └─────────────────────────────────────────────────────────────────┘
 
-  1. 認證 (Authenticator)
-     │   ├── SSO (Okta/Azure AD/LDAP)
+  1. 認證 (SSO Integration)
+     │   ├── Okta (OIDC/SAML)
+     │   ├── Azure AD (OAuth2)
+     │   ├── LDAP
      │   ├── API Key
      │   └── Basic Auth
      │
      ▼
-  2. 審計日誌 (AuditLogger)
+  2. 授權 (RBAC)
+     │   ├── 角色定義
+     │   ├── 權限分配
+     │   └── 資源訪問控制
+     │
+     ▼
+  3. 審計日誌 (AuditLogger)
      │   ├── 存取記錄
      │   ├── 操作軌跡
      │   └── 異常警報
      │
      ▼
-  3. 通知 (EnterpriseHub)
+  4. 通知 (EnterpriseHub)
      │   ├── Slack
      │   ├── Teams
      │   └── Syslog
      │
      ▼
-  4. 監控整合
-         └── Prometheus/Grafana
+  5. 監控 (Cloud Dashboard)
+         ├── 即時監控
+         ├── 團隊協作
+         └── 警報系統
+```
+
+### 6️⃣ 遷移流程 (Migration Flow)
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                   遷移流程 (Migration Flow)                       │
+└─────────────────────────────────────────────────────────────────┘
+
+  1. 分析現有程式碼
+     │
+     ▼
+  2. AST 解析 (LangGraphMigrationTool)
+     │   ├── 節點識別
+     │   ├── 依賴分析
+     │   └── 風險評估
+     │
+     ▼
+  3. 模式對應
+     │   ├── State 轉換
+     │   ├── Agent 轉換
+     │   └── Tool 轉換
+     │
+     ▼
+  4. 程式碼生成
+     │
+     ▼
+  5. 驗證與部署
+         ├── 語法驗證
+         └── 測試
 ```
 
 ---
 
 ## 📦 功能清單
 
-### 核心模組 (49+)
+### 核心模組 (58+)
 
 | 類別 | 模組 | 功能 |
 |------|------|------|
@@ -173,6 +260,7 @@
 | **成本** | cost_allocator.py | API/Compute 成本追蹤 |
 | | cost_optimizer.py | 自動成本優化 |
 | **訊息** | message_bus.py | Pub/Sub 協調 |
+| | map_protocol.py | 標準化 Agent 溝通 |
 | **工作流** | workflow_graph.py | DAG 工作流 |
 | | workflow_templates.py | 範本庫 |
 | | parallel_executor.py | 並行執行 |
@@ -181,33 +269,23 @@
 | | agent_spawner.py | 動態 Spawn |
 | | agent_lifecycle.py | 生命週期 |
 | | agent_state.py | 狀態追蹤 |
-| | agent_communication.py | 通訊協議 |
 | **品質** | auto_quality_gate.py | 自動化把關 |
 | | smart_router.py | 智慧路由 |
-| | task_splitter_v2.py | 任務拆分 |
+| **安全** | guardrails.py | Prompt Injection、PII、SQL Injection |
 | **監控** | dashboard.py | 統一儀表板 |
 | | predictive_monitor.py | 預測監控 |
 | | resource_dashboard.py | 資源視圖 |
 | | risk_dashboard.py | 風險儀表板 |
-| | dashboard_cost_trend.py | 成本趨勢 |
+| | cloud_dashboard.py | 雲端監控 |
 | **交付** | delivery_manager.py | 交付管理 |
 | | delivery_tracker.py | 版本追蹤 |
 | | doc_generator.py | 文件生成 |
-| **安全** | rbac.py | 權限管理 |
-| | audit_logger.py | 審計日誌 |
-| | approval_flow.py | 審批流程 |
-| **整合** | cicd_integration.py | CI/CD 整合 |
-| | storage.py | 持久化 |
-| | multi_language.py | 多語言支援 |
-| | openclaw_adapter.py | OpenClaw 適配 |
-| | extension_configurator.py | 擴展配置 |
-| | extensions.py | 擴展管理 |
-| **知識** | knowledge_base.py | 模式庫 |
-| | doc_generator.py | 文件生成 |
-| **工具** | scheduler.py | 優先級排程 |
-| | failover_manager.py | 故障轉移 |
-| **專案** | project.py | 專案管理 |
-| | agent_lifecycle.py | Agent 生命週期 |
+| **擴展** | wizard.py | 互動式設定精靈 |
+| | autoscaler.py | 自動擴展管理 |
+| | llm_providers.py | 多供應商支援 |
+| | sso_integration.py | SSO 單一登入 |
+| | marketplace.py | 模板市場 |
+| | test_framework.py | 測試框架 |
 
 ### Solutions A-E
 
@@ -218,18 +296,6 @@
 | **C: Data Quality** | data_quality.py | 驗證、異常偵測、品質評分 |
 | **D: Enterprise Hub** | enterprise_hub.py | SSO、審計日誌、Slack/Teams |
 | **E: LangGraph Migrator** | langgraph_migrator.py | AST 分析、風險評估、程式碼生成 |
-
-### Extensions
-
-| 模組 | 功能 |
-|------|------|
-| mcp_adapter | 企業服務整合 |
-| cost_optimizer | 成本控制 |
-| vertical_templates | 垂直範本 |
-| security_audit | 安全審計 |
-| langchain_adapter | LangChain 遷移 |
-| local_deployment | 本地部署 |
-| workflow_visualizer | 流程視覺化 |
 
 ---
 
@@ -246,73 +312,41 @@ core = MethodologyCore()
 core.tasks.split_from_goal("開發登入")
 core.sprints.create_sprint(...)
 core.evaluator.run_suite(...)
+core.guardrails.check(...)
+core.autoscaler.scale_to(...)
 core.enterprise.notify(...)
 ```
 
-### 2. 多 Agent 協調
+### 2. 互動式設定 (Wizard)
 
-- **Sequential**: 順序執行，依賴鏈
-- **Parallel**: 並行執行，產出合併
-- **Hierarchical**: 層級結構，父子協調
-
-```python
-# 並行執行
-core.workflow.execute_parallel([
-    ("task-1", agent_1),
-    ("task-2", agent_2),
-    ("task-3", agent_3),
-])
+```bash
+python cli.py wizard
+# 引導式建立專案
 ```
 
-### 3. 智慧路由 (SmartRouter)
+### 3. 安全防護 (Guardrails)
 
 ```python
-router = SmartRouter()
+# Prompt Injection 檢測
+result = guardrails.check(user_input)
 
-# 根據任務類型自動選擇最佳模型
-result = router.route(task_type="code_review", prompt="...")
-# 自動選擇性價比最高的模型
+# PII 過濾
+result = guardrails.mask_pii(user_input)
 ```
 
-### 4. 成本控制
+### 4. 自動擴展 (AutoScaler)
 
 ```python
-# 設定預算
-core.costs.set_budget(monthly=1000)
-
-# 追蹤花費
-core.costs.track("api_call", model="gpt-4", tokens=1000)
-
-# 超出警報
-core.costs.set_alert(threshold=0.8, callback=notify)
+# 根據負載自動調整
+scaler.update_metrics(cpu=85, queue=100)
+action = scaler.check_and_scale()
 ```
 
-### 5. 品質把關
+### 5. 多 Agent 協調 (MAP Protocol)
 
 ```python
-gate = AutoQualityGate()
-
-# 自動化審查
-result = gate.check(code_snippet, context={
-    "language": "python",
-    "security_level": "high"
-})
-
-print(f"Passed: {result.passed}")
-print(f"Score: {result.score}/100")
-```
-
-### 6. 可視化
-
-```python
-# 甘特圖
-gantt.to_rich_ascii()
-
-# Burndown
-dashboard.show_burndown(sprint_id)
-
-# 資源視圖
-resource_dashboard.to_table()
+# 標準化 Agent 溝通
+message = MAPProtocol.encode(sender="agent-1", action="request", data={})
 ```
 
 ---
@@ -335,18 +369,9 @@ resource_dashboard.to_table()
 | Agent Monitor | v3.2.0 | 監控警報 |
 | OpenClaw | - | Agent 執行環境 |
 
-### 擴展 Skills
-
-| Skill | 版本 | 功能 |
-|-------|------|------|
-| mcp_adapter | - | MCP 協定適配 |
-| langchain_adapter | - | LangChain 整合 |
-| local_deployment | - | 本地部署 |
-
 ### Python 依賴
 
 ```
-# requirements.txt
 pydantic>=2.0
 dataclasses-json>=0.6
 rich>=13.0
@@ -371,32 +396,31 @@ from methodology import MethodologyCore
 
 core = MethodologyCore()
 
-# 1. 任務分解
+# 1. 專案設定
+core.wizard.create_project("my-project", "customer_service")
+
+# 2. 任務分解
 tasks = core.tasks.split_from_goal("開發 AI 客服系統")
 
-# 2. 建立 Sprint
-core.sprints.create_sprint(
-    name="Sprint 1",
-    capacity=40
-)
+# 3. 安全檢查
+result = core.guardrails.check(user_input)
 
-# 3. 執行 Agent
-def my_agent(prompt, context=None):
-    return f"Response to: {prompt}"
-
-# 4. 評估
+# 4. Agent 評估
 suite = core.evaluator.create_suite("Test Suite")
 core.evaluator.run_suite(suite.id, my_agent)
 
-# 5. 檢視報告
-print(core.evaluator.generate_report(suite.id))
+# 5. 自動擴展
+core.autoscaler.scale_to(replicas=5)
+
+# 6. 部署通知
+core.enterprise.alert("Deployment Complete", "Sprint 1 done")
 ```
 
 ### CLI 使用
 
 ```bash
 # 初始化
-python cli.py init "my-project"
+python cli.py wizard
 
 # 任務管理
 python cli.py task add "新功能" --points 5
@@ -409,6 +433,12 @@ python cli.py sprint list
 # 視覺化
 python cli.py board
 
+# 安全
+python cli.py guardrails check --text "..."
+
+# 擴展
+python cli.py scale status
+
 # Solutions
 python cli.py eval create "Tests"
 python cli.py quality check
@@ -420,53 +450,21 @@ python cli.py migrate my_agent.py
 
 ## 🖥️ CLI 參考
 
-### 專案管理
-
 | 命令 | 說明 |
 |------|------|
-| `init <name>` | 初始化專案 |
-| `status` | 顯示狀態 |
-| `version` | 版本資訊 |
-
-### 任務管理
-
-| 命令 | 說明 |
-|------|------|
-| `task add <name> [--points] [--priority]` | 新增任務 |
-| `task list` | 列出任務 |
-| `task complete <id>` | 標記完成 |
-
-### Sprint
-
-| 命令 | 說明 |
-|------|------|
-| `sprint create <name> [--start] [--end] [--capacity]` | 建立 Sprint |
-| `sprint list` | 列出 Sprint |
-| `sprint start <id>` | 開始 Sprint |
-
-### Solutions
-
-| 命令 | 說明 |
-|------|------|
-| `eval create <name>` | 建立評估套件 |
-| `eval run <suite_id>` | 執行評估 |
-| `eval report <suite_id>` | 評估報告 |
+| `wizard` | 互動式專案設定 |
+| `task add/list` | 任務管理 |
+| `sprint create/list` | Sprint 管理 |
+| `board` | 視覺化看板 |
+| `eval create/run/report` | Agent 評估 |
 | `quality check` | 資料品質檢查 |
+| `guardrails check` | 安全檢查 |
+| `scale status` | 自動擴展狀態 |
 | `enterprise status` | 企業整合狀態 |
 | `migrate <file>` | 遷移到 LangGraph |
-| `parse [--schema]` | 結構化輸出解析 |
-
-### 其他
-
-| 命令 | 說明 |
-|------|------|
-| `board` | 視覺化看板 |
-| `report [--type]` | 產生報告 |
 | `term <query>` | PM 術語查詢 |
 | `resources list` | 資源清單 |
-| `pm report` | 晨間報告 |
-| `pm forecast` | 成本預測 |
-| `pm health` | Sprint 健康 |
+| `pm report/forecast/health` | PM Mode |
 
 ---
 
@@ -476,6 +474,10 @@ python cli.py migrate my_agent.py
 
 ```python
 class MethodologyCore:
+    # 專案
+    @property
+    def wizard(self) -> SetupWizard
+    
     # 任務
     @property
     def tasks(self) -> TaskSplitter
@@ -508,6 +510,14 @@ class MethodologyCore:
     @property
     def data_quality(self) -> DataQualityChecker
     
+    # 安全 (Guardrails)
+    @property
+    def guardrails(self) -> Guard
+    
+    # 自動擴展 (AutoScaler)
+    @property
+    def autoscaler(self) -> AutoScaler
+    
     # 企業整合 (Solution D)
     @property
     def enterprise(self) -> EnterpriseHub
@@ -517,66 +527,14 @@ class MethodologyCore:
     def migrator(self) -> LangGraphMigrationTool
 ```
 
-### AgentEvaluator
-
-```python
-class AgentEvaluator:
-    def create_suite(name, iterations=1) -> EvaluationSuite
-    def add_test_case(suite_id, name, input_prompt, expected_output) -> TestCase
-    def run_suite(suite_id, agent_a_fn, agent_b_fn=None) -> EvaluationSuite
-    def generate_report(suite_id) -> str
-    def compare_versions(suite_id) -> Dict
-```
-
-### StructuredOutputEngine
-
-```python
-class StructuredOutputEngine:
-    def parse(prompt, llm_call, schema_name, max_retries=3) -> ParseResult
-    def register_schema(schema: OutputSchema)
-    def generate_report() -> str
-```
-
-### DataQualityChecker
-
-```python
-class DataQualityChecker:
-    def analyze(data, field_types=None) -> QualityReport
-    def clean_data(data, strategy="remove") -> Tuple[List, QualityReport]
-    def generate_report_markdown(report) -> str
-```
-
-### EnterpriseHub
-
-```python
-class EnterpriseHub:
-    @property
-    def auth(self) -> Authenticator
-    @property
-    def audit(self) -> AuditLogger
-    
-    def add_slack(name, webhook_url) -> SlackMessenger
-    def add_teams(name, webhook_url) -> TeamsMessenger
-    def notify(messenger_name, message) -> bool
-    def alert(title, message, severity) -> None
-```
-
-### LangGraphMigrationTool
-
-```python
-class LangGraphMigrationTool:
-    def analyze_file(file_path) -> MigrationResult
-    def migrate_file(file_path, output_path) -> MigrationResult
-    def generate_report(result) -> str
-    def validate_langgraph_syntax(code) -> Tuple[bool, str]
-```
-
 ---
 
 ## 📊 版本歷史
 
 | 版本 | 日期 | 說明 |
 |------|------|------|
+| v5.4.0 | 2026-03-20 | v4.5.0 Extensions 整合 |
+| v5.3.1 | 2026-03-20 | 工作流程案例 |
 | v5.3.0 | 2026-03-20 | Solutions A-E 完整整合 |
 | v5.2.0 | 2026-03-20 | Agent Evaluation Framework |
 | v5.1.0 | 2026-03-20 | 單元測試 + 使用手冊 |
@@ -596,4 +554,4 @@ MIT License
 ---
 
 **GitHub**: https://github.com/johnnylugm-tech/methodology-v2
-**Release**: https://github.com/johnnylugm-tech/methodology-v2/releases/tag/v5.3.0
+**Release**: https://github.com/johnnylugm-tech/methodology-v2/releases/tag/v5.4.0
