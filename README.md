@@ -1,16 +1,22 @@
-# 🎯 AI Agent 開發工具箱 - methodology-v2
+# 🎯 Methodology-v2
 
-> 統一的方法論 + 工具集 + 框架整合
+> Multi-Agent Collaboration Development Framework
+> 企業級 AI Agent 開發框架
 
 ---
 
-## 安裝
+[![Version](https://img.shields.io/badge/version-v4.1.0-blue.svg)](https://github.com/johnnylugm-tech/methodology-v2)
+[![Python](https://img.shields.io/badge/python-3.8+-green.svg)](https://python.org)
+
+---
+
+## 📦 安裝
 
 ```bash
 pip install methodology-v2
 ```
 
-或開發模式：
+或：
 
 ```bash
 git clone https://github.com/johnnylugm-tech/methodology-v2
@@ -20,161 +26,165 @@ pip install -e .
 
 ---
 
-## 使用的核心 Skills (單獨維護)
+## 🚀 快速開始
 
-這三個核心 Skill 會單獨維護，methodology-v2 的專案運作會使用它們：
+### 統一入口
 
-| Skill | GitHub | 用途 |
-|-------|---------|------|
-| **Model Router** | [model-router-v2](https://github.com/johnnylugm-tech/model-router-v2) | 智慧模型路由 |
-| **Agent Monitor** | [agent-dashboard-v3](https://github.com/johnnylugm-tech/agent-dashboard-v3) | 監控儀表板 |
-| **Agent Quality Guard** | [Agent-Quality-Guard](https://github.com/johnnylugm-tech/Agent-Quality-Guard) | 品質把關 |
+```python
+from methodology import MethodologyCore
+
+core = MethodologyCore()
+core.tasks.split_from_goal("開發 AI 客服系統")
+core.agents.register("dev-1", "Developer", AgentType.DEVELOPER)
+core.publish_event("project:started", {})
+```
 
 ---
 
-## 快速開始
+## 📚 功能概覽
 
-### 1. Dashboard
+### 核心模組 (37+)
 
-# 完整版 (v3)
-dashboard = Dashboard()
+| 類別 | 模組 | 功能 |
+|------|------|------|
+| **Agent 協調** | AgentTeam, AgentRegistry, MessageBus | 定義、注册、通訊 |
+| **執行** | WorkflowGraph, Scheduler, ParallelExecutor | DAG 工作流、排程 |
+| **品質** | AutoQualityGate, SmartRouter, TaskSplitterV2 | 把關、路由、分解 |
+| **監控** | Dashboard, PredictiveMonitor, ProgressDashboard | 進度、成本、風險 |
+| **交付** | DeliveryManager, DocGenerator, TestGenerator | 版本、文檔、測試 |
+| **安全** | SecurityAuditor, RBAC, AuditLogger | 審計、權限、軌跡 |
 
-# 輕量版 (v2)
-dashboard = Dashboard(mode="light")
+### Extensions (7)
 
-dashboard.run()
+| 模組 | 功能 |
+|------|------|
+| **mcp_adapter** | 企業服務整合 (Slack, Notion, GitHub) |
+| **cost_optimizer** | 成本控制 (省 70-93%) |
+| **vertical_templates** | 客服、法律 Agent 模板 |
+| **security_audit** | API Key、SQL 注入檢測 |
+| **langchain_adapter** | LangChain 遷移工具 |
+| **local_deployment** | 本地部署 (隱私合規) |
+| **workflow_visualizer** | Mermaid 圖表生成 |
+
+---
+
+## 🏗️ 架構
+
+```
+MethodologyCore (統一入口)
+    │
+    ├── AgentTeam       → Agent 定義
+    ├── AgentRegistry   → Agent 注册
+    ├── MessageBus      → Agent 通訊
+    ├── WorkflowGraph   → 工作流引擎
+    ├── Scheduler      → 任務排程
+    ├── AutoQualityGate → 品質把關
+    ├── SmartRouter    → 模型路由
+    ├── Dashboard      → 監控儀表板
+    └── Extensions     → 企業整合
 ```
 
-### 2. Smart Router
+---
+
+## 📖 文件
+
+| 文件 | 說明 |
+|------|------|
+| [QUICKSTART.md](QUICKSTART.md) | 5 分鐘快速上手 |
+| [PM_HANDBOOK.md](PM_HANDBOOK.md) | PM 手把手教學 |
+| [SKILL.md](SKILL.md) | 技術規格 |
+| Extensions/*/SKILL.md | 各 Extension 文檔 |
+
+---
+
+## 💡 使用範例
+
+### 任務管理
 
 ```python
-from methodology import SmartRouter
+from methodology import TaskSplitterV2
 
-router = SmartRouter(budget="medium")
-result = router.route("幫我寫一個 Python 函數")
-print(f"Model: {result.model}")
-```
+splitter = TaskSplitterV2()
+tasks = splitter.split_from_goal("開發 AI 系統")
 
-### 3. Auto Quality Gate
-
-```python
-from methodology import AutoQualityGate
-
-gate = AutoQualityGate(auto_fix=True)
-report = gate.scan("your_code.py")
-```
-
-### 4. Storage
-
-```python
-from methodology import Storage
-
-storage = Storage()
-conv_id = storage.create_conversation("我的對話")
-storage.add_message(conv_id, "user", "你好")
-```
-
-### 5. OpenClaw Adapter
-
-```python
-from methodology import create_musk_agent
-
-agent = create_musk_agent()
-result = agent.execute("幫我完成這個任務")
-```
-
-### 6. Task Splitter
-
-```python
-from methodology import TaskSplitter
-
-splitter = TaskSplitter()
-tasks = splitter.split_from_goal("開發一個 AI 系統")
 for task in splitter.get_execution_order():
     print(f"{task.id}: {task.name}")
 ```
 
-### 7. Doc Generator
+### 工作流
 
 ```python
-from methodology import DocGenerator
+from methodology import WorkflowGraph
 
-generator = DocGenerator()
-items = generator.parse_file("module.py")
-print(generator.generate_markdown(items))
+wf = WorkflowGraph(name="AI 開發")
+wf.add_node("design", "系統設計")
+wf.add_node("backend", "後端", depends_on=["design"])
+execution = wf.execute()
 ```
 
-### 8. Test Generator
+### 成本追蹤
 
 ```python
-from methodology import TestGenerator
+from methodology import CostOptimizer
 
-generator = TestGenerator()
-test_code = generator.generate_from_file("module.py")
+optimizer = CostOptimizer(monthly_budget=100)
+optimizer.track(model="gpt-4o", prompt_tokens=1000, completion_tokens=500)
 ```
 
-### 9. Predictive Monitor
+### MCP 整合
 
 ```python
-from methodology import PredictiveMonitor
+from methodology import MCPAdapter
 
-monitor = PredictiveMonitor()
-monitor.record("latency", 1.5)
-monitor.set_threshold("latency", warning=2, critical=5)
-
-prediction = monitor.predict("latency")
-print(f"Predicted: {prediction.predicted_value}")
+adapter = MCPAdapter()
+adapter.connect("slack", token="xoxb-xxx")
+result = adapter.execute("發送訊息")
 ```
 
 ---
 
-## 核心模組
+## 🔧 配置
 
-| 模組 | 功能 |
-|------|------|
-| `methodology` | 錯誤分類 (L1-L4)、生命週期、Agent 協作 |
-| `dashboard` | Dashboard (v2/v3) |
-| `smart_router` | 智慧模型路由 |
-| `auto_quality_gate` | 自動品質把關 |
-| `storage` | SQLite 對話存儲 |
-| `openclaw_adapter` | OpenClaw 整合 |
-| `task_splitter` | 任務自動分解 |
-| `doc_generator` | 文檔自動生成 |
-| `test_generator` | 測試自動生成 |
-| `predictive_monitor` | 預測性監控 |
+```python
+from methodology import MethodologyCore, MethodologyConfig
 
----
+config = MethodologyConfig(
+    project_name="My Project",
+    monthly_budget=500,
+    enable_audit=True,
+    enable_monitoring=True,
+)
 
-## Docker 一鍵部署
-
-```bash
-# 啟動所有服務
-docker-compose up -d
-
-# 訪問
-# - Model Router: http://localhost:8080
-# - Agent Monitor: http://localhost:3000
-# - Unified Dashboard: http://localhost:8081
+core = MethodologyCore(config=config)
 ```
 
 ---
 
-## 配置開關
+## 📊 版本歷程
 
-| 功能 | 預設 | 關閉 |
+| 版本 | 日期 | 功能 |
 |------|------|------|
-| Auto Quality Gate | `auto_fix=True` | `auto_fix=False` |
-| Smart Router | `auto_route=True` | `auto_route=False` |
-| Dashboard | `version="full"` (v3) | `version="light"` (v2) |
+| v4.1.0 | 2026-03-20 | Extensions 整合、統一入口 |
+| v4.0.0 | 2026-03-20 | 企業 Extensions |
+| v3.3.0 | 2026-03-20 | AgentCoordination 四核心 |
+| v3.0.0 | 2026-03-20 | Phase 1-3 完整實作 |
 
 ---
 
-## 版本
+## 🤝 貢獻
 
-v2.6.0
+歡迎提交 Issue 和 PR！
 
 ---
 
-## GitHub
+## 📄 License
 
-https://github.com/johnnylugm-tech/methodology-v2
+MIT
+
+---
+
+## 🔗 連結
+
+- [GitHub](https://github.com/johnnylugm-tech/methodology-v2)
+- [PyPI](https://pypi.org/project/methodology-v2)
+- [文件](https://github.com/johnnylugm-tech/methodology-v2#readme)

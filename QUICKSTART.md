@@ -1,39 +1,33 @@
 # 🚀 Methodology-v2 快速上手指南
 
-> 5 分鐘入門，10 分鐘開始開發
+> 5 分鐘入門，成為 AI Agent 開發專家
 
 ---
 
-## 這是什麼？
+## 📖 這份指南是什麼？
 
-**Methodology-v2** 是一套幫助團隊用 AI Agent 開發軟體的方法論。
-
-簡單說：讓 AI 幫你寫代碼、測試、審查，你專心解決問題。
+**Methodology-v2** 是一套讓團隊用 AI Agent 開發軟體的完整方法論。
 
 ---
 
-## 🎯 目標讀者
+## 🎯 你會學到
 
-- ✅ 想用 AI 輔助開發的團隊
-- ✅ 想要標準化開發流程的團隊
-- ✅ 想要提升開發效率的團隊
-
-**不需要**：
-- ❌ AI 專家
-- ❌ 大團隊
-- ❌ 完美流程
+| 時間 | 內容 |
+|------|------|
+| 5 分鐘 | 安裝 + 第一個範例 |
+| 15 分鐘 | 核心功能實作 |
+| 30 分鐘 | Extensions 企業整合 |
+| 60 分鐘 | 完整專案開發 |
 
 ---
 
-## 🏁 5 分鐘快速開始
-
-### 1. 安裝
+## 1️⃣ 安裝 (2 分鐘)
 
 ```bash
 pip install methodology-v2
 ```
 
-或
+或從 GitHub：
 
 ```bash
 git clone https://github.com/johnnylugm-tech/methodology-v2
@@ -41,139 +35,219 @@ cd methodology-v2
 pip install -e .
 ```
 
-### 2. 建立你的第一個任務
+---
+
+## 2️⃣ 統一入口 (3 分鐘)
+
+**最簡單的開始方式：**
 
 ```python
-from methodology import TaskSplitter
+from methodology import MethodologyCore
 
-# 描述你想要什麼
-splitter = TaskSplitter()
-tasks = splitter.split_from_goal("開發一個簡單的天氣查詢系統")
+# 建立核心
+core = MethodologyCore()
 
-# 自動幫你拆分任務
-for task in tasks:
-    print(f"📋 {task.name}")
+# 任務管理
+core.tasks.split_from_goal("開發 AI 客服系統")
+
+# Agent 注册
+core.agents.register("dev-1", "Developer", AgentType.DEVELOPER)
+
+# 發布事件
+core.publish_event("task:created", {"task": "新任務"})
+
+# 審計日誌
+core.log_action("create", "task")
 ```
 
-**輸出**：
-```
-📋 調研與分析
-📋 系統設計
-📋 開發實現
-📋 測試驗證
-```
+---
 
-### 3. 選擇你的開發模式
+## 3️⃣ 核心功能
+
+### 3.1 任務分解
 
 ```python
-from methodology import Dashboard
+from methodology import TaskSplitterV2
 
-# 輕鬆模式 (推薦新手)
-dashboard = Dashboard(mode="light")
+splitter = TaskSplitterV2()
+tasks = splitter.split_from_goal("開發 AI 客服系統")
 
-# 完整模式 (需要更多功能)
-# dashboard = Dashboard(mode="full")
-
-dashboard.run()
+for task in splitter.get_execution_order():
+    print(f"📌 {task.name} ({task.priority.name})")
 ```
 
-打開瀏覽器 http://localhost:8080 就可以看到儀表板！
+### 3.2 工作流程
 
----
+```python
+from methodology import WorkflowTemplates, WorkflowType
 
-## 💡 核心概念
+templates = WorkflowTemplates()
+project = templates.create_project("scrum", "我的第一個專案")
 
-### 不用學全部，先用這 3 個！
-
-| 功能 | 什麼時候用 |
-|------|-----------|
-| **TaskSplitter** | 不知道怎麼開始？用它幫你拆任務 |
-| **Dashboard** | 想看開發進度？打開儀表板 |
-| **SmartRouter** | 不知道用哪個 AI 模型？讓它幫你選 |
-
-### 以後想用的
-
-| 功能 | 什麼時候用 |
-|------|-----------|
-| **AutoQualityGate** | 想要自動檢查代碼品質 |
-| **DocGenerator** | 想要自動生成文檔 |
-| **TestGenerator** | 想要自動生成測試 |
-| **PredictiveMonitor** | 想要預測問題 |
-
----
-
-## 🔄 開發流程（簡化版）
-
-```
-1. 用 TaskSplitter 拆分任務
-      ↓
-2. 讓 AI Agent 執行任務
-      ↓
-3. 用 AutoQualityGate 檢查品質
-      ↓
-4. 用 Dashboard 看進度
-      ↓
-5. 重複直到完成
+print(f"Sprints: {[s['name'] for s in project['sprints']]}")
 ```
 
-就是這麼簡單！
+### 3.3 進度追蹤
+
+```python
+from methodology import ProgressDashboard
+
+dashboard = ProgressDashboard()
+sprint_id = dashboard.create_sprint("Sprint 1", "MVP 完成", capacity=50)
+dashboard.start_sprint(sprint_id)
+
+print(dashboard.generate_report())
+```
 
 ---
 
-## 🎓 學習路徑
+## 4️⃣ Extensions 企業整合
 
-### 第一天：基礎
+### 4.1 MCP 企業服務整合
 
-- [x] 安裝完成
-- [x] 跑第一個範例
-- [ ] 用 TaskSplitter 拆分一個任務
-- [ ] 打開 Dashboard 看看
+```python
+from methodology import MCPAdapter
 
-### 第二天：熟悉
+adapter = MCPAdapter()
+adapter.connect("slack", token="xoxb-xxx")
+result = adapter.execute("發送訊息到 #general")
+```
 
-- [ ] 試試 SmartRouter 選模型
-- [ ] 用 AutoQualityGate 檢查代碼
-- [ ] 生成第一份文檔
+### 4.2 成本優化
 
-### 第三天：進階
+```python
+from methodology import CostOptimizer
 
-- [ ] 用 TestGenerator 生成測試
-- [ ] 設定 PredictiveMonitor
-- [ ] 用 Docker 部署
+optimizer = CostOptimizer(monthly_budget=100)
+optimizer.track(model="gpt-4o", prompt_tokens=1000, completion_tokens=500)
+
+# 自動選擇最便宜模型
+model = optimizer.select_model("simple_summary", required_quality="medium")
+print(f"使用模型: {model}")  # 省 70-93%
+```
+
+### 4.3 垂直領域模板
+
+```python
+from methodology import CustomerServiceAgent, LegalAgent
+
+# 客服機器人
+cs = CustomerServiceAgent(knowledge_base="docs/")
+result = cs.handle("我要退貨")
+
+# 法律 Agent
+legal = LegalAgent(jurisdiction="TW")
+analysis = legal.analyze_contract("合約.txt")
+```
+
+### 4.4 安全審計
+
+```python
+from methodology import SecurityAuditor
+
+auditor = SecurityAuditor()
+report = auditor.scan("code.py")
+print(f"嚴重問題: {len(report.critical_issues)}")
+```
+
+### 4.5 工作流視覺化
+
+```python
+from methodology import WorkflowVisualizer
+
+viz = WorkflowVisualizer()
+mermaid = viz.generate_diagram(
+    agents=["researcher", "coder", "reviewer"],
+    process="sequential"
+)
+print(mermaid)
+```
 
 ---
 
-## ❓ 常見問題
+## 5️⃣ 完整範例
 
-**Q: 我需要很多 AI 知識嗎？**
-A: 不用！Methodology-v2 會幫你處理。
+```python
+from methodology import MethodologyCore
 
-**Q: 團隊很小可以嗎？**
-A: 可以！1個人、3個人、10個人都可以用。
+# 初始化
+core = MethodologyCore()
 
-**Q: 一定要用全部功能嗎？**
-A: 不用！從一個功能開始，漸進增加。
+# 1. 建立專案
+core.config.project_name = "AI 客服系統"
 
-**Q: 免費嗎？**
-A: 是的，開源免費使用。
+# 2. 注册團隊
+from methodology import AgentType
+core.agents.register("architect", "架構師", AgentType.ARCHITECT)
+core.agents.register("dev-1", "開發者", AgentType.DEVELOPER)
+core.agents.register("tester", "測試員", AgentType.TESTER)
+
+# 3. 分解任務
+tasks = core.tasks.split_from_goal("開發 AI 客服系統")
+
+# 4. 建立工作流
+workflow = core.workflow
+workflow.add_node("design", "系統設計")
+workflow.add_node("backend", "後端開發", depends_on=["design"])
+workflow.add_edge("design", "backend")
+
+# 5. 追蹤成本
+core.track_cost(0.05, user_id="dev-1", model="gpt-4o")
+
+# 6. 發布事件
+core.publish_event("project:started", {"name": "AI 客服系統"})
+
+# 7. 保存
+core.save()
+
+print("✅ 專案建立完成！")
+```
 
 ---
 
-## 📚 接下來
+## 6️⃣ 常見問題
 
-- [ ] 繼續閱讀完整文檔
-- [ ] 查看範例程式碼
-- [ ] 加入社群討論
+### Q: 需要多少 Python 經驗？
+A: 基礎即可。我們有完整的 API 文件。
+
+### Q: 可以只用一部分功能嗎？
+A: 可以！每個模組都是獨立的。
+
+### Q: 資料存在哪裡？
+A: SQLite (本地)，可設定 PostgreSQL。
+
+### Q: 支援哪些模型？
+A: GPT-4、Claude、Gemini、MiniMax 等 20+ 模型。
 
 ---
 
-## 💬 獲得幫助
+## 📚 學習路徑
 
-- GitHub Issues: 報告問題
-- 文件: 查看完整說明
+```
+Day 1: 基礎
+├── 安裝完成
+├── 跑第一個範例
+└── 使用核心模組
+
+Day 2-3: 企業整合
+├── MCP 適配器
+├── 成本優化
+└── 安全審計
+
+Day 4-5: 進階
+├── Multi-Agent 協調
+├── 工作流自動化
+└── 部署上線
+```
 
 ---
 
-**記住：不用一次學會全部，從一小步開始！**
+## 🔗 相關連結
 
-🚀 加油！
+- [完整文檔](./README.md)
+- [PM 手冊](./PM_HANDBOOK.md)
+- [GitHub](https://github.com/johnnylugm-tech/methodology-v2)
+
+---
+
+**記住：從一小步開始！** 🚀

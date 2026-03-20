@@ -485,6 +485,59 @@ A: 可以，直接 pip install 就能用。
 
 ---
 
+## 8. Extensions 企業整合
+
+### 8.1 MCP 企業服務整合
+
+```python
+from methodology import MCPAdapter
+
+adapter = MCPAdapter()
+adapter.connect("slack", token="xoxb-xxx")
+result = adapter.execute("發送訊息")
+```
+
+### 8.2 成本優化
+
+```python
+from methodology import CostOptimizer
+
+optimizer = CostOptimizer(monthly_budget=100)
+optimizer.track(model="gpt-4o", prompt_tokens=1000, completion_tokens=500)
+best_model = optimizer.select_model("簡單摘要", required_quality="medium")
+# 節省 70-93%
+```
+
+### 8.3 垂直領域模板
+
+```python
+from methodology import CustomerServiceAgent
+
+cs = CustomerServiceAgent(knowledge_base="docs/")
+result = cs.handle("我要退貨")
+```
+
+### 8.4 安全審計
+
+```python
+from methodology import SecurityAuditor
+
+auditor = SecurityAuditor()
+report = auditor.scan("src/")
+print(f"🔴 嚴重問題: {len(report.critical_issues)}")
+```
+
+### 8.5 工作流視覺化
+
+```python
+from methodology import WorkflowVisualizer
+
+viz = WorkflowVisualizer()
+mermaid = viz.generate_diagram(agents=["dev", "tester"])
+```
+
+---
+
 ## 📚 更多資源
 
 - [QUICKSTART.md](./QUICKSTART.md) - 5 分鐘快速開始
