@@ -298,3 +298,22 @@ __all__ = [
     "Version",
     "Artifact",
 ]
+
+# Phase 2 - Lifecycle & Visualization
+from .agent_lifecycle import AgentLifecycleViewer, AgentLifecycleState, AgentLifecycleInfo
+from .gantt_chart import GanttChart, GanttTask, TaskStatus
+from .resource_dashboard import ResourceDashboard, ResourceType, ResourceStatus, ResourceInfo
+
+__all__ += [
+    # Phase 2
+    "AgentLifecycleViewer",
+    "AgentLifecycleState",
+    "AgentLifecycleInfo",
+    "GanttChart",
+    "GanttTask",
+    "TaskStatus",
+    "ResourceDashboard",
+    "ResourceType",
+    "ResourceStatus",
+    "ResourceInfo",
+]
