@@ -27,6 +27,7 @@ from sprint_planner import SprintPlanner
 from pm_terminology import PMTerminologyMapper
 from resource_dashboard import ResourceDashboard
 from pm_mode import PMMode
+from agent_evaluator import AgentEvaluator, HumanEvaluator, TestCase, EvaluationSuite
 from data_connector import DataSourceManager
 
 
@@ -42,6 +43,8 @@ class MethodologyCLI:
         self.sprint_planner = SprintPlanner()
         self.terminology = PMTerminologyMapper()
         self.pm_mode = PMMode()
+        self.evaluator = AgentEvaluator()
+        self.hitl = HumanEvaluator()
         self.resources = ResourceDashboard()
         self.data_manager = DataSourceManager()
     
@@ -71,6 +74,8 @@ class MethodologyCLI:
             return self.cmd_term(args)
         elif command == "pm":
             return self.cmd_pm(args)
+        elif command == "eval":
+            return self.cmd_eval(args)
         elif command == "resources":
             return self.cmd_resources(args)
         else:
@@ -317,6 +322,91 @@ class MethodologyCLI:
         
         return 0
     
+    def cmd_eval(self, args):
+        """Agent Evaluation"""
+        action = args.eval_action
+        
+        if action == "create":
+            suite = self.evaluator.create_suite(
+                name=args.name or "Test Suite",
+                description=args.description or "",
+                iterations=args.iterations or 1
+            )
+            print(f"✅ Created evaluation suite: {suite.id}")
+            print(f"   Name: {suite.name}")
+            return 0
+        
+        elif action == "list":
+            suites = list(self.evaluator.suites.values())
+            if not suites:
+                print("No evaluation suites found")
+                return 0
+            
+            print(f"\n{'ID':<12} {'Name':<30} {'Status':<12} {'Tests'}")
+            print("-" * 70)
+            for s in suites:
+                print(f"{s.id:<12} {s.name[:28]:<30} {s.status.value:<12} {len(s.test_cases)}")
+            return 0
+        
+        elif action == "report":
+            if not args.suite_id:
+                print("Error: --suite-id required")
+                return 1
+            
+            if args.suite_id not in self.evaluator.suites:
+                print(f"Suite '{args.suite_id}' not found")
+                return 1
+            
+            print(self.evaluator.generate_report(args.suite_id))
+            return 0
+        
+        elif action == "run":
+            if not args.suite_id:
+                print("Error: --suite-id required")
+                return 1
+            
+            if args.suite_id not in self.evaluator.suites:
+                print(f"Suite '{args.suite_id}' not found")
+                return 1
+            
+            # 定義簡單的 mock agent
+            import time
+            def mock_agent(prompt, context=None, timeout=30):
+                time.sleep(0.1)
+                return f"Response to: {prompt[:50]}..."
+            
+            print(f"Running evaluation suite: {args.suite_id}...")
+            self.evaluator.run_suite(args.suite_id, mock_agent)
+            print("✅ Evaluation completed")
+            return 0
+        
+        elif action == "add":
+            if not args.suite_id:
+                print("Error: --suite-id required")
+                return 1
+            
+            if not args.name:
+                print("Error: --name (test case name) required")
+                return 1
+            
+            test = self.evaluator.add_test_case(
+                suite_id=args.suite_id,
+                name=args.name,
+                input_prompt=args.prompt or "Test prompt",
+                expected_output=args.expected
+            )
+            print(f"✅ Added test case: {test.id} - {test.name}")
+            return 0
+        
+        elif action == "hitl":
+            pending = self.hitl.get_pending_count()
+            print(f"\n📋 Human-in-the-Loop")
+            print(f"   Pending reviews: {pending}")
+            return 0
+        
+        print(f"Unknown action: {action}")
+        return 1
+    
     def cmd_pm(self, args):
         """PM Mode"""
         action = args.action
@@ -459,6 +549,38 @@ def main():
     pm_parser = subparsers.add_parser("pm", help="PM Mode")
     pm_parser.add_argument("action", choices=["report", "forecast", "health"],
                          help="PM action")
+    
+    # eval
+    # eval subcommands
+    eval_sp = subparsers.add_parser("eval", help="Agent Evaluation")
+    eval_sub = eval_sp.add_subparsers(dest="eval_action", help="Evaluation actions")
+    
+    # eval create
+    eval_create = eval_sub.add_parser("create", help="Create evaluation suite")
+    eval_create.add_argument("name", help="Suite name")
+    eval_create.add_argument("--description", help="Suite description")
+    eval_create.add_argument("--iterations", type=int, default=1, help="Iterations")
+    
+    # eval list
+    eval_sub.add_parser("list", help="List evaluation suites")
+    
+    # eval add
+    eval_add = eval_sub.add_parser("add", help="Add test case")
+    eval_add.add_argument("suite_id", help="Suite ID")
+    eval_add.add_argument("name", nargs="?", help="Test case name")
+    eval_add.add_argument("--prompt", help="Test prompt")
+    eval_add.add_argument("--expected", help="Expected output")
+    
+    # eval run
+    eval_run = eval_sub.add_parser("run", help="Run evaluation")
+    eval_run.add_argument("suite_id", help="Suite ID")
+    
+    # eval report
+    eval_report = eval_sub.add_parser("report", help="Show evaluation report")
+    eval_report.add_argument("suite_id", help="Suite ID")
+    
+    # eval hitl
+    eval_sub.add_parser("hitl", help="Human-in-the-Loop status")
     
     # version
     subparsers.add_parser("version", help="Show version")
