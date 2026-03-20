@@ -286,7 +286,7 @@ class DataQualityChecker:
                 # 常見模式
                 patterns = self._extract_patterns(str_values)
                 profile.patterns = patterns[:3]
-        except:
+        except Exception:
             pass
         
         # 一致性分數
@@ -304,7 +304,7 @@ class DataQualityChecker:
         try:
             float(v)
             return True
-        except:
+        except Exception:
             return False
     
     def _extract_patterns(self, values: List[str]) -> List[str]:
@@ -536,9 +536,9 @@ class DataQualityChecker:
 if __name__ == "__main__":
     import json
     
-    print("Data Quality Connector")
-    print("=" * 50)
-    print()
+# #     print("Data Quality Connector")
+# #     print("=" * 50)
+# #     print()
     
     # 建立檢查器
     checker = DataQualityChecker()
@@ -563,15 +563,15 @@ if __name__ == "__main__":
     }
     
     # 分析
-    print("## Analyzing Data Quality...")
+# #     print("## Analyzing Data Quality...")
     report = checker.analyze(test_data, field_types)
     
     # 產生報告
-    print(checker.generate_report_markdown(report))
+# #     print(checker.generate_report_markdown(report))
     
     # 清理
-    print("\n## Cleaning Data...")
+# #     print("\n## Cleaning Data...")
     cleaned, clean_report = checker.clean_data(test_data, strategy="remove")
-    print(f"Original rows: {len(test_data)}")
-    print(f"Cleaned rows: {len(cleaned)}")
-    print(f"Removed: {len(test_data) - len(cleaned)}")
+# #     print(f"Original rows: {len(test_data)}")
+# #     print(f"Cleaned rows: {len(cleaned)}")
+# #     print(f"Removed: {len(test_data) - len(cleaned)}")

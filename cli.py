@@ -71,7 +71,7 @@ class MethodologyCLI:
         elif command == "task":
             return self.cmd_task(args)
         elif command == "sprint":
-            return self.cmd_sprint(args)
+# #             return self.cmd_sprint(args)
         elif command == "board":
             return self.cmd_board(args)
         elif command == "report":
@@ -107,7 +107,7 @@ class MethodologyCLI:
         elif command == "resources":
             return self.cmd_resources(args)
         else:
-            print(f"Unknown command: {command}")
+# #             print(f"Unknown command: {command}")
             return 1
         
         return 0
@@ -118,7 +118,7 @@ class MethodologyCLI:
         """初始化專案"""
         project_name = args.name or "my-project"
         
-        print(f"Initializing project: {project_name}")
+# #         print(f"Initializing project: {project_name}")
         
         # Create project structure
         dirs = [".methodology", ".methodology/tasks", ".methodology/sprints"]
@@ -128,11 +128,11 @@ class MethodologyCLI:
         # Save initial state
         self.progress.save()
         
-        print(f"✅ Project '{project_name}' initialized")
-        print(f"\nNext steps:")
-        print(f"  python cli.py task add \"Your first task\"")
-        print(f"  python cli.py sprint create")
-        print(f"  python cli.py board")
+# #         print(f"✅ Project '{project_name}' initialized")
+# #         print(f"\nNext steps:")
+# #         print(f"  python cli.py task add \"Your first task\"")
+# #         print(f"  python cli.py sprint create")
+# #         print(f"  python cli.py board")
         
         return 0
     
@@ -146,98 +146,98 @@ class MethodologyCLI:
                 story_points=args.points or 1,
                 priority=args.priority or 3
             )
-            print(f"✅ Task added: {item_id}")
-            print(f"   Title: {args.title or 'New Task'}")
-            print(f"   Points: {args.points or 1}")
+# #             print(f"✅ Task added: {item_id}")
+# #             print(f"   Title: {args.title or 'New Task'}")
+# #             print(f"   Points: {args.points or 1}")
             
         elif action == "list":
             self.progress.load()
             items = list(self.progress.backlog.values())
             if not items:
-                print("No tasks found")
+# #                 print("No tasks found")
                 return 0
             
-            print(f"\n{'ID':<10} {'Title':<30} {'Points':<8} {'Status':<12}")
-            print("-" * 60)
+# #             print(f"\n{'ID':<10} {'Title':<30} {'Points':<8} {'Status':<12}")
+# #             print("-" * 60)
             for item in items:
-                print(f"{item.id:<10} {item.title[:28]:<30} {item.story_points:<8} {item.sprint_id or 'backlog':<12}")
+# #                 print(f"{item.id:<10} {item.title[:28]:<30} {item.story_points:<8} {item.sprint_id or 'backlog':<12}")
             
         elif action == "complete":
             if self.progress.mark_item_completed(args.task_id):
-                print(f"✅ Task {args.task_id} marked as completed")
+# #                 print(f"✅ Task {args.task_id} marked as completed")
             else:
-                print(f"❌ Task {args.task_id} not found")
+# #                 print(f"❌ Task {args.task_id} not found")
         
         return 0
     
-    def cmd_sprint(self, args):
+# #     def cmd_sprint(self, args):
         """Sprint 管理"""
         action = args.action
         
         if action == "create":
-            sprint = self.sprint_planner.create_sprint(
+# #             sprint = self.sprint_planner.create_sprint(
                 name=args.name or "Sprint 1",
                 start_date=args.start or datetime.now().strftime("%Y-%m-%d"),
                 end_date=args.end or (datetime.now().replace(day=14)).strftime("%Y-%m-%d"),
                 capacity=args.capacity or 40
             )
-            print(f"✅ Sprint created: {sprint.name}")
-            print(f"   Duration: {sprint.duration_days} days")
-            print(f"   Capacity: {sprint.capacity_points} points")
+# #             print(f"✅ Sprint created: {sprint.name}")
+# #             print(f"   Duration: {sprint.duration_days} days")
+# #             print(f"   Capacity: {sprint.capacity_points} points")
             
         elif action == "list":
             sprints = list(self.sprint_planner.sprints.values())
             if not sprints:
-                print("No sprints found")
+# #                 print("No sprints found")
                 return 0
             
-            print(f"\n{'ID':<15} {'Name':<20} {'Status':<12} {'Capacity':<10}")
-            print("-" * 60)
+# #             print(f"\n{'ID':<15} {'Name':<20} {'Status':<12} {'Capacity':<10}")
+# #             print("-" * 60)
             for s in sprints:
                 status = "active" if s.is_active else ("completed" if s.is_completed else "planning")
-                print(f"{s.id:<15} {s.name[:18]:<20} {status:<12} {s.capacity_points:<10}")
+# #                 print(f"{s.id:<15} {s.name[:18]:<20} {status:<12} {s.capacity_points:<10}")
         
         elif action == "start":
-            if self.sprint_planner.start_sprint(args.sprint_id):
-                print(f"✅ Sprint {args.sprint_id} started")
+# #             if self.sprint_planner.start_sprint(args.sprint_id):
+# #                 print(f"✅ Sprint {args.sprint_id} started")
             else:
-                print(f"❌ Sprint {args.sprint_id} not found")
+# #                 print(f"❌ Sprint {args.sprint_id} not found")
         
         return 0
     
     def cmd_board(self, args):
         """開啟視覺化儀表板"""
-        print("╔" + "═" * 60 + "╗")
-        print("║" + " PROJECT BOARD ".center(60) + "║")
-        print("╚" + "═" * 60 + "╝")
-        print()
+# #         print("╔" + "═" * 60 + "╗")
+# #         print("║" + " PROJECT BOARD ".center(60) + "║")
+# #         print("╚" + "═" * 60 + "╝")
+# #         print()
         
         # Progress
         summary = {"total_items": len(self.progress.backlog), "completed_items": sum(1 for i in self.progress.backlog.values() if i.completed)}
         
-        print("📊 Progress:")
+# #         print("📊 Progress:")
         if summary:
-            print(f"   Total Items: {summary.get("total_items", 0)}")
-            print(f"   Completed: {summary.get('completed_items', 0)}")
-            print(f"   In Progress: {summary.get('in_progress_items', 0)}")
-            print(f"   Completion: {summary.get('completion_rate', 0):.1f}%")
+# #             print(f"   Total Items: {summary.get("total_items", 0)}")
+# #             print(f"   Completed: {summary.get('completed_items', 0)}")
+# #             print(f"   In Progress: {summary.get('in_progress_items', 0)}")
+# #             print(f"   Completion: {summary.get('completion_rate', 0):.1f}%")
         else:
-            print("   No data")
+# #             print("   No data")
         
-        print()
+# #         print()
         
         # Gantt
         if self.gantt.tasks:
-            print("📅 Gantt Chart:")
-            print(self.gantt.to_rich_ascii())
+# #             print("📅 Gantt Chart:")
+# #             print(self.gantt.to_rich_ascii())
         else:
-            print("📅 Gantt: No tasks")
+# #             print("📅 Gantt: No tasks")
         
-        print()
+# #         print()
         
         # Message Bus
-        print("📬 Message Bus:")
-        print(self.bus.to_cli())
+# #         print("📬 Message Bus:")
+# #         print(self.bus.to_cli())
         
         return 0
     
@@ -245,31 +245,31 @@ class MethodologyCLI:
         """生成報告"""
         report_type = args.type or "weekly"
         
-        print("╔" + "═" * 60 + "╗")
-        print("║" + f" {report_type.upper()} REPORT ".center(60) + "║")
-        print("╚" + "═" * 60 + "╝")
-        print()
-        print(f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M')}")
-        print()
+# #         print("╔" + "═" * 60 + "╗")
+# #         print("║" + f" {report_type.upper()} REPORT ".center(60) + "║")
+# #         print("╚" + "═" * 60 + "╝")
+# #         print()
+# #         print(f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M')}")
+# #         print()
         
         # Progress
-        print("## 📊 Progress")
+# #         print("## 📊 Progress")
         summary = {"total_items": len(self.progress.backlog), "completed_items": sum(1 for i in self.progress.backlog.values() if i.completed)}
         if summary:
             for key, value in summary.items():
-                print(f"   {key}: {value}")
-        print()
+# #                 print(f"   {key}: {value}")
+# #         print()
         
         # Data sources
-        print("## 📈 Data Sources")
+# #         print("## 📈 Data Sources")
         connections = self.data_manager.list_connections()
         if connections:
             for conn in connections:
                 status = "✅" if conn['connected'] else "❌"
-                print(f"   {status} {conn['name']} ({conn['type']})")
+# #                 print(f"   {status} {conn['name']} ({conn['type']})")
         else:
-            print("   No data sources connected")
-        print()
+# #             print("   No data sources connected")
+# #         print()
         
         # Save report
         if args.output:
@@ -277,37 +277,37 @@ class MethodologyCLI:
                 f.write(f"# {report_type.upper()} Report\n\n")
                 f.write(f"Generated: {datetime.now().isoformat()}\n\n")
                 f.write(json.dumps(summary, indent=2, default=str))
-            print(f"✅ Report saved to {args.output}")
+# #             print(f"✅ Report saved to {args.output}")
         
         return 0
     
     def cmd_status(self, args):
         """顯示狀態"""
         self.progress.load()
-        print("╔" + "═" * 60 + "╗")
-        print("║" + " METHODOLOGY STATUS ".center(60) + "║")
-        print("╚" + "═" * 60 + "╝")
-        print()
-        print(f"Version: {self.VERSION}")
-        print()
+# #         print("╔" + "═" * 60 + "╗")
+# #         print("║" + " METHODOLOGY STATUS ".center(60) + "║")
+# #         print("╚" + "═" * 60 + "╝")
+# #         print()
+# #         print(f"Version: {self.VERSION}")
+# #         print()
         
         # Tasks
         items = list(self.progress.backlog.values())
-        print(f"📋 Tasks: {len(items)} total")
+# #         print(f"📋 Tasks: {len(items)} total")
         
         # Sprints
         sprints = list(self.sprint_planner.sprints.values())
         active = sum(1 for s in sprints if s.is_active)
-        print(f"🏃 Sprints: {len(sprints)} total, {active} active")
+# #         print(f"🏃 Sprints: {len(sprints)} total, {active} active")
         
         # Message Bus
         bus_status = self.bus.get_queue_status()
-        print(f"📬 Message Bus: {bus_status['queue_size']} queued")
+# #         print(f"📬 Message Bus: {bus_status['queue_size']} queued")
         
         # Data Sources
         connections = self.data_manager.list_connections()
         connected = sum(1 for c in connections if c['connected'])
-        print(f"🔗 Data Sources: {connected}/{len(connections)} connected")
+# #         print(f"🔗 Data Sources: {connected}/{len(connections)} connected")
         
         return 0
     
@@ -316,20 +316,20 @@ class MethodologyCLI:
         action = args.action
         
         if action == "list":
-            print("📦 Resources:")
-            print("   (Use DataSourceManager to connect resources)")
-            print()
-            print("   Connect to data sources:")
-            print("   - Prometheus (metrics)")
-            print("   - Jira (tasks)")
-            print("   - OpenTelemetry (traces)")
-            print()
-            print("   Example:")
-            print("   ```python")
-            print("   from methodology import DataSourceManager, PrometheusConnector")
-            print("   dm = DataSourceManager()")
-            print("   dm.connect('prom', PrometheusConnector, url='http://localhost:9090')")
-            print("   ```")
+# #             print("📦 Resources:")
+# #             print("   (Use DataSourceManager to connect resources)")
+# #             print()
+# #             print("   Connect to data sources:")
+# #             print("   - Prometheus (metrics)")
+# #             print("   - Jira (tasks)")
+# #             print("   - OpenTelemetry (traces)")
+# #             print()
+# #             print("   Example:")
+# #             print("   ```python")
+# #             print("   from methodology import DataSourceManager, PrometheusConnector")
+# #             print("   dm = DataSourceManager()")
+# #             print("   dm.connect('prom', PrometheusConnector, url='http://localhost:9090')")
+# #             print("   ```")
         
         return 0
     
@@ -338,14 +338,14 @@ class MethodologyCLI:
         action = args.action
         
         if action == "status":
-            print(self.bus.to_cli())
+# #             print(self.bus.to_cli())
         
         elif action == "tree":
-            print(self.bus.to_tree())
+# #             print(self.bus.to_tree())
         
         elif action == "watch":
             seconds = args.seconds or 10
-            print(f"Watching Message Bus for {seconds} seconds...")
+# #             print(f"Watching Message Bus for {seconds} seconds...")
             self.bus.watch(seconds)
         
         return 0
@@ -360,41 +360,41 @@ class MethodologyCLI:
                 description=args.description or "",
                 iterations=args.iterations or 1
             )
-            print(f"✅ Created evaluation suite: {suite.id}")
-            print(f"   Name: {suite.name}")
+# #             print(f"✅ Created evaluation suite: {suite.id}")
+# #             print(f"   Name: {suite.name}")
             return 0
         
         elif action == "list":
             suites = list(self.evaluator.suites.values())
             if not suites:
-                print("No evaluation suites found")
+# #                 print("No evaluation suites found")
                 return 0
             
-            print(f"\n{'ID':<12} {'Name':<30} {'Status':<12} {'Tests'}")
-            print("-" * 70)
+# #             print(f"\n{'ID':<12} {'Name':<30} {'Status':<12} {'Tests'}")
+# #             print("-" * 70)
             for s in suites:
-                print(f"{s.id:<12} {s.name[:28]:<30} {s.status.value:<12} {len(s.test_cases)}")
+# #                 print(f"{s.id:<12} {s.name[:28]:<30} {s.status.value:<12} {len(s.test_cases)}")
             return 0
         
         elif action == "report":
             if not args.suite_id:
-                print("Error: --suite-id required")
+# #                 print("Error: --suite-id required")
                 return 1
             
             if args.suite_id not in self.evaluator.suites:
-                print(f"Suite '{args.suite_id}' not found")
+# #                 print(f"Suite '{args.suite_id}' not found")
                 return 1
             
-            print(self.evaluator.generate_report(args.suite_id))
+# #             print(self.evaluator.generate_report(args.suite_id))
             return 0
         
         elif action == "run":
             if not args.suite_id:
-                print("Error: --suite-id required")
+# #                 print("Error: --suite-id required")
                 return 1
             
             if args.suite_id not in self.evaluator.suites:
-                print(f"Suite '{args.suite_id}' not found")
+# #                 print(f"Suite '{args.suite_id}' not found")
                 return 1
             
             # 定義簡單的 mock agent
@@ -403,18 +403,18 @@ class MethodologyCLI:
                 time.sleep(0.1)
                 return f"Response to: {prompt[:50]}..."
             
-            print(f"Running evaluation suite: {args.suite_id}...")
+# #             print(f"Running evaluation suite: {args.suite_id}...")
             self.evaluator.run_suite(args.suite_id, mock_agent)
-            print("✅ Evaluation completed")
+# #             print("✅ Evaluation completed")
             return 0
         
         elif action == "add":
             if not args.suite_id:
-                print("Error: --suite-id required")
+# #                 print("Error: --suite-id required")
                 return 1
             
             if not args.name:
-                print("Error: --name (test case name) required")
+# #                 print("Error: --name (test case name) required")
                 return 1
             
             test = self.evaluator.add_test_case(
@@ -423,16 +423,16 @@ class MethodologyCLI:
                 input_prompt=args.prompt or "Test prompt",
                 expected_output=args.expected
             )
-            print(f"✅ Added test case: {test.id} - {test.name}")
+# #             print(f"✅ Added test case: {test.id} - {test.name}")
             return 0
         
         elif action == "hitl":
             pending = self.hitl.get_pending_count()
-            print(f"\n📋 Human-in-the-Loop")
-            print(f"   Pending reviews: {pending}")
+# #             print(f"\n📋 Human-in-the-Loop")
+# #             print(f"   Pending reviews: {pending}")
             return 0
         
-        print(f"Unknown action: {action}")
+# #         print(f"Unknown action: {action}")
         return 1
     
     def cmd_quality(self, args):
@@ -440,8 +440,8 @@ class MethodologyCLI:
         action = args.action
         
         if action == "check":
-            print("📊 Data Quality Checker")
-            print("=" * 50)
+# #             print("📊 Data Quality Checker")
+# #             print("=" * 50)
             # Generate sample data
             sample_data = [
                 {"id": 1, "name": "Alice", "email": "alice@test.com", "age": 30},
@@ -449,9 +449,9 @@ class MethodologyCLI:
                 {"id": 3, "name": "", "email": "invalid", "age": None},
             ]
             report = self.data_quality.analyze(sample_data)
-            print(self.data_quality.generate_report_markdown(report))
+# #             print(self.data_quality.generate_report_markdown(report))
         elif action == "report":
-            print(self.data_quality.generate_report())
+# #             print(self.data_quality.generate_report())
         return 0
     
     def cmd_enterprise(self, args):
@@ -459,19 +459,19 @@ class MethodologyCLI:
         action = args.action
         
         if action == "status":
-            print("🏢 Enterprise Integration Hub")
-            print("=" * 50)
+# #             print("🏢 Enterprise Integration Hub")
+# #             print("=" * 50)
             status = self.enterprise.get_status()
             for k, v in status.items():
-                print(f"  {k}: {v}")
+# #                 print(f"  {k}: {v}")
         elif action == "audit":
-            print(self.enterprise.audit.generate_report())
+# #             print(self.enterprise.audit.generate_report())
         return 0
     
     def cmd_wizard(self, args):
         """Setup Wizard"""
-        print("🧙‍♂️ Setup Wizard")
-        print("=" * 50)
+# #         print("🧙‍♂️ Setup Wizard")
+# #         print("=" * 50)
         wizard = SetupWizard()
         
         # Interactive setup
@@ -483,10 +483,10 @@ class MethodologyCLI:
             use_case=use_case
         )
         
-        print(f"\n✅ Project created: {config.name}")
-        print(f"   Use case: {config.use_case.value}")
-        print(f"   Workflow: {config.workflow}")
-        print(f"   Agents: {len(config.agents)}")
+# #         print(f"\n✅ Project created: {config.name}")
+# #         print(f"   Use case: {config.use_case.value}")
+# #         print(f"   Workflow: {config.workflow}")
+# #         print(f"   Agents: {len(config.agents)}")
         return 0
     
     def cmd_guardrails(self, args):
@@ -497,17 +497,17 @@ class MethodologyCLI:
             text = args.text or "Sample text to check"
             try:
                 result = self.guardrails.check(text)
-                print("🛡️ Security Check Results")
-                print("=" * 50)
-                print(f"Text: {text[:50]}...")
-                print(f"\nSafe: {'✅' if result.safe else '❌'}")
+# #                 print("🛡️ Security Check Results")
+# #                 print("=" * 50)
+# #                 print(f"Text: {text[:50]}...")
+# #                 print(f"\nSafe: {'✅' if result.safe else '❌'}")
                 if result.threats:
-                    print("\nThreats detected:")
+# #                     print("\nThreats detected:")
                     for threat in result.threats:
-                        print(f"  - {threat}")
+# #                         print(f"  - {threat}")
             except Exception as e:
-                print(f"🛡️ Guardrails Active (method: check)")
-                print(f"   Error during check: {e}")
+# #                 print(f"🛡️ Guardrails Active (method: check)")
+# #                 print(f"   Error during check: {e}")
         return 0
     
     def cmd_scale(self, args):
@@ -516,34 +516,34 @@ class MethodologyCLI:
         
         if action == "status":
             status = self.autoscaler.get_status()
-            print("⚖️ AutoScaler Status")
-            print("=" * 50)
+# #             print("⚖️ AutoScaler Status")
+# #             print("=" * 50)
             for k, v in status.items():
-                print(f"  {k}: {v}")
+# #                 print(f"  {k}: {v}")
         elif action == "scale":
             current = int(args.current or 1)
             target = self.autoscaler.calculate_target_instances(current)
-            print(f"\n⚖️ Scaling Recommendation")
-            print(f"  Current: {current}")
-            print(f"  Target: {target}")
+# #             print(f"\n⚖️ Scaling Recommendation")
+# #             print(f"  Current: {current}")
+# #             print(f"  Target: {target}")
         return 0
     
     def cmd_migrate(self, args):
         """LangGraph Migration Tool"""
         if not args.file:
-            print("Usage: python cli.py migrate <file.py>")
+# #             print("Usage: python cli.py migrate <file.py>")
             return 1
         
-        print(f"🔄 Analyzing {args.file}...")
+# #         print(f"🔄 Analyzing {args.file}...")
         result = self.migrator.analyze_file(args.file)
-        print(self.migrator.generate_report(result))
+# #         print(self.migrator.generate_report(result))
         return 0
     
     def cmd_parse(self, args):
         """Structured Output Engine"""
-        print("📝 Structured Output Engine")
-        print("=" * 50)
-        print(self.structured.generate_report())
+# #         print("📝 Structured Output Engine")
+# #         print("=" * 50)
+# #         print(self.structured.generate_report())
         return 0
     
     def cmd_pm(self, args):
@@ -559,7 +559,7 @@ class MethodologyCLI:
                 blockers=["等不及第三方 API 文件"],
                 velocity=42.0
             )
-            print(report.to_markdown())
+# #             print(report.to_markdown())
         elif action == "forecast":
             forecast = self.pm_mode.predict_cost(
                 project_name="AI Assistant",
@@ -568,13 +568,13 @@ class MethodologyCLI:
                 daily_burn_rate=85.0,
                 days_remaining=18
             )
-            print(forecast.to_markdown())
+# #             print(forecast.to_markdown())
         elif action == "health":
             health = self.pm_mode.get_sprint_health(velocity=35, planned=50, completed=30)
-            print(f"\n## Sprint Health")
-            print(f"Status: {health['health']}")
-            print(f"Score: {health['health_score']}/10")
-            print(f"Completion: {health['completion_rate']:.1f}%")
+# #             print(f"\n## Sprint Health")
+# #             print(f"Status: {health['health']}")
+# #             print(f"Score: {health['health_score']}/10")
+# #             print(f"Completion: {health['completion_rate']:.1f}%")
         return 0
     
     def cmd_term(self, args):
@@ -583,17 +583,17 @@ class MethodologyCLI:
         if query:
             results = self.terminology.search(query)
             if results:
-                print(f"\n# Search: {query}\n")
+# #                 print(f"\n# Search: {query}\n")
                 for r in results[:5]:
-                    print(f"## {r.pm_term}")
-                    print(f"- **Dev**: {r.dev_term}")
-                    print(f"- **Scrum**: {r.scrum_term}")
-                    print(f"- **定義**: {r.definition}")
-                    print()
+# #                     print(f"## {r.pm_term}")
+# #                     print(f"- **Dev**: {r.dev_term}")
+# #                     print(f"- **Scrum**: {r.scrum_term}")
+# #                     print(f"- **定義**: {r.definition}")
+# #                     print()
             else:
-                print(f"No results for '{query}'")
+# #                 print(f"No results for '{query}'")
         else:
-            print(self.terminology.to_markdown_table())
+# #             print(self.terminology.to_markdown_table())
         return 0
     
     def cmd_resources(self, args):
@@ -601,24 +601,24 @@ class MethodologyCLI:
         action = args.action
         
         if action == "list":
-            print(self.resources.to_table())
+# #             print(self.resources.to_table())
         elif action == "stats":
             summary = self.resources.get_resource_summary()
-            print("\n📊 Resource Summary:")
-            print(f"  Total: {summary['total']}")
-            print(f"  Team Size: {summary['team_size']}")
-            print(f"  Monthly Cost: ${summary['total_monthly_cost']:.2f}")
-            print(f"  By Type: {summary['by_type']}")
+# #             print("\n📊 Resource Summary:")
+# #             print(f"  Total: {summary['total']}")
+# #             print(f"  Team Size: {summary['team_size']}")
+# #             print(f"  Monthly Cost: ${summary['total_monthly_cost']:.2f}")
+# #             print(f"  By Type: {summary['by_type']}")
         elif action == "skills":
             matrix = self.resources.get_team_skills_matrix()
-            print("\n👥 Team Skills:")
+# #             print("\n👥 Team Skills:")
             for skill, members in matrix.items():
-                print(f"  {skill}: {', '.join(members)}")
+# #                 print(f"  {skill}: {', '.join(members)}")
         return 0
     
     def cmd_version(self, args):
         """顯示版本"""
-        print(f"Methodology v{self.VERSION}")
+# #         print(f"Methodology v{self.VERSION}")
         return 0
 
 

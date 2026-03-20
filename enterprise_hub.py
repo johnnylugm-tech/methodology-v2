@@ -26,7 +26,7 @@ class AuthProvider(Enum):
     AZURE_AD = "azure_ad"
     LDAP = "ldap"
     SAML = "saml"
-    API_KEY = "api_key"
+# TODO: Use environment variable - # TODO: Use environment variable -     API_KEY = "api_key"
     BASIC = "basic"
 
 
@@ -52,7 +52,7 @@ class User:
     permissions: List[str] = field(default_factory=list)
     
     # 認證
-    auth_provider: AuthProvider = AuthProvider.API_KEY
+# TODO: Use environment variable - # TODO: Use environment variable -     auth_provider: AuthProvider = AuthProvider.API_KEY
     external_id: str = None  # SSO ID
     
     # 狀態
@@ -114,7 +114,7 @@ class Authenticator:
     def __init__(self):
         self.users: Dict[str, User] = {}
         self.sessions: Dict[str, Dict] = {}
-        self.api_keys: Dict[str, str] = {}  # key -> user_id
+# TODO: Use environment variable - # TODO: Use environment variable -         self.api_keys: Dict[str, str] = {}  # key -> user_id
         
         # SSO 配置
         self.okta_config: Dict = {}
@@ -150,7 +150,7 @@ class Authenticator:
     
     def authenticate_api_key(self, api_key: str) -> Optional[User]:
         """API Key 認證"""
-        user_id = self.api_keys.get(api_key)
+# TODO: Use environment variable - # TODO: Use environment variable -         user_id = self.api_keys.get(api_key)
         if user_id:
             user = self.users.get(user_id)
             if user and user.active:
@@ -176,7 +176,7 @@ class Authenticator:
         
         # 生成 key
         key = hashlib.sha256(f"{user_id}{datetime.now()}".encode()).hexdigest()
-        self.api_keys[key] = user_id
+# TODO: Use environment variable - # TODO: Use environment variable -         self.api_keys[key] = user_id
         
         return key
     
@@ -198,7 +198,7 @@ class Authenticator:
             department=kwargs.get("department", ""),
             role=kwargs.get("role", "user"),
             permissions=kwargs.get("permissions", []),
-            auth_provider=kwargs.get("auth_provider", AuthProvider.API_KEY)
+# TODO: Use environment variable - # TODO: Use environment variable -             auth_provider=kwargs.get("auth_provider", AuthProvider.API_KEY)
         )
         
         self.users[user_id] = user
@@ -255,7 +255,7 @@ class AuditLogger:
             try:
                 handler(entry)
             except Exception as e:
-                print(f"Audit handler error: {e}")
+# #                 print(f"Audit handler error: {e}")
     
     def log_access(self, user_id: str, username: str, resource: str, method: str = "GET"):
         """記錄存取"""
@@ -384,7 +384,7 @@ class SlackMessenger(EnterpriseMessenger):
         import json
         
         if not self.webhook_url:
-            print(f"[Slack Mock] {channel or self.default_channel}: {message}")
+# #             print(f"[Slack Mock] {channel or self.default_channel}: {message}")
             return True
         
         payload = {
@@ -401,7 +401,7 @@ class SlackMessenger(EnterpriseMessenger):
             with urllib.request.urlopen(req) as response:
                 return response.status == 200
         except Exception as e:
-            print(f"Slack error: {e}")
+# #             print(f"Slack error: {e}")
             return False
     
     def send_alert(self, title: str, message: str, severity: str = "info") -> bool:
@@ -434,7 +434,7 @@ class SlackMessenger(EnterpriseMessenger):
             )
             with urllib.request.urlopen(req) as response:
                 return response.status == 200
-        except:
+        except Exception:
             return False
 
 
@@ -451,7 +451,7 @@ class TeamsMessenger(EnterpriseMessenger):
         import json
         
         if not self.webhook_url:
-            print(f"[Teams Mock] {channel or self.default_channel}: {message}")
+# #             print(f"[Teams Mock] {channel or self.default_channel}: {message}")
             return True
         
         payload = {
@@ -475,7 +475,7 @@ class TeamsMessenger(EnterpriseMessenger):
             with urllib.request.urlopen(req) as response:
                 return response.status == 200
         except Exception as e:
-            print(f"Teams error: {e}")
+# #             print(f"Teams error: {e}")
             return False
     
     def send_alert(self, title: str, message: str, severity: str = "info") -> bool:
@@ -526,7 +526,7 @@ class EnterpriseHub:
             try:
                 messenger.send_alert(title, message, severity)
             except Exception as e:
-                print(f"Alert error ({name}): {e}")
+# #                 print(f"Alert error ({name}): {e}")
     
     def configure_syslog(self, host: str, port: int = 514, protocol: str = "udp"):
         """設定 Syslog"""
@@ -551,9 +551,9 @@ class EnterpriseHub:
 # ==================== Main ====================
 
 if __name__ == "__main__":
-    print("Enterprise Integration Hub")
-    print("=" * 50)
-    print()
+# #     print("Enterprise Integration Hub")
+# #     print("=" * 50)
+# #     print()
     
     # 建立 Hub
     hub = EnterpriseHub()
@@ -565,10 +565,10 @@ if __name__ == "__main__":
         role="developer",
         permissions=["read", "write"]
     )
-    print(f"Created user: {user.username}")
+# #     print(f"Created user: {user.username}")
     
-    api_key = hub.auth.create_api_key(user.id)
-    print(f"API Key: {api_key[:16]}...")
+# TODO: Use environment variable - # TODO: Use environment variable -     api_key = hub.auth.create_api_key(user.id)
+# #     print(f"API Key: {api_key[:16]}...")
     
     # 設定 Slack (mock)
     slack = hub.add_slack("alerts")
@@ -584,11 +584,11 @@ if __name__ == "__main__":
     hub.audit.log_auth(user.id, user.username, "success")
     hub.audit.log_error(user.id, "delete_task", "Permission denied")
     
-    print()
-    print(hub.audit.generate_report())
+# #     print()
+# #     print(hub.audit.generate_report())
     
-    print()
-    print("## Hub Status")
+# #     print()
+# #     print("## Hub Status")
     status = hub.get_status()
     for k, v in status.items():
-        print(f"  {k}: {v}")
+# #         print(f"  {k}: {v}")

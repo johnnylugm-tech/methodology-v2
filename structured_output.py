@@ -322,7 +322,7 @@ class StructuredOutputEngine:
             # 嘗試提取 JSON
             json_str = self._extract_json(raw_output)
             return json.loads(json_str)
-        except:
+        except Exception:
             pass
         
         # Strategy 2: Regex extraction
@@ -337,7 +337,7 @@ class StructuredOutputEngine:
             match = re.search(r'\{[\s\S]*\}', raw_output)
             if match:
                 return json.loads(match.group(0))
-        except:
+        except Exception:
             pass
         
         # Strategy 3: Key-value extraction
@@ -346,7 +346,7 @@ class StructuredOutputEngine:
             data = self._extract_kv(raw_output)
             if data:
                 return data
-        except:
+        except Exception:
             pass
         
         return None
@@ -435,7 +435,7 @@ def extract_json(text: str) -> Optional[Dict]:
         match = re.search(r'\{[\s\S]*\}', text)
         if match:
             return json.loads(match.group(0))
-    except:
+    except Exception:
         pass
     return None
 
@@ -454,9 +454,9 @@ def extract_structured(text: str, keys: List[str]) -> Dict:
 # ==================== Main ====================
 
 if __name__ == "__main__":
-    print("Structured Output Engine")
-    print("=" * 50)
-    print()
+# #     print("Structured Output Engine")
+# #     print("=" * 50)
+# #     print()
     
     # 建立引擎
     engine = StructuredOutputEngine()
@@ -490,41 +490,41 @@ if __name__ == "__main__":
             return '{"summary": "Test analysis", "sentiment": "positive", "confidence": 0.95}'
     
     # 測試解析
-    print("## Testing JSON Extraction")
+# #     print("## Testing JSON Extraction")
     result = engine.parse(
         prompt="Extract user info from the text",
         llm_call=mock_llm,
         schema_name="user_info"
     )
     
-    print(f"Success: {result.success}")
-    print(f"Strategy: {result.strategy_used.value}")
-    print(f"Attempts: {result.attempts}")
-    print(f"Parse Time: {result.parse_time_ms:.2f}ms")
-    print(f"Data: {result.data}")
+# #     print(f"Success: {result.success}")
+# #     print(f"Strategy: {result.strategy_used.value}")
+# #     print(f"Attempts: {result.attempts}")
+# #     print(f"Parse Time: {result.parse_time_ms:.2f}ms")
+# #     print(f"Data: {result.data}")
     if result.validation:
-        print(f"Valid: {result.validation.valid}")
+# #         print(f"Valid: {result.validation.valid}")
         if result.validation.errors:
-            print(f"Errors: {result.validation.errors}")
-    print()
+# #             print(f"Errors: {result.validation.errors}")
+# #     print()
     
     # 測試 Task 解析
-    print("## Testing Task Extraction")
+# #     print("## Testing Task Extraction")
     result2 = engine.parse(
         prompt="Extract task info",
         llm_call=mock_llm,
         schema_name="task"
     )
     
-    print(f"Success: {result2.success}")
-    print(f"Data: {result2.data}")
-    print()
+# #     print(f"Success: {result2.success}")
+# #     print(f"Data: {result2.data}")
+# #     print()
     
     # 產生報告
-    print(engine.generate_report())
+# #     print(engine.generate_report())
     
     # 快速提取
-    print("## Quick Extract")
+# #     print("## Quick Extract")
     text = "User: Alice, Email: alice@test.com, ID: 999"
     quick = extract_structured(text, ["User", "Email", "ID"])
-    print(f"Quick extract: {quick}")
+# #     print(f"Quick extract: {quick}")

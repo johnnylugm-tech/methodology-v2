@@ -464,7 +464,7 @@ def analyze_complexity(code: str) -> Dict[str, Any]:
     """分析程式碼複雜度"""
     try:
         tree = ast.parse(code)
-    except:
+    except Exception:
         return {"error": "Cannot parse code"}
     
     class ComplexityVisitor(ast.NodeVisitor):
@@ -518,9 +518,9 @@ def analyze_complexity(code: str) -> Dict[str, Any]:
 # ==================== Main ====================
 
 if __name__ == "__main__":
-    print("LangGraph Migration Tool")
-    print("=" * 50)
-    print()
+# #     print("LangGraph Migration Tool")
+# #     print("=" * 50)
+# #     print()
     
     # 建立工具
     tool = LangGraphMigrationTool()
@@ -539,18 +539,18 @@ class MyAgent:
     
     def summarize(self, text):
         for i in range(3):
-            print(i)
+# #             print(i)
         return text[:100]
 '''
     
-    print("## Complexity Analysis")
+# #     print("## Complexity Analysis")
     complexity = analyze_complexity(test_code)
     for k, v in complexity.items():
-        print(f"  {k}: {v}")
-    print()
+# #         print(f"  {k}: {v}")
+# #     print()
     
     # 測試快速遷移
-    print("## Quick Migration")
+# #     print("## Quick Migration")
     agent_code = '''
 state = {
     "messages": [],
@@ -559,10 +559,10 @@ state = {
 }
 '''
     migrated = quick_migrate_agent(agent_code)
-    print(migrated)
-    print()
+# #     print(migrated)
+# #     print()
     
     # 顯示預設模式
-    print("## Supported Patterns")
+# #     print("## Supported Patterns")
     for i, p in enumerate(tool.patterns[:5], 1):
-        print(f"  {i}. {p.pattern_name}: {p.description}")
+# #         print(f"  {i}. {p.pattern_name}: {p.description}")

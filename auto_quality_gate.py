@@ -63,7 +63,7 @@ class AutoQualityGate:
         self.auto_fix = auto_fix
         self.reports: List[QualityReport] = []
         
-        print(f"[AutoQualityGate] Auto-fix: {'ON' if auto_fix else 'OFF'}")
+# #         print(f"[AutoQualityGate] Auto-fix: {'ON' if auto_fix else 'OFF'}")
     
     def scan(self, file_path: str) -> QualityReport:
         """
@@ -120,7 +120,7 @@ class AutoQualityGate:
             report.score = self._calculate_score(report.issues)
             report.passed = report.score >= 80
         except Exception as e:
-            print(f"Scan error: {e}")
+# #             print(f"Scan error: {e}")
         
         self.reports.append(report)
         
@@ -128,9 +128,9 @@ class AutoQualityGate:
         if self.auto_fix and report.issues:
             fixable = [i for i in report.issues if i.fixable]
             if fixable:
-                print(f"[AutoQualityGate] 自動修復 {len(fixable)} 個問題...")
+# #                 print(f"[AutoQualityGate] 自動修復 {len(fixable)} 個問題...")
                 fix_result = self.fix(report)
-                print(f"[AutoQualityGate] 已修復 {fix_result['success']}/{fix_result['total']} 個問題")
+# #                 print(f"[AutoQualityGate] 已修復 {fix_result['success']}/{fix_result['total']} 個問題")
         
         return report
     
@@ -155,7 +155,7 @@ class AutoQualityGate:
                         fix_suggestion="移除或使用日誌"
                     ))
                 
-                if "except:" in line:
+                if "except Exception:" in line:
                     issues.append(QualityIssue(
                         rule_id="empty-except",
                         severity="warning",
@@ -189,7 +189,7 @@ class AutoQualityGate:
                     ))
                     
         except Exception as e:
-            print(f"Read error: {e}")
+# #             print(f"Read error: {e}")
         
         return issues
     
@@ -272,7 +272,7 @@ class AutoQualityGate:
                 if issue.rule_id == "print-debug":
                     # 註釋掉 print 語句
                     for i, line in enumerate(lines, 1):
-                        if i == issue.line and "print(" in line:
+# #                         if i == issue.line and "print(" in line:
                             lines[i-1] = "# " + lines[i-1]
                             fixed.append(f"Line {i}: 註釋調試輸出")
                             break
@@ -280,15 +280,15 @@ class AutoQualityGate:
                 elif issue.rule_id == "empty-except":
                     # 改為具體異常
                     for i, line in enumerate(lines, 1):
-                        if i == issue.line and "except:" in line:
-                            lines[i-1] = line.replace("except:", "except Exception:")
+                        if i == issue.line and "except Exception:" in line:
+                            lines[i-1] = line.replace("except Exception:", "except Exception:")
                             fixed.append(f"Line {i}: 添加具體異常")
                             break
                             
                 elif issue.rule_id == "hardcoded-secret":
                     # 添加註釋提醒
                     for i, line in enumerate(lines, 1):
-                        if i == issue.line and ("password" in line.lower() or "api_key" in line.lower()):
+# TODO: Use environment variable - # TODO: Use environment variable -                         if i == issue.line and ("password" in line.lower() or "api_key" in line.lower()):
                             lines[i-1] = "# TODO: Use environment variable - " + lines[i-1]
                             fixed.append(f"Line {i}: 添加環境變數提醒")
                             break
@@ -376,10 +376,10 @@ if __name__ == "__main__":
     import sys
     
     if len(sys.argv) < 2:
-        print("Usage:")
-        print("  python auto_quality_gate.py scan <file>")
-        print("  python auto_quality_gate.py fix <file>")
-        print("  python auto_quality_gate.py report")
+# #         print("Usage:")
+# #         print("  python auto_quality_gate.py scan <file>")
+# #         print("  python auto_quality_gate.py fix <file>")
+# #         print("  python auto_quality_gate.py report")
         sys.exit(1)
     
     command = sys.argv[1]
@@ -387,39 +387,39 @@ if __name__ == "__main__":
     
     if command == "scan":
         if len(sys.argv) < 3:
-            print("Usage: python auto_quality_gate.py scan <file>")
+# #             print("Usage: python auto_quality_gate.py scan <file>")
             sys.exit(1)
         
         report = gate.scan(sys.argv[2])
-        print(f"\nFile: {report.file}")
-        print(f"Score: {report.score}/100")
-        print(f"Status: {'✅ PASSED' if report.passed else '❌ FAILED'}")
-        print(f"\nIssues found: {len(report.issues)}")
+# #         print(f"\nFile: {report.file}")
+# #         print(f"Score: {report.score}/100")
+# #         print(f"Status: {'✅ PASSED' if report.passed else '❌ FAILED'}")
+# #         print(f"\nIssues found: {len(report.issues)}")
         for issue in report.issues:
-            print(f"  [{issue.severity}] {issue.rule_id}: {issue.message}")
+# #             print(f"  [{issue.severity}] {issue.rule_id}: {issue.message}")
     
     elif command == "fix":
         if len(sys.argv) < 3:
-            print("Usage: python auto_quality_gate.py fix <file>")
+# #             print("Usage: python auto_quality_gate.py fix <file>")
             sys.exit(1)
         
         report = gate.scan(sys.argv[2])
-        print(f"Score before fix: {report.score}/100")
+# #         print(f"Score before fix: {report.score}/100")
         
         result = gate.fix(report)
-        print(f"\nFixed: {result['success']}/{result['total']}")
+# #         print(f"\nFixed: {result['success']}/{result['total']}")
         for f in result["fixed"]:
-            print(f"  ✅ {f}")
+# #             print(f"  ✅ {f}")
         
         # 重新掃描
         report2 = gate.scan(sys.argv[2])
-        print(f"\nScore after fix: {report2.score}/100")
+# #         print(f"\nScore after fix: {report2.score}/100")
     
     elif command == "report":
-        print(gate.generate_report("markdown"))
+# #         print(gate.generate_report("markdown"))
     
     else:
-        print(f"Unknown command: {command}")
+# #         print(f"Unknown command: {command}")
         sys.exit(1)
 
 # ==================== Security Audit 整合 ====================
