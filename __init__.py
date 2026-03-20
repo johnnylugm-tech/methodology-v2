@@ -50,7 +50,7 @@ from .dashboard_cost_trend import CostTrendAnalyzer, CostSnapshot, CostTrend, Co
 from .failover_manager import FailoverManager, CircuitBreaker, ModelEndpoint, FailoverEvent
 from .parallel_executor import ParallelExecutor, ParallelTask, Worker, ExecutionResult
 
-__version__ = "3.0.1"
+__version__ = "3.1.0"
 
 __all__ = [
     # Core
@@ -159,4 +159,29 @@ __all__ = [
     "ParallelTask",
     "Worker",
     "ExecutionResult",
+
+    # Multi-Agent Team (v3.1)
+    "AgentTeam",
+    "AgentDefinition",
+    "AgentInstance",
+    "AgentRole",
+    "AgentCapability",
+    "AgentPermission",
+    "AgentTool",
+
+    # Agent Communication
+    "AgentCommunication",
+    "AgentMessage",
+    "HandoffRule",
+    "Conversation",
+    "ConflictRecord",
+    "MessageType",
+    "HandoffTrigger",
+
+    # Agent State
+    "StateManager",
+    "AgentState",
+    "AgentTask",
+    "Artifact",
+    "TaskStatus",
 ]
