@@ -171,6 +171,29 @@ core = MethodologyCore(config=config)
 
 ---
 
+## 關鍵亮點
+
+| # | 亮點 | 說明 |
+|---|------|------|
+| 1 | **統一入口** | `MethodologyCore()` 一行初始化 |
+| 2 | **AgentCoordination** | Registry + MessageBus + WorkflowGraph + ApprovalFlow |
+| 3 | **三大核心工具** | Model Router · Agent Monitor · Agent Quality Guard |
+| 4 | **成本優化** | 省 70-93% 費用 |
+| 5 | **企業整合** | MCP 支援 Slack/GitHub/Notion |
+| 6 | **預測監控** | 趨勢預測 + 風險預警 |
+| 7 | **持久化** | SQLite / PostgreSQL |
+| 8 | **開關配置** | 每個功能可獨立開關 |
+
+### 三大核心工具
+
+| 工具 | GitHub | 功能 |
+|------|--------|------|
+| **Model Router** | [model-router-v2](https://github.com/johnnylugm-tech/model-router-v2) | 智慧路由，省 70-93% |
+| **Agent Monitor** | [agent-dashboard-v3](https://github.com/johnnylugm-tech/agent-dashboard-v3) | 監控儀表板 |
+| **Agent Quality Guard** | [Agent-Quality-Guard](https://github.com/johnnylugm-tech/Agent-Quality-Guard) | 品質把關 |
+
+---
+
 ## 🤝 貢獻
 
 歡迎提交 Issue 和 PR！
