@@ -614,8 +614,8 @@ if __name__ == "__main__":
     
     evaluator.add_test_case(
         suite_id=suite.id,
-# TODO: Use environment variable - # TODO: Use environment variable -         name="Invalid Password",
-# TODO: Use environment variable - # TODO: Use environment variable -         input_prompt="User enters wrong password",
+# TODO: Use environment variable - # TODO: Use environment variable - # TODO: Use environment variable -         name="Invalid Password",
+# TODO: Use environment variable - # TODO: Use environment variable - # TODO: Use environment variable -         input_prompt="User enters wrong password",
         expected_output="Authentication failed",
         tags=["error_case"]
     )

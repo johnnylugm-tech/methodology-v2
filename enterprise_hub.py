@@ -26,7 +26,7 @@ class AuthProvider(Enum):
     AZURE_AD = "azure_ad"
     LDAP = "ldap"
     SAML = "saml"
-# TODO: Use environment variable - # TODO: Use environment variable -     API_KEY = "api_key"
+# TODO: Use environment variable - # TODO: Use environment variable - # TODO: Use environment variable -     API_KEY = "api_key"
     BASIC = "basic"
 
 
@@ -52,7 +52,7 @@ class User:
     permissions: List[str] = field(default_factory=list)
     
     # 認證
-# TODO: Use environment variable - # TODO: Use environment variable -     auth_provider: AuthProvider = AuthProvider.API_KEY
+# TODO: Use environment variable - # TODO: Use environment variable - # TODO: Use environment variable -     auth_provider: AuthProvider = AuthProvider.API_KEY
     external_id: str = None  # SSO ID
     
     # 狀態
@@ -114,7 +114,7 @@ class Authenticator:
     def __init__(self):
         self.users: Dict[str, User] = {}
         self.sessions: Dict[str, Dict] = {}
-# TODO: Use environment variable - # TODO: Use environment variable -         self.api_keys: Dict[str, str] = {}  # key -> user_id
+# TODO: Use environment variable - # TODO: Use environment variable - # TODO: Use environment variable -         self.api_keys: Dict[str, str] = {}  # key -> user_id
         
         # SSO 配置
         self.okta_config: Dict = {}
@@ -150,7 +150,7 @@ class Authenticator:
     
     def authenticate_api_key(self, api_key: str) -> Optional[User]:
         """API Key 認證"""
-# TODO: Use environment variable - # TODO: Use environment variable -         user_id = self.api_keys.get(api_key)
+# TODO: Use environment variable - # TODO: Use environment variable - # TODO: Use environment variable -         user_id = self.api_keys.get(api_key)
         if user_id:
             user = self.users.get(user_id)
             if user and user.active:
@@ -176,7 +176,7 @@ class Authenticator:
         
         # 生成 key
         key = hashlib.sha256(f"{user_id}{datetime.now()}".encode()).hexdigest()
-# TODO: Use environment variable - # TODO: Use environment variable -         self.api_keys[key] = user_id
+# TODO: Use environment variable - # TODO: Use environment variable - # TODO: Use environment variable -         self.api_keys[key] = user_id
         
         return key
     
@@ -198,7 +198,7 @@ class Authenticator:
             department=kwargs.get("department", ""),
             role=kwargs.get("role", "user"),
             permissions=kwargs.get("permissions", []),
-# TODO: Use environment variable - # TODO: Use environment variable -             auth_provider=kwargs.get("auth_provider", AuthProvider.API_KEY)
+# TODO: Use environment variable - # TODO: Use environment variable - # TODO: Use environment variable -             auth_provider=kwargs.get("auth_provider", AuthProvider.API_KEY)
         )
         
         self.users[user_id] = user
@@ -567,7 +567,7 @@ if __name__ == "__main__":
     )
 # #     print(f"Created user: {user.username}")
     
-# TODO: Use environment variable - # TODO: Use environment variable -     api_key = hub.auth.create_api_key(user.id)
+# TODO: Use environment variable - # TODO: Use environment variable - # TODO: Use environment variable -     api_key = hub.auth.create_api_key(user.id)
 # #     print(f"API Key: {api_key[:16]}...")
     
     # 設定 Slack (mock)
