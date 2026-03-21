@@ -15,6 +15,13 @@
 | 9 | Output Validator | [case09_output_validator.md](case09_output_validator.md) | Schema 驗證、自動化修復 |
 | 10 | Agent Debugger | [case10_agent_debugger.md](case10_agent_debugger.md) | Trace、觀測性、可視化 |
 | 11 | Framework Bridge | [case11_framework_bridge.md](case11_framework_bridge.md) | CrewAI ↔ LangGraph 遷移 |
+| 12 | Agent Memory | [case12_agent_memory.md](case12_agent_memory.md) | 長期記憶、上下文管理 |
+| 13 | Observability | [case13_observability.md](case13_observability.md) | 可觀測性、日誌、追蹤 |
+| 14 | Auto Debugger | [case14_auto_debugger.md](case14_auto_debugger.md) | 自動調試、錯誤分類 |
+| 15 | API Gateway | [case15_api_gateway.md](case15_api_gateway.md) | API 閘道、限流 |
+| 16 | Governance | [case16_governance.md](case16_governance.md) | 治理合規、政策執行 |
+| 17 | Advanced Security | [case17_advanced_security.md](case17_advanced_security.md) | 安全掃描、滲透測試 |
+| 18 | Performance Optimizer | [case18_performance_optimizer.md](case18_performance_optimizer.md) | 效能優化、緩存 |
 
 ---
 
@@ -48,6 +55,13 @@
 - [ ] OmO + Methodology-v2 → [案例 8：OmO + v2 整合實戰](case08_omo_integration.md#案例-8omo--methodology-v2-整合實戰)
 
 ### 我需要強化生產環境...
+- [ ] Agent Memory → [案例 12：Agent Memory](case12_agent_memory.md)
+- [ ] Observability → [案例 13：Observability](case13_observability.md)
+- [ ] Auto Debugger → [案例 14：Auto Debugger](case14_auto_debugger.md)
+- [ ] API Gateway → [案例 15：API Gateway](case15_api_gateway.md)
+- [ ] Governance → [案例 16：Governance](case16_governance.md)
+- [ ] Advanced Security → [案例 17：Advanced Security](case17_advanced_security.md)
+- [ ] Performance → [案例 18：Performance Optimizer](case18_performance_optimizer.md)
 - [ ] 輸出格式驗證 → [案例 9：Output Validator](case09_output_validator.md#案例-9agent-output-validator-方案-f)
 - [ ] Agent 追蹤除錯 → [案例 10：Agent Debugger](case10_agent_debugger.md#案例-10agent-debugger-方案-g)
 - [ ] 框架遷移 → [案例 11：Framework Bridge](case11_framework_bridge.md#案例-11framework-bridge-方案-h)

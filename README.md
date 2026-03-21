@@ -287,7 +287,7 @@
 | | marketplace.py | 模板市場 |
 | | test_framework.py | 測試框架 |
 
-### Solutions A-H
+### Solutions A-R
 
 | 方案 | 模組 | 功能 |
 |------|------|------|
@@ -299,6 +299,13 @@
 | **F: Output Validator** | agent_output_validator.py | Schema 驗證 + 自動修復 |
 | **G: Agent Debugger** | agent_debugger.py | Trace/觀測性系統 |
 | **H: Framework Bridge** | framework_bridge.py | CrewAI ↔ LangGraph 雙向遷移 |
+| **I: Agent Memory** | agent_memory/ | 長期記憶、上下文管理 |
+| **J: Observability** | observability/ | 可觀測性、日誌、追蹤 |
+| **K: Auto Debugger** | auto_debugger/ | 自動調試、錯誤分類 |
+| **L: API Gateway** | api_gateway/ | API 閘道、限流 |
+| **M: Governance** | governance/ | 治理合規、政策執行 |
+| **N: Advanced Security** | advanced-security/ | 安全掃描、滲透測試 |
+| **O: Performance** | performance_optimizer/ | 效能優化、緩存 |
 
 ---
 
