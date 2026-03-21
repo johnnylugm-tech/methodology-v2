@@ -107,7 +107,7 @@ class MethodologyCLI:
         elif command == "resources":
             return self.cmd_resources(args)
         else:
-            pass # Removed print-debug
+            print(f"Unknown command: {command}")
             return 1
         
         return 0
@@ -118,7 +118,7 @@ class MethodologyCLI:
         """初始化專案"""
         project_name = args.name or "my-project"
         
-        pass # Removed print-debug
+        print(f"Initializing project: {project_name}")
         
         # Create project structure
         dirs = [".methodology", ".methodology/tasks", ".methodology/sprints"]
@@ -128,11 +128,11 @@ class MethodologyCLI:
         # Save initial state
         self.progress.save()
         
-        pass # Removed print-debug
-        pass # Removed print-debug
-        pass # Removed print-debug
-        pass # Removed print-debug
-        pass # Removed print-debug
+        print(f"✅ Project '{project_name}' initialized")
+        print(f"\nNext steps:")
+        print(f"  python cli.py task add \"Your first task\"")
+        print(f"  python cli.py sprint create")
+        print(f"  python cli.py board")
         
         return 0
     
@@ -146,27 +146,27 @@ class MethodologyCLI:
                 story_points=args.points or 1,
                 priority=args.priority or 3
             )
-            pass # Removed print-debug
-            pass # Removed print-debug
-            pass # Removed print-debug
+            print(f"✅ Task added: {item_id}")
+            print(f"   Title: {args.title or 'New Task'}")
+            print(f"   Points: {args.points or 1}")
             
         elif action == "list":
             self.progress.load()
             items = list(self.progress.backlog.values())
             if not items:
-                pass # Removed print-debug
+                print("No tasks found")
                 return 0
             
-            pass # Removed print-debug
-            pass # Removed print-debug
+            print(f"\n{'ID':<10} {'Title':<30} {'Points':<8} {'Status':<12}")
+            print("-" * 60)
             for item in items:
-                pass # Removed print-debug
+                print(f"{item.id:<10} {item.title[:28]:<30} {item.story_points:<8} {item.sprint_id or 'backlog':<12}")
             
         elif action == "complete":
             if self.progress.mark_item_completed(args.task_id):
-                pass # Removed print-debug
+                print(f"✅ Task {args.task_id} marked as completed")
             else:
-                pass # Removed print-debug
+                print(f"❌ Task {args.task_id} not found")
         
         return 0
     
@@ -181,63 +181,63 @@ class MethodologyCLI:
                 end_date=args.end or (datetime.now().replace(day=14)).strftime("%Y-%m-%d"),
                 capacity=args.capacity or 40
             )
-            pass # Removed print-debug
-            pass # Removed print-debug
-            pass # Removed print-debug
+            print(f"✅ Sprint created: {sprint.name}")
+            print(f"   Duration: {sprint.duration_days} days")
+            print(f"   Capacity: {sprint.capacity_points} points")
             
         elif action == "list":
             sprints = list(self.sprint_planner.sprints.values())
             if not sprints:
-                pass # Removed print-debug
+                print("No sprints found")
                 return 0
             
-            pass # Removed print-debug
-            pass # Removed print-debug
+            print(f"\n{'ID':<15} {'Name':<20} {'Status':<12} {'Capacity':<10}")
+            print("-" * 60)
             for s in sprints:
                 status = "active" if s.is_active else ("completed" if s.is_completed else "planning")
-                pass # Removed print-debug
+                print(f"{s.id:<15} {s.name[:18]:<20} {status:<12} {s.capacity_points:<10}")
         
         elif action == "start":
             if self.sprint_planner.start_sprint(args.sprint_id):
-                pass # Removed print-debug
+                print(f"✅ Sprint {args.sprint_id} started")
             else:
-                pass # Removed print-debug
+                print(f"❌ Sprint {args.sprint_id} not found")
         
         return 0
     
     def cmd_board(self, args):
         """開啟視覺化儀表板"""
-        pass # Removed print-debug
-        pass # Removed print-debug
-        pass # Removed print-debug
-        pass # Removed print-debug
+        print("╔" + "═" * 60 + "╗")
+        print("║" + " PROJECT BOARD ".center(60) + "║")
+        print("╚" + "═" * 60 + "╝")
+        print()
         
         # Progress
         summary = {"total_items": len(self.progress.backlog), "completed_items": sum(1 for i in self.progress.backlog.values() if i.completed)}
         
-        pass # Removed print-debug
+        print("📊 Progress:")
         if summary:
-            pass # Removed print-debug
-            pass # Removed print-debug
-            pass # Removed print-debug
-            pass # Removed print-debug
+            print(f"   Total Items: {summary.get("total_items", 0)}")
+            print(f"   Completed: {summary.get('completed_items', 0)}")
+            print(f"   In Progress: {summary.get('in_progress_items', 0)}")
+            print(f"   Completion: {summary.get('completion_rate', 0):.1f}%")
         else:
-            pass # Removed print-debug
+            print("   No data")
         
-        pass # Removed print-debug
+        print()
         
         # Gantt
         if self.gantt.tasks:
-            pass # Removed print-debug
-            pass # Removed print-debug
+            print("📅 Gantt Chart:")
+            print(self.gantt.to_rich_ascii())
         else:
-            pass # Removed print-debug
+            print("📅 Gantt: No tasks")
         
-        pass # Removed print-debug
+        print()
         
         # Message Bus
-        pass # Removed print-debug
-        pass # Removed print-debug
+        print("📬 Message Bus:")
+        print(self.bus.to_cli())
         
         return 0
     
@@ -245,31 +245,31 @@ class MethodologyCLI:
         """生成報告"""
         report_type = args.type or "weekly"
         
-        pass # Removed print-debug
-        pass # Removed print-debug
-        pass # Removed print-debug
-        pass # Removed print-debug
-        pass # Removed print-debug
-        pass # Removed print-debug
+        print("╔" + "═" * 60 + "╗")
+        print("║" + f" {report_type.upper()} REPORT ".center(60) + "║")
+        print("╚" + "═" * 60 + "╝")
+        print()
+        print(f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M')}")
+        print()
         
         # Progress
-        pass # Removed print-debug
+        print("## 📊 Progress")
         summary = {"total_items": len(self.progress.backlog), "completed_items": sum(1 for i in self.progress.backlog.values() if i.completed)}
         if summary:
             for key, value in summary.items():
-                pass # Removed print-debug
-        pass # Removed print-debug
+                print(f"   {key}: {value}")
+        print()
         
         # Data sources
-        pass # Removed print-debug
+        print("## 📈 Data Sources")
         connections = self.data_manager.list_connections()
         if connections:
             for conn in connections:
                 status = "✅" if conn['connected'] else "❌"
-                pass # Removed print-debug
+                print(f"   {status} {conn['name']} ({conn['type']})")
         else:
-            pass # Removed print-debug
-        pass # Removed print-debug
+            print("   No data sources connected")
+        print()
         
         # Save report
         if args.output:
@@ -277,37 +277,37 @@ class MethodologyCLI:
                 f.write(f"# {report_type.upper()} Report\n\n")
                 f.write(f"Generated: {datetime.now().isoformat()}\n\n")
                 f.write(json.dumps(summary, indent=2, default=str))
-            pass # Removed print-debug
+            print(f"✅ Report saved to {args.output}")
         
         return 0
     
     def cmd_status(self, args):
         """顯示狀態"""
         self.progress.load()
-        pass # Removed print-debug
-        pass # Removed print-debug
-        pass # Removed print-debug
-        pass # Removed print-debug
-        pass # Removed print-debug
-        pass # Removed print-debug
+        print("╔" + "═" * 60 + "╗")
+        print("║" + " METHODOLOGY STATUS ".center(60) + "║")
+        print("╚" + "═" * 60 + "╝")
+        print()
+        print(f"Version: {self.VERSION}")
+        print()
         
         # Tasks
         items = list(self.progress.backlog.values())
-        pass # Removed print-debug
+        print(f"📋 Tasks: {len(items)} total")
         
         # Sprints
         sprints = list(self.sprint_planner.sprints.values())
         active = sum(1 for s in sprints if s.is_active)
-        pass # Removed print-debug
+        print(f"🏃 Sprints: {len(sprints)} total, {active} active")
         
         # Message Bus
         bus_status = self.bus.get_queue_status()
-        pass # Removed print-debug
+        print(f"📬 Message Bus: {bus_status['queue_size']} queued")
         
         # Data Sources
         connections = self.data_manager.list_connections()
         connected = sum(1 for c in connections if c['connected'])
-        pass # Removed print-debug
+        print(f"🔗 Data Sources: {connected}/{len(connections)} connected")
         
         return 0
     
@@ -316,20 +316,20 @@ class MethodologyCLI:
         action = args.action
         
         if action == "list":
-            pass # Removed print-debug
-            pass # Removed print-debug
-            pass # Removed print-debug
-            pass # Removed print-debug
-            pass # Removed print-debug
-            pass # Removed print-debug
-            pass # Removed print-debug
-            pass # Removed print-debug
-            pass # Removed print-debug
-            pass # Removed print-debug
-            pass # Removed print-debug
-            pass # Removed print-debug
-            pass # Removed print-debug
-            pass # Removed print-debug
+            print("📦 Resources:")
+            print("   (Use DataSourceManager to connect resources)")
+            print()
+            print("   Connect to data sources:")
+            print("   - Prometheus (metrics)")
+            print("   - Jira (tasks)")
+            print("   - OpenTelemetry (traces)")
+            print()
+            print("   Example:")
+            print("   ```python")
+            print("   from methodology import DataSourceManager, PrometheusConnector")
+            print("   dm = DataSourceManager()")
+            print("   dm.connect('prom', PrometheusConnector, url='http://localhost:9090')")
+            print("   ```")
         
         return 0
     
@@ -338,14 +338,14 @@ class MethodologyCLI:
         action = args.action
         
         if action == "status":
-            pass # Removed print-debug
+            print(self.bus.to_cli())
         
         elif action == "tree":
-            pass # Removed print-debug
+            print(self.bus.to_tree())
         
         elif action == "watch":
             seconds = args.seconds or 10
-            pass # Removed print-debug
+            print(f"Watching Message Bus for {seconds} seconds...")
             self.bus.watch(seconds)
         
         return 0
@@ -360,41 +360,41 @@ class MethodologyCLI:
                 description=args.description or "",
                 iterations=args.iterations or 1
             )
-            pass # Removed print-debug
-            pass # Removed print-debug
+            print(f"✅ Created evaluation suite: {suite.id}")
+            print(f"   Name: {suite.name}")
             return 0
         
         elif action == "list":
             suites = list(self.evaluator.suites.values())
             if not suites:
-                pass # Removed print-debug
+                print("No evaluation suites found")
                 return 0
             
-            pass # Removed print-debug
-            pass # Removed print-debug
+            print(f"\n{'ID':<12} {'Name':<30} {'Status':<12} {'Tests'}")
+            print("-" * 70)
             for s in suites:
-                pass # Removed print-debug
+                print(f"{s.id:<12} {s.name[:28]:<30} {s.status.value:<12} {len(s.test_cases)}")
             return 0
         
         elif action == "report":
             if not args.suite_id:
-                pass # Removed print-debug
+                print("Error: --suite-id required")
                 return 1
             
             if args.suite_id not in self.evaluator.suites:
-                pass # Removed print-debug
+                print(f"Suite '{args.suite_id}' not found")
                 return 1
             
-            pass # Removed print-debug
+            print(self.evaluator.generate_report(args.suite_id))
             return 0
         
         elif action == "run":
             if not args.suite_id:
-                pass # Removed print-debug
+                print("Error: --suite-id required")
                 return 1
             
             if args.suite_id not in self.evaluator.suites:
-                pass # Removed print-debug
+                print(f"Suite '{args.suite_id}' not found")
                 return 1
             
             # 定義簡單的 mock agent
@@ -403,18 +403,18 @@ class MethodologyCLI:
                 time.sleep(0.1)
                 return f"Response to: {prompt[:50]}..."
             
-            pass # Removed print-debug
+            print(f"Running evaluation suite: {args.suite_id}...")
             self.evaluator.run_suite(args.suite_id, mock_agent)
-            pass # Removed print-debug
+            print("✅ Evaluation completed")
             return 0
         
         elif action == "add":
             if not args.suite_id:
-                pass # Removed print-debug
+                print("Error: --suite-id required")
                 return 1
             
             if not args.name:
-                pass # Removed print-debug
+                print("Error: --name (test case name) required")
                 return 1
             
             test = self.evaluator.add_test_case(
@@ -423,16 +423,16 @@ class MethodologyCLI:
                 input_prompt=args.prompt or "Test prompt",
                 expected_output=args.expected
             )
-            pass # Removed print-debug
+            print(f"✅ Added test case: {test.id} - {test.name}")
             return 0
         
         elif action == "hitl":
             pending = self.hitl.get_pending_count()
-            pass # Removed print-debug
-            pass # Removed print-debug
+            print(f"\n📋 Human-in-the-Loop")
+            print(f"   Pending reviews: {pending}")
             return 0
         
-        pass # Removed print-debug
+        print(f"Unknown action: {action}")
         return 1
     
     def cmd_quality(self, args):
@@ -440,8 +440,8 @@ class MethodologyCLI:
         action = args.action
         
         if action == "check":
-            pass # Removed print-debug
-            pass # Removed print-debug
+            print("📊 Data Quality Checker")
+            print("=" * 50)
             # Generate sample data
             sample_data = [
                 {"id": 1, "name": "Alice", "email": "alice@test.com", "age": 30},
@@ -449,9 +449,9 @@ class MethodologyCLI:
                 {"id": 3, "name": "", "email": "invalid", "age": None},
             ]
             report = self.data_quality.analyze(sample_data)
-            pass # Removed print-debug
+            print(self.data_quality.generate_report_markdown(report))
         elif action == "report":
-            pass # Removed print-debug
+            print(self.data_quality.generate_report())
         return 0
     
     def cmd_enterprise(self, args):
@@ -459,19 +459,19 @@ class MethodologyCLI:
         action = args.action
         
         if action == "status":
-            pass # Removed print-debug
-            pass # Removed print-debug
+            print("🏢 Enterprise Integration Hub")
+            print("=" * 50)
             status = self.enterprise.get_status()
             for k, v in status.items():
-                pass # Removed print-debug
+                print(f"  {k}: {v}")
         elif action == "audit":
-            pass # Removed print-debug
+            print(self.enterprise.audit.generate_report())
         return 0
     
     def cmd_wizard(self, args):
         """Setup Wizard"""
-        pass # Removed print-debug
-        pass # Removed print-debug
+        print("🧙‍♂️ Setup Wizard")
+        print("=" * 50)
         wizard = SetupWizard()
         
         # Interactive setup
@@ -483,10 +483,10 @@ class MethodologyCLI:
             use_case=use_case
         )
         
-        pass # Removed print-debug
-        pass # Removed print-debug
-        pass # Removed print-debug
-        pass # Removed print-debug
+        print(f"\n✅ Project created: {config.name}")
+        print(f"   Use case: {config.use_case.value}")
+        print(f"   Workflow: {config.workflow}")
+        print(f"   Agents: {len(config.agents)}")
         return 0
     
     def cmd_guardrails(self, args):
@@ -497,17 +497,17 @@ class MethodologyCLI:
             text = args.text or "Sample text to check"
             try:
                 result = self.guardrails.check(text)
-                pass # Removed print-debug
-                pass # Removed print-debug
-                pass # Removed print-debug
-                pass # Removed print-debug
+                print("🛡️ Security Check Results")
+                print("=" * 50)
+                print(f"Text: {text[:50]}...")
+                print(f"\nSafe: {'✅' if result.safe else '❌'}")
                 if result.threats:
-                    pass # Removed print-debug
+                    print("\nThreats detected:")
                     for threat in result.threats:
-                        pass # Removed print-debug
+                        print(f"  - {threat}")
             except Exception as e:
-                pass # Removed print-debug
-                pass # Removed print-debug
+                print(f"🛡️ Guardrails Active (method: check)")
+                print(f"   Error during check: {e}")
         return 0
     
     def cmd_scale(self, args):
@@ -516,34 +516,34 @@ class MethodologyCLI:
         
         if action == "status":
             status = self.autoscaler.get_status()
-            pass # Removed print-debug
-            pass # Removed print-debug
+            print("⚖️ AutoScaler Status")
+            print("=" * 50)
             for k, v in status.items():
-                pass # Removed print-debug
+                print(f"  {k}: {v}")
         elif action == "scale":
             current = int(args.current or 1)
             target = self.autoscaler.calculate_target_instances(current)
-            pass # Removed print-debug
-            pass # Removed print-debug
-            pass # Removed print-debug
+            print(f"\n⚖️ Scaling Recommendation")
+            print(f"  Current: {current}")
+            print(f"  Target: {target}")
         return 0
     
     def cmd_migrate(self, args):
         """LangGraph Migration Tool"""
         if not args.file:
-            pass # Removed print-debug
+            print("Usage: python cli.py migrate <file.py>")
             return 1
         
-        pass # Removed print-debug
+        print(f"🔄 Analyzing {args.file}...")
         result = self.migrator.analyze_file(args.file)
-        pass # Removed print-debug
+        print(self.migrator.generate_report(result))
         return 0
     
     def cmd_parse(self, args):
         """Structured Output Engine"""
-        pass # Removed print-debug
-        pass # Removed print-debug
-        pass # Removed print-debug
+        print("📝 Structured Output Engine")
+        print("=" * 50)
+        print(self.structured.generate_report())
         return 0
     
     def cmd_pm(self, args):
@@ -559,7 +559,7 @@ class MethodologyCLI:
                 blockers=["等不及第三方 API 文件"],
                 velocity=42.0
             )
-            pass # Removed print-debug
+            print(report.to_markdown())
         elif action == "forecast":
             forecast = self.pm_mode.predict_cost(
                 project_name="AI Assistant",
@@ -568,13 +568,13 @@ class MethodologyCLI:
                 daily_burn_rate=85.0,
                 days_remaining=18
             )
-            pass # Removed print-debug
+            print(forecast.to_markdown())
         elif action == "health":
             health = self.pm_mode.get_sprint_health(velocity=35, planned=50, completed=30)
-            pass # Removed print-debug
-            pass # Removed print-debug
-            pass # Removed print-debug
-            pass # Removed print-debug
+            print(f"\n## Sprint Health")
+            print(f"Status: {health['health']}")
+            print(f"Score: {health['health_score']}/10")
+            print(f"Completion: {health['completion_rate']:.1f}%")
         return 0
     
     def cmd_term(self, args):
@@ -583,17 +583,17 @@ class MethodologyCLI:
         if query:
             results = self.terminology.search(query)
             if results:
-                pass # Removed print-debug
+                print(f"\n# Search: {query}\n")
                 for r in results[:5]:
-                    pass # Removed print-debug
-                    pass # Removed print-debug
-                    pass # Removed print-debug
-                    pass # Removed print-debug
-                    pass # Removed print-debug
+                    print(f"## {r.pm_term}")
+                    print(f"- **Dev**: {r.dev_term}")
+                    print(f"- **Scrum**: {r.scrum_term}")
+                    print(f"- **定義**: {r.definition}")
+                    print()
             else:
-                pass # Removed print-debug
+                print(f"No results for '{query}'")
         else:
-            pass # Removed print-debug
+            print(self.terminology.to_markdown_table())
         return 0
     
     def cmd_resources(self, args):
@@ -601,24 +601,24 @@ class MethodologyCLI:
         action = args.action
         
         if action == "list":
-            pass # Removed print-debug
+            print(self.resources.to_table())
         elif action == "stats":
             summary = self.resources.get_resource_summary()
-            pass # Removed print-debug
-            pass # Removed print-debug
-            pass # Removed print-debug
-            pass # Removed print-debug
-            pass # Removed print-debug
+            print("\n📊 Resource Summary:")
+            print(f"  Total: {summary['total']}")
+            print(f"  Team Size: {summary['team_size']}")
+            print(f"  Monthly Cost: ${summary['total_monthly_cost']:.2f}")
+            print(f"  By Type: {summary['by_type']}")
         elif action == "skills":
             matrix = self.resources.get_team_skills_matrix()
-            pass # Removed print-debug
+            print("\n👥 Team Skills:")
             for skill, members in matrix.items():
-                pass # Removed print-debug
+                print(f"  {skill}: {', '.join(members)}")
         return 0
     
     def cmd_version(self, args):
         """顯示版本"""
-        pass # Removed print-debug
+        print(f"Methodology v{self.VERSION}")
         return 0
 
 
