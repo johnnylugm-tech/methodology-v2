@@ -3,6 +3,8 @@
 Agent Spawner - Agent 標準化 Spawn 機制
 
 標準化子 Agent 創建流程、數量限制、生命周期管理
+
+参考 CrewAI 设计，新增 AgentPersona 支持
 """
 
 import time
@@ -11,6 +13,30 @@ from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from enum import Enum
 
+
+# ============================================================================
+# CrewAI 风格 AgentPersona
+# ============================================================================
+
+@dataclass
+class AgentPersona:
+    """
+    CrewAI 风格的 Agent 人格定义
+    
+    赋予 Agent 更丰富的角色内涵，而不仅仅是 role 名称
+    """
+    role: str           # "Researcher", "Writer", "Developer"
+    goal: str           # "Find latest AI trends"
+    backstory: str      # "You are a senior research analyst with 10 years experience..."
+    
+    def to_prompt(self) -> str:
+        """转换为 LLM prompt"""
+        return f"You are a {self.role}. Your goal is: {self.goal}. {self.backstory}"
+
+
+# ============================================================================
+# Spawn 策略
+# ============================================================================
 
 class SpawnPolicy(Enum):
     """Spawn 策略"""
@@ -53,6 +79,10 @@ class SpawnRequest:
     priority: int = 0
     policy: SpawnPolicy = SpawnPolicy.LAZY
     capabilities: List[str] = field(default_factory=list)
+    
+    # === CrewAI 风格新增 ===
+    persona: Optional[AgentPersona] = None  # Agent 人格（可选）
+    tools: List[Any] = field(default_factory=list)  # 工具列表（可选）
 
 
 @dataclass

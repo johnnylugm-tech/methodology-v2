@@ -3,6 +3,8 @@
 Agent Team - Sub-agent 定義與團隊管理
 
 定義 Agent 角色、權限、能力
+
+參考 CrewAI 設計，新增 AgentPersona 支持
 """
 
 import json
@@ -10,6 +12,12 @@ from typing import Dict, List, Optional, Any, Set
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
+
+# 導入 AgentPersona（crewai_风格）
+try:
+    from agent_spawner import AgentPersona
+except ImportError:
+    AgentPersona = None  # 向後相容
 
 
 class AgentRole(Enum):
@@ -120,6 +128,10 @@ class AgentInstance:
     total_tokens_used: int = 0
     total_cost: float = 0.0
     
+    # === CrewAI 風格新增 ===
+    persona: Optional[Any] = None  # AgentPersona
+    tools: List[Any] = field(default_factory=list)  # 工具列表
+    
     # 上下文
     memory: List[str] = field(default_factory=list)
     created_at: datetime = field(default_factory=datetime.now)
@@ -135,7 +147,16 @@ class AgentInstance:
             "tasks_completed": self.tasks_completed,
             "tasks_failed": self.tasks_failed,
             "last_active": self.last_active.isoformat(),
+            "persona": self.persona.to_prompt() if self.persona else None,
+            "tools": [str(t) for t in self.tools],
         }
+    
+    def get_system_prompt(self) -> str:
+        """取得系統 prompt（支援 CrewAI 風格）"""
+        base = f"{self.role.value} Agent - {self.name}"
+        if self.persona:
+            return self.persona.to_prompt()
+        return base
 
 
 class AgentTeam:

@@ -45,7 +45,7 @@ from risk_registry import RiskRegistry, RiskLevel, RiskStatus
 class MethodologyCLI:
     """統一 CLI 入口"""
     
-    VERSION = "5.7.0"
+    VERSION = "5.8.0"
     
     def __init__(self):
         self.progress = ProgressDashboard()
