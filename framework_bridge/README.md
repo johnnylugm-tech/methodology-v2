@@ -29,7 +29,7 @@ pip install -e .
 ```python
 import sys
 sys.path.insert(0, "/path/to/methodology-v2")
-from framework_bridge import ContractTest, ContractValidator
+from framework_bridge.contract_test import ContractTest, ContractValidator
 ```
 
 ## 快速開始
@@ -106,5 +106,5 @@ pytest test_contract.py -v
 
 ## 與 FrameworkBridge.py 的關係
 
-`framework_bridge.py`（在 parent 目錄）提供 CrewAI ↔ LangGraph 遷移功能。
+`crewai_bridge.py`（在 parent 目錄）提供 CrewAI ↔ LangGraph 遷移功能。
 本目錄的契約測試模組可獨立使用，也可用於驗證遷移後的 Agent 是否符合契約。

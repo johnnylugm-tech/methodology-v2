@@ -32,7 +32,7 @@ from structured_output import StructuredOutputEngine
 from data_quality import DataQualityChecker
 from enterprise_hub import EnterpriseHub
 from langgraph_migrator import LangGraphMigrationTool
-from framework_bridge import FrameworkBridge, bridge_quick_convert
+from crewai_bridge import FrameworkBridge, bridge_quick_convert
 from wizard.wizard import SetupWizard, TEMPLATES
 from guardrails.guardrails import Guard
 from autoscaler.autoscaler import AutoScaler

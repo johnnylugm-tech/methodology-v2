@@ -45,6 +45,6 @@ python framework_bridge/test_contract.py
 
 ## Related
 
-- framework_bridge.py
+- crewai_bridge.py
 - framework_bridge/contract_test.py
 - framework_bridge/contract_validator.py
