@@ -5,7 +5,7 @@
 
 ---
 
-[![Version](https://img.shields.io/badge/version-v5.5.0-blue.svg)](https://github.com/johnnylugm-tech/methodology-v2)
+[![Version](https://img.shields.io/badge/version-v5.6.0-blue.svg)](https://github.com/johnnylugm-tech/methodology-v2)
 [![Python](https://img.shields.io/badge/python-3.8+-green.svg)](https://python.org)
 [![Tests](https://img.shields.io/badge/tests-32%20passed-green.svg)]()
 
@@ -399,7 +399,7 @@ message = MAPProtocol.encode(sender="agent-1", action="request", data={})
 
 | 專案 | 版本 | 關係 | 說明 |
 |------|------|------|------|
-| **methodology-v2** | v5.5.0 | 主框架 | ✅ 內建，無需額外安裝 |
+| **methodology-v2** | v5.6.0 | 主框架 | ✅ 內建，無需額外安裝 |
 | Agent Quality Guard | v1.0.3 | 生態系 | 品質把關，可選 |
 | Model Router | v2.3.0 | 生態系 | 模型路由，可選 |
 | Agent Monitor | v3.2.0 | 生態系 | 監控警報，可選 |
@@ -552,7 +552,7 @@ await bridge.start()
 
 ---
 
-## 🆕 Extensions (v5.5.0 新增)
+## 🆕 Extensions (v5.6.0 新增)
 
 | 模組 | 功能 |
 |------|------|
@@ -648,8 +648,8 @@ class MethodologyCore:
 
 | 版本 | 日期 | 說明 |
 |------|------|------|
-| v5.5.0 | 2026-03-20 | Trend Optimization: 強化 Guardrails 安全模組 |
-| v5.5.0 | 2026-03-20 | v4.5.0 Extensions 整合 |
+| v5.6.0 | 2026-03-20 | Trend Optimization: 強化 Guardrails 安全模組 |
+| v5.6.0 | 2026-03-20 | v4.5.0 Extensions 整合 |
 | v5.3.1 | 2026-03-20 | 工作流程案例 |
 | v5.3.0 | 2026-03-20 | Solutions A-E 完整整合 |
 | v5.2.0 | 2026-03-20 | Agent Evaluation Framework |
@@ -670,4 +670,4 @@ MIT License
 ---
 
 **GitHub**: https://github.com/johnnylugm-tech/methodology-v2
-**Release**: https://github.com/johnnylugm-tech/methodology-v2/releases/tag/v5.5.0
+**Release**: https://github.com/johnnylugm-tech/methodology-v2/releases/tag/v5.6.0
