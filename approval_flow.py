@@ -96,7 +96,7 @@ class ApprovalRequest:
     requester_name: str = ""
     
     # 類型
-    approval_type: str  # "code_review", "deployment", "budget", etc.
+    approval_type: str = "general"  # "code_review", "deployment", "budget", etc.
     
     # 內容
     resource_id: str = None  # 相關資源 ID

@@ -276,6 +276,7 @@
 | | predictive_monitor.py | 預測監控 |
 | | resource_dashboard.py | 資源視圖 |
 | | risk_dashboard.py | 風險儀表板 |
+| | risk_registry.py | 風險登記表 |
 | | cloud_dashboard.py | 雲端監控 |
 | **交付** | delivery_manager.py | 交付管理 |
 | | delivery_tracker.py | 版本追蹤 |
@@ -517,8 +518,45 @@ python cli.py migrate my_agent.py
 | `report` | 產生報告 |
 | `status` | 顯示狀態 |
 | `version` | 顯示版本 |
+| `approval` | 人類審批管理 (list/create/approve/reject/show/report/stats) |
 
-**共 19 個 CLI 命令**
+**共 20 個 CLI 命令**
+
+### 🔧 Approval CLI 範例
+
+```bash
+# 查看待審批任務
+python cli.py approval list
+
+# 創建審批請求
+python cli.py approval create --name "代碼審查" --approval-type code_review --requester dev-1 --requester-name "大明"
+
+# 批准任務
+python cli.py approval approve --request-id <id> --approver lead --comment "LGTM"
+
+# 駁回任務
+python cli.py approval reject --request-id <id> --approver lead --comment "需要修改"
+
+# 查看任務詳情
+python cli.py approval show --request-id <id>
+
+# 查看統計
+python cli.py approval stats
+```
+
+### 🌐 Approval Web UI
+
+啟動 Streamlit 審批界面：
+
+```bash
+streamlit run approval_ui.py
+```
+
+功能：
+- 📋 查看待審批任務
+- ✅/❌ Approve/Reject 按鈕
+- 📊 統計儀表板
+- ➕ 創建新審批請求
 
 ---
 

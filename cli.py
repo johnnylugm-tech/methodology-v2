@@ -21,7 +21,7 @@ from datetime import datetime
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from progress_dashboard import ProgressDashboard
-from gantt_chart import GanttChart
+from gantt_chart import GanttChart, ResourceGanttChart
 from message_bus import MessageBus
 from sprint_planner import SprintPlanner
 from pm_terminology import PMTerminologyMapper
@@ -38,6 +38,8 @@ from guardrails.guardrails import Guard
 from autoscaler.autoscaler import AutoScaler
 from data_connector import DataSourceManager
 from agent_debugger import AgentDebugger, EventType
+from approval_flow import ApprovalFlow, ApprovalLevel, ApprovalStatus
+from risk_registry import RiskRegistry, RiskLevel, RiskStatus
 
 
 class MethodologyCLI:
@@ -65,6 +67,8 @@ class MethodologyCLI:
         self.resources = ResourceDashboard()
         self.data_manager = DataSourceManager()
         self.debugger = AgentDebugger()
+        self.approval_flow = ApprovalFlow()
+        self.registry = RiskRegistry()
     
     def run(self, args):
         """執行命令"""
@@ -78,6 +82,8 @@ class MethodologyCLI:
             return self.cmd_sprint(args)
         elif command == "board":
             return self.cmd_board(args)
+        elif command == "gantt-resource":
+            return self.cmd_gantt_resource(args)
         elif command == "report":
             return self.cmd_report(args)
         elif command == "status":
@@ -114,6 +120,10 @@ class MethodologyCLI:
             return self.cmd_debug(args)
         elif command == "trace":
             return self.cmd_trace(args)
+        elif command == "approval":
+            return self.cmd_approval(args)
+        elif command == "risk":
+            return self.cmd_risk(args)
         else:
             print(f"Unknown command: {command}")
             return 1
@@ -747,6 +757,218 @@ class MethodologyCLI:
         
         return 0
     
+    def cmd_approval(self, args):
+        """人類審批管理"""
+        action = args.action
+        
+        if action == "list":
+            pending = self.approval_flow.get_pending()
+            if not pending:
+                print("✅ No pending approvals")
+                return 0
+            print(f"\n{'ID':<15} {'Name':<30} {'Type':<15} {'Requester':<15}")
+            print("-" * 80)
+            for p in pending:
+                print(f"{p['id']:<15} {p['name'][:28]:<30} {p['approval_type']:<15} {p.get('requester_name', p.get('requester','')):<15}")
+            return 0
+        
+        elif action == "create":
+            req_id = self.approval_flow.create_request(
+                name=args.name or "New Approval Request",
+                description=args.description or "",
+                requester=args.requester or "user",
+                requester_name=args.requester_name or "",
+                approval_type=args.approval_type or "general",
+            )
+            print(f"✅ Created approval request: {req_id}")
+            return 0
+        
+        elif action == "approve":
+            if not args.request_id:
+                print("Error: --request-id required")
+                return 1
+            level = None
+            if args.level:
+                try:
+                    level = ApprovalLevel(args.level)
+                except ValueError:
+                    print(f"Error: Invalid level '{args.level}'. Use: l1, l2, l3, l4, final")
+                    return 1
+            result = self.approval_flow.approve(args.request_id, args.approver or "user",
+                                               comment=args.comment or "", level=level)
+            if result:
+                print(f"✅ Approved: {args.request_id}")
+            else:
+                print(f"❌ Failed to approve: {args.request_id}")
+            return 0
+        
+        elif action == "reject":
+            if not args.request_id:
+                print("Error: --request-id required")
+                return 1
+            level = None
+            if args.level:
+                try:
+                    level = ApprovalLevel(args.level)
+                except ValueError:
+                    print(f"Error: Invalid level '{args.level}'. Use: l1, l2, l3, l4, final")
+                    return 1
+            result = self.approval_flow.reject(args.request_id, args.approver or "user",
+                                              comment=args.comment or "", level=level)
+            if result:
+                print(f"✅ Rejected: {args.request_id}")
+            else:
+                print(f"❌ Failed to reject: {args.request_id}")
+            return 0
+        
+        elif action == "show":
+            if not args.request_id:
+                print("Error: --request-id required")
+                return 1
+            request = self.approval_flow.get_request(args.request_id)
+            if not request:
+                print(f"❌ Request not found: {args.request_id}")
+                return 1
+            print(f"\n{'='*60}")
+            print(f"Approval Request: {request.name}")
+            print(f"{'='*60}")
+            print(f"ID: {request.id}")
+            print(f"Type: {request.approval_type}")
+            print(f"Status: {request.status.value}")
+            print(f"Requester: {request.requester_name or request.requester}")
+            print(f"Created: {request.created_at}")
+            print(f"\nDescription:")
+            print(f"  {request.description}")
+            print(f"\nSteps:")
+            for i, step in enumerate(request.steps):
+                marker = "→" if i == request.current_step_index else ("✓" if step.status != ApprovalStatus.PENDING else " ")
+                print(f"  {marker} [{step.level.value.upper()}] {step.approver} - {step.status.value}")
+                for approval in step.approvals:
+                    print(f"      - {approval['approver']}: {approval['status'].value} ({approval.get('comment','')})")
+            print(f"\n{'='*60}")
+            return 0
+        
+        elif action == "report":
+            print(self.approval_flow.generate_report())
+            return 0
+        
+        elif action == "stats":
+            stats = self.approval_flow.get_statistics()
+            print("\n📊 Approval Statistics")
+            print("=" * 40)
+            for k, v in stats.items():
+                print(f"  {k}: {v}")
+            return 0
+        
+        print(f"Unknown action: {action}")
+        return 1
+
+    def cmd_risk(self, args):
+        """風險登記表管理"""
+        action = args.action
+
+        if action == "add":
+            risk = self.registry.add_risk(
+                title=args.title,
+                description=args.desc or "",
+                level=RiskLevel.from_string(args.level) if args.level else RiskLevel.MEDIUM,
+                owner=args.owner or "unassigned",
+                impact=args.impact or "",
+                probability=args.probability or 0.5,
+                mitigation=args.mitigation or "",
+            )
+            print(f"✅ Risk added: {risk.id}")
+            print(f"   Title: {risk.title}")
+            print(f"   Level: {risk.level.value}")
+            print(f"   Owner: {risk.owner}")
+            return 0
+
+        elif action == "list":
+            level_filter = args.level
+            status_filter = args.status
+
+            if level_filter:
+                risks = self.registry.get_risks_by_level(RiskLevel.from_string(level_filter))
+            elif status_filter:
+                risks = self.registry.get_risks_by_status(RiskStatus.from_string(status_filter))
+            else:
+                risks = self.registry.get_all_risks()
+
+            if not risks:
+                print("No risks found")
+                return 0
+
+            print(f"\n{'ID':<10} {'Level':<10} {'Status':<12} {'Title':<30} {'Owner':<15}")
+            print("-" * 80)
+            for r in risks:
+                print(f"{r.id:<10} {r.level.value:<10} {r.status.value:<12} {r.title[:28]:<30} {r.owner:<15}")
+            return 0
+
+        elif action == "show":
+            risk = self.registry.get_risk(args.risk_id)
+            if not risk:
+                print(f"❌ Risk not found: {args.risk_id}")
+                return 1
+            print(f"\n{'='*60}")
+            print(f"Risk: {risk.title}")
+            print(f"{'='*60}")
+            print(f"ID: {risk.id}")
+            print(f"Level: {risk.level.value}")
+            print(f"Status: {risk.status.value}")
+            print(f"Owner: {risk.owner}")
+            print(f"Probability: {risk.probability:.0%}")
+            print(f"Impact: {risk.impact}")
+            print(f"Created: {risk.created_at.strftime('%Y-%m-%d %H:%M')}")
+            if risk.mitigated_at:
+                print(f"Mitigated: {risk.mitigated_at.strftime('%Y-%m-%d %H:%M')}")
+            if risk.closed_at:
+                print(f"Closed: {risk.closed_at.strftime('%Y-%m-%d %H:%M')}")
+            print(f"\nDescription:\n  {risk.description}")
+            print(f"\nMitigation:\n  {risk.mitigation}")
+            print(f"{'='*60}")
+            return 0
+
+        elif action == "close":
+            if self.registry.update_risk_status(args.risk_id, RiskStatus.CLOSED):
+                print(f"✅ Risk closed: {args.risk_id}")
+            else:
+                print(f"❌ Risk not found: {args.risk_id}")
+            return 0
+
+        elif action == "mitigate":
+            if self.registry.update_risk_status(args.risk_id, RiskStatus.MITIGATED):
+                print(f"✅ Risk mitigated: {args.risk_id}")
+            else:
+                print(f"❌ Risk not found: {args.risk_id}")
+            return 0
+
+        elif action == "report":
+            print(self.registry.generate_report())
+            return 0
+
+        elif action == "stats":
+            summary = self.registry.get_summary()
+            print("\n📊 Risk Summary")
+            print("=" * 40)
+            print(f"Total Risks: {summary['total']}")
+            print("\nBy Status:")
+            for k, v in summary['by_status'].items():
+                print(f"  {k}: {v}")
+            print("\nBy Level:")
+            for k, v in summary['by_level'].items():
+                print(f"  {k}: {v}")
+            return 0
+
+        elif action == "delete":
+            if self.registry.delete_risk(args.risk_id):
+                print(f"✅ Risk deleted: {args.risk_id}")
+            else:
+                print(f"❌ Risk not found: {args.risk_id}")
+            return 0
+
+        print(f"Unknown action: {action}")
+        return 1
+
     def cmd_version(self, args):
         """顯示版本"""
         print(f"Methodology v{self.VERSION}")
@@ -901,6 +1123,34 @@ def main():
     trace_parser.add_argument("--limit", type=int, help="Limit events")
     trace_parser.add_argument("--output", "-o", help="Output file")
     
+    # approval
+    approval_parser = subparsers.add_parser("approval", help="Human Approval Management")
+    approval_parser.add_argument("action", choices=["list", "create", "approve", "reject", "show", "report", "stats"],
+                                help="Approval action")
+    approval_parser.add_argument("--request-id", help="Request ID")
+    approval_parser.add_argument("--name", help="Request name")
+    approval_parser.add_argument("--description", help="Request description")
+    approval_parser.add_argument("--requester", help="Requester ID")
+    approval_parser.add_argument("--requester-name", help="Requester name")
+    approval_parser.add_argument("--approval-type", help="Approval type (code_review, deployment, budget)")
+    approval_parser.add_argument("--approver", help="Approver ID")
+    approval_parser.add_argument("--level", help="Approval level (l1, l2, l3, l4, final)")
+    approval_parser.add_argument("--comment", help="Comment")
+
+    # risk
+    risk_parser = subparsers.add_parser("risk", help="Risk Registry Management")
+    risk_parser.add_argument("action", choices=["add", "list", "show", "close", "mitigate", "report", "stats", "delete"],
+                             help="Risk action")
+    risk_parser.add_argument("--title", help="Risk title")
+    risk_parser.add_argument("--desc", help="Risk description")
+    risk_parser.add_argument("--level", help="Risk level (low, medium, high, critical)")
+    risk_parser.add_argument("--owner", help="Risk owner")
+    risk_parser.add_argument("--impact", help="Impact description")
+    risk_parser.add_argument("--probability", type=float, help="Probability (0-1)")
+    risk_parser.add_argument("--mitigation", help="Mitigation strategy")
+    risk_parser.add_argument("--risk-id", help="Risk ID")
+    risk_parser.add_argument("--status", help="Filter by status (open, mitigated, accepted, closed)")
+
     # version
     subparsers.add_parser("version", help="Show version")
     
