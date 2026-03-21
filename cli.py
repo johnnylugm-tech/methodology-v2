@@ -32,10 +32,12 @@ from structured_output import StructuredOutputEngine
 from data_quality import DataQualityChecker
 from enterprise_hub import EnterpriseHub
 from langgraph_migrator import LangGraphMigrationTool
+from framework_bridge import FrameworkBridge, bridge_quick_convert
 from wizard.wizard import SetupWizard, TEMPLATES
 from guardrails.guardrails import Guard
 from autoscaler.autoscaler import AutoScaler
 from data_connector import DataSourceManager
+from agent_debugger import AgentDebugger, EventType
 
 
 class MethodologyCLI:
@@ -56,11 +58,13 @@ class MethodologyCLI:
         self.data_quality = DataQualityChecker()
         self.enterprise = EnterpriseHub()
         self.migrator = LangGraphMigrationTool()
+        self.bridge = FrameworkBridge()
         self.wizard = SetupWizard()
         self.guardrails = Guard()
         self.autoscaler = AutoScaler()
         self.resources = ResourceDashboard()
         self.data_manager = DataSourceManager()
+        self.debugger = AgentDebugger()
     
     def run(self, args):
         """執行命令"""
@@ -106,6 +110,10 @@ class MethodologyCLI:
             return self.cmd_parse(args)
         elif command == "resources":
             return self.cmd_resources(args)
+        elif command == "debug":
+            return self.cmd_debug(args)
+        elif command == "trace":
+            return self.cmd_trace(args)
         else:
             print(f"Unknown command: {command}")
             return 1
@@ -529,11 +537,47 @@ class MethodologyCLI:
         return 0
     
     def cmd_migrate(self, args):
-        """LangGraph Migration Tool"""
+        """LangGraph / CrewAI Migration Tool"""
         if not args.file:
-            print("Usage: python cli.py migrate <file.py>")
+            print("Usage: python cli.py migrate [--from crewai|langgraph] [--to crewai|langgraph] <file.py>")
             return 1
-        
+
+        from_framework = getattr(args, 'from', None)
+        to_framework = getattr(args, 'to', None)
+
+        # Cross-framework migration
+        if from_framework and to_framework:
+            if from_framework == to_framework:
+                print(f"⚠️ Source and target are the same: {from_framework}")
+                return 1
+
+            print(f"🔄 Migrating {from_framework.upper()} → {to_framework.upper()}...")
+            print(f"   File: {args.file}")
+            print()
+
+            report = bridge_quick_convert(args.file, from_framework, to_framework)
+
+            if report.success:
+                print(f"✅ Migration successful!")
+                print(f"   Output: {report.output_file}")
+                print(f"   Nodes migrated: {report.nodes_migrated}")
+                print()
+
+                # Validate
+                success, messages = self.bridge.validate_migration(
+                    args.file, report.output_file,
+                    f"{from_framework}_to_{to_framework}"
+                )
+                for msg in messages:
+                    print(f"   {msg}")
+            else:
+                print(f"❌ Migration failed:")
+                for err in report.errors:
+                    print(f"   - {err}")
+
+            return 0
+
+        # Default: LangGraph migration (backward compatible)
         print(f"🔄 Analyzing {args.file}...")
         result = self.migrator.analyze_file(args.file)
         print(self.migrator.generate_report(result))
@@ -614,6 +658,93 @@ class MethodologyCLI:
             print("\n👥 Team Skills:")
             for skill, members in matrix.items():
                 print(f"  {skill}: {', '.join(members)}")
+        return 0
+    
+    def cmd_debug(self, args):
+        """Agent Debug - 查看追蹤"""
+        action = args.action
+        
+        if action == "status":
+            print(self.debugger.to_table())
+        
+        elif action == "stats":
+            agent_id = args.agent_id
+            if agent_id:
+                stats = self.debugger.get_stats(agent_id)
+                print(f"\n📊 Debug Stats for: {agent_id}")
+                for k, v in stats.items():
+                    print(f"   {k}: {v}")
+            else:
+                print(self.debugger.get_stats())
+        
+        elif action == "list":
+            agent_id = args.agent_id
+            if not agent_id:
+                print("Error: --agent-id required")
+                return 1
+            events = self.debugger.get_trace(agent_id, limit=args.limit or 20)
+            if not events:
+                print(f"No trace events found for agent: {agent_id}")
+                return 0
+            print(f"\n📋 Trace Events for: {agent_id}")
+            print("-" * 70)
+            for event in events:
+                print(f"  [{event['timestamp']}] {event['event_type']} - {event.get('id', 'N/A')}")
+                if event.get('data'):
+                    for k, v in event['data'].items():
+                        print(f"     {k}: {str(v)[:50]}")
+        
+        elif action == "clear":
+            if args.agent_id:
+                self.debugger.clear(args.agent_id)
+                print(f"✅ Cleared traces for agent: {args.agent_id}")
+            else:
+                self.debugger.clear()
+                print("✅ Cleared all traces")
+        
+        elif action == "enable":
+            self.debugger.enable_debug()
+            self.bus.enable_debug()
+            print("✅ Debug mode enabled")
+        
+        elif action == "disable":
+            self.debugger.disable_debug()
+            self.bus.disable_debug()
+            print("✅ Debug mode disabled")
+        
+        return 0
+    
+    def cmd_trace(self, args):
+        """Agent Trace - 視覺化追蹤"""
+        agent_id = args.agent_id
+        
+        if not agent_id:
+            print("Error: --agent-id required")
+            return 1
+        
+        if args.action == "view":
+            # 視覺化 trace
+            print(self.debugger.visualize(agent_id, max_events=args.limit or 50))
+        
+        elif args.action == "correlation":
+            # 視覺化 correlation
+            correlation_id = args.correlation
+            if correlation_id:
+                print(self.debugger.visualize_correlation(correlation_id))
+            else:
+                print("Error: --correlation required for correlation view")
+                return 1
+        
+        elif args.action == "export":
+            # 導出 JSON
+            json_data = self.debugger.export(agent_id)
+            if args.output:
+                with open(args.output, 'w') as f:
+                    f.write(json_data)
+                print(f"✅ Trace exported to {args.output}")
+            else:
+                print(json_data)
+        
         return 0
     
     def cmd_version(self, args):
@@ -730,9 +861,13 @@ def main():
     enterprise_parser.add_argument("action", choices=["status", "audit"], default="status")
     
     # migrate
-    migrate_parser = subparsers.add_parser("migrate", help="LangGraph Migration")
+    migrate_parser = subparsers.add_parser("migrate", help="Framework Migration (CrewAI ↔ LangGraph)")
     migrate_parser.add_argument("file", help="File to migrate")
-    
+    migrate_parser.add_argument("--from", dest="from_", choices=["crewai", "langgraph"],
+                                help="Source framework")
+    migrate_parser.add_argument("--to", choices=["crewai", "langgraph"],
+                                help="Target framework")
+
     # parse
     parse_parser = subparsers.add_parser("parse", help="Structured Output Engine")
     parse_parser.add_argument("--schema", help="Schema name")
@@ -749,6 +884,22 @@ def main():
     scale_parser = subparsers.add_parser("scale", help="AutoScaler")
     scale_parser.add_argument("action", choices=["status", "scale"], default="status")
     scale_parser.add_argument("--current", help="Current instances")
+    
+    # debug
+    debug_parser = subparsers.add_parser("debug", help="Agent Debugger")
+    debug_parser.add_argument("action", choices=["status", "stats", "list", "clear", "enable", "disable"],
+                            help="Debug action")
+    debug_parser.add_argument("--agent-id", help="Agent ID")
+    debug_parser.add_argument("--limit", type=int, help="Limit events")
+    
+    # trace
+    trace_parser = subparsers.add_parser("trace", help="Agent Trace Visualization")
+    trace_parser.add_argument("action", choices=["view", "correlation", "export"],
+                            help="Trace action")
+    trace_parser.add_argument("--agent-id", help="Agent ID")
+    trace_parser.add_argument("--correlation", help="Correlation ID")
+    trace_parser.add_argument("--limit", type=int, help="Limit events")
+    trace_parser.add_argument("--output", "-o", help="Output file")
     
     # version
     subparsers.add_parser("version", help="Show version")

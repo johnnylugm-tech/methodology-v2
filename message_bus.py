@@ -15,6 +15,9 @@ from collections import defaultdict
 import threading
 import asyncio
 
+# Agent Debugger integration
+from agent_debugger import AgentDebugger, EventType
+
 
 class MessagePriority(Enum):
     """訊息優先級"""
@@ -79,7 +82,7 @@ class Subscription:
 class MessageBus:
     """事件驅動消息匯流排"""
     
-    def __init__(self, max_queue_size: int = 10000):
+    def __init__(self, max_queue_size: int = 10000, enable_debug: bool = False):
         # 主題到訂閱者的映射
         self.subscriptions: Dict[str, List[Subscription]] = defaultdict(list)
         
@@ -109,6 +112,10 @@ class MessageBus:
             "messages_failed": 0,
             "subscriptions_created": 0,
         }
+        
+        # Agent Debugger 整合
+        self._debugger = AgentDebugger() if enable_debug else None
+        self._debug_enabled = enable_debug
     
     def publish(self, topic: str, payload: Any,
                message_type: MessageType = MessageType.EVENT,
@@ -116,9 +123,24 @@ class MessageBus:
                headers: Dict = None,
                source: str = None,
                correlation_id: str = None,
-               ttl_seconds: int = None) -> str:
+               ttl_seconds: int = None,
+               agent_id: str = None) -> str:
         """發布訊息"""
         message_id = str(uuid.uuid4())
+        
+        # Debug trace
+        if self._debug_enabled and self._debugger:
+            self._debugger.trace(
+                agent_id=agent_id or source or "unknown",
+                event_type=EventType.MESSAGE_SENT,
+                data={
+                    "topic": topic,
+                    "message_type": message_type.value,
+                    "priority": priority.value,
+                    "message_id": message_id,
+                },
+                correlation_id=correlation_id,
+            )
         
         envelope = Envelope(
             id=message_id,
@@ -152,9 +174,21 @@ class MessageBus:
     def subscribe(self, topic: str, callback: Callable,
                  filter_func: Callable = None,
                  priority: MessagePriority = MessagePriority.NORMAL,
-                 ephemeral: bool = False) -> str:
+                 ephemeral: bool = False,
+                 agent_id: str = None) -> str:
         """訂閱主題"""
         with self.lock:
+            # Debug trace
+            if self._debug_enabled and self._debugger:
+                self._debugger.trace(
+                    agent_id=agent_id or "unknown",
+                    event_type=EventType.MESSAGE_RECEIVED,
+                    data={
+                        "topic": topic,
+                        "action": "subscribe",
+                        "subscription_id": f"sub-{self.subscription_counter + 1}",
+                    },
+                )
             self.subscription_counter += 1
             subscription_id = f"sub-{self.subscription_counter}"
             
@@ -349,7 +383,48 @@ class MessageBus:
             "global_subscriptions_count": len(self.global_subscriptions),
             "dead_letter_queue_size": len(self.dead_letter_queue),
             "stats": self.stats,
+            "debug_enabled": self._debug_enabled,
         }
+    
+    def enable_debug(self) -> None:
+        """啟用除錯追蹤"""
+        if self._debugger is None:
+            self._debugger = AgentDebugger()
+        self._debug_enabled = True
+        self._debugger.enable_debug()
+    
+    def disable_debug(self) -> None:
+        """停用除錯追蹤"""
+        self._debug_enabled = False
+        if self._debugger:
+            self._debugger.disable_debug()
+    
+    def get_debugger(self) -> Optional[AgentDebugger]:
+        """取得除錯器實例"""
+        return self._debugger
+    
+    def debug_trace(self, agent_id: str, event_type: EventType, data: Dict = None,
+                    correlation_id: str = None) -> str:
+        """
+        手動記錄除錯事件
+        
+        Args:
+            agent_id: Agent 標識
+            event_type: 事件類型
+            data: 事件資料
+            correlation_id: 關聯 ID
+        
+        Returns:
+            事件 ID
+        """
+        if not self._debug_enabled or not self._debugger:
+            return None
+        return self._debugger.trace(
+            agent_id=agent_id,
+            event_type=event_type,
+            data=data,
+            correlation_id=correlation_id,
+        )
     
     def generate_report(self) -> str:
         """生成報告"""
