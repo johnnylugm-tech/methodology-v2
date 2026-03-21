@@ -381,3 +381,18 @@ if __name__ == "__main__":
         result = guard.check(content)
         print(f"Safe: {result.safe}")
         print(f"Threats: {len(result.threats)}")
+    # XSS Detection Rule
+    def check_xss(self, text: str) -> bool:
+        """檢測 XSS 攻擊"""
+        xss_patterns = [
+            r"<script",
+            r"javascript:",
+            r"onerror=",
+            r"onload=",
+            r"onclick=",
+        ]
+        for pattern in xss_patterns:
+            if re.search(pattern, text, re.IGNORECASE):
+                return True
+        return False
+
