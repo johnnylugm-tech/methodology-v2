@@ -43,7 +43,7 @@ from agent_debugger import AgentDebugger, EventType
 class MethodologyCLI:
     """統一 CLI 入口"""
     
-    VERSION = "5.4.0"
+    VERSION = "5.5.0"
     
     def __init__(self):
         self.progress = ProgressDashboard()
