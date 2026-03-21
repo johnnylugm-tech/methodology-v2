@@ -249,7 +249,7 @@
 
 ## 📦 功能清單
 
-### 核心模組 (58+)
+### 核心模組 (61+)
 
 | 類別 | 模組 | 功能 |
 |------|------|------|
@@ -287,15 +287,18 @@
 | | marketplace.py | 模板市場 |
 | | test_framework.py | 測試框架 |
 
-### Solutions A-E
+### Solutions A-H
 
 | 方案 | 模組 | 功能 |
 |------|------|------|
 | **A: Agent Evaluation** | agent_evaluator.py | A/B 測試、效能指標、HITL |
-| **B: Structured Output** | structured_output.py + agent_output_validator.py | JSON Schema、重試機制、穩定性追蹤、Schema 驗證 + 自動修復 |
+| **B: Structured Output** | structured_output.py | JSON Schema、重試機制、穩定性追蹤 |
 | **C: Data Quality** | data_quality.py | 驗證、異常偵測、品質評分 |
 | **D: Enterprise Hub** | enterprise_hub.py | SSO、審計日誌、Slack/Teams |
 | **E: LangGraph Migrator** | langgraph_migrator.py | AST 分析、風險評估、程式碼生成 |
+| **F: Output Validator** | agent_output_validator.py | Schema 驗證 + 自動修復 |
+| **G: Agent Debugger** | agent_debugger.py | Trace/觀測性系統 |
+| **H: Framework Bridge** | framework_bridge.py | CrewAI ↔ LangGraph 雙向遷移 |
 
 ---
 

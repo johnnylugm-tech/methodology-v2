@@ -11,6 +11,10 @@
 | 5 | 錯誤處理與監控 | [case05_monitoring.md](case05_monitoring.md) | L1-L4 錯誤分類、預測監控、熔斷 |
 | 6 | 知識管理 | [case06_knowledge.md](case06_knowledge.md) | Pattern 庫、版本控制、Rollback |
 | 7 | 錯誤處理 | [case07_error_handling.md](case07_error_handling.md) | L1-L4 分類、Timeout、認證失敗 |
+| 8 | OmO + v2 整合 | [case08_omo_integration.md](case08_omo_integration.md) | Mode C、事件驅動、Decoupled |
+| 9 | Output Validator | [case09_output_validator.md](case09_output_validator.md) | Schema 驗證、自動化修復 |
+| 10 | Agent Debugger | [case10_agent_debugger.md](case10_agent_debugger.md) | Trace、觀測性、可視化 |
+| 11 | Framework Bridge | [case11_framework_bridge.md](case11_framework_bridge.md) | CrewAI ↔ LangGraph 遷移 |
 
 ---
 
@@ -42,6 +46,11 @@
 
 ### 我需要整合外部工具...
 - [ ] OmO + Methodology-v2 → [案例 8：OmO + v2 整合實戰](case08_omo_integration.md#案例-8omo--methodology-v2-整合實戰)
+
+### 我需要強化生產環境...
+- [ ] 輸出格式驗證 → [案例 9：Output Validator](case09_output_validator.md#案例-9agent-output-validator-方案-f)
+- [ ] Agent 追蹤除錯 → [案例 10：Agent Debugger](case10_agent_debugger.md#案例-10agent-debugger-方案-g)
+- [ ] 框架遷移 → [案例 11：Framework Bridge](case11_framework_bridge.md#案例-11framework-bridge-方案-h)
 - [ ] 預測問題 → [案例 5.2：預測監控](case05_monitoring.md#案例-52預測監控)
 - [ ] 故障轉移 → [案例 5.3：熔斷機制](case05_monitoring.md#案例-53熔斷與故障轉移)
 
