@@ -5,7 +5,7 @@
 
 ---
 
-[![Version](https://img.shields.io/badge/version-v5.8.0-blue.svg)](https://github.com/johnnylugm-tech/methodology-v2)
+[![Version](https://img.shields.io/badge/version-v5.9.0-blue.svg)](https://github.com/johnnylugm-tech/methodology-v2)
 [![Python](https://img.shields.io/badge/python-3.8+-green.svg)](https://python.org)
 [![Tests](https://img.shields.io/badge/tests-32%20passed-green.svg)]()
 
@@ -316,10 +316,17 @@
 | **V: Contract Testing** | framework_bridge/ | Agent 契約測試、介面驗證 |
 | **W: Resource Gantt** | gantt_chart.py | 資源視圖、任務衝突檢測 |
 | **X: Tool Registry** | tool_registry.py | 統一工具接入、CrewAI 風格一行接入 |
+| **Y: Hybrid Workflow** | hybrid_workflow.py | 智慧分流、小改自動、大改審查 |
 
 ---
 
 ## ⭐ 關鍵亮點
+### 🆕 Hybrid Workflow (2026-03-22)
+- 新增 `hybrid_workflow.py`：智慧分流工作流，小改自動，大改審查
+- 三種模式：OFF / HYBRID / ON
+- 安全關鍵字優先審查
+- 來源: 任務 Y
+
 ### 🆕 強化 LLM Providers 模組 (2026-03-21)
 - 新增 Provider 支援
 - 來源: 輪換
@@ -406,7 +413,7 @@ message = MAPProtocol.encode(sender="agent-1", action="request", data={})
 
 | 專案 | 版本 | 關係 | 說明 |
 |------|------|------|------|
-| **methodology-v2** | v5.8.0 | 主框架 | ✅ 內建，無需額外安裝 |
+| **methodology-v2** | v5.9.0 | 主框架 | ✅ 內建，無需額外安裝 |
 | Agent Quality Guard | v1.0.3 | 生態系 | 品質把關，可選 |
 | Model Router | v2.3.0 | 生態系 | 模型路由，可選 |
 | Agent Monitor | v3.2.0 | 生態系 | 監控警報，可選 |
@@ -721,6 +728,7 @@ class MethodologyCore:
 
 | 版本 | 日期 | 說明 |
 |------|------|------|
+| v5.9.0 | 2026-03-22 | Hybrid Workflow: 智慧分流工作流 (Solution Y) |
 | v5.8.0 | 2026-03-20 | Trend Optimization: 強化 Guardrails 安全模組 |
 | v5.8.0 | 2026-03-20 | v4.5.0 Extensions 整合 |
 | v5.3.1 | 2026-03-20 | 工作流程案例 |
@@ -743,4 +751,4 @@ MIT License
 ---
 
 **GitHub**: https://github.com/johnnylugm-tech/methodology-v2
-**Release**: https://github.com/johnnylugm-tech/methodology-v2/releases/tag/v5.8.0
+**Release**: https://github.com/johnnylugm-tech/methodology-v2/releases/tag/v5.9.0

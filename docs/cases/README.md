@@ -32,6 +32,7 @@
 | 26 | Contract Testing | [case26_contract_testing.md](case26_contract_testing.md) | 契約測試、介面驗證 |
 | 27 | Resource Gantt | [case27_resource_gantt.md](case27_resource_gantt.md) | 資源視圖、衝突檢測 |
 | 28 | CrewAI Integration | [case28_crewai_integration.md](case28_crewai_integration.md) | CrewAI 風格整合、ToolRegistry |
+| 29 | Hybrid Workflow | [case29_hybrid_workflow.md](case29_hybrid_workflow.md) | 智慧分流、小改自動、大改審查 |
 
 ---
 
