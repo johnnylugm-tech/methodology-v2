@@ -16,6 +16,7 @@ Reference:
 import asyncio
 import time
 import functools
+import sys
 from enum import Enum
 from dataclasses import dataclass, field
 from typing import Callable, Any, Optional, Dict, List
@@ -28,6 +29,103 @@ class CircuitState(Enum):
     CLOSED = "closed"      # 正常
     OPEN = "open"         # 開啟（熔斷）
     HALF_OPEN = "half_open"  # 半開（測試）
+
+
+class SLALevel(Enum):
+    """SLA 等級"""
+    CRITICAL = "critical"  # 1 秒
+    HIGH = "high"         # 5 秒
+    MEDIUM = "medium"     # 30 秒
+    LOW = "low"           # 2 分鐘
+
+
+class SLATracker:
+    """SLA 追蹤器 - 監控任務是否在 SLA 時間內完成"""
+    
+    SLA_LEVELS = {
+        "critical": 1.0,   # 1 秒
+        "high": 5.0,       # 5 秒
+        "medium": 30.0,    # 30 秒
+        "low": 120.0       # 2 分鐘
+    }
+    
+    def __init__(self, default_level: str = "medium"):
+        self.default_level = default_level
+        self.default_seconds = self.SLA_LEVELS.get(default_level, 30.0)
+        self._tracked_tasks: Dict[str, Dict] = {}
+    
+    def track(self, task_id: str, sla_level: str = None) -> None:
+        """記錄 SLA 開始時間"""
+        seconds = self.SLA_LEVELS.get(sla_level, self.default_seconds) if sla_level else self.default_seconds
+        self._tracked_tasks[task_id] = {
+            "start_time": time.monotonic(),
+            "sla_seconds": seconds,
+            "sla_level": sla_level or self.default_level,
+            "violated": False
+        }
+    
+    def check_sla(self, task_id: str) -> tuple[bool, float, float]:
+        """
+        檢查 SLA 是否超時
+        
+        Returns:
+            (is_violated, elapsed_seconds, sla_seconds)
+        """
+        if task_id not in self._tracked_tasks:
+            return False, 0.0, self.default_seconds
+        
+        task = self._tracked_tasks[task_id]
+        elapsed = time.monotonic() - task["start_time"]
+        sla_seconds = task["sla_seconds"]
+        is_violated = elapsed > sla_seconds
+        
+        if is_violated and not task["violated"]:
+            task["violated"] = True
+            print(f"⚠️ SLA VIOLATION: task={task_id} elapsed={elapsed:.2f}s sla={sla_seconds}s level={task['sla_level']}")
+        
+        return is_violated, elapsed, sla_seconds
+    
+    def get_task_status(self, task_id: str) -> Optional[Dict]:
+        """取得任務 SLA 狀態"""
+        if task_id not in self._tracked_tasks:
+            return None
+        is_violated, elapsed, sla_seconds = self.check_sla(task_id)
+        task = self._tracked_tasks[task_id]
+        return {
+            "task_id": task_id,
+            "sla_level": task["sla_level"],
+            "elapsed_seconds": elapsed,
+            "sla_seconds": sla_seconds,
+            "is_violated": is_violated,
+            "remaining_seconds": max(0, sla_seconds - elapsed)
+        }
+    
+    def print_sla_violations(self) -> None:
+        """印出所有 SLA 違規"""
+        violations = [t for t in self._tracked_tasks.values() if t["violated"]]
+        if not violations:
+            print("✅ No SLA violations")
+            return
+        
+        print(f"⚠️ SLA VIOLATIONS ({len(violations)}):")
+        for task_id, task in self._tracked_tasks.items():
+            if task["violated"]:
+                elapsed = time.monotonic() - task["start_time"]
+                print(f"  - {task_id}: level={task['sla_level']} elapsed={elapsed:.2f}s (limit={task['sla_seconds']}s)")
+    
+    def get_violation_summary(self) -> Dict:
+        """取得 SLA 違規摘要"""
+        violations = [t for t in self._tracked_tasks.values() if t["violated"]]
+        total = len(self._tracked_tasks)
+        return {
+            "total_tracked": total,
+            "violations": len(violations),
+            "compliance_rate": (total - len(violations)) / total if total > 0 else 1.0
+        }
+    
+    def clear(self) -> None:
+        """清除所有追蹤"""
+        self._tracked_tasks.clear()
 
 
 @dataclass
@@ -201,7 +299,8 @@ class FaultTolerantExecutor:
         circuit_config: CircuitBreakerConfig = None,
         timeout: float = 30.0,
         fallback: Callable = None,
-        validator: OutputValidator = None
+        validator: OutputValidator = None,
+        sla_level: str = "medium"
     ):
         self.name = name
         self.retry_config = retry_config or RetryConfig()
@@ -210,9 +309,15 @@ class FaultTolerantExecutor:
         self.fallback = fallback
         self.validator = validator or OutputValidator()
         self.execution_log: List[Dict] = []
+        self.sla_tracker = SLATracker(sla_level)
+        self._sla_enabled = True
     
     async def execute(self, func: Callable, *args, **kwargs) -> ExecutionResult:
         """執行函數（帶容錯）"""
+        # 0. 記錄 SLA 開始
+        if self._sla_enabled:
+            self.sla_tracker.track(f"{self.name}_{len(self.execution_log)}", self.sla_tracker.default_level)
+        
         # 1. 檢查熔斷器
         if not self.circuit_breaker.can_execute():
             return await self._handle_circuit_open()
@@ -238,6 +343,11 @@ class FaultTolerantExecutor:
                 if validation_passed:
                     self.circuit_breaker.record_success()
                     self._log_execution(attempt + 1, True, result)
+                    
+                    # 4. SLA 檢查
+                    task_key = f"{self.name}_{len(self.execution_log) - 1}"
+                    is_violated, elapsed, sla_seconds = self.sla_tracker.check_sla(task_key)
+                    
                     return ExecutionResult(
                         success=True,
                         result=result,
@@ -386,8 +496,67 @@ def with_fault_tolerance(
     return decorator
 
 
+def cmd_sla_status(args, tracker: SLATracker = None, executor: FaultTolerantExecutor = None):
+    """查看 SLA 狀態"""
+    if executor:
+        tracker = executor.sla_tracker
+    
+    if not tracker:
+        print("❌ No SLA tracker provided")
+        return
+    
+    tracker.print_sla_violations()
+    summary = tracker.get_violation_summary()
+    print(f"\n📊 SLA Summary:")
+    print(f"  Total tracked: {summary['total_tracked']}")
+    print(f"  Violations: {summary['violations']}")
+    print(f"  Compliance rate: {summary['compliance_rate']*100:.1f}%")
+
+
 # 測試
 if __name__ == "__main__":
+    import argparse
+    
+    parser = argparse.ArgumentParser(description="Fault Tolerant - 容錯系統")
+    parser.add_argument("--test-circuit", action="store_true", help="測試熔斷器")
+    parser.add_argument("--test-sla", action="store_true", help="測試 SLA 追蹤")
+    parser.add_argument("--sla-level", default="medium", choices=["critical", "high", "medium", "low"], help="SLA 等級")
+    parser.add_argument("--sla-status", action="store_true", help="查看 SLA 狀態")
+    args = parser.parse_args()
+    
+    if args.test_sla:
+        print(f"=== Test SLA Tracker (level={args.sla_level}) ===")
+        tracker = SLATracker(default_level=args.sla_level)
+        tracker.track("task_1", "critical")
+        tracker.track("task_2", "high")
+        tracker.track("task_3", "medium")
+        
+        import time
+        time.sleep(0.5)
+        
+        print(f"\nTask 1 (critical): {tracker.get_task_status('task_1')}")
+        print(f"Task 2 (high): {tracker.get_task_status('task_2')}")
+        print(f"Task 3 (medium): {tracker.get_task_status('task_3')}")
+        
+        # 測試 SLA 整合
+        print(f"\n=== Test SLA with Executor ===")
+        
+        async def slow_func():
+            await asyncio.sleep(0.1)
+            return "done"
+        
+        executor = FaultTolerantExecutor(name="slow_task", sla_level=args.sla_level)
+        result = asyncio.run(executor.execute(slow_func))
+        print(f"Execution result: success={result.success}")
+        
+        cmd_sla_status(args, executor=executor)
+        sys.exit(0)
+    
+    if args.sla_status:
+        tracker = SLATracker()
+        cmd_sla_status(args, tracker=tracker)
+        sys.exit(0)
+    
     async def test():
         # 測試熔斷器
         print("=== Test Circuit Breaker ===")
@@ -412,7 +581,8 @@ if __name__ == "__main__":
         
         executor = FaultTolerantExecutor(
             name="test_func",
-            retry_config=RetryConfig(max_attempts=3, base_delay=0.1)
+            retry_config=RetryConfig(max_attempts=3, base_delay=0.1),
+            sla_level="medium"
         )
         
         result = await executor.execute(failing_func)

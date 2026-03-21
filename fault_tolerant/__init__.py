@@ -17,6 +17,9 @@ from .fault_tolerant import (
     CircuitBreakerConfig,
     ExecutionResult,
     with_fault_tolerance,
+    SLATracker,
+    SLALevel,
+    cmd_sla_status,
 )
 
 __all__ = [
@@ -28,4 +31,7 @@ __all__ = [
     "CircuitBreakerConfig",
     "ExecutionResult",
     "with_fault_tolerance",
+    "SLATracker",
+    "SLALevel",
+    "cmd_sla_status",
 ]
