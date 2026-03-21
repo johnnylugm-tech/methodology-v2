@@ -249,7 +249,7 @@
 
 ## 📦 功能清單
 
-### 核心模組 (61+)
+### 核心模組 (68+)
 
 | 類別 | 模組 | 功能 |
 |------|------|------|
@@ -539,6 +539,20 @@ await bridge.start()
 ```
 
 詳見：[案例 8：OmO + v2 整合實戰](docs/cases/case08_omo_integration.md)
+
+---
+
+## 🆕 Extensions (v5.5.0 新增)
+
+| 模組 | 功能 |
+|------|------|
+| **advanced-security** | 高級安全檢查、滲透測試 |
+| **agent_memory** | 長期記憶、上下文管理 |
+| **api_gateway** | API 閘道、限流、監控 |
+| **auto_debugger** | 自動調試、錯誤分類、根因分析 |
+| **governance** | 治理合規、政策執行 |
+| **observability** | 可觀測性、日誌、追蹤、儀表板 |
+| **performance_optimizer** | 效能優化、延遲優化、緩存 |
 
 ---
 
