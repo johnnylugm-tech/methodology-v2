@@ -164,3 +164,11 @@ if __name__ == "__main__":
     for provider_name in LLMFactory.list_providers():
         provider = LLMFactory.create(provider_name, model="test")
         print(f"{provider_name}: {provider.complete('Hello world')}")
+    # Groq Provider
+    elif provider == "groq":
+        return {
+            "name": "Groq",
+            "models": ["llama-3.1-8b", "mixtral-8x7b"],
+            "supports": ["chat", "completion"],
+        }
+
