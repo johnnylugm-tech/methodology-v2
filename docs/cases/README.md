@@ -22,6 +22,7 @@
 | 16 | Governance | [case16_governance.md](case16_governance.md) | 治理合規、政策執行 |
 | 17 | Advanced Security | [case17_advanced_security.md](case17_advanced_security.md) | 安全掃描、滲透測試 |
 | 18 | Performance Optimizer | [case18_performance_optimizer.md](case18_performance_optimizer.md) | 效能優化、緩存 |
+| 19 | Multi-Agent 自動化協同 | [case19_multi_agent_auto.md](case19_multi_agent_auto.md) | 智慧並行、錯誤處理、降級機制 |
 
 ---
 
@@ -62,6 +63,7 @@
 - [ ] Governance → [案例 16：Governance](case16_governance.md)
 - [ ] Advanced Security → [案例 17：Advanced Security](case17_advanced_security.md)
 - [ ] Performance → [案例 18：Performance Optimizer](case18_performance_optimizer.md)
+- [ ] Multi-Agent 自動化 → [案例 19：自動化協同](case19_multi_agent_auto.md)
 - [ ] 輸出格式驗證 → [案例 9：Output Validator](case09_output_validator.md#案例-9agent-output-validator-方案-f)
 - [ ] Agent 追蹤除錯 → [案例 10：Agent Debugger](case10_agent_debugger.md#案例-10agent-debugger-方案-g)
 - [ ] 框架遷移 → [案例 11：Framework Bridge](case11_framework_bridge.md#案例-11framework-bridge-方案-h)
