@@ -10,7 +10,7 @@ Enhanced debugging and monitoring for methodology-v2.
 ## Quick Start
 
 ```python
-from observability import Observer, Tracer, MetricsCollector
+from observability import Observer, Tracer, MetricsCollector, DistributedTracer, UnifiedLogger
 
 # Trace execution
 with Tracer("agent_task") as span:
@@ -27,7 +27,34 @@ Observer.log("agent_state", {"step": 1, "agent": "coder"})
 
 ## Features
 
-### 1. Tracing
+### 1. Distributed Tracing
+
+跨 Agent 請求追蹤，支援完整呼叫鏈重建。
+
+```python
+from observability import DistributedTracer
+
+dt = DistributedTracer()
+span_id = dt.trace_request("req_001", "coder", metadata={"task": "debug"})
+# ... agent work ...
+dt.end_span("req_001", span_id)
+tree = dt.get_trace_tree("req_001")  # 取得完整呼叫樹
+```
+
+### 2. Unified Logging
+
+統一日誌格式，输出到 `/tmp/unified_logs.jsonl`。
+
+```python
+from observability import UnifiedLogger
+
+ul = UnifiedLogger()
+ul.info("coder", "agent_start", {"task": "fix bug"}, request_id="req_001")
+ul.error("researcher", "tool_error", {"error": "timeout"})
+logs = ul.get_logs(request_id="req_001")  # 查詢某請求的所有日誌
+```
+
+### 3. Tracing
 
 ```python
 with Tracer("workflow") as span:
@@ -36,7 +63,7 @@ with Tracer("workflow") as span:
     span.set_tag("task", "debug_code")
 ```
 
-### 2. Metrics
+### 4. Metrics
 
 ```python
 # Counters
@@ -52,7 +79,7 @@ MetricsCollector.histogram("latency_ms", duration)
 MetricsCollector.histogram("tokens_used", tokens)
 ```
 
-### 3. Structured Logging
+### 5. Structured Logging
 
 ```python
 Observer.log("agent_start", {"agent": "coder", "task": "fix bug"})
@@ -60,7 +87,7 @@ Observer.log("agent_end", {"agent": "coder", "status": "success"})
 Observer.log("error", {"error": "timeout", "agent": "researcher"})
 ```
 
-### 4. Dashboard
+### 6. Dashboard
 
 ```bash
 python observability/dashboard.py
