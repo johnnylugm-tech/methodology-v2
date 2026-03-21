@@ -26,6 +26,11 @@
 | 20 | Three-Phase Executor | [case20_three_phase_executor.md](case20_three_phase_executor.md) | 三階段並行執行 (串→並→串) |
 | 21 | Fault Tolerant | [case21_fault_tolerant.md](case21_fault_tolerant.md) | 容錯、熔斷、Hallucination 檢測 |
 | 22 | Smart Orchestrator | [case22_smart_orchestrator.md](case22_smart_orchestrator.md) | 智能協調、負載均衡 |
+| 23 | Approval UI | [case23_approval_ui.md](case23_approval_ui.md) | 人類審批、CLI + Streamlit |
+| 24 | Risk Registry | [case24_risk_registry.md](case24_risk_registry.md) | 風險登記表、追蹤管理 |
+| 25 | SLA Tracker | [case25_sla_tracker.md](case25_sla_tracker.md) | SLA 層級、違規檢測 |
+| 26 | Contract Testing | [case26_contract_testing.md](case26_contract_testing.md) | 契約測試、介面驗證 |
+| 27 | Resource Gantt | [case27_resource_gantt.md](case27_resource_gantt.md) | 資源視圖、衝突檢測 |
 
 ---
 
