@@ -10,6 +10,7 @@
 | 4 | 企業整合 | [case04_enterprise.md](case04_enterprise.md) | CI/CD、多語言、MCP 服務 |
 | 5 | 錯誤處理與監控 | [case05_monitoring.md](case05_monitoring.md) | L1-L4 錯誤分類、預測監控、熔斷 |
 | 6 | 知識管理 | [case06_knowledge.md](case06_knowledge.md) | Pattern 庫、版本控制、Rollback |
+| 7 | 錯誤處理 | [case07_error_handling.md](case07_error_handling.md) | L1-L4 分類、Timeout、認證失敗 |
 
 ---
 
@@ -37,6 +38,7 @@
 
 ### 我需要監控和錯誤處理...
 - [ ] 自動分類錯誤 → [案例 5.1：L1-L4 分類](case05_monitoring.md#案例-51l1-l4-錯誤分類)
+- [ ] 各流程錯誤處理 → [案例 7：錯誤處理與例外情境](case07_error_handling.md#案例-7錯誤處理與例外情境)
 - [ ] 預測問題 → [案例 5.2：預測監控](case05_monitoring.md#案例-52預測監控)
 - [ ] 故障轉移 → [案例 5.3：熔斷機制](case05_monitoring.md#案例-53熔斷與故障轉移)
 

@@ -503,6 +503,22 @@ python cli.py migrate my_agent.py
 
 ---
 
+## 📚 案例文檔
+
+完整範例請參考：[docs/cases/README.md](docs/cases/README.md)
+
+| # | 情境 | 檔案 |
+|---|------|------|
+| 1 | PM 日常管理 | docs/cases/case01_pm_daily.md |
+| 2 | 軟體開發團隊 | docs/cases/case02_development.md |
+| 3 | Multi-Agent 協作 | docs/cases/case03_multi_agent.md |
+| 4 | 企業整合 | docs/cases/case04_enterprise.md |
+| 5 | 錯誤處理與監控 | docs/cases/case05_monitoring.md |
+| 6 | 知識管理 | docs/cases/case06_knowledge.md |
+| 7 | 錯誤處理與例外情境 | docs/cases/case07_error_handling.md |
+
+---
+
 ## 📚 API 參考
 
 ### MethodologyCore
