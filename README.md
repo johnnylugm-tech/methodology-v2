@@ -362,25 +362,30 @@ message = MAPProtocol.encode(sender="agent-1", action="request", data={})
 
 ## 🔗 工具相依 Skill
 
-### 核心依賴
+### 核心說明
 
-| Skill | 版本 | 用途 |
-|-------|------|------|
-| ai-agent-toolkit | v2.1.0 | Agent 工具集 |
-| multi-agent-toolkit | - | 協作框架 |
-| model-router | v1.0.1 | 模型路由 |
+> 📦 **重要提醒**：methodology-v2 已經**內建所有核心功能**，安裝後即可使用。
+> 
+> 下列技能/工具為 **Johnny's AI Agent 生態系** 的一部分，可按需安裝。
 
-### 整合 Skills
+### Johnny's AI Agent 生態系
 
-| Skill | 版本 | 整合方式 |
-|-------|------|----------|
-| Agent Quality Guard | v1.0.3 | 品質把關 |
-| Agent Monitor | v3.2.0 | 監控警報 |
-| OpenClaw | - | Agent 執行環境 |
+| 專案 | 版本 | 關係 | 說明 |
+|------|------|------|------|
+| **methodology-v2** | v5.4.0 | 主框架 | ✅ 內建，無需額外安裝 |
+| Agent Quality Guard | v1.0.3 | 生態系 | 品質把關，可選 |
+| Model Router | v2.3.0 | 生態系 | 模型路由，可選 |
+| Agent Monitor | v3.2.0 | 生態系 | 監控警報，可選 |
+| ai-agent-toolkit | v2.1.0 | 生態系 | 工具集，引用 |
 
-### Python 依賴
+### Python 依賴 (自動安裝)
 
+```bash
+# 安裝 methodology-v2 時會自動安裝
+pip install -r requirements.txt
 ```
+
+```txt
 pydantic>=2.0
 dataclasses-json>=0.6
 rich>=13.0
@@ -395,7 +400,12 @@ urllib3>=1.26
 ### 安裝
 
 ```bash
+# 方法一：Clone 並安裝
 cd /Users/johnny/.openclaw/workspace-musk/skills/methodology-v2
+pip install -r requirements.txt
+
+# 方法二：直接使用 (已包含所有依賴)
+# 無需額外安裝任何 Skill 或工具
 ```
 
 ### 基本使用
