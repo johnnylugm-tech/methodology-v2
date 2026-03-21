@@ -480,18 +480,26 @@ python cli.py migrate my_agent.py
 | 命令 | 說明 |
 |------|------|
 | `wizard` | 互動式專案設定 |
-| `task add/list` | 任務管理 |
-| `sprint create/list` | Sprint 管理 |
+| `init` | 初始化專案 |
+| `task` | 任務管理 (add/list/complete) |
+| `sprint` | Sprint 管理 (create/list/start) |
 | `board` | 視覺化看板 |
-| `eval create/run/report` | Agent 評估 |
-| `quality check` | 資料品質檢查 |
-| `guardrails check` | 安全檢查 |
-| `scale status` | 自動擴展狀態 |
-| `enterprise status` | 企業整合狀態 |
-| `migrate <file>` | 遷移到 LangGraph |
-| `term <query>` | PM 術語查詢 |
-| `resources list` | 資源清單 |
-| `pm report/forecast/health` | PM Mode |
+| `eval` | Agent 評估 (create/run/hitl/report/list) |
+| `quality` | 資料品質檢查 (check/report) |
+| `guardrails` | 安全檢查 (check) |
+| `scale` | 自動擴展 (status) |
+| `enterprise` | 企業整合 (status/audit) |
+| `migrate` | 遷移到 LangGraph |
+| `parse` | 結構化輸出解析 |
+| `term` | PM 術語查詢 |
+| `resources` | 資源清單 |
+| `pm` | PM Mode (report/forecast/health) |
+| `bus` | Message Bus 狀態 |
+| `report` | 產生報告 |
+| `status` | 顯示狀態 |
+| `version` | 顯示版本 |
+
+**共 19 個 CLI 命令**
 
 ---
 

@@ -28,13 +28,20 @@ from pm_terminology import PMTerminologyMapper
 from resource_dashboard import ResourceDashboard
 from pm_mode import PMMode
 from agent_evaluator import AgentEvaluator, HumanEvaluator, TestCase, EvaluationSuite
+from structured_output import StructuredOutputEngine
+from data_quality import DataQualityChecker
+from enterprise_hub import EnterpriseHub
+from langgraph_migrator import LangGraphMigrationTool
+from wizard.wizard import SetupWizard, TEMPLATES
+from guardrails.guardrails import Guard
+from autoscaler.autoscaler import AutoScaler
 from data_connector import DataSourceManager
 
 
 class MethodologyCLI:
     """統一 CLI 入口"""
     
-    VERSION = "5.1.0"
+    VERSION = "5.4.0"
     
     def __init__(self):
         self.progress = ProgressDashboard()
@@ -45,6 +52,13 @@ class MethodologyCLI:
         self.pm_mode = PMMode()
         self.evaluator = AgentEvaluator()
         self.hitl = HumanEvaluator()
+        self.structured = StructuredOutputEngine()
+        self.data_quality = DataQualityChecker()
+        self.enterprise = EnterpriseHub()
+        self.migrator = LangGraphMigrationTool()
+        self.wizard = SetupWizard()
+        self.guardrails = Guard()
+        self.autoscaler = AutoScaler()
         self.resources = ResourceDashboard()
         self.data_manager = DataSourceManager()
     
@@ -76,6 +90,20 @@ class MethodologyCLI:
             return self.cmd_pm(args)
         elif command == "eval":
             return self.cmd_eval(args)
+        elif command == "quality":
+            return self.cmd_quality(args)
+        elif command == "enterprise":
+            return self.cmd_enterprise(args)
+        elif command == "migrate":
+            return self.cmd_migrate(args)
+        elif command == "wizard":
+            return self.cmd_wizard(args)
+        elif command == "guardrails":
+            return self.cmd_guardrails(args)
+        elif command == "scale":
+            return self.cmd_scale(args)
+        elif command == "parse":
+            return self.cmd_parse(args)
         elif command == "resources":
             return self.cmd_resources(args)
         else:
@@ -407,6 +435,117 @@ class MethodologyCLI:
         print(f"Unknown action: {action}")
         return 1
     
+    def cmd_quality(self, args):
+        """Data Quality Checker"""
+        action = args.action
+        
+        if action == "check":
+            print("📊 Data Quality Checker")
+            print("=" * 50)
+            # Generate sample data
+            sample_data = [
+                {"id": 1, "name": "Alice", "email": "alice@test.com", "age": 30},
+                {"id": 2, "name": "Bob", "email": "bob@test.com", "age": 25},
+                {"id": 3, "name": "", "email": "invalid", "age": None},
+            ]
+            report = self.data_quality.analyze(sample_data)
+            print(self.data_quality.generate_report_markdown(report))
+        elif action == "report":
+            print(self.data_quality.generate_report())
+        return 0
+    
+    def cmd_enterprise(self, args):
+        """Enterprise Integration Hub"""
+        action = args.action
+        
+        if action == "status":
+            print("🏢 Enterprise Integration Hub")
+            print("=" * 50)
+            status = self.enterprise.get_status()
+            for k, v in status.items():
+                print(f"  {k}: {v}")
+        elif action == "audit":
+            print(self.enterprise.audit.generate_report())
+        return 0
+    
+    def cmd_wizard(self, args):
+        """Setup Wizard"""
+        print("🧙‍♂️ Setup Wizard")
+        print("=" * 50)
+        wizard = SetupWizard()
+        
+        # Interactive setup
+        project_name = input("Project name: ") or "my-agent-project"
+        use_case = input("Use case (customer_service/coding/research/data_analysis/custom): ") or "customer_service"
+        
+        config = wizard.create_project(
+            name=project_name,
+            use_case=use_case
+        )
+        
+        print(f"\n✅ Project created: {config.name}")
+        print(f"   Use case: {config.use_case.value}")
+        print(f"   Workflow: {config.workflow}")
+        print(f"   Agents: {len(config.agents)}")
+        return 0
+    
+    def cmd_guardrails(self, args):
+        """Security Guardrails"""
+        action = args.action
+        
+        if action == "check":
+            text = args.text or "Sample text to check"
+            try:
+                result = self.guardrails.check(text)
+                print("🛡️ Security Check Results")
+                print("=" * 50)
+                print(f"Text: {text[:50]}...")
+                print(f"\nSafe: {'✅' if result.safe else '❌'}")
+                if result.threats:
+                    print("\nThreats detected:")
+                    for threat in result.threats:
+                        print(f"  - {threat}")
+            except Exception as e:
+                print(f"🛡️ Guardrails Active (method: check)")
+                print(f"   Error during check: {e}")
+        return 0
+    
+    def cmd_scale(self, args):
+        """AutoScaler"""
+        action = args.action
+        
+        if action == "status":
+            status = self.autoscaler.get_status()
+            print("⚖️ AutoScaler Status")
+            print("=" * 50)
+            for k, v in status.items():
+                print(f"  {k}: {v}")
+        elif action == "scale":
+            current = int(args.current or 1)
+            target = self.autoscaler.calculate_target_instances(current)
+            print(f"\n⚖️ Scaling Recommendation")
+            print(f"  Current: {current}")
+            print(f"  Target: {target}")
+        return 0
+    
+    def cmd_migrate(self, args):
+        """LangGraph Migration Tool"""
+        if not args.file:
+            print("Usage: python cli.py migrate <file.py>")
+            return 1
+        
+        print(f"🔄 Analyzing {args.file}...")
+        result = self.migrator.analyze_file(args.file)
+        print(self.migrator.generate_report(result))
+        return 0
+    
+    def cmd_parse(self, args):
+        """Structured Output Engine"""
+        print("📝 Structured Output Engine")
+        print("=" * 50)
+        print(self.structured.generate_report())
+        return 0
+    
     def cmd_pm(self, args):
         """PM Mode"""
         action = args.action
@@ -581,6 +720,35 @@ def main():
     
     # eval hitl
     eval_sub.add_parser("hitl", help="Human-in-the-Loop status")
+    
+    # quality
+    quality_parser = subparsers.add_parser("quality", help="Data Quality Checker")
+    quality_parser.add_argument("action", choices=["check", "report"], default="check")
+    
+    # enterprise
+    enterprise_parser = subparsers.add_parser("enterprise", help="Enterprise Hub")
+    enterprise_parser.add_argument("action", choices=["status", "audit"], default="status")
+    
+    # migrate
+    migrate_parser = subparsers.add_parser("migrate", help="LangGraph Migration")
+    migrate_parser.add_argument("file", help="File to migrate")
+    
+    # parse
+    parse_parser = subparsers.add_parser("parse", help="Structured Output Engine")
+    parse_parser.add_argument("--schema", help="Schema name")
+    
+    # wizard
+    wizard_parser = subparsers.add_parser("wizard", help="Setup Wizard")
+    
+    # guardrails
+    guardrails_parser = subparsers.add_parser("guardrails", help="Security Guardrails")
+    guardrails_parser.add_argument("action", choices=["check"], default="check")
+    guardrails_parser.add_argument("--text", help="Text to check")
+    
+    # scale
+    scale_parser = subparsers.add_parser("scale", help="AutoScaler")
+    scale_parser.add_argument("action", choices=["status", "scale"], default="status")
+    scale_parser.add_argument("--current", help="Current instances")
     
     # version
     subparsers.add_parser("version", help="Show version")
