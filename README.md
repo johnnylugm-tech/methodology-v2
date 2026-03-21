@@ -519,8 +519,37 @@ python cli.py migrate my_agent.py
 | `status` | 顯示狀態 |
 | `version` | 顯示版本 |
 | `approval` | 人類審批管理 (list/create/approve/reject/show/report/stats) |
+| `risk` | 風險登記表 (add/list/show/close/mitigate/report/stats/delete) |
 
-**共 20 個 CLI 命令**
+**共 21 個 CLI 命令**
+
+### 🔧 Risk CLI 範例
+
+```bash
+# 新增風險
+python cli.py risk add --title "API 超時" --desc "第三方 API 回應時間超過 5 秒" --level high --owner alice --impact "用戶體驗下降" --probability 0.6 --mitigation "添加重試機制和備用供應商"
+
+# 列出所有風險
+python cli.py risk list
+
+# 按等級篩選
+python cli.py risk list --level high
+
+# 查看風險詳情
+python cli.py risk show --risk-id <id>
+
+# 緩解風險
+python cli.py risk mitigate --risk-id <id>
+
+# 關閉風險
+python cli.py risk close --risk-id <id>
+
+# 產生風險報告
+python cli.py risk report
+
+# 查看統計
+python cli.py risk stats
+```
 
 ### 🔧 Approval CLI 範例
 

@@ -597,10 +597,358 @@ Plotly.newPlot('chart',data,{{title:'Project Timeline',xaxis:{{title:'Days'}},ya
 
 
 # ============================================================================
+# Resource Gantt Chart
+# ============================================================================
+
+@dataclass
+class ResourceAgent:
+    """資源代理（Agent/人員）"""
+    id: str
+    name: str
+    role: str = ""
+    capacity: float = 100.0  # 容量百分比
+
+
+@dataclass
+class ResourceTask:
+    """資源視圖任務（帶資源分配）"""
+    task_id: str
+    name: str
+    start_date: datetime
+    duration_days: int
+    end_date: datetime = None
+    assigned_agent: str = ""  # 資源 ID
+    status: TaskStatus = TaskStatus.PLANNED
+    progress: float = 0.0
+    color: str = "#3B82F6"
+    
+    def __post_init__(self):
+        if self.end_date is None:
+            self.end_date = self.start_date + timedelta(days=self.duration_days)
+
+
+@dataclass
+class ResourceConflict:
+    """資源衝突"""
+    agent_id: str
+    agent_name: str
+    date: datetime
+    tasks: List[str]  # 任務 ID 列表
+    
+    def __str__(self):
+        return f"⚠️  {self.agent_name} on {self.date.strftime('%Y-%m-%d')}: {', '.join(self.tasks)}"
+
+
+class ResourceGanttChart(GanttChart):
+    """
+    資源視圖的 Gantt 圖
+    
+    X 軸：時間
+    Y 軸：資源（Agent/人員）
+    每個任務顯示在哪個資源上執行
+    
+    使用方式：
+    
+    ```python
+    from methodology import ResourceGanttChart
+    
+    chart = ResourceGanttChart()
+    
+    # 加入 Agent
+    chart.add_agent("alice", "Alice", role="Developer")
+    chart.add_agent("bob", "Bob", role="QA")
+    
+    # 加入任務（帶資源分配）
+    chart.add_resource_task("t1", "API Design", "2026-03-20", 2, assigned_agent="alice")
+    chart.add_resource_task("t2", "Backend Dev", "2026-03-22", 3, assigned_agent="alice")
+    chart.add_resource_task("t3", "Testing", "2026-03-25", 2, assigned_agent="bob")
+    
+    # 產生資源視圖
+    print(chart.generate_resource_view())
+    
+    # 檢測衝突
+    conflicts = chart.detect_conflicts()
+    for c in conflicts:
+        print(c)
+    ```
+    """
+    
+    def __init__(self, start_date: str = None, scale: int = 3):
+        super().__init__(start_date, scale)
+        self.agents: Dict[str, ResourceAgent] = {}
+        self.resource_tasks: Dict[str, ResourceTask] = {}
+    
+    def add_agent(self, agent_id: str, name: str, role: str = "", capacity: float = 100.0) -> ResourceAgent:
+        """加入 Agent 資源"""
+        agent = ResourceAgent(id=agent_id, name=name, role=role, capacity=capacity)
+        self.agents[agent_id] = agent
+        return agent
+    
+    def add_resource_task(self, task_id: str, name: str, start_date: str,
+                         duration: int, assigned_agent: str = "",
+                         status: TaskStatus = TaskStatus.PLANNED,
+                         progress: float = 0.0, color: str = "#3B82F6") -> ResourceTask:
+        """加入資源任務"""
+        if isinstance(start_date, str):
+            start = datetime.strptime(start_date, "%Y-%m-%d")
+        elif isinstance(start_date, datetime):
+            start = start_date
+        else:
+            start = self.start_date
+        
+        task = ResourceTask(
+            task_id=task_id,
+            name=name,
+            start_date=start,
+            duration_days=duration,
+            end_date=start + timedelta(days=duration),
+            assigned_agent=assigned_agent,
+            status=status,
+            progress=progress,
+            color=color
+        )
+        
+        self.resource_tasks[task_id] = task
+        return task
+    
+    def get_agents_with_tasks(self) -> List[str]:
+        """取得有任務的 Agent ID 列表"""
+        agents_with_tasks = set(t.assigned_agent for t in self.resource_tasks.values() if t.assigned_agent)
+        # 按加入順序排列
+        return [a for a in self.agents.keys() if a in agents_with_tasks]
+    
+    def detect_conflicts(self) -> List[ResourceConflict]:
+        """
+        檢測任務衝突
+        
+        同一資源在同一時間被派多個任務
+        
+        Returns:
+            List[ResourceConflict]: 衝突列表
+        """
+        conflicts = []
+        
+        # 按資源分組
+        agent_tasks: Dict[str, List[ResourceTask]] = {}
+        for task in self.resource_tasks.values():
+            if task.assigned_agent:
+                if task.assigned_agent not in agent_tasks:
+                    agent_tasks[task.assigned_agent] = []
+                agent_tasks[task.assigned_agent].append(task)
+        
+        # 檢測每個資源的衝突
+        for agent_id, tasks in agent_tasks.items():
+            # 對於每個任務對
+            for i, t1 in enumerate(tasks):
+                for t2 in tasks[i+1:]:
+                    # 檢查時間重疊
+                    if t1.start_date < t2.end_date and t2.start_date < t1.end_date:
+                        # 找出重疊的日期
+                        current = max(t1.start_date, t2.start_date)
+                        while current < min(t1.end_date, t2.end_date):
+                            # 檢查是否已存在衝突
+                            existing = None
+                            for c in conflicts:
+                                if c.agent_id == agent_id and c.date == current:
+                                    existing = c
+                                    break
+                            
+                            if existing:
+                                if t1.task_id not in existing.tasks:
+                                    existing.tasks.append(t1.task_id)
+                                if t2.task_id not in existing.tasks:
+                                    existing.tasks.append(t2.task_id)
+                            else:
+                                agent_name = self.agents.get(agent_id, ResourceAgent(agent_id, agent_id)).name
+                                conflicts.append(ResourceConflict(
+                                    agent_id=agent_id,
+                                    agent_name=agent_name,
+                                    date=current,
+                                    tasks=[t1.task_id, t2.task_id]
+                                ))
+                            
+                            current += timedelta(days=1)
+        
+        return conflicts
+    
+    def detect_overload(self, agent_id: str, date: datetime) -> bool:
+        """檢測資源是否超載"""
+        if agent_id not in self.agents:
+            return False
+        
+        tasks_on_date = [
+            t for t in self.resource_tasks.values()
+            if t.assigned_agent == agent_id
+            and t.start_date <= date < t.end_date
+        ]
+        
+        # 超載：同一天有多個任務
+        return len(tasks_on_date) > 1
+    
+    def get_resource_utilization(self) -> Dict[str, Dict]:
+        """取得資源利用率"""
+        utilization = {}
+        
+        for agent_id, agent in self.agents.items():
+            agent_tasks = [t for t in self.resource_tasks.values() if t.assigned_agent == agent_id]
+            
+            # 計算工作天數
+            work_days = set()
+            for t in agent_tasks:
+                current = t.start_date
+                while current < t.end_date:
+                    work_days.add(current.date())
+                    current += timedelta(days=1)
+            
+            utilization[agent_id] = {
+                "name": agent.name,
+                "role": agent.role,
+                "total_tasks": len(agent_tasks),
+                "work_days": len(work_days),
+                "tasks": [t.name for t in agent_tasks],
+            }
+        
+        return utilization
+    
+    def generate_resource_view(self) -> str:
+        """
+        生成資源視圖 ASCII 圖表
+        
+        X 軸：時間
+        Y 軸：資源（Agent/人員）
+        
+        Returns:
+            ASCII 格式資源 Gantt 圖
+        """
+        if not self.resource_tasks:
+            return "No resource tasks"
+        
+        # 收集所有日期
+        all_dates = set()
+        for task in self.resource_tasks.values():
+            current = task.start_date
+            while current < task.end_date:
+                all_dates.add(current.date())
+                current += timedelta(days=1)
+        
+        if not all_dates:
+            return "No dates"
+        
+        dates = sorted(all_dates)
+        dates = [datetime.combine(d, datetime.min.time()) for d in dates]
+        
+        # 收集有任務的資源
+        agent_ids = self.get_agents_with_tasks()
+        
+        lines = []
+        width = max(60, len(dates) * 5 + 40)
+        
+        lines.append("╔" + "═" * width + "╗")
+        lines.append("║" + " RESOURCE GANTT CHART ".center(width) + "║")
+        lines.append("╚" + "═" * width + "╝")
+        lines.append("")
+        
+        # 日期軸
+        header = "│ " + "Resource".ljust(16)
+        for d in dates:
+            header += d.strftime(" %m/%d")
+        lines.append(header + " │")
+        
+        sep_count = 19 + len(dates) * 5
+        lines.append("├" + "─" * 17 + "┼" + "─" * (len(dates) * 5) + "┤")
+        
+        # 任務列
+        for agent_id in agent_ids:
+            agent = self.agents.get(agent_id, ResourceAgent(agent_id, agent_id))
+            name = f"{agent.name[:14]}".ljust(14)
+            role_tag = f"[{agent.role[:4]}]" if agent.role else ""
+            
+            row = f"│ {name} {role_tag} │"
+            
+            for d in dates:
+                dt = d
+                # 找這天該資源的任務
+                tasks_on_day = [
+                    t for t in self.resource_tasks.values()
+                    if t.assigned_agent == agent_id
+                    and t.start_date.date() <= dt.date() < t.end_date.date()
+                ]
+                
+                if tasks_on_day:
+                    # 顯示任務數量標記
+                    if len(tasks_on_day) == 1:
+                        t = tasks_on_day[0]
+                        if t.status == TaskStatus.COMPLETED:
+                            row += " ● "
+                        elif t.status == TaskStatus.IN_PROGRESS:
+                            row += " ◔ "
+                        else:
+                            row += " █ "
+                    else:
+                        row += f" ×{len(tasks_on_day)} "  # 衝突標記
+                else:
+                    row += "    "
+            
+            lines.append(row)
+        
+        lines.append("")
+        
+        # 圖例
+        conflict_count = len(self.detect_conflicts())
+        lines.append(f"○ Planned  ◔ In Progress  ● Completed  █ Active")
+        if conflict_count > 0:
+            lines.append(f"⚠️  Conflicts detected: {conflict_count}")
+        
+        # 衝突列表
+        conflicts = self.detect_conflicts()
+        if conflicts:
+            lines.append("")
+            lines.append("─── Conflicts ───")
+            for c in conflicts[:10]:  # 最多顯示 10 個
+                lines.append(f"  {c}")
+            if len(conflicts) > 10:
+                lines.append(f"  ... and {len(conflicts) - 10} more")
+        
+        return "\n".join(lines)
+    
+    def to_resource_mermaid(self) -> str:
+        """產生資源視圖 Mermaid 格式"""
+        lines = ["gantt"]
+        lines.append("    title Resource Allocation")
+        lines.append("    dateFormat YYYY-MM-DD")
+        
+        for agent_id in self.get_agents_with_tasks():
+            agent = self.agents.get(agent_id, ResourceAgent(agent_id, agent_id))
+            lines.append(f"    section {agent.name}")
+            
+            agent_tasks = [t for t in self.resource_tasks.values() if t.assigned_agent == agent_id]
+            for task in agent_tasks:
+                start = task.start_date.strftime("%Y-%m-%d")
+                end = task.end_date.strftime("%Y-%m-%d")
+                lines.append(f"    {task.name} :{start}, {end}")
+        
+        return "\n".join(lines)
+    
+    def get_resource_summary(self) -> Dict:
+        """取得資源視圖摘要"""
+        agents_with_tasks = self.get_agents_with_tasks()
+        all_tasks = len(self.resource_tasks)
+        
+        return {
+            "total_agents": len(self.agents),
+            "agents_with_tasks": len(agents_with_tasks),
+            "total_tasks": all_tasks,
+            "conflict_count": len(self.detect_conflicts()),
+            "utilization": self.get_resource_utilization(),
+        }
+
+
+# ============================================================================
 # Main
 # ============================================================================
 
 if __name__ == "__main__":
+    # 測試基本 Gantt
     gantt = GanttChart()
     gantt.add_task('design', 'System Design', start_date='2026-03-20', duration=2, assignee='Alice')
     gantt.add_task('backend', 'Backend Dev', start_date='2026-03-22', duration=3, depends_on=['design'], assignee='Bob')
@@ -614,3 +962,24 @@ if __name__ == "__main__":
     print("\n=== Summary ===")
     import json
     print(json.dumps(gantt.get_summary(), indent=2))
+    
+    print("\n\n=== Resource Gantt ===")
+    # 測試資源視圖
+    rgantt = ResourceGanttChart()
+    rgantt.add_agent("alice", "Alice", role="Developer")
+    rgantt.add_agent("bob", "Bob", role="QA")
+    
+    rgantt.add_resource_task("t1", "API Design", "2026-03-20", 2, assigned_agent="alice")
+    rgantt.add_resource_task("t2", "Backend API", "2026-03-22", 3, assigned_agent="alice")
+    rgantt.add_resource_task("t3", "Testing", "2026-03-25", 2, assigned_agent="bob")
+    # 故意重疊產生衝突
+    rgantt.add_resource_task("t4", "Bug Fix", "2026-03-23", 2, assigned_agent="alice",
+                             status=TaskStatus.IN_PROGRESS)
+    
+    print(rgantt.generate_resource_view())
+    print("\n=== Resource Summary ===")
+    print(json.dumps(rgantt.get_resource_summary(), indent=2, ensure_ascii=False))
+    
+    print("\n=== Conflicts ===")
+    for c in rgantt.detect_conflicts():
+        print(f"  {c}")
