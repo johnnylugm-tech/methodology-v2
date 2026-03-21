@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+# TODO: Use environment variable - #!/usr/bin/env python3
 """
 Auto Quality Gate - 自動品質把關與修復
 

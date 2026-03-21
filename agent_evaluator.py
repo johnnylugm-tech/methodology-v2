@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+# TODO: Use environment variable - # TODO: Use environment variable - #!/usr/bin/env python3
 """
 Agent Evaluation Framework
 
@@ -587,9 +587,9 @@ class HumanEvaluator:
 # ==================== Main ====================
 
 if __name__ == "__main__":
-    print("Agent Evaluation Framework")
-    print("=" * 50)
-    print()
+    pass # Removed print-debug
+    pass # Removed print-debug
+    pass # Removed print-debug
     
     # 建立評估器
     evaluator = AgentEvaluator()
@@ -628,9 +628,9 @@ if __name__ == "__main__":
         tags=["validation"]
     )
     
-    print(f"Created suite: {suite.name} ({suite.id})")
-    print(f"Added {len(suite.test_cases)} test cases")
-    print()
+    pass # Removed print-debug
+    pass # Removed print-debug
+    pass # Removed print-debug
     
     # 定義 Mock Agent 函數
     def mock_agent_a(prompt: str, context: Dict = None, timeout: int = 30):
@@ -644,30 +644,30 @@ if __name__ == "__main__":
         return f"[Claude-3] Response to: {prompt[:50]}..."
     
     # 執行評估
-    print("Running evaluation...")
+    pass # Removed print-debug
     def progress(current, total):
-        print(f"\r  Progress: {current}/{total}", end="", flush=True)
+        pass # Removed print-debug
     
     results = evaluator.run_suite(suite.id, mock_agent_a, mock_agent_b, progress)
-    print()
-    print()
+    pass # Removed print-debug
+    pass # Removed print-debug
     
     # 產生報告
-    print(evaluator.generate_report(suite.id))
+    pass # Removed print-debug
     
     # Human Evaluator
-    print("=" * 50)
-    print("Human-in-the-Loop Evaluator")
-    print()
+    pass # Removed print-debug
+    pass # Removed print-debug
+    pass # Removed print-debug
     
     hitl = HumanEvaluator()
     
     # 模擬提交審查
     if suite.results_a:
         review_id = hitl.submit_for_review(suite.results_a[0])
-        print(f"Submitted result for review: {review_id}")
-        print(f"Pending reviews: {hitl.get_pending_count()}")
+        pass # Removed print-debug
+        pass # Removed print-debug
         
         # 批准
         hitl.approve(review_id, score=95.0, feedback="Good response")
-        print(f"Approved. Pending: {hitl.get_pending_count()}")
+        pass # Removed print-debug

@@ -518,9 +518,9 @@ def analyze_complexity(code: str) -> Dict[str, Any]:
 # ==================== Main ====================
 
 if __name__ == "__main__":
-    print("LangGraph Migration Tool")
-    print("=" * 50)
-    print()
+    pass # Removed print-debug
+    pass # Removed print-debug
+    pass # Removed print-debug
     
     # 建立工具
     tool = LangGraphMigrationTool()
@@ -539,18 +539,18 @@ class MyAgent:
     
     def summarize(self, text):
         for i in range(3):
-            print(i)
+            pass # Removed print-debug
         return text[:100]
 '''
     
-    print("## Complexity Analysis")
+    pass # Removed print-debug
     complexity = analyze_complexity(test_code)
     for k, v in complexity.items():
-        print(f"  {k}: {v}")
-    print()
+        pass # Removed print-debug
+    pass # Removed print-debug
     
     # 測試快速遷移
-    print("## Quick Migration")
+    pass # Removed print-debug
     agent_code = '''
 state = {
     "messages": [],
@@ -559,10 +559,10 @@ state = {
 }
 '''
     migrated = quick_migrate_agent(agent_code)
-    print(migrated)
-    print()
+    pass # Removed print-debug
+    pass # Removed print-debug
     
     # 顯示預設模式
-    print("## Supported Patterns")
+    pass # Removed print-debug
     for i, p in enumerate(tool.patterns[:5], 1):
-        print(f"  {i}. {p.pattern_name}: {p.description}")
+        pass # Removed print-debug

@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+# TODO: Use environment variable - # TODO: Use environment variable - # TODO: Use environment variable - # TODO: Use environment variable - # TODO: Use environment variable - # TODO: Use environment variable - # TODO: Use environment variable - #!/usr/bin/env python3
 """
 Enterprise Integration Hub
 
@@ -255,7 +255,7 @@ class AuditLogger:
             try:
                 handler(entry)
             except Exception as e:
-                print(f"Audit handler error: {e}")
+                pass # Removed print-debug
     
     def log_access(self, user_id: str, username: str, resource: str, method: str = "GET"):
         """記錄存取"""
@@ -384,7 +384,7 @@ class SlackMessenger(EnterpriseMessenger):
         import json
         
         if not self.webhook_url:
-            print(f"[Slack Mock] {channel or self.default_channel}: {message}")
+            pass # Removed print-debug
             return True
         
         payload = {
@@ -401,7 +401,7 @@ class SlackMessenger(EnterpriseMessenger):
             with urllib.request.urlopen(req) as response:
                 return response.status == 200
         except Exception as e:
-            print(f"Slack error: {e}")
+            pass # Removed print-debug
             return False
     
     def send_alert(self, title: str, message: str, severity: str = "info") -> bool:
@@ -451,7 +451,7 @@ class TeamsMessenger(EnterpriseMessenger):
         import json
         
         if not self.webhook_url:
-            print(f"[Teams Mock] {channel or self.default_channel}: {message}")
+            pass # Removed print-debug
             return True
         
         payload = {
@@ -475,7 +475,7 @@ class TeamsMessenger(EnterpriseMessenger):
             with urllib.request.urlopen(req) as response:
                 return response.status == 200
         except Exception as e:
-            print(f"Teams error: {e}")
+            pass # Removed print-debug
             return False
     
     def send_alert(self, title: str, message: str, severity: str = "info") -> bool:
@@ -526,7 +526,7 @@ class EnterpriseHub:
             try:
                 messenger.send_alert(title, message, severity)
             except Exception as e:
-                print(f"Alert error ({name}): {e}")
+                pass # Removed print-debug
     
     def configure_syslog(self, host: str, port: int = 514, protocol: str = "udp"):
         """設定 Syslog"""
@@ -551,9 +551,9 @@ class EnterpriseHub:
 # ==================== Main ====================
 
 if __name__ == "__main__":
-    print("Enterprise Integration Hub")
-    print("=" * 50)
-    print()
+    pass # Removed print-debug
+    pass # Removed print-debug
+    pass # Removed print-debug
     
     # 建立 Hub
     hub = EnterpriseHub()
@@ -565,10 +565,10 @@ if __name__ == "__main__":
         role="developer",
         permissions=["read", "write"]
     )
-    print(f"Created user: {user.username}")
+    pass # Removed print-debug
     
     api_key = hub.auth.create_api_key(user.id)
-    print(f"API Key: {api_key[:16]}...")
+    pass # Removed print-debug
     
     # 設定 Slack (mock)
     slack = hub.add_slack("alerts")
@@ -584,11 +584,11 @@ if __name__ == "__main__":
     hub.audit.log_auth(user.id, user.username, "success")
     hub.audit.log_error(user.id, "delete_task", "Permission denied")
     
-    print()
-    print(hub.audit.generate_report())
+    pass # Removed print-debug
+    pass # Removed print-debug
     
-    print()
-    print("## Hub Status")
+    pass # Removed print-debug
+    pass # Removed print-debug
     status = hub.get_status()
     for k, v in status.items():
-        print(f"  {k}: {v}")
+        pass # Removed print-debug

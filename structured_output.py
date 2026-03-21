@@ -454,9 +454,9 @@ def extract_structured(text: str, keys: List[str]) -> Dict:
 # ==================== Main ====================
 
 if __name__ == "__main__":
-    print("Structured Output Engine")
-    print("=" * 50)
-    print()
+    pass # Removed print-debug
+    pass # Removed print-debug
+    pass # Removed print-debug
     
     # 建立引擎
     engine = StructuredOutputEngine()
@@ -490,41 +490,41 @@ if __name__ == "__main__":
             return '{"summary": "Test analysis", "sentiment": "positive", "confidence": 0.95}'
     
     # 測試解析
-    print("## Testing JSON Extraction")
+    pass # Removed print-debug
     result = engine.parse(
         prompt="Extract user info from the text",
         llm_call=mock_llm,
         schema_name="user_info"
     )
     
-    print(f"Success: {result.success}")
-    print(f"Strategy: {result.strategy_used.value}")
-    print(f"Attempts: {result.attempts}")
-    print(f"Parse Time: {result.parse_time_ms:.2f}ms")
-    print(f"Data: {result.data}")
+    pass # Removed print-debug
+    pass # Removed print-debug
+    pass # Removed print-debug
+    pass # Removed print-debug
+    pass # Removed print-debug
     if result.validation:
-        print(f"Valid: {result.validation.valid}")
+        pass # Removed print-debug
         if result.validation.errors:
-            print(f"Errors: {result.validation.errors}")
-    print()
+            pass # Removed print-debug
+    pass # Removed print-debug
     
     # 測試 Task 解析
-    print("## Testing Task Extraction")
+    pass # Removed print-debug
     result2 = engine.parse(
         prompt="Extract task info",
         llm_call=mock_llm,
         schema_name="task"
     )
     
-    print(f"Success: {result2.success}")
-    print(f"Data: {result2.data}")
-    print()
+    pass # Removed print-debug
+    pass # Removed print-debug
+    pass # Removed print-debug
     
     # 產生報告
-    print(engine.generate_report())
+    pass # Removed print-debug
     
     # 快速提取
-    print("## Quick Extract")
+    pass # Removed print-debug
     text = "User: Alice, Email: alice@test.com, ID: 999"
     quick = extract_structured(text, ["User", "Email", "ID"])
-    print(f"Quick extract: {quick}")
+    pass # Removed print-debug
