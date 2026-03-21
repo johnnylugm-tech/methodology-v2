@@ -41,7 +41,22 @@ print(f"完成: {result.completed_tasks}/{result.total_tasks}")
 | 任務規劃 | 自動分解複雜任務 |
 | Agent 調度 | 根據類型分配任務 |
 | 負載均衡 | 選擇最低負載 Agent |
+| 衝突檢測 | 防止重複派任務給忙碌的 Agent |
 | 狀態追蹤 | 實時監控執行 |
+
+## Conflict Detection
+
+```python
+orchestrator = SmartOrchestrator(conflict_detection=True)
+
+# 手動派任務（會檢查衝突）
+orchestrator.assign_task(task_id, agent_id)
+# → ConflictError: Agent xxx is busy
+
+# 檢查衝突
+if orchestrator.check_conflict(agent_id):
+    print("Agent is busy!")
+```
 
 ## Integration
 

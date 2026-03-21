@@ -10,6 +10,7 @@
 | **Agent 調度** | 智慧分配任務給 Agent |
 | **依賴管理** | 處理任務間依賴關係 |
 | **負載均衡** | 避免 Agent 過載 |
+| **衝突檢測** | 防止重複派任務給忙碌的 Agent |
 | **狀態追蹤** | 實時監控執行狀態 |
 
 ## 概念
@@ -44,6 +45,30 @@ task2 = orchestrator.create_task("分析", "分析任務", "analysis", dependenc
 # 執行
 result = await orchestrator.execute()
 print(f"完成: {result.completed_tasks}/{result.total_tasks}")
+```
+
+## 衝突檢測
+
+```python
+from smart_orchestrator import SmartOrchestrator, ConflictError
+
+orchestrator = SmartOrchestrator(conflict_detection=True)
+
+orchestrator.register_agent("dev", "開發 Agent", "coding")
+task_id = orchestrator.create_task("開發", "寫代碼", "coding")
+
+# 手動派任務
+orchestrator.assign_task(task_id, "dev")
+
+# 再次派任務會拋出 ConflictError
+try:
+    orchestrator.assign_task(task_id, "dev")
+except ConflictError as e:
+    print(e)  # Agent dev is busy
+
+# 手動檢查衝突
+if orchestrator.check_conflict("dev"):
+    print("Agent 正在忙碌")
 ```
 
 ## 整合

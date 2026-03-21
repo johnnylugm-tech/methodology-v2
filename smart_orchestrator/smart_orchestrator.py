@@ -38,6 +38,11 @@ class AgentStatus(Enum):
     ERROR = "error"
 
 
+class ConflictError(Exception):
+    """衝突錯誤 - Agent 已被派任務"""
+    pass
+
+
 @dataclass
 class Task:
     """任務"""
@@ -91,8 +96,9 @@ class OrchestrationResult:
 class SmartOrchestrator:
     """智能任務協調器"""
     
-    def __init__(self, max_concurrent: int = 5):
+    def __init__(self, max_concurrent: int = 5, conflict_detection: bool = True):
         self.max_concurrent = max_concurrent
+        self.conflict_detection = conflict_detection
         self.agents: Dict[str, Agent] = {}
         self.tasks: Dict[str, Task] = {}
         self.execution_queue: deque = deque()
@@ -127,6 +133,43 @@ class SmartOrchestrator:
     def get_agent_types(self) -> List[str]:
         """取得所有 Agent 類型"""
         return list(set(a.agent_type for a in self.agents.values()))
+    
+    def check_conflict(self, agent_id: str, task_id: str = None) -> bool:
+        """檢查 Agent 是否已被派任務（衝突檢測）
+        
+        Returns:
+            True if conflict detected (agent is busy), False otherwise
+        """
+        agent = self.agents.get(agent_id)
+        if agent and agent.status == AgentStatus.BUSY:
+            return True  # 衝突
+        return False
+    
+    def assign_task(self, task_id: str, agent_id: str):
+        """手動派任務給 Agent（帶衝突檢測）
+        
+        Raises:
+            ConflictError: 如果 Agent 正在忙碌且 conflict_detection 開啟
+            ValueError: 如果 task 或 agent 不存在
+        """
+        if task_id not in self.tasks:
+            raise ValueError(f"Task {task_id} not found")
+        if agent_id not in self.agents:
+            raise ValueError(f"Agent {agent_id} not found")
+        
+        if self.conflict_detection:
+            if self.check_conflict(agent_id, task_id):
+                raise ConflictError(f"Agent {agent_id} is busy")
+        
+        task = self.tasks[task_id]
+        agent = self.agents[agent_id]
+        
+        task.assigned_agent = agent_id
+        task.status = TaskStatus.WAITING
+        agent.status = AgentStatus.BUSY
+        agent.current_task = task_id
+        
+        self._log("task_assigned", {"task_id": task_id, "agent_id": agent_id})
     
     # ========== Task 管理 ==========
     
