@@ -39,6 +39,9 @@
 ### 我需要監控和錯誤處理...
 - [ ] 自動分類錯誤 → [案例 5.1：L1-L4 分類](case05_monitoring.md#案例-51l1-l4-錯誤分類)
 - [ ] 各流程錯誤處理 → [案例 7：錯誤處理與例外情境](case07_error_handling.md#案例-7錯誤處理與例外情境)
+
+### 我需要整合外部工具...
+- [ ] OmO + Methodology-v2 → [案例 8：OmO + v2 整合實戰](case08_omo_integration.md#案例-8omo--methodology-v2-整合實戰)
 - [ ] 預測問題 → [案例 5.2：預測監控](case05_monitoring.md#案例-52預測監控)
 - [ ] 故障轉移 → [案例 5.3：熔斷機制](case05_monitoring.md#案例-53熔斷與故障轉移)
 

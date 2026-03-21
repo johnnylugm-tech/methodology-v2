@@ -462,3 +462,36 @@ core.enterprise.alert("Deployment", "Sprint 1 MVP deployed", "info")
 ## 許可
 
 MIT License
+
+---
+
+## 🔗 OmO + Methodology-v2 整合
+
+### 整合模式
+
+| 模式 | 說明 | 適用場景 |
+|------|------|---------|
+| Mode A | OmO → v2 品質把關 | 用 OmO 執行，用 v2 把關 |
+| Mode B | v2 → OmO 多模型執行 | 用 v2 規劃，用 OmO 執行 |
+| **Mode C** | **兩者同時** | **需要完整協作** |
+
+### 安裝 OmO
+
+```bash
+npm install -g oh-my-opencode
+oh-my-opencode --version
+```
+
+### 快速開始
+
+```python
+from om_bridge import EventBridge
+
+# Mode C：完整整合
+bridge = EventBridge()
+await bridge.start()
+```
+
+### 案例
+
+詳細範例請參考：[docs/cases/case08_omo_integration.md](docs/cases/case08_omo_integration.md)

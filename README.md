@@ -503,6 +503,36 @@ python cli.py migrate my_agent.py
 
 ---
 
+## 🔗 OmO + Methodology-v2 整合
+
+### 整合方案
+
+Methodology-v2 支援與 [Oh My OpenCode (OmO)](https://github.com/code-yeongyu/oh-my-openagent) 整合：
+
+- **Mode A**: OmO → v2 品質把關
+- **Mode B**: v2 → OmO 多模型執行
+- **Mode C**: 兩者同時 (完整整合)
+
+### 安裝
+
+```bash
+npm install -g oh-my-opencode
+oh-my-opencode --version
+```
+
+### 使用方式
+
+```python
+from om_bridge import EventBridge
+
+bridge = EventBridge()  # Mode C 完整整合
+await bridge.start()
+```
+
+詳見：[案例 8：OmO + v2 整合實戰](docs/cases/case08_omo_integration.md)
+
+---
+
 ## 📚 案例文檔
 
 完整範例請參考：[docs/cases/README.md](docs/cases/README.md)
@@ -516,6 +546,7 @@ python cli.py migrate my_agent.py
 | 5 | 錯誤處理與監控 | docs/cases/case05_monitoring.md |
 | 6 | 知識管理 | docs/cases/case06_knowledge.md |
 | 7 | 錯誤處理與例外情境 | docs/cases/case07_error_handling.md |
+| 8 | OmO + v2 整合實戰 | docs/cases/case08_omo_integration.md |
 
 ---
 
