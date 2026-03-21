@@ -23,6 +23,9 @@
 | 17 | Advanced Security | [case17_advanced_security.md](case17_advanced_security.md) | 安全掃描、滲透測試 |
 | 18 | Performance Optimizer | [case18_performance_optimizer.md](case18_performance_optimizer.md) | 效能優化、緩存 |
 | 19 | Multi-Agent 自動化協同 | [case19_multi_agent_auto.md](case19_multi_agent_auto.md) | 智慧並行、錯誤處理、降級機制 |
+| 20 | Three-Phase Executor | [case20_three_phase_executor.md](case20_three_phase_executor.md) | 三階段並行執行 (串→並→串) |
+| 21 | Fault Tolerant | [case21_fault_tolerant.md](case21_fault_tolerant.md) | 容錯、熔斷、Hallucination 檢測 |
+| 22 | Smart Orchestrator | [case22_smart_orchestrator.md](case22_smart_orchestrator.md) | 智能協調、負載均衡 |
 
 ---
 

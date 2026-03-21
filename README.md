@@ -249,7 +249,7 @@
 
 ## 📦 功能清單
 
-### 核心模組 (68+)
+### 核心模組 (71+)
 
 | 類別 | 模組 | 功能 |
 |------|------|------|
@@ -306,6 +306,9 @@
 | **M: Governance** | governance/ | 治理合規、政策執行 |
 | **N: Advanced Security** | advanced-security/ | 安全掃描、滲透測試 |
 | **O: Performance** | performance_optimizer/ | 效能優化、緩存 |
+| **P: Three-Phase Executor** | three_phase_executor/ | 三階段並行執行 (串→並→串) |
+| **Q: Fault Tolerant** | fault_tolerant/ | 容錯系統、熔斷器、Output Validator |
+| **R: Smart Orchestrator** | smart_orchestrator/ | 智能任務協調、負載均衡 |
 
 ---
 
