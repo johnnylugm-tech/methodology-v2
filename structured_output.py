@@ -7,6 +7,7 @@ Structured Output Engine
 - 自動重試 + fallback
 - 輸出穩定性追蹤
 - 多格式支援 (JSON/YAML/Markdown)
+- Agent Output Validator 整合
 """
 
 import re
@@ -17,6 +18,13 @@ from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Any, Callable, Union
 from enum import Enum
 from datetime import datetime
+
+# Agent Output Validator 整合
+try:
+    from agent_output_validator import AgentOutputValidator, ValidationReport as AOVReport
+    VALIDATOR_AVAILABLE = True
+except ImportError:
+    VALIDATOR_AVAILABLE = False
 
 
 class OutputFormat(Enum):
@@ -384,7 +392,124 @@ class StructuredOutputEngine:
                 result[key] = value
         
         return result if result else None
-    
+
+    # ==================== Agent Output Validator 整合 ====================
+
+    def validate_output(
+        self,
+        output: Any,
+        schema: Any = None,
+        auto_fix: bool = True,
+        quality_gate=None
+    ) -> ValidationReport:
+        """
+        使用 AgentOutputValidator 驗證輸出並可選自動修復
+
+        Args:
+            output: 待驗證的輸出
+            schema: Schema 定義（Dict/Pydantic/List[Dict]/str）
+            auto_fix: 是否自動修復可修復的問題
+            quality_gate: 可選的 AutoQualityGate 實例用於整合
+
+        Returns:
+            ValidationReport（整合了 AOV 結果）
+        """
+        if not VALIDATOR_AVAILABLE:
+            # Fallback: 使用內建的簡單驗證
+            return self._fallback_validate(output, schema)
+
+        validator = AgentOutputValidator()
+
+        # 驗證
+        if auto_fix:
+            fixed_output, fix_report = validator.auto_fix(output, schema, dry_run=False)
+            # 合併報告
+            combined = ValidationResult()
+            combined.valid = fix_report.valid and (output is not None)
+            for err in fix_report.errors:
+                combined.add_error(err.field, err.message)
+            for warn in fix_report.warnings:
+                combined.add_warning(warn.field, warn.message)
+            combined._auto_fix_report = fix_report  # 附加元數據
+            return combined
+        else:
+            aov_report = validator.validate(output, schema)
+            # 轉換為內建格式
+            combined = ValidationResult()
+            combined.valid = aov_report.valid
+            for err in aov_report.errors:
+                combined.add_error(err.field, err.message)
+            for warn in aov_report.warnings:
+                combined.add_warning(warn.field, warn.message)
+            combined._auto_fix_report = aov_report  # 附加元數據
+            return combined
+
+    def _fallback_validate(self, output: Any, schema: Any) -> ValidationResult:
+        """當 AgentOutputValidator 不可用時的 fallback"""
+        result = ValidationResult()
+
+        if schema is None:
+            return result
+
+        # 如果有 registered schema，使用它
+        if isinstance(schema, str) and schema in self.schemas:
+            return self.schemas[schema].validate(output)
+
+        # 如果是 dict 且有 properties，當作簡單 schema
+        if isinstance(schema, dict) and "properties" in schema:
+            result.valid = True
+            return result
+
+        return result
+
+    def validate_and_fix_with_quality_gate(
+        self,
+        output: Any,
+        schema: Any = None,
+        quality_gate=None,
+        file_path: str = None
+    ) -> ValidationResult:
+        """
+        完整驗證流程：Validator + AutoFix + QualityGate
+
+        Args:
+            output: 待驗證的輸出
+            schema: Schema 定義
+            quality_gate: AutoQualityGate 實例
+            file_path: 當提供時，也會用 QualityGate 掃描
+
+        Returns:
+            ValidationResult（含 extra 數據）
+        """
+        # Step 1: Validator 驗證 + 自動修復
+        validation_result = self.validate_output(output, schema, auto_fix=True)
+
+        # Step 2: QualityGate 額外檢查（如果提供）
+        extra_issues = []
+        if quality_gate and file_path:
+            try:
+                qg_report = quality_gate.scan(file_path)
+                for issue in qg_report.issues:
+                    extra_issues.append({
+                        "source": "quality_gate",
+                        "rule_id": issue.rule_id,
+                        "severity": issue.severity,
+                        "message": issue.message,
+                        "line": issue.line,
+                        "fixable": issue.fixable
+                    })
+                    if issue.severity == "critical":
+                        validation_result.add_error(
+                            f"quality_gate:{issue.rule_id}",
+                            f"[QG] {issue.message}"
+                        )
+            except Exception:
+                pass  # QualityGate 失敗不影響主流程
+
+        # 附加額外資訊
+        validation_result._extra_issues = extra_issues
+        return validation_result
+
     def generate_report(self) -> str:
         """產生穩定性報告"""
         lines = []

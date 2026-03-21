@@ -292,7 +292,7 @@
 | 方案 | 模組 | 功能 |
 |------|------|------|
 | **A: Agent Evaluation** | agent_evaluator.py | A/B 測試、效能指標、HITL |
-| **B: Structured Output** | structured_output.py | JSON Schema、重試機制、穩定性追蹤 |
+| **B: Structured Output** | structured_output.py + agent_output_validator.py | JSON Schema、重試機制、穩定性追蹤、Schema 驗證 + 自動修復 |
 | **C: Data Quality** | data_quality.py | 驗證、異常偵測、品質評分 |
 | **D: Enterprise Hub** | enterprise_hub.py | SSO、審計日誌、Slack/Teams |
 | **E: LangGraph Migrator** | langgraph_migrator.py | AST 分析、風險評估、程式碼生成 |
@@ -307,6 +307,12 @@
 ### 🆕 強化 Guardrails 安全模組 (2026-03-21)
 - 新增更多安全檢測規則
 - 來源: 預設
+
+### 🆕 Agent Output Validator (2026-03-21)
+- 新增 `agent_output_validator.py`：JSON Schema / Pydantic / 自訂規則驗證 + 自動修復
+- `StructuredOutputEngine.validate_output()` 整合驗證器
+- `validate_and_fix_with_quality_gate()` 完整流程（Validator + QualityGate 整合）
+- 來源: 任務 F
 
 ### 🆕 強化 Guardrails 安全模組 (2026-03-21)
 - 新增更多安全檢測規則

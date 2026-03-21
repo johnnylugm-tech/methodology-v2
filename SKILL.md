@@ -260,6 +260,87 @@ print(gate.generate_report("markdown"))
 
 ---
 
+### Agent Output Validator
+
+結構化輸出驗證 + 自動修復，支援 JSON Schema / Pydantic / 自訂規則。
+
+```python
+from agent_output_validator import AgentOutputValidator, create_output_schema
+
+# 初始化
+validator = AgentOutputValidator()
+
+# 建立 JSON Schema
+schema = create_output_schema(
+    "user_info",
+    {
+        "id": {"type": "integer"},
+        "name": {"type": "string"},
+        "email": {"type": "string", "pattern": r"^[\w.-]+@[\w.-]+\.\w+$"},
+        "role": {"type": "string", "enum": ["admin", "user", "guest"]},
+    },
+    required=["id", "email"]
+)
+
+# 驗證輸出
+report = validator.validate(
+    {"id": 123, "name": "John", "email": "john@example.com"},
+    schema
+)
+print(f"Valid: {report.valid}")
+
+# 自動修復
+fixed, fix_report = validator.auto_fix(
+    {"id": "not_an_int", "email": "invalid"},
+    schema
+)
+print(f"Fixes applied: {fix_report.fix_applied}")
+```
+
+#### 驗證類型
+
+| 類型 | 說明 |
+|------|------|
+| JSON Schema | 標準 JSON Schema Draft-07 |
+| Pydantic | BaseModel 子類驗證 |
+| 自訂規則 | List[Dict] 定義的規則 |
+
+#### 自訂規則範例
+
+```python
+rules = [
+    {"field": "id", "check": "required"},
+    {"field": "score", "check": "range", "min": 0, "max": 100},
+    {"field": "email", "check": "pattern", "pattern": r"^[\w.-]+@[\w.-]+\.\w+$"},
+    {"field": "status", "check": "enum", "values": ["active", "inactive"]},
+]
+```
+
+#### 整合 StructuredOutputEngine
+
+```python
+from structured_output import StructuredOutputEngine
+
+engine = StructuredOutputEngine()
+
+# 驗證輸出（含自動修復）
+result = engine.validate_output(
+    output=data,
+    schema="user_info",
+    auto_fix=True
+)
+
+# 完整流程：Validator + QualityGate
+result = engine.validate_and_fix_with_quality_gate(
+    output=data,
+    schema="user_info",
+    quality_gate=quality_gate_instance,
+    file_path="agent_output.py"
+)
+```
+
+---
+
 ### Smart Router
 
 基於 Model Router 的智慧路由，根據任務自動選擇最適合的 LLM。
