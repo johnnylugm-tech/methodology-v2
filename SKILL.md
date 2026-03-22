@@ -8,16 +8,16 @@
 
 | 版本 | 日期 | 說明 |
 |------|------|------|
-| v5.21 | 2026-03-23 | Constitution 憲章系統 + 標準化專案模板 + Markdown Checklists（基於v5.20） |
-| v5.20 | 2026-03-22 | Fault Tolerance 強化：四層架構、Framework 對照表、上手指南 |
+| v5.21 | 2026-03-23 | Constitution 憲章系統 + 標準化專案模板 + Markdown Checklists + 新手上路/客製化/工作流程文檔 |
+| v5.20 | 2026-03-22 | Fault Tolerance 強化：四層架構 (Retry→Fallback→Classification→Checkpoint)、Framework 對照表、上手指南 |
 | v5.19 | 2026-03-22 | Human Intervention 人類介入界面（狀態儀表板、介入請求、批准流程） |
 | v5.18 | 2026-03-22 | Recovery Controller 災難恢復控制中心 |
-| v5.17 | 2026-03-22 | State Persistence 狀態持久化系統（支援 SQLite/Redis/檔案系統） |
+| v5.17 | 2026-03-22 | State Persistence 狀態持久化系統（支援 SQLite/Redis/檔案系統） + Checkpoint Manager |
 | v5.16 | 2026-03-22 | Knowledge Sync 知識同步系統（對標 Agno 知識庫） |
 | v5.15 | 2026-03-22 | Workflow Graph 工作流圖結構視覺化（對標 LangGraph） |
 | v5.14 | 2026-03-22 | Async Executor 非同步執行器 |
-| v5.17 | 2026-03-22 | Checkpoint Manager 狀態快照管理 |
 | v5.13 | 2026-03-22 | ASPICE 實踐：traceability_matrix, verification_gate, work_product |
+| v5.12 | 2026-03-22 | 正確性保障：Timeout、A/B雙重驗證、Kickoff檢查；錯誤處理：HITL機制、L1-L6分類、斷點設計；P2P協作 |
 | v5.12 | 2026-03-22 | 正確性保障：Timeout、A/B雙重驗證、Kickoff檢查；錯誤處理：HITL機制、L1-L6分類、斷點設計；P2P協作 |
 | v5.11 | 2026-03-22 | HITL (Human-in-the-Loop) 系統 |
 | v5.10 | 2026-03-22 | Unified Config 統一配置 |
