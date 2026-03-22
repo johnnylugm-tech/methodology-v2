@@ -41,6 +41,7 @@ from agent_debugger import AgentDebugger, EventType
 from approval_flow import ApprovalFlow, ApprovalLevel, ApprovalStatus
 from risk_registry import RiskRegistry, RiskLevel, RiskStatus
 from p2p_team_config import P2PTeamConfig
+from hitl_controller import HITLController, AgentOwner, OutputStatus
 
 
 class MethodologyCLI:
@@ -71,6 +72,7 @@ class MethodologyCLI:
         self.approval_flow = ApprovalFlow()
         self.registry = RiskRegistry()
         self.p2p_config: P2PTeamConfig = None
+        self.hitl_controller = HITLController()
     
     def run(self, args):
         """執行命令"""
@@ -128,6 +130,8 @@ class MethodologyCLI:
             return self.cmd_risk(args)
         elif command == "p2p":
             return self.cmd_p2p(args)
+        elif command == "hitl":
+            return self.cmd_hitl(args)
         else:
             print(f"Unknown command: {command}")
             return 1
@@ -1045,6 +1049,144 @@ class MethodologyCLI:
         print(f"Unknown action: {action}")
         return 1
 
+    def cmd_hitl(self, args):
+        """HITL 人類介入管理"""
+        action = args.action
+        
+        if action == "register":
+            # 註冊負責人
+            owner = AgentOwner(
+                owner_id=args.owner_id,
+                name=args.name or "",
+                email=args.email or "",
+                role=args.role or "Owner",
+            )
+            if self.hitl_controller.register_owner(owner):
+                print(f"✅ Owner registered: {owner.name} ({owner.owner_id})")
+            else:
+                print(f"❌ Owner already exists: {owner.owner_id}")
+            return 0
+        
+        elif action == "list":
+            # 列出負責人或產出
+            if args.list_type == "owners":
+                owners = self.hitl_controller.list_owners()
+                if not owners:
+                    print("No owners registered")
+                    return 0
+                print(f"\n{'Owner ID':<20} {'Name':<20} {'Email':<30} {'Role':<15} {'Agents'}")
+                print("-" * 90)
+                for o in owners:
+                    print(f"{o.owner_id:<20} {o.name:<20} {o.email:<30} {o.role:<15} {len(o.agents)}")
+                return 0
+            elif args.list_type == "outputs":
+                outputs = self.hitl_controller.get_outputs_by_status(OutputStatus(args.status_filter)) if args.status_filter else list(self.hitl_controller.outputs.values())
+                if not outputs:
+                    print("No outputs found")
+                    return 0
+                print(f"\n{'Output ID':<20} {'Agent':<15} {'Owner':<15} {'Task':<20} {'Status':<15}")
+                print("-" * 90)
+                for o in outputs:
+                    print(f"{o.id:<20} {o.agent_id:<15} {o.owner_id:<15} {o.task_id:<20} {o.status.value:<15}")
+                return 0
+            elif args.list_type == "pending":
+                pending = self.hitl_controller.get_pending_reviews(args.owner_filter)
+                if not pending:
+                    print("No pending reviews")
+                    return 0
+                print(f"\n{'Output ID':<20} {'Agent':<15} {'Task':<20} {'Created':<20} {'Owner'}")
+                print("-" * 90)
+                for o in pending:
+                    print(f"{o.id:<20} {o.agent_id:<15} {o.task_id:<20} {o.created_at.strftime('%Y-%m-%d %H:%M'):<20} {o.owner_id}")
+                return 0
+        
+        elif action == "assign":
+            # 指派 Agent 給負責人
+            if self.hitl_controller.assign_agent_to_owner(args.agent_id, args.owner_id):
+                owner = self.hitl_controller.get_owner(args.owner_id)
+                print(f"✅ Assigned {args.agent_id} -> {owner.name if owner else args.owner_id}")
+            else:
+                print(f"❌ Failed to assign: owner {args.owner_id} not found")
+            return 0
+        
+        elif action == "approve":
+            # 批准產出
+            if self.hitl_controller.approve_output(args.output_id, args.approver or "user"):
+                print(f"✅ Approved: {args.output_id}")
+            else:
+                print(f"❌ Failed to approve: {args.output_id}")
+            return 0
+        
+        elif action == "reject":
+            # 要求修改
+            feedback = args.feedback or "Revision requested"
+            if self.hitl_controller.request_revision(args.output_id, args.approver or "user", feedback):
+                print(f"✅ Revision requested: {args.output_id}")
+                print(f"   Feedback: {feedback}")
+            else:
+                print(f"❌ Failed to request revision: {args.output_id}")
+            return 0
+        
+        elif action == "show":
+            # 顯示產出詳情
+            output = self.hitl_controller.get_output(args.output_id)
+            if not output:
+                print(f"❌ Output not found: {args.output_id}")
+                return 1
+            print(f"\n{'='*60}")
+            print(f"Output: {output.id}")
+            print(f"{'='*60}")
+            print(f"Agent: {output.agent_id}")
+            print(f"Owner: {output.owner_id}")
+            print(f"Task: {output.task_id}")
+            print(f"Status: {output.status.value}")
+            print(f"Created: {output.created_at}")
+            if output.submitted_at:
+                print(f"Submitted: {output.submitted_at}")
+            if output.approved_at:
+                print(f"Approved: {output.approved_at} by {output.approved_by}")
+            if output.feedback:
+                print(f"Feedback: {output.feedback}")
+            if output.revision_count > 0:
+                print(f"Revision count: {output.revision_count}")
+            print(f"{'='*60}")
+            return 0
+        
+        elif action == "stats":
+            # 顯示統計
+            stats = self.hitl_controller.get_statistics()
+            print(f"\n📊 HITL Statistics")
+            print("=" * 40)
+            print(f"Total outputs: {stats['total_outputs']}")
+            print(f"Pending reviews: {stats['pending_reviews']}")
+            print(f"Total owners: {stats['total_owners']}")
+            print(f"Agents assigned: {stats['total_agents_assigned']}")
+            print(f"Avg revision count: {stats['avg_revision_count']}")
+            print(f"\nBy status:")
+            for status, count in stats['by_status'].items():
+                print(f"  {status}: {count}")
+            return 0
+        
+        elif action == "report":
+            # 生成報告
+            print(self.hitl_controller.generate_report())
+            return 0
+        
+        elif action == "escalate":
+            # 升級產出
+            from hitl_controller import EscalationLevel
+            level = EscalationLevel(args.level) if args.level else EscalationLevel.OWNER
+            if self.hitl_controller.escalate_output(args.output_id, args.reason, level):
+                print(f"✅ Escalated: {args.output_id}")
+                print(f"   Reason: {args.reason}")
+                print(f"   Level: {level.value}")
+            else:
+                print(f"❌ Failed to escalate: {args.output_id}")
+            return 0
+        
+        print(f"Unknown action: {action}")
+        return 1
+
     def cmd_version(self, args):
         """顯示版本"""
         print(f"Methodology v{self.VERSION}")
@@ -1234,6 +1376,27 @@ def main():
     p2p_init.add_argument("config_path", help="Path to team config JSON file")
     p2p_sub.add_parser("status", help="Show team status")
     p2p_sub.add_parser("list", help="List team members")
+
+    # hitl
+    hitl_parser = subparsers.add_parser("hitl", help="HITL Human-in-the-Loop Management")
+    hitl_parser.add_argument("action", choices=["register", "list", "assign", "approve", "reject", "show", "stats", "report", "escalate"],
+                            help="HITL action")
+    hitl_parser.add_argument("owner_id", nargs="?", help="Owner ID or Output ID depending on action")
+    hitl_parser.add_argument("--name", help="Owner name")
+    hitl_parser.add_argument("--email", help="Owner email")
+    hitl_parser.add_argument("--role", help="Owner role")
+    hitl_parser.add_argument("--agent-id", dest="agent_id", help="Agent ID for assignment")
+    hitl_parser.add_argument("--output-id", dest="output_id", help="Output ID")
+    hitl_parser.add_argument("--approver", help="Approver ID")
+    hitl_parser.add_argument("--feedback", help="Feedback/reason")
+    hitl_parser.add_argument("--reason", help="Escalation reason")
+    hitl_parser.add_argument("--level", help="Escalation level (owner, manager, executive)")
+    hitl_parser.add_argument("--list-type", dest="list_type", choices=["owners", "outputs", "pending"], default="owners",
+                           help="List type (for 'list' action)")
+    hitl_parser.add_argument("--status-filter", dest="status_filter", 
+                           choices=["draft", "pending_review", "approved", "revision_requested", "completed", "escalated"],
+                           help="Filter outputs by status")
+    hitl_parser.add_argument("--owner-filter", dest="owner_filter", help="Filter by owner ID")
 
     # version
     subparsers.add_parser("version", help="Show version")

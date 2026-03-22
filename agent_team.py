@@ -159,6 +159,10 @@ class AgentInstance:
     peer_mailbox: List[Dict] = field(default_factory=list)  # 收到的訊息
     team_mode: TeamMode = TeamMode.MASTER_SUB  # 團隊模式
     
+    # === HITL 人類介入支援 ===
+    owner_id: Optional[str] = None  # 人類負責人 ID
+    hitl_enabled: bool = True       # 是否啟用 HITL
+    
     def to_dict(self) -> Dict:
         return {
             "instance_id": self.instance_id,
@@ -171,6 +175,8 @@ class AgentInstance:
             "last_active": self.last_active.isoformat(),
             "persona": self.persona.to_prompt() if self.persona else None,
             "tools": [str(t) for t in self.tools],
+            "owner_id": self.owner_id,
+            "hitl_enabled": self.hitl_enabled,
         }
     
     def get_system_prompt(self) -> str:
