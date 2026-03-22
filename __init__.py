@@ -51,7 +51,7 @@ from .dashboard_cost_trend import CostTrendAnalyzer, CostSnapshot, CostTrend, Co
 from .failover_manager import FailoverManager, CircuitBreaker, ModelEndpoint, FailoverEvent
 from .parallel_executor import ParallelExecutor, ParallelTask, Worker, ExecutionResult
 
-__version__ = "5.4.0"
+__version__ = "5.14.0"
 
 __all__ = [
     # Core
