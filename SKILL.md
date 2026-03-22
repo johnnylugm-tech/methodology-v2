@@ -11,6 +11,7 @@
 | v5.16 | 2026-03-22 | Knowledge Sync 知識同步系統（對標 Agno 知識庫） |
 | v5.15 | 2026-03-22 | Workflow Graph 工作流圖結構視覺化（對標 LangGraph） |
 | v5.14 | 2026-03-22 | Async Executor 非同步執行器 |
+| v5.17 | 2026-03-22 | Checkpoint Manager 狀態快照管理 |
 | v5.13 | 2026-03-22 | ASPICE 實踐：traceability_matrix, verification_gate, work_product |
 | v5.12 | 2026-03-22 | 正確性保障：Timeout、A/B雙重驗證、Kickoff檢查；錯誤處理：HITL機制、L1-L6分類、斷點設計；P2P協作 |
 | v5.11 | 2026-03-22 | HITL (Human-in-the-Loop) 系統 |
@@ -702,6 +703,57 @@ results = await run_parallel(task1(), task2(), task3(), max_concurrency=10)
 | 結果收集 | 統一收集所有任務結果 |
 
 詳細案例：請參考 `docs/cases/case37_async_executor.md`
+
+---
+
+### Checkpoint Manager
+
+狀態快照管理，支援 Agent 狀態的定期快照、恢復和查詢。
+
+```python
+from checkpoint_manager import CheckpointManager, CheckpointStatus
+
+# 初始化
+cm = CheckpointManager(
+    storage_path="./checkpoints",
+    max_checkpoints=100
+)
+
+# 保存快照
+ckpt_id = cm.save(
+    agent_id="agent_001",
+    task_id="task_001",
+    state={"progress": 50, "data": {...}},
+    checkpoint_type="auto",  # auto, manual, on_complete
+    metadata={"step": 5}
+)
+
+# 恢復快照
+state = cm.load(ckpt_id)
+
+# 取得最新快照
+latest = cm.get_latest("agent_001")
+
+# 列出所有快照
+checkpoints = cm.list_checkpoints("agent_001")
+
+# 刪除快照
+cm.delete(ckpt_id)
+
+# 導出/導入
+json_str = cm.export_checkpoint(ckpt_id)
+new_id = cm.import_checkpoint(json_str)
+```
+
+| 功能 | 說明 |
+|------|------|
+| 雙重儲存 | 記憶體快速訪問 + 磁碟持久化 |
+| 自動清理 | 超過上限自動刪除最舊快照 |
+| 快照類型 | auto, manual, on_complete |
+| 快照狀態 | active, committed, obsolete |
+| 導出導入 | JSON 格式跨系統共享 |
+
+詳細案例：請參考 `docs/cases/case39_checkpoint_manager.md`
 
 ---
 
