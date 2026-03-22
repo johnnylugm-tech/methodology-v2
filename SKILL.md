@@ -1,6 +1,23 @@
 # methodology-v2
 
-> Multi-Agent Collaboration Development Methodology v5.4
+> Multi-Agent Collaboration Development Methodology v5.13
+
+---
+
+## 📊 版本歷史
+
+| 版本 | 日期 | 說明 |
+|------|------|------|
+| v5.13 | 2026-03-22 | ASPICE 實踐：traceability_matrix, verification_gate, work_product |
+| v5.12 | 2026-03-22 | 正確性保障：Timeout、A/B雙重驗證、Kickoff檢查；錯誤處理：HITL機制、L1-L6分類、斷點設計；P2P協作 |
+| v5.11 | 2026-03-22 | HITL (Human-in-the-Loop) 系統 |
+| v5.10 | 2026-03-22 | Unified Config 統一配置 |
+| v5.9 | 2026-03-22 | Hybrid A/B Workflow 混合分流工作流 |
+| v5.8 | 2026-03-20 | CrewAI 整合 |
+| v5.6 | 2026-03-21 | Three-Phase Executor, Fault Tolerant, Smart Orchestrator |
+| v5.4 | 2026-03-20 | 初始版本 |
+
+---
 
 ## 概述
 
@@ -15,12 +32,14 @@
 
 ## 核心原則
 
-- **錯誤分類**：L1-L4 四級分類
+- **錯誤分類**：L1-L6 六級分類（含 HITL）
 - **開發流程**：6 階段標準化
-- **協作模式**：Sequential / Parallel / Hierarchical
-- **品質把關**：Agent Quality Guard
+- **協作模式**：Sequential / Parallel / Hierarchical / P2P
+- **品質把關**：Agent Quality Guard + Quality Gate
 - **監控警報**：健康評分 + 三級警報
 - **工具整合**：Model Router、Quality Guard、Monitor
+- **正確性保障**：Timeout、A/B雙重驗證、Kickoff檢查
+- **企業級支援**：ASPICE、Contract Testing、Traceability
 
 ---
 
