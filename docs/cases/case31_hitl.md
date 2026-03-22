@@ -199,6 +199,79 @@ adapter = MessageBusHITLAdapter(bus, controller)
 # 主題：hitl.new_output, hitl.approved, hitl.revision_requested, hitl.escalated
 ```
 
+## 企業表單系統整合
+
+HITL 支援與企業表單系統整合，讓審批流程無縫嵌入企業既有工作流。
+
+### 支援的企業系統
+
+| 系統 | 說明 |
+|------|------|
+| **Jira** | 建立 Issue 作為審批工單 |
+| **ServiceNow** | 企業 IT 服務管理 |
+| **SAP** | ERP 系統審批 |
+| **Monday.com** | 專案管理平台 |
+| **本地/POC** | 預設使用本地儲存 |
+
+### 整合方式
+
+```python
+from hitl_controller import HITLController, FormSystemAdapter
+
+# 1. 定義企業 Adapter
+class JiraFormAdapter(FormSystemAdapter):
+    def __init__(self, jira_client):
+        self.jira = jira_client
+    
+    def create_ticket(self, output, owner):
+        """在 Jira 建立審批 Issue"""
+        return self.jira.create_issue(
+            project="HITL",
+            summary=f"[HITL] 產出審批: {output.id}",
+            description=f"Agent: {output.agent_id}\nTask: {output.task_id}",
+            assignee=owner.email
+        )
+    
+    def notify_approval(self, owner_id, output, action):
+        """發送通知"""
+        self.jira.notify(owner_id, f"有新審批: {action}")
+    
+    def get_approval_status(self, ticket_id):
+        """查詢審批狀態"""
+        return self.jira.get_status(ticket_id)
+    
+    def update_ticket(self, ticket_id, status, feedback=None):
+        """更新工單"""
+        self.jira.update(ticket_id, status, comment=feedback)
+
+# 2. 使用自定義 Adapter
+controller = HITLController()
+controller.set_form_adapter(JiraFormAdapter(jira_client))
+```
+
+### 預設本地模式
+
+小型專案或 POC 可使用預設的本地儲存：
+
+```python
+# 無需任何設定，預設使用本地儲存
+controller = HITLController()
+
+# 手動設定
+from hitl_controller import DefaultFormAdapter
+controller.set_form_adapter(DefaultFormAdapter())
+```
+
+### 何時使用企業整合？
+
+| 場景 | 建議 |
+|------|------|
+| POC / 快速驗證 | 本地模式（預設） |
+| 小型團隊 | 本地模式 |
+| 中型企業 | Jira / Monday.com |
+| 大型企業 | ServiceNow / SAP |
+| 多系統混合 | 多個 Adapter 實作 |
+
 ## 最佳實踐
 
 ### 1. 清晰的責任歸屬
