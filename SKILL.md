@@ -578,6 +578,43 @@ registry.get_by_agent("agent-dev-001")
 # 依類型查詢
 registry.get_by_type(ProductType.CODE)
 
+---
+
+## 附錄：正確的模組使用方式
+
+### Fault Tolerant
+
+```python
+from fault_tolerant import CircuitBreaker, FaultTolerantExecutor
+
+# 初始化（需要 name 參數）
+cb = CircuitBreaker(name="my-circuit")
+executor = FaultTolerantExecutor(name="my-executor")
+
+# 使用裝飾器
+@with_fault_tolerance(max_retries=3, backoff=2.0)
+async def my_function():
+    pass
+```
+
+### Governance
+
+```python
+from governance.governance_agent import GovernanceAgent
+
+agent = GovernanceAgent()
+```
+
+### Error Classification
+
+```python
+from methodology_base import ErrorClassifier, ErrorLevel
+
+classifier = ErrorClassifier()
+level = classifier.classify(ValueError("test"))
+# 返回: ErrorLevel.L1, L2, L3, L4, L5, L6
+```
+
 # 取得未驗證產品
 registry.get_unverified()
 
