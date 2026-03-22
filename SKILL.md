@@ -626,4 +626,49 @@ registry.get_verification_summary()
 
 ---
 
+## 統一角色定義 (Agent Role)
+
+對標 CrewAI 的 Role-based Agent 概念，實現統一的角色定義系統。
+
+```python
+from agent_role import (
+    AgentRole, 
+    RoleType, 
+    Permission, 
+    Skill,
+    RoleRegistry
+)
+
+# 建立角色
+dev_role = AgentRole(
+    role_id="role-dev-001",
+    name="Developer",
+    role_type=RoleType.DEVELOPER,
+    goals="Write high-quality code",
+    backstory="Experienced software engineer",
+    permissions=[Permission.READ, Permission.WRITE, Permission.EXECUTE],
+    skills=[Skill("coding", 5), Skill("debugging", 4)]
+)
+
+# 檢查權限
+dev_role.has_permission(Permission.WRITE)  # True
+
+# 使用角色註冊表
+registry = RoleRegistry()
+registry.register(dev_role)
+role = registry.get("role-dev-001")
+```
+
+### 預設角色
+
+| 角色 | ID | 權限 |
+|------|-----|------|
+| Developer | role-dev | read, write, execute |
+| Code Reviewer | role-review | read, approve |
+| Project Manager | role-pm | read, write, approve, delete |
+
+詳細案例：請參考 `docs/cases/case34_agent_role.md`
+
+---
+
 *這個方法論幫助團隊標準化多 Agent 協作開發流程*
