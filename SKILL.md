@@ -499,4 +499,75 @@ dashboard = Dashboard(config={
 
 ---
 
+---
+
+## 工作產品 (Work Products)
+
+結構化追蹤 Agent 產出，確保每個產出都有明確的類型、擁有者和驗證狀態。
+
+### 基本使用
+
+```python
+from work_product import WorkProductRegistry, ProductType, register_product
+
+# 初始化
+registry = WorkProductRegistry()
+
+# 快速註冊
+product = register_product(
+    name="用戶認證模組",
+    product_type=ProductType.CODE,
+    owner_agent_id="agent-dev-001",
+    content="def authenticate(user, passwd): ...",
+    metadata={"language": "python"}
+)
+
+# 驗證
+product.verify("reviewer-001")
+
+# 查詢
+summary = registry.get_verification_summary()
+print(f"驗證率: {summary['verification_rate']}")
+```
+
+### 產品類型
+
+| 類型 | 說明 |
+|------|------|
+| CODE | 代碼產出 |
+| DOCUMENT | 文檔資料 |
+| REPORT | 報告分析 |
+| TEST_RESULT | 測試結果 |
+| CONFIG | 配置檔案 |
+| MODEL | 模型檔案 |
+| DATA | 資料檔案 |
+
+### 驗證狀態
+
+| 狀態 | 說明 |
+|------|------|
+| UNVERIFIED | 待驗證 |
+| VERIFIED | 已驗證 |
+| FAILED | 驗證失敗 |
+
+### 查詢方式
+
+```python
+# 依 Agent 查詢
+registry.get_by_agent("agent-dev-001")
+
+# 依類型查詢
+registry.get_by_type(ProductType.CODE)
+
+# 取得未驗證產品
+registry.get_unverified()
+
+# 驗證摘要
+registry.get_verification_summary()
+```
+
+詳細案例：請參考 `docs/cases/case33_work_products.md`
+
+---
+
 *這個方法論幫助團隊標準化多 Agent 協作開發流程*
