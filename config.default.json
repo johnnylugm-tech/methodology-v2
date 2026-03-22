@@ -1,0 +1,50 @@
+{
+  "_meta": {
+    "version": "1.0",
+    "description": "methodology-v2 統一設定檔",
+    "last_updated": "2026-03-22"
+  },
+  
+  "p2p": {
+    "_description": "P2P 點對點代理設定（預設關閉）",
+    "enabled": false,
+    "default_mode": "master-sub",
+    "maxSpawnDepth": 2,
+    "allowAgentToAgent": true,
+    "messageQueueSize": 100
+  },
+  
+  "hitl": {
+    "_description": "HITL 人類介入設定（預設關閉，向前相容）",
+    "enabled": false,
+    "auto_escalate_timeout": 3600,
+    "require_approval_for_all": false
+  },
+  
+  "hybridWorkflow": {
+    "_description": "Hybrid Workflow 智慧分流設定（預設 hybrid）",
+    "default_mode": "hybrid",
+    "smallChangeThreshold": 10,
+    "largeChangeThreshold": 30,
+    "autoApproveComments": true,
+    "autoApproveDocs": true
+  },
+  
+  "agentDefaults": {
+    "_description": "Agent 預設設定",
+    "maxConcurrentAgents": 5,
+    "defaultTimeout": 300,
+    "retryLimit": 3,
+    "idleTimeout": 300,
+    "enableMemory": true,
+    "enableTelemetry": true
+  },
+  
+  "system": {
+    "_description": "系統全域設定",
+    "logLevel": "INFO",
+    "logPath": "./logs",
+    "storagePath": "./data",
+    "enablePersistence": true
+  }
+}
