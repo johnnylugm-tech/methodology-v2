@@ -249,7 +249,51 @@ Step 8: 交付與版本 (DeliveryManager)
 
 ---
 
-## 7️⃣ 快速開始
+## 7️⃣ P2P + HITL 協作模式
+
+Methodology-v2 支援兩種核心協作模式：
+
+### P2P (Peer-to-Peer) - 點對點代理協作
+
+多個 Agent 直接互相溝通，**沒有單一主控者**：
+
+```
+┌──────────┐     ┌──────────┐     ┌──────────┐
+│ Agent A  │◄───►│ Agent B  │◄───►│ Agent C  │
+└──────────┘     └──────────┘     └──────────┘
+```
+
+**適用場景：**
+- 複雜專案、多領域協作
+- 高品質需求（多元視角審查）
+- 大規模並行任務處理
+
+### HITL (Human-in-the-Loop) - 人類介入控制
+
+人類在關鍵節點審批、決策、引導：
+
+```
+Agent 執行 → 人類審批 → 下一階段
+```
+
+**適用場景：**
+- **所有場景都需要**（非可選項）
+- 每個產出都需要負責人
+- 風險控制避免完全自動化
+
+### 何時用哪種？
+
+| 任務類型 | 推薦模式 |
+|---------|---------|
+| 簡單任務 / POC | 單一主代理 |
+| 複雜專案 / 多領域 | **P2P + HITL** |
+| 正式發布 / 生產 | **P2P + HITL**（強制） |
+
+📖 **詳細指南：** [P2P_HITL_GUIDE.md](P2P_HITL_GUIDE.md)
+
+---
+
+## 8️⃣ 快速開始
 
 ### 安裝
 
@@ -318,6 +362,7 @@ print("✅ 完成！")
 | GitHub | https://github.com/johnnylugm-tech/methodology-v2 |
 | Releases | https://github.com/johnnylugm-tech/methodology-v2/releases |
 | 文檔 | [QUICKSTART.md](QUICKSTART.md)、[PM_HANDBOOK.md](PM_HANDBOOK.md) |
+| **P2P + HITL** | **[P2P_HITL_GUIDE.md](P2P_HITL_GUIDE.md)** ⭐ 新 |
 | 案例 | [docs/cases/README.md](docs/cases/README.md) |
 
 ---
