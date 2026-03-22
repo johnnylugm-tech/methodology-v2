@@ -363,6 +363,7 @@ print("✅ 完成！")
 | Releases | https://github.com/johnnylugm-tech/methodology-v2/releases |
 | 文檔 | [QUICKSTART.md](QUICKSTART.md)、[PM_HANDBOOK.md](PM_HANDBOOK.md) |
 | **P2P + HITL** | **[P2P_HITL_GUIDE.md](P2P_HITL_GUIDE.md)** ⭐ 新 |
+| **ASPICE 實踐** | **[case32](docs/cases/case32_traceability.md)、[case33](docs/cases/case33_work_products.md)** ⭐ 新 |
 | 案例 | [docs/cases/README.md](docs/cases/README.md) |
 
 ---
