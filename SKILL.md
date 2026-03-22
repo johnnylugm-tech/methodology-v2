@@ -8,6 +8,8 @@
 
 | 版本 | 日期 | 說明 |
 |------|------|------|
+| v5.16 | 2026-03-22 | Knowledge Sync 知識同步系統（對標 Agno 知識庫） |
+| v5.15 | 2026-03-22 | Workflow Graph 工作流圖結構視覺化（對標 LangGraph） |
 | v5.14 | 2026-03-22 | Async Executor 非同步執行器 |
 | v5.13 | 2026-03-22 | ASPICE 實踐：traceability_matrix, verification_gate, work_product |
 | v5.12 | 2026-03-22 | 正確性保障：Timeout、A/B雙重驗證、Kickoff檢查；錯誤處理：HITL機制、L1-L6分類、斷點設計；P2P協作 |
@@ -81,6 +83,45 @@ crew = Crew(
 )
 
 result = crew.kickoff()
+```
+
+### 🚀 快速啟動 (Quick Start)
+
+對標 CrewAI 的 minimal boilerplate，5 行啟動 Agent，3 行建立團隊：
+
+```python
+from quick_start import create_agent, create_team, quick_start
+
+# Level 1: 5 行啟動一個 Agent
+agent = create_agent(name="DevBot", role="Developer", goal="Write code")
+
+# Level 2: 3 行建立團隊
+team = create_team("DevTeam", [agent])
+
+# Level 3: 一行執行任務
+from quick_start import run_task
+result = run_task(team, "Build a login system")
+```
+
+#### 預設模板
+
+```python
+# 一行建立完整團隊
+team = quick_start("full")  # 4 個 Agent: Architect + Dev + Reviewer + Tester
+
+# 開發團隊模板
+team = quick_start("dev")   # 2 個 Agent: Developer + Reviewer
+
+# PM 團隊模板
+team = quick_start("pm")    # 1 個 Agent: PM
+```
+
+#### 互動式 CLI
+
+```bash
+python quick_start.py interactive  # 互動式選擇模板
+python quick_start.py templates     # 查看可用模板
+python quick_start.py quick         # 快速啟動完整團隊
 ```
 
 ---
