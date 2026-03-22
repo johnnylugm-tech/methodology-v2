@@ -319,13 +319,15 @@
 | **Y: Hybrid Workflow** | hybrid_workflow.py | 智慧分流、小改自動、大改審查 |
 | **Z: P2P Orchestrator** | p2p_orchestrator.py | 點對點代理協調、平等協作 |
 | **AA: HITL Controller** | hitl_controller.py | 人類介入控制、產出負責制 |
+| **AB: Unified Config** | unified_config.py | 統一配置中心、集中管理 |
 
 ---
 
 ## ⭐ 關鍵亮點
-### 🆕 P2P + HITL (2026-03-22)
+### 🆕 P2P + HITL + Unified Config (2026-03-22)
 - 新增 `p2p_orchestrator.py`：點對點代理協調
 - 新增 `hitl_controller.py`：人類介入控制
+- 新增 `unified_config.py`：統一配置中心
 - 三種模式：OFF / HYBRID / ON
 - 安全關鍵字優先審查
 - 來源: 任務 Y
