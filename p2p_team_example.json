@@ -1,4 +1,15 @@
 {
+  "_meta": {
+    "version": "1.0",
+    "description": "P2P Team Configuration"
+  },
+  
+  "p2p": {
+    "_description": "P2P 模式設定。預設為關閉（單一主代理模式）",
+    "enabled": false,
+    "default_mode": "master-sub"
+  },
+  
   "team": {
     "teamId": "research-dev-team",
     "mode": "peer-to-peer",
@@ -8,6 +19,7 @@
       "messageQueueSize": 100
     }
   },
+  
   "members": [
     {
       "agentId": "programmer-agent",

@@ -12,6 +12,29 @@ from pathlib import Path
 
 
 @dataclass
+class P2PGlobalSettings:
+    """P2P 全域設定（預設關閉）"""
+    enabled: bool = False                    # 預設關閉
+    default_mode: str = "master-sub"         # 預設為單一主代理模式
+    
+    def to_dict(self) -> dict:
+        return asdict(self)
+    
+    @classmethod
+    def from_dict(cls, data: dict) -> "P2PGlobalSettings":
+        if not data:
+            data = {}
+        return cls(
+            enabled=data.get("enabled", False),
+            default_mode=data.get("default_mode", "master-sub"),
+        )
+    
+    def is_enabled(self) -> bool:
+        """檢查是否啟用 P2P 模式"""
+        return self.enabled
+
+
+@dataclass
 class P2PTeamSettings:
     """P2P 團隊設定"""
     mode: str = "peer-to-peer"
@@ -79,10 +102,16 @@ class P2PTeamConfig:
         team_meta: TeamMeta,
         settings: P2PTeamSettings,
         members: List[TeamMember],
+        global_settings: P2PGlobalSettings = None,
     ):
         self.team_meta = team_meta
         self.settings = settings
         self.members = members
+        self.global_settings = global_settings or P2PGlobalSettings()  # 預設關閉
+    
+    def is_p2p_enabled(self) -> bool:
+        """檢查 P2P 模式是否啟用"""
+        return self.global_settings.enabled if self.global_settings else False
 
     @classmethod
     def from_json(cls, config_path: str) -> "P2PTeamConfig":
@@ -99,6 +128,10 @@ class P2PTeamConfig:
     @classmethod
     def from_dict(cls, config: dict) -> "P2PTeamConfig":
         """從字典建立"""
+        # 讀取全域設定（預設關閉）
+        global_data = config.get("p2p", {})
+        global_settings = P2PGlobalSettings.from_dict(global_data)
+        
         team_data = config.get("team", {})
         settings_data = team_data.get("settings", {})
         members_data = config.get("members", [])
@@ -107,11 +140,20 @@ class P2PTeamConfig:
         settings = P2PTeamSettings.from_dict(settings_data)
         members = [TeamMember.from_dict(m) for m in members_data]
 
-        return cls(team_meta=team_meta, settings=settings, members=members)
+        return cls(
+            team_meta=team_meta,
+            settings=settings,
+            members=members,
+            global_settings=global_settings
+        )
 
     def to_dict(self) -> dict:
         """轉換為字典"""
         return {
+            "p2p": {
+                "enabled": self.global_settings.enabled if self.global_settings else False,
+                "default_mode": self.global_settings.default_mode if self.global_settings else "master-sub",
+            },
             "team": {
                 "teamId": self.team_meta.team_id,
                 "mode": self.settings.mode,
