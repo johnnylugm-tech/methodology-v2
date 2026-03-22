@@ -6,6 +6,7 @@ HITL Controller - 人類介入控制中心
 - 管理 Agent 負責人 (Owner)
 - 追蹤產出生命週期
 - 處理審批/修訂/升級
+- 支援企業表單系統整合
 
 使用方法：
     from hitl_controller import HITLController, AgentOwner, OutputStatus
@@ -29,12 +30,128 @@ HITL Controller - 人類介入控制中心
     controller.approve_output(output_id, "owner-1")
 """
 
+from abc import ABC, abstractmethod
+
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Dict, List, Optional, Any, Callable
 from datetime import datetime
 import uuid
 import json
+
+
+# ============================================================================
+# 企業表單系統整合介面
+# ============================================================================
+
+class FormSystemAdapter(ABC):
+    """
+    企業表單系統介面卡
+    
+    用途：
+    - 整合 Jira、ServiceNow、SAP、Monday.com 等企業表單系統
+    - 將 HITL 審批流程無縫嵌入企業既有工作流
+    
+    使用方式：
+        # 自定義 Jira 整合
+        class JiraFormAdapter(FormSystemAdapter):
+            def create_ticket(self, output):
+                return jira_client.create_issue(...)
+            
+            def notify_approval(self, owner_id, output):
+                jira_client.add_comment(...)
+        
+        # 使用
+        controller = HITLController()
+        controller.set_form_adapter(JiraFormAdapter())
+    """
+    
+    @abstractmethod
+    def create_ticket(self, output: "Output", owner: "AgentOwner") -> str:
+        """
+        在表單系統中建立審批工單
+        
+        Args:
+            output: 產出物件
+            owner: 負責人
+        
+        Returns:
+            str: 工單 ID
+        """
+        pass
+    
+    @abstractmethod
+    def notify_approval(self, owner_id: str, output: "Output", action: str):
+        """
+        通知負責人有新審批任務
+        
+        Args:
+            owner_id: 負責人 ID
+            output: 產出物件
+            action: 操作類型 (approve/reject/escalate)
+        """
+        pass
+    
+    @abstractmethod
+    def get_approval_status(self, ticket_id: str) -> str:
+        """
+        查詢表單系統中的審批狀態
+        
+        Args:
+            ticket_id: 工單 ID
+        
+        Returns:
+            str: 狀態 (approved/rejected/pending)
+        """
+        pass
+    
+    @abstractmethod
+    def update_ticket(self, ticket_id: str, status: str, feedback: str = None):
+        """
+        更新表單系統中的工單狀態
+        
+        Args:
+            ticket_id: 工單 ID
+            status: 新狀態
+            feedback: 審批意見
+        """
+        pass
+
+
+class DefaultFormAdapter(FormSystemAdapter):
+    """
+    預設表單適配器（僅本地儲存）
+    
+    適用場景：
+    - POC / 快速驗證
+    - 無企業表單系統需求
+    """
+    
+    def __init__(self):
+        self.tickets: Dict[str, dict] = {}
+    
+    def create_ticket(self, output: "Output", owner: "AgentOwner") -> str:
+        ticket_id = f"TICKET-{output.id}"
+        self.tickets[ticket_id] = {
+            "output_id": output.id,
+            "owner_id": owner.owner_id,
+            "status": "pending"
+        }
+        return ticket_id
+    
+    def notify_approval(self, owner_id: str, output: "Output", action: str):
+        # 預設實現：僅打印日誌
+        print(f"[DefaultFormAdapter] Notify {owner_id}: {action} for output {output.id}")
+    
+    def get_approval_status(self, ticket_id: str) -> str:
+        ticket = self.tickets.get(ticket_id, {})
+        return ticket.get("status", "pending")
+    
+    def update_ticket(self, ticket_id: str, status: str, feedback: str = None):
+        if ticket_id in self.tickets:
+            self.tickets[ticket_id]["status"] = status
+            if feedback:
+                self.tickets[ticket_id]["feedback"] = feedback
 
 
 class OutputStatus(Enum):
@@ -119,19 +236,32 @@ class Output:
 class HITLController:
     """HITL 控制中心"""
     
-    def __init__(self, storage_path: str = None):
+    def __init__(self, storage_path: str = None, form_adapter: FormSystemAdapter = None):
         """
         初始化 HITL 控制中心
         
         Args:
             storage_path: 選項，持久化儲存路徑
+            form_adapter: 選項，企業表單系統介面卡（預設為 DefaultFormAdapter）
         """
         self.owners: Dict[str, AgentOwner] = {}
         self.outputs: Dict[str, Output] = {}
         self.pending_reviews: List[str] = []  # 等待審批的產出 IDs
         self.agent_to_owner: Dict[str, str] = {}  # agent_id -> owner_id 映射
         self.storage_path = storage_path
+        self.form_adapter = form_adapter or DefaultFormAdapter()  # 預設本地儲存
         self._load_from_storage()
+    
+    def set_form_adapter(self, adapter: FormSystemAdapter):
+        """
+        設定企業表單系統介面卡
+        
+        用於整合 Jira、ServiceNow、SAP、Monday.com 等
+        
+        Args:
+            adapter: FormSystemAdapter 實作
+        """
+        self.form_adapter = adapter
     
     def _generate_id(self, prefix: str) -> str:
         """生成唯一 ID"""
@@ -329,6 +459,12 @@ class HITLController:
         if output_id not in self.pending_reviews:
             self.pending_reviews.append(output_id)
         
+        # 透過表單系統通知負責人
+        owner = self.owners.get(output.owner_id)
+        if owner and self.form_adapter:
+            self.form_adapter.create_ticket(output, owner)
+            self.form_adapter.notify_approval(owner.owner_id, output, "review_requested")
+        
         self._save_to_storage()
         return True
     
@@ -362,6 +498,10 @@ class HITLController:
         # 從 pending_reviews 移除
         if output_id in self.pending_reviews:
             self.pending_reviews.remove(output_id)
+        
+        # 透過表單系統更新狀態
+        if self.form_adapter:
+            self.form_adapter.notify_approval(owner_id, output, "approved")
         
         self._save_to_storage()
         return True
