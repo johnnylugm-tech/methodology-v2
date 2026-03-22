@@ -495,3 +495,57 @@ await bridge.start()
 ### 案例
 
 詳細範例請參考：[docs/cases/case08_omo_integration.md](docs/cases/case08_omo_integration.md)
+
+---
+
+## v5.12.0 新功能指南
+
+### 正確性保障
+
+```python
+# Timeout 規範
+timeout = 評估時間 × 1.5  # 最小 5 分鐘
+```
+
+### A/B 雙重驗證
+
+```python
+# Agent A 交付前必須通過 Reflection 自我審查
+# Agent B 實作前必須預先驗證設計可行性
+```
+
+### Kickoff 檢查清單
+
+```
+每個專案啟動前必須完成 8 項檢查：
+1. Git 倉庫配置
+2. 開發環境就緒
+3. 測試框架建立
+4. CI/CD 配置
+5. 安全基線檢查
+6. Quality Gate 標準
+7. 審批節點定義
+8. 通訊渠道設定
+```
+
+### HITL 機制
+
+```python
+# 5 種情況需要人工介入：
+# - L5 認證錯誤
+# - 重大決策
+# - 品質不及格 (<70分)
+# - 超時過多 (連續3次)
+# - 未知錯誤
+```
+
+### P2P 協作
+
+```python
+from methodology import AgentTeam
+
+team = AgentTeam(mode="peer-to-peer")
+dev1 = team.create_p2p_instance("developer", "dev1")
+```
+
+詳情請參考：[docs/GETTING_STARTED_v5.12.md](docs/GETTING_STARTED_v5.12.md)

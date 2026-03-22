@@ -5,7 +5,7 @@
 
 ---
 
-[![Version](https://img.shields.io/badge/version-v5.11.0-blue.svg)](https://github.com/johnnylugm-tech/methodology-v2)
+[![Version](https://img.shields.io/badge/version-v5.12.0-blue.svg)](https://github.com/johnnylugm-tech/methodology-v2)
 [![Python](https://img.shields.io/badge/python-3.8+-green.svg)](https://python.org)
 [![Tests](https://img.shields.io/badge/tests-32%20passed-green.svg)]()
 
@@ -810,6 +810,7 @@ class TeamMode(Enum):
 
 | 版本 | 日期 | 說明 |
 |------|------|------|
+| v5.12.0 | 2026-03-22 | 正確性保障：Timeout、A/B雙重驗證、Kickoff檢查；錯誤處理：HITL機制、L1-L6分類、斷點設計；P2P協作：角色定義、訊息優先級、衝突處理 |
 | v5.11.0 | 2026-03-22 | Hybrid Workflow: 智慧分流工作流 (Solution Y) |
 | v5.8.0 | 2026-03-20 | Trend Optimization: 強化 Guardrails 安全模組 |
 | v5.8.0 | 2026-03-20 | v4.5.0 Extensions 整合 |
@@ -833,4 +834,4 @@ MIT License
 ---
 
 **GitHub**: https://github.com/johnnylugm-tech/methodology-v2
-**Release**: https://github.com/johnnylugm-tech/methodology-v2/releases/tag/v5.11.0
+**Release**: https://github.com/johnnylugm-tech/methodology-v2/releases/tag/v5.12.0
