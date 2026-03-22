@@ -1,6 +1,6 @@
 # methodology-v2
 
-> Multi-Agent Collaboration Development Methodology v5.13
+> Multi-Agent Collaboration Development Methodology v5.18
 
 ---
 
@@ -8,6 +8,7 @@
 
 | 版本 | 日期 | 說明 |
 |------|------|------|
+| v5.18 | 2026-03-22 | Recovery Controller 災難恢復控制中心 |
 | v5.17 | 2026-03-22 | State Persistence 狀態持久化系統（支援 SQLite/Redis/檔案系統） |
 | v5.16 | 2026-03-22 | Knowledge Sync 知識同步系統（對標 Agno 知識庫） |
 | v5.15 | 2026-03-22 | Workflow Graph 工作流圖結構視覺化（對標 LangGraph） |
