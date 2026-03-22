@@ -8,6 +8,7 @@
 
 | 版本 | 日期 | 說明 |
 |------|------|------|
+| v5.14 | 2026-03-22 | Async Executor 非同步執行器 |
 | v5.13 | 2026-03-22 | ASPICE 實踐：traceability_matrix, verification_gate, work_product |
 | v5.12 | 2026-03-22 | 正確性保障：Timeout、A/B雙重驗證、Kickoff檢查；錯誤處理：HITL機制、L1-L6分類、斷點設計；P2P協作 |
 | v5.11 | 2026-03-22 | HITL (Human-in-the-Loop) 系統 |
@@ -623,6 +624,43 @@ registry.get_verification_summary()
 ```
 
 詳細案例：請參考 `docs/cases/case33_work_products.md`
+
+---
+
+### Async Executor
+
+對標 AutoGen 的 async/await 支援，提供 asyncio 原生的並發任務執行能力。
+
+```python
+from async_executor import AsyncExecutor, run_async, run_parallel
+
+# 使用 executor
+executor = AsyncExecutor(max_concurrency=5)
+
+async def my_task(name):
+    await asyncio.sleep(1)
+    return f"{name} done"
+
+# 創建任務
+executor.create_task("task1", my_task("A"))
+executor.create_task("task2", my_task("B"))
+
+# 執行並取得結果
+results = await executor.execute_all()
+
+# 便捷函數
+result = await run_async(agent.execute("task"), timeout=30.0)
+results = await run_parallel(task1(), task2(), task3(), max_concurrency=10)
+```
+
+| 功能 | 說明 |
+|------|------|
+| 並發執行 | 控制最大並發數，避免資源耗盡 |
+| 超時控制 | 支援任務級別的超時設定 |
+| 錯誤處理 | 單一任務失敗不影響其他任務 |
+| 結果收集 | 統一收集所有任務結果 |
+
+詳細案例：請參考 `docs/cases/case37_async_executor.md`
 
 ---
 
