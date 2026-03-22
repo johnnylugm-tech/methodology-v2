@@ -427,3 +427,21 @@ __all__ = [
     "ASTNode",
     "NodeType",
 ]
+
+# P2P Orchestrator (v5.5)
+from .p2p_orchestrator import (
+    P2POrchestrator,
+    PeerAgent,
+    P2PMessage,
+    PendingRequest,
+    P2PError,
+)
+
+__all__ += [
+    # P2P Orchestrator
+    "P2POrchestrator",
+    "PeerAgent",
+    "P2PMessage",
+    "PendingRequest",
+    "P2PError",
+]

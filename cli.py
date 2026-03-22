@@ -46,7 +46,7 @@ from p2p_team_config import P2PTeamConfig
 class MethodologyCLI:
     """統一 CLI 入口"""
     
-    VERSION = "5.9.0"
+    VERSION = "5.10.0"
     
     def __init__(self):
         self.progress = ProgressDashboard()

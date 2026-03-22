@@ -10,22 +10,22 @@
   },
   "members": [
     {
-      "agent_id": "programmer-agent",
+      "agentId": "programmer-agent",
       "role": "Developer",
-      "peer_memory_enabled": true,
-      "can_spawn_subagent": true
+      "peerMemoryEnabled": true,
+      "canSpawnSubagent": true
     },
     {
-      "agent_id": "reviewer-agent",
+      "agentId": "reviewer-agent",
       "role": "CodeReviewer",
-      "peer_memory_enabled": true,
-      "can_spawn_subagent": true
+      "peerMemoryEnabled": true,
+      "canSpawnSubagent": true
     },
     {
-      "agent_id": "researcher-agent",
+      "agentId": "researcher-agent",
       "role": "Researcher",
-      "peer_memory_enabled": true,
-      "can_spawn_subagent": false
+      "peerMemoryEnabled": true,
+      "canSpawnSubagent": false
     }
   ]
 }
