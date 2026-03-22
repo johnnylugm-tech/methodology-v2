@@ -8,6 +8,7 @@
 
 | 版本 | 日期 | 說明 |
 |------|------|------|
+| v5.19 | 2026-03-22 | Human Intervention 人類介入界面（狀態儀表板、介入請求、批准流程） |
 | v5.18 | 2026-03-22 | Recovery Controller 災難恢復控制中心 |
 | v5.17 | 2026-03-22 | State Persistence 狀態持久化系統（支援 SQLite/Redis/檔案系統） |
 | v5.16 | 2026-03-22 | Knowledge Sync 知識同步系統（對標 Agno 知識庫） |
@@ -787,6 +788,61 @@ persistence.unlock_session(session_id, owner="agent_002")
 ```
 
 詳細案例：請參考 `docs/cases/case40_state_persistence.md`
+
+---
+
+## Human Intervention (人類介入界面)
+
+人類介入系統，讓人類可以查看狀態、請求介入、批准行動。
+
+```python
+from human_intervention import (
+    HumanIntervention,
+    InterventionType,
+    InterventionStatus
+)
+
+# 初始化人類介入系統
+hi = HumanIntervention()
+
+# 請求介入
+request_id = hi.request_intervention(
+    agent_id="dev_agent_001",
+    task_id="deploy_to_production",
+    intervention_type=InterventionType.APPROVAL,
+    reason="即將部署到生產環境，需要人類確認",
+    current_state={"changes": ["user_auth.py"], "risk_level": "high"},
+    suggested_actions=["確認部署", "檢查測試覆蓋率"],
+    priority=5
+)
+
+# 批准請求
+hi.approve_action(request_id, approver="johnny", comments="確認部署")
+
+# 拒絕請求
+hi.reject_action(request_id, rejector="johnny", reason="測試覆蓋率不足")
+
+# 查看狀態儀表板
+dashboard = hi.show_status(agent_id="dev_agent_001")
+print(hi.export_dashboard_text(dashboard))
+
+# 獲取待處理請求
+pending = hi.get_pending_requests(priority=4)
+
+# 獲取介入摘要
+summary = hi.get_intervention_summary()
+```
+
+### 介入類型
+
+| 類型 | 說明 |
+|------|------|
+| `APPROVAL` | 需要批准（高風險操作） |
+| `CORRECTION` | 需要修正（錯誤處理） |
+| `ESCALATION` | 需要升級（專家介入） |
+| `NOTIFICATION` | 僅通知 |
+
+詳細案例：請參考 `docs/cases/case42_human_intervention.md`
 
 ---
 
