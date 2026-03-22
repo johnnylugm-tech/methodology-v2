@@ -317,12 +317,15 @@
 | **W: Resource Gantt** | gantt_chart.py | 資源視圖、任務衝突檢測 |
 | **X: Tool Registry** | tool_registry.py | 統一工具接入、CrewAI 風格一行接入 |
 | **Y: Hybrid Workflow** | hybrid_workflow.py | 智慧分流、小改自動、大改審查 |
+| **Z: P2P Orchestrator** | p2p_orchestrator.py | 點對點代理協調、平等協作 |
+| **AA: HITL Controller** | hitl_controller.py | 人類介入控制、產出負責制 |
 
 ---
 
 ## ⭐ 關鍵亮點
-### 🆕 Hybrid Workflow (2026-03-22)
-- 新增 `hybrid_workflow.py`：智慧分流工作流，小改自動，大改審查
+### 🆕 P2P + HITL (2026-03-22)
+- 新增 `p2p_orchestrator.py`：點對點代理協調
+- 新增 `hitl_controller.py`：人類介入控制
 - 三種模式：OFF / HYBRID / ON
 - 安全關鍵字優先審查
 - 來源: 任務 Y

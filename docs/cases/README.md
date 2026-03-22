@@ -33,6 +33,8 @@
 | 27 | Resource Gantt | [case27_resource_gantt.md](case27_resource_gantt.md) | 資源視圖、衝突檢測 |
 | 28 | CrewAI Integration | [case28_crewai_integration.md](case28_crewai_integration.md) | CrewAI 風格整合、ToolRegistry |
 | 29 | Hybrid Workflow | [case29_hybrid_workflow.md](case29_hybrid_workflow.md) | 智慧分流、小改自動、大改審查 |
+| 30 | P2P Orchestrator | [case30_p2p_orchestrator.md](case30_p2p_orchestrator.md) | 點對點代理協調、平等協作 |
+| 31 | HITL | [case31_hitl.md](case31_hitl.md) | 人類介入控制、產出負責制 |
 
 ---
 
