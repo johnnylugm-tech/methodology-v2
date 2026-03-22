@@ -445,3 +445,25 @@ __all__ += [
     "PendingRequest",
     "P2PError",
 ]
+
+# Traceability Matrix (v5.6) - ASPICE Compliance
+from .traceability_matrix import (
+    TraceabilityMatrix,
+    TraceLink,
+    TraceStatus,
+    LinkType,
+    TraceabilityMixin,
+    get_traceability_matrix,
+    reset_traceability_matrix,
+)
+
+__all__ += [
+    # Traceability Matrix
+    "TraceabilityMatrix",
+    "TraceLink",
+    "TraceStatus",
+    "LinkType",
+    "TraceabilityMixin",
+    "get_traceability_matrix",
+    "reset_traceability_matrix",
+]

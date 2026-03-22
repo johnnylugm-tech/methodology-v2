@@ -19,6 +19,15 @@ try:
 except ImportError:
     AgentPersona = None  # 向後相容
 
+# 導入 Traceability Matrix（可選整合）
+try:
+    from traceability_matrix import TraceabilityMatrix, TraceStatus, get_traceability_matrix
+    TRACING_AVAILABLE = True
+except ImportError:
+    TRACING_AVAILABLE = False
+    TraceStatus = None
+    TraceabilityMatrix = None
+
 
 class AgentRole(Enum):
     """Agent 角色"""
@@ -192,7 +201,8 @@ class AgentInstance:
 class AgentTeam:
     """Agent 團隊管理器"""
     
-    def __init__(self, team_id: str = None, name: str = "Default Team"):
+    def __init__(self, team_id: str = None, name: str = "Default Team",
+                 enable_trace: bool = True):
         self.team_id = team_id or f"team-{datetime.now().timestamp()}"
         self.name = name
         
@@ -202,8 +212,20 @@ class AgentTeam:
         # Agent 實例
         self.instances: Dict[str, AgentInstance] = {}
         
+        # Traceability Matrix 整合（可選）
+        self._trace_enabled = enable_trace and TRACING_AVAILABLE
+        self._trace: Optional[TraceabilityMatrix] = None
+        self._trace_task_links: Dict[str, str] = {}  # task_id -> link_id
+        
         # 預設模板
         self._load_default_definitions()
+    
+    @property
+    def trace(self) -> Optional[TraceabilityMatrix]:
+        """取得 Traceability Matrix 實例（延遲初始化）"""
+        if self._trace_enabled and self._trace is None:
+            self._trace = get_traceability_matrix()
+        return self._trace
     
     def _load_default_definitions(self):
         """載入預設 Agent 定義"""
@@ -514,9 +536,19 @@ class AgentTeam:
         instance.current_task_id = task_id
         instance.last_active = datetime.now()
         
+        # === Traceability Matrix 整合 ===
+        if self.trace:
+            link_id = self.trace.add_link(
+                source_type="task",
+                source_id=task_id,
+                target_type="agent",
+                target_id=instance_id
+            )
+            self._trace_task_links[task_id] = link_id
+        
         return True
     
-    def complete_task(self, instance_id: str, success: bool = True):
+    def complete_task(self, instance_id: str, success: bool = True, output_id: str = None):
         """完成任務"""
         instance = self.instances.get(instance_id)
         if not instance:
@@ -530,6 +562,21 @@ class AgentTeam:
             instance.tasks_completed += 1
         else:
             instance.tasks_failed += 1
+        
+        # === Traceability Matrix 整合 ===
+        if self.trace and instance.current_task_id:
+            # 如果有 output_id，建立 agent -> output 鏈接
+            if output_id:
+                self.trace.add_link(
+                    source_type="agent",
+                    source_id=instance_id,
+                    target_type="output",
+                    target_id=output_id
+                )
+            # 標記 task -> agent 鏈接為完成
+            link_id = self._trace_task_links.pop(instance.current_task_id, None)
+            if link_id:
+                self.trace.mark_verified(link_id, verifier="team-complete")
     
     def get_team_summary(self) -> Dict:
         """取得團隊摘要"""
