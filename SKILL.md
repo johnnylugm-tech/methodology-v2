@@ -846,6 +846,45 @@ summary = hi.get_intervention_summary()
 
 ---
 
+## Fault Tolerance（容錯與災難復原）
+
+Methodology-v2 提供完整的 Fault Tolerance 方案，透過四層架構確保系統在遇到錯誤或故障時能繼續運作或優雅降級。
+
+### 四層架構
+
+| 層級 | 功能 | 說明 |
+|------|------|------|
+| **L1: Retry with Backoff** | 自動重試 | 網路瞬斷、API 限流時等一下再試 |
+| **L2: Model Fallback** | 模型切換 | 主模型當機時自動切換備用模型 |
+| **L3: Error Classification** | 錯誤分類 | 不同錯誤類型不同處理方式 |
+| **L4: Checkpoint Recovery** | 快照恢復 | 系統崩潰後從快照恢復 |
+
+### 四大核心工具
+
+| 工具 | 模組 | 功能 |
+|------|------|------|
+| `CheckpointManager` | `checkpoint_manager.py` | 任務執行中定期快照，中斷後恢復 |
+| `StatePersistence` | `state_persistence.py` | 跨 session 保持狀態（SQLite/Redis） |
+| `RecoveryController` | `recovery_controller.py` | 失敗自動分類 + 建立恢復計劃 |
+| `HumanIntervention` | `human_intervention.py` | 危險操作前或連續失敗時需要人類審批 |
+
+### 推薦組合
+
+| 專案規模 | 組合 |
+|---------|------|
+| 小型（單機） | `CheckpointManager` |
+| 中型（單機 + DB） | `CheckpointManager` + `StatePersistence` + `RecoveryController` |
+| 大型（分散式） | 全部四個工具 + 通知系統（Slack/Email） |
+
+📖 **詳細上手指南：** [docs/FAULT_TOLERANCE_GUIDE.md](docs/FAULT_TOLERANCE_GUIDE.md)
+📖 **案例文檔：**
+- [Checkpoint Manager](docs/cases/case39_checkpoint_manager.md)
+- [State Persistence](docs/cases/case40_state_persistence.md)
+- [Recovery Controller](docs/cases/case41_recovery_controller.md)
+- [Human Intervention](docs/cases/case42_human_intervention.md)
+
+---
+
 ## 統一角色定義 (Agent Role)
 
 對標 CrewAI 的 Role-based Agent 概念，實現統一的角色定義系統。
