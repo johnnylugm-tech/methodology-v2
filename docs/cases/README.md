@@ -42,6 +42,10 @@
 | 36 | Quick Start | [case36_quick_start.md](case36_quick_start.md) | 5行啟動、3分鐘上手 |
 | 37 | Async Executor | [case37_async_executor.md](case37_async_executor.md) | 非同步執行、並發控制 |
 | 38 | Knowledge Sync | [case38_knowledge_sync.md](case38_knowledge_sync.md) | 知識同步、版本控制 |
+| 39 | Checkpoint Manager | [case39_checkpoint_manager.md](case39_checkpoint_manager.md) | 狀態快照、斷電恢復 |
+| 40 | State Persistence | [case40_state_persistence.md](case40_state_persistence.md) | Session 持久化、SQLite/Redis |
+| 41 | Recovery Controller | [case41_recovery_controller.md](case41_recovery_controller.md) | 災難恢復、6種失敗分類 |
+| 42 | Human Intervention | [case42_human_intervention.md](case42_human_intervention.md) | 人類介入、狀態儀表板 |
 
 ---
 
