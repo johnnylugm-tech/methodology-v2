@@ -327,6 +327,18 @@
 - 安全關鍵字優先審查
 - 來源: 任務 Y
 
+### 🆕 P2P 對等代理模式 (2026-03-22)
+- `agent_team.py` 新增 P2P 支援：
+  - `TeamMode` 枚舉：`MASTER_SUB`（主從模式）和 `PEER_TO_PEER`（點對點模式）
+  - `PeerAgentConfig` dataclass：對等代理配置（獨立身份、記憶、工作空間、Sub Agent 嵌套深度、允許通訊對象）
+  - `agent_to_agent()`：直接發送訊息給對等代理
+  - `broadcast()`：廣播訊息給所有對等代理
+  - `get_mailbox()`：收取訊息
+  - `create_p2p_instance()`：建立 P2P 實例
+  - `configure_peer()`：設定對等代理配置
+  - `set_team_mode()`：切換團隊模式
+- 來源: 任務 P2P
+
 ### 🆕 強化 LLM Providers 模組 (2026-03-21)
 - 新增 Provider 支援
 - 來源: 輪換
@@ -474,6 +486,40 @@ core.autoscaler.scale_to(replicas=5)
 
 # 6. 部署通知
 core.enterprise.alert("Deployment Complete", "Sprint 1 done")
+```
+
+### P2P 對等代理使用
+
+```python
+from agent_team import AgentTeam, TeamMode, PeerAgentConfig
+
+# 建立團隊
+team = AgentTeam(name="P2P 開發團隊")
+
+# 建立 P2P 實例（可跨工作空間獨立運作）
+dev1 = team.create_p2p_instance(
+    "developer-developer", name="大明",
+    peer_id="dev-1",
+    allowed_peers=["dev-2", "dev-3"],
+    peer_memory_enabled=True,
+    spawn_depth=2
+)
+
+dev2 = team.create_p2p_instance(
+    "developer-developer", name="小明",
+    peer_id="dev-2",
+    allowed_peers=["dev-1", "dev-3"]
+)
+
+# P2P 訊息傳遞
+team.agent_to_agent("dev-1", "dev-2", {"type": "task", "content": "請 review 這段代碼"})
+team.broadcast("dev-1", {"type": "announcement", "content": "衝刺開始！"})
+
+# 收取訊息
+messages = team.get_mailbox("dev-2")
+
+# 切換團隊模式
+team.set_team_mode(TeamMode.PEER_TO_PEER)
 ```
 
 ### CLI 使用
@@ -720,6 +766,42 @@ class MethodologyCore:
     # 遷移 (Solution E)
     @property
     def migrator(self) -> LangGraphMigrationTool
+```
+
+### AgentTeam P2P API
+
+```python
+class AgentTeam:
+    # 團隊模式
+    team_mode: TeamMode  # MASTER_SUB 或 PEER_TO_PEER
+    
+    # P2P 實例建立
+    def create_p2p_instance(self, definition_id, name, peer_id,
+                           allowed_peers, peer_memory_enabled,
+                           peer_workspace_path, can_spawn_subagent,
+                           spawn_depth) -> AgentInstance
+    
+    # P2P 配置
+    def configure_peer(self, instance_id, peer_config) -> bool
+    def set_team_mode(self, mode: TeamMode)
+    
+    # P2P 通訊
+    def agent_to_agent(self, from_peer, to_peer, message) -> bool
+    def broadcast(self, from_peer, message) -> int
+    def get_mailbox(self, instance_id) -> List[Dict]
+
+@dataclass
+class PeerAgentConfig:
+    peer_id: str
+    peer_memory_enabled: bool = True
+    peer_workspace_path: str = None
+    can_spawn_subagent: bool = True
+    spawn_depth: int = 2
+    allowed_peers: List[str] = field(default_factory=list)
+
+class TeamMode(Enum):
+    MASTER_SUB = "master-sub"
+    PEER_TO_PEER = "peer-to-peer"
 ```
 
 ---

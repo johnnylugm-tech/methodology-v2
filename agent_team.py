@@ -60,6 +60,23 @@ class AgentPermission(Enum):
     MANAGE_USERS = "users:manage"
 
 
+class TeamMode(Enum):
+    """團隊模式"""
+    MASTER_SUB = "master-sub"       # 主從模式
+    PEER_TO_PEER = "peer-to-peer"  # 點對點模式
+
+
+@dataclass
+class PeerAgentConfig:
+    """對等代理配置"""
+    peer_id: str                           # 獨立身份
+    peer_memory_enabled: bool = True        # 獨立記憶
+    peer_workspace_path: str = None        # 獨立工作空間
+    can_spawn_subagent: bool = True        # 可啟動 Sub Agent
+    spawn_depth: int = 2                    # 嵌套深度
+    allowed_peers: List[str] = field(default_factory=list)  # 允許通訊的對象
+
+
 @dataclass
 class AgentTool:
     """工具定義"""
@@ -136,6 +153,11 @@ class AgentInstance:
     memory: List[str] = field(default_factory=list)
     created_at: datetime = field(default_factory=datetime.now)
     last_active: datetime = field(default_factory=datetime.now)
+    
+    # === P2P 對等代理支援 ===
+    peer_config: Optional[PeerAgentConfig] = None  # P2P 配置
+    peer_mailbox: List[Dict] = field(default_factory=list)  # 收到的訊息
+    team_mode: TeamMode = TeamMode.MASTER_SUB  # 團隊模式
     
     def to_dict(self) -> Dict:
         return {
@@ -310,6 +332,43 @@ class AgentTeam:
         self.instances[instance_id] = instance
         return instance
     
+    def create_p2p_instance(self, definition_id: str, name: str = None,
+                            peer_id: str = None,
+                            allowed_peers: List[str] = None,
+                            peer_memory_enabled: bool = True,
+                            peer_workspace_path: str = None,
+                            can_spawn_subagent: bool = True,
+                            spawn_depth: int = 2) -> AgentInstance:
+        """創建 P2P 對等代理實例
+        
+        Args:
+            definition_id: Agent 定義 ID
+            name: 實例名稱
+            peer_id: 對等身份 ID（預設使用 instance_id）
+            allowed_peers: 允許通訊的對象列表
+            peer_memory_enabled: 是否啟用獨立記憶
+            peer_workspace_path: 獨立工作空間路徑
+            can_spawn_subagent: 是否可啟動 Sub Agent
+            spawn_depth: 嵌套深度
+            
+        Returns:
+            AgentInstance: P2P Agent 實例
+        """
+        instance = self.create_instance(definition_id, name)
+        
+        actual_peer_id = peer_id or instance.instance_id
+        instance.peer_config = PeerAgentConfig(
+            peer_id=actual_peer_id,
+            peer_memory_enabled=peer_memory_enabled,
+            peer_workspace_path=peer_workspace_path,
+            can_spawn_subagent=can_spawn_subagent,
+            spawn_depth=spawn_depth,
+            allowed_peers=allowed_peers or [],
+        )
+        instance.team_mode = TeamMode.PEER_TO_PEER
+        
+        return instance
+    
     def get_instance(self, instance_id: str) -> Optional[AgentInstance]:
         """取得 Agent 實例"""
         return self.instances.get(instance_id)
@@ -327,6 +386,105 @@ class AgentTeam:
                 return instance
         
         return None
+    
+    # === P2P 通訊方法 ===
+    
+    def set_team_mode(self, mode: TeamMode):
+        """設定團隊模式"""
+        self.team_mode = mode
+        for instance in self.instances.values():
+            instance.team_mode = mode
+    
+    def configure_peer(self, instance_id: str, peer_config: PeerAgentConfig) -> bool:
+        """設定 Agent 的 P2P 配置"""
+        instance = self.instances.get(instance_id)
+        if not instance:
+            return False
+        instance.peer_config = peer_config
+        return True
+    
+    def agent_to_agent(self, from_peer: str, to_peer: str, message: Any) -> bool:
+        """直接發送訊息給對等代理
+        
+        Args:
+            from_peer: 發送者 instance_id
+            to_peer: 接收者 instance_id
+            message: 訊息內容
+            
+        Returns:
+            bool: 是否成功送達
+        """
+        from_instance = self.instances.get(from_peer)
+        to_instance = self.instances.get(to_peer)
+        
+        if not from_instance or not to_instance:
+            return False
+        
+        # 檢查 allowed_peers 權限
+        if from_instance.peer_config and from_instance.peer_config.allowed_peers:
+            if to_peer not in from_instance.peer_config.allowed_peers:
+                return False
+        
+        # 封裝訊息
+        envelope = {
+            "from": from_peer,
+            "to": to_peer,
+            "message": message,
+            "timestamp": datetime.now().isoformat(),
+        }
+        
+        # 投遞到接收者信箱
+        to_instance.peer_mailbox.append(envelope)
+        to_instance.last_active = datetime.now()
+        
+        return True
+    
+    def broadcast(self, from_peer: str, message: Any) -> int:
+        """廣播訊息給所有對等代理
+        
+        Args:
+            from_peer: 發送者 instance_id
+            message: 訊息內容
+            
+        Returns:
+            int: 成功送達的數量
+        """
+        from_instance = self.instances.get(from_peer)
+        if not from_instance:
+            return 0
+        
+        count = 0
+        envelope_base = {
+            "from": from_peer,
+            "message": message,
+            "timestamp": datetime.now().isoformat(),
+        }
+        
+        for instance_id, instance in self.instances.items():
+            if instance_id == from_peer:
+                continue
+            
+            # 檢查 allowed_peers 權限
+            if from_instance.peer_config and from_instance.peer_config.allowed_peers:
+                if instance_id not in from_instance.peer_config.allowed_peers:
+                    continue
+            
+            envelope = envelope_base.copy()
+            envelope["to"] = instance_id
+            instance.peer_mailbox.append(envelope)
+            instance.last_active = datetime.now()
+            count += 1
+        
+        return count
+    
+    def get_mailbox(self, instance_id: str) -> List[Dict]:
+        """取得 Agent 的信箱訊息"""
+        instance = self.instances.get(instance_id)
+        if not instance:
+            return []
+        messages = instance.peer_mailbox.copy()
+        instance.peer_mailbox.clear()
+        return messages
     
     def assign_task(self, instance_id: str, task_id: str) -> bool:
         """指派任務給 Agent"""
