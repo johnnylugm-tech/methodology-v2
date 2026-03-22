@@ -37,6 +37,11 @@
 | 31 | HITL | [case31_hitl.md](case31_hitl.md) | 人類介入控制、產出負責制 |
 | 32 | Traceability | [case32_traceability.md](case32_traceability.md) | ASPICE 追溯性矩陣、執行鏈追蹤 |
 | 33 | Work Products | [case33_work_products.md](case33_work_products.md) | 工作產品結構化、驗證狀態追蹤 |
+| 34 | Agent Role | [case34_agent_role.md](case34_agent_role.md) | 統一角色定義、Role-based Agent |
+| 35 | Workflow Graph | [case35_workflow_graph.md](case35_workflow_graph.md) | 工作流圖結構視覺化 |
+| 36 | Quick Start | [case36_quick_start.md](case36_quick_start.md) | 5行啟動、3分鐘上手 |
+| 37 | Async Executor | [case37_async_executor.md](case37_async_executor.md) | 非同步執行、並發控制 |
+| 38 | Knowledge Sync | [case38_knowledge_sync.md](case38_knowledge_sync.md) | 知識同步、版本控制 |
 
 ---
 

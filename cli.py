@@ -47,7 +47,7 @@ from hitl_controller import HITLController, AgentOwner, OutputStatus
 class MethodologyCLI:
     """統一 CLI 入口"""
     
-    VERSION = "5.14.0"
+    VERSION = "5.16.0"
     
     def __init__(self):
         self.progress = ProgressDashboard()

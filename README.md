@@ -5,7 +5,7 @@
 
 ---
 
-[![Version](https://img.shields.io/badge/version-v5.14.0-blue.svg)](https://github.com/johnnylugm-tech/methodology-v2)
+[![Version](https://img.shields.io/badge/version-v5.16.0-blue.svg)](https://github.com/johnnylugm-tech/methodology-v2)
 [![Python](https://img.shields.io/badge/python-3.8+-green.svg)](https://python.org)
 [![Tests](https://img.shields.io/badge/tests-32%20passed-green.svg)]()
 
@@ -323,6 +323,11 @@
 | **AC: Traceability Matrix** | traceability_matrix.py | ASPICE 追溯性矩陣、執行鏈追蹤 |
 | **AD: Verification Gates** | verification_gate.py | 驗證關卡、HITL + Autonomous |
 | **AE: Work Products** | work_product.py | 工作產品結構化、驗證狀態 |
+| **AF: Agent Role** | agent_role.py | 統一角色定義、Role-based Agent |
+| **AG: Workflow Graph** | workflow_graph.py | 工作流圖結構、LangGraph 風格 |
+| **AH: Quick Start** | quick_start.py | 5行啟動、3分鐘上手 |
+| **AI: Async Executor** | async_executor.py | 非同步執行、並發控制 |
+| **AJ: Knowledge Sync** | knowledge_sync.py | 知識同步、版本控制 |
 
 ---
 
@@ -439,7 +444,7 @@ message = MAPProtocol.encode(sender="agent-1", action="request", data={})
 
 | 專案 | 版本 | 關係 | 說明 |
 |------|------|------|------|
-| **methodology-v2** | v5.14.0 | 主框架 | ✅ 內建，無需額外安裝 |
+| **methodology-v2** | v5.16.0 | 主框架 | ✅ 內建，無需額外安裝 |
 | Agent Quality Guard | v1.0.3 | 生態系 | 品質把關，可選 |
 | Model Router | v2.3.0 | 生態系 | 模型路由，可選 |
 | Agent Monitor | v3.2.0 | 生態系 | 監控警報，可選 |
@@ -824,7 +829,7 @@ class TeamMode(Enum):
 
 | 版本 | 日期 | 說明 |
 |------|------|------|
-| v5.14.0 | 2026-03-22 | Hybrid Workflow: 智慧分流工作流 (Solution Y) |
+| v5.16.0 | 2026-03-22 | Hybrid Workflow: 智慧分流工作流 (Solution Y) |
 | v5.8.0 | 2026-03-20 | Trend Optimization: 強化 Guardrails 安全模組 |
 | v5.8.0 | 2026-03-20 | v4.5.0 Extensions 整合 |
 | v5.3.1 | 2026-03-20 | 工作流程案例 |
@@ -847,4 +852,4 @@ MIT License
 ---
 
 **GitHub**: https://github.com/johnnylugm-tech/methodology-v2
-**Release**: https://github.com/johnnylugm-tech/methodology-v2/releases/tag/v5.14.0
+**Release**: https://github.com/johnnylugm-tech/methodology-v2/releases/tag/v5.16.0
