@@ -40,6 +40,7 @@ from data_connector import DataSourceManager
 from agent_debugger import AgentDebugger, EventType
 from approval_flow import ApprovalFlow, ApprovalLevel, ApprovalStatus
 from risk_registry import RiskRegistry, RiskLevel, RiskStatus
+from p2p_team_config import P2PTeamConfig
 
 
 class MethodologyCLI:
@@ -69,6 +70,7 @@ class MethodologyCLI:
         self.debugger = AgentDebugger()
         self.approval_flow = ApprovalFlow()
         self.registry = RiskRegistry()
+        self.p2p_config: P2PTeamConfig = None
     
     def run(self, args):
         """執行命令"""
@@ -124,6 +126,8 @@ class MethodologyCLI:
             return self.cmd_approval(args)
         elif command == "risk":
             return self.cmd_risk(args)
+        elif command == "p2p":
+            return self.cmd_p2p(args)
         else:
             print(f"Unknown command: {command}")
             return 1
@@ -969,6 +973,78 @@ class MethodologyCLI:
         print(f"Unknown action: {action}")
         return 1
 
+    def cmd_p2p(self, args):
+        """P2P 團隊配置管理"""
+        action = args.p2p_action
+        cache_path = ".p2p_team_cache.json"
+
+        if action == "init":
+            try:
+                self.p2p_config = P2PTeamConfig.from_json(args.config_path)
+            except FileNotFoundError as e:
+                print(f"❌ {e}")
+                return 1
+            except json.JSONDecodeError as e:
+                print(f"❌ Invalid JSON: {e}")
+                return 1
+
+            if not self.p2p_config.validate():
+                print("❌ Config validation failed")
+                return 1
+
+            # Persist to cache for stateless access
+            with open(cache_path, "w", encoding="utf-8") as f:
+                json.dump(self.p2p_config.to_dict(), f, indent=2, ensure_ascii=False)
+
+            summary = self.p2p_config.summary()
+            print(f"✅ Team loaded: {summary['teamId']}")
+            print(f"   Mode: {summary['mode']}")
+            print(f"   Members: {summary['memberCount']}")
+            print(f"   Max Spawn Depth: {summary['maxSpawnDepth']}")
+            return 0
+
+        # Reload from cache for status/list
+        if os.path.exists(cache_path):
+            try:
+                with open(cache_path, "r", encoding="utf-8") as f:
+                    self.p2p_config = P2PTeamConfig.from_dict(json.load(f))
+            except Exception:
+                self.p2p_config = None
+
+        if self.p2p_config is None:
+            print("❌ No team loaded. Run: python cli.py p2p init <config.json>")
+            return 1
+
+        if action == "status":
+            summary = self.p2p_config.summary()
+            print(f"\n📡 P2P Team Status")
+            print("=" * 40)
+            print(f"Team ID: {summary['teamId']}")
+            print(f"Mode: {summary['mode']}")
+            print(f"Members: {summary['memberCount']}")
+            print(f"Roles: {', '.join(summary['roles'])}")
+            print(f"Max Spawn Depth: {summary['maxSpawnDepth']}")
+            print(f"Agent-to-Agent: {'✅' if summary['allowAgentToAgent'] else '❌'}")
+            return 0
+
+        if action == "list":
+            members = self.p2p_config.list_agents()
+            if not members:
+                print("No members in team")
+                return 0
+            print(f"\n👥 Team Members ({len(members)})")
+            print("-" * 60)
+            print(f"{'Agent ID':<25} {'Role':<18} {'Spawn':<8} {'Memory'}")
+            print("-" * 60)
+            for m in members:
+                spawn = "✅" if m["canSpawnSubagent"] else "❌"
+                memory = "✅" if m["peerMemoryEnabled"] else "❌"
+                print(f"{m['agentId']:<25} {m['role']:<18} {spawn:<8} {memory}")
+            return 0
+
+        print(f"Unknown action: {action}")
+        return 1
+
     def cmd_version(self, args):
         """顯示版本"""
         print(f"Methodology v{self.VERSION}")
@@ -1150,6 +1226,14 @@ def main():
     risk_parser.add_argument("--mitigation", help="Mitigation strategy")
     risk_parser.add_argument("--risk-id", help="Risk ID")
     risk_parser.add_argument("--status", help="Filter by status (open, mitigated, accepted, closed)")
+
+    # p2p
+    p2p_parser = subparsers.add_parser("p2p", help="P2P Team Config")
+    p2p_sub = p2p_parser.add_subparsers(dest="p2p_action", help="P2P actions")
+    p2p_init = p2p_sub.add_parser("init", help="Initialize team from JSON")
+    p2p_init.add_argument("config_path", help="Path to team config JSON file")
+    p2p_sub.add_parser("status", help="Show team status")
+    p2p_sub.add_parser("list", help="List team members")
 
     # version
     subparsers.add_parser("version", help="Show version")
