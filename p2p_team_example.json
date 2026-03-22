@@ -1,13 +1,20 @@
 {
   "_meta": {
     "version": "1.0",
-    "description": "P2P Team Configuration"
+    "description": "P2P + HITL Team Configuration"
   },
   
   "p2p": {
     "_description": "P2P 模式設定。預設為關閉（單一主代理模式）",
     "enabled": false,
     "default_mode": "master-sub"
+  },
+  
+  "hitl": {
+    "_description": "HITL 人類介入設定。預設為關閉，向前相容",
+    "enabled": false,
+    "auto_escalate_timeout": 3600,
+    "require_approval_for_all": false
   },
   
   "team": {

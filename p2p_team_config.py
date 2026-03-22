@@ -12,6 +12,31 @@ from pathlib import Path
 
 
 @dataclass
+class HITLGlobalSettings:
+    """HITL 全域設定（預設關閉）"""
+    enabled: bool = False                    # 預設關閉
+    auto_escalate_timeout: int = 3600        # 自動升級超時（秒）
+    require_approval_for_all: bool = False     # 是否所有產出都需要審批
+    
+    def to_dict(self) -> dict:
+        return asdict(self)
+    
+    @classmethod
+    def from_dict(cls, data: dict = None) -> "HITLGlobalSettings":
+        if not data:
+            data = {}
+        return cls(
+            enabled=data.get("enabled", False),
+            auto_escalate_timeout=data.get("auto_escalate_timeout", 3600),
+            require_approval_for_all=data.get("require_approval_for_all", False),
+        )
+    
+    def is_enabled(self) -> bool:
+        """檢查是否啟用 HITL"""
+        return self.enabled
+
+
+@dataclass
 class P2PGlobalSettings:
     """P2P 全域設定（預設關閉）"""
     enabled: bool = False                    # 預設關閉
@@ -103,15 +128,21 @@ class P2PTeamConfig:
         settings: P2PTeamSettings,
         members: List[TeamMember],
         global_settings: P2PGlobalSettings = None,
+        hitl_settings: HITLGlobalSettings = None,
     ):
         self.team_meta = team_meta
         self.settings = settings
         self.members = members
         self.global_settings = global_settings or P2PGlobalSettings()  # 預設關閉
+        self.hitl_settings = hitl_settings or HITLGlobalSettings()       # 預設關閉
     
     def is_p2p_enabled(self) -> bool:
         """檢查 P2P 模式是否啟用"""
         return self.global_settings.enabled if self.global_settings else False
+    
+    def is_hitl_enabled(self) -> bool:
+        """檢查 HITL 是否啟用"""
+        return self.hitl_settings.enabled if self.hitl_settings else False
 
     @classmethod
     def from_json(cls, config_path: str) -> "P2PTeamConfig":
@@ -132,6 +163,10 @@ class P2PTeamConfig:
         global_data = config.get("p2p", {})
         global_settings = P2PGlobalSettings.from_dict(global_data)
         
+        # 讀取 HITL 全域設定（預設關閉）
+        hitl_data = config.get("hitl", {})
+        hitl_settings = HITLGlobalSettings.from_dict(hitl_data)
+        
         team_data = config.get("team", {})
         settings_data = team_data.get("settings", {})
         members_data = config.get("members", [])
@@ -144,7 +179,8 @@ class P2PTeamConfig:
             team_meta=team_meta,
             settings=settings,
             members=members,
-            global_settings=global_settings
+            global_settings=global_settings,
+            hitl_settings=hitl_settings
         )
 
     def to_dict(self) -> dict:
@@ -153,6 +189,11 @@ class P2PTeamConfig:
             "p2p": {
                 "enabled": self.global_settings.enabled if self.global_settings else False,
                 "default_mode": self.global_settings.default_mode if self.global_settings else "master-sub",
+            },
+            "hitl": {
+                "enabled": self.hitl_settings.enabled if self.hitl_settings else False,
+                "auto_escalate_timeout": self.hitl_settings.auto_escalate_timeout if self.hitl_settings else 3600,
+                "require_approval_for_all": self.hitl_settings.require_approval_for_all if self.hitl_settings else False,
             },
             "team": {
                 "teamId": self.team_meta.team_id,

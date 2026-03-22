@@ -160,8 +160,10 @@ class AgentInstance:
     team_mode: TeamMode = TeamMode.MASTER_SUB  # 團隊模式
     
     # === HITL 人類介入支援 ===
+    # 注意：需配合 P2PTeamConfig.hitl_settings.enabled 全域設定
+    # 只有當全域 HITL 啟用時，此設定才會生效
     owner_id: Optional[str] = None  # 人類負責人 ID
-    hitl_enabled: bool = True       # 是否啟用 HITL
+    hitl_enabled: bool = True       # 是否啟用 HITL（預設開）
     
     def to_dict(self) -> Dict:
         return {
