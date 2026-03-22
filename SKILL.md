@@ -8,6 +8,7 @@
 
 | 版本 | 日期 | 說明 |
 |------|------|------|
+| v5.17 | 2026-03-22 | State Persistence 狀態持久化系統（支援 SQLite/Redis/檔案系統） |
 | v5.16 | 2026-03-22 | Knowledge Sync 知識同步系統（對標 Agno 知識庫） |
 | v5.15 | 2026-03-22 | Workflow Graph 工作流圖結構視覺化（對標 LangGraph） |
 | v5.14 | 2026-03-22 | Async Executor 非同步執行器 |
@@ -754,6 +755,37 @@ new_id = cm.import_checkpoint(json_str)
 | 導出導入 | JSON 格式跨系統共享 |
 
 詳細案例：請參考 `docs/cases/case39_checkpoint_manager.md`
+
+---
+
+## State Persistence (狀態持久化)
+
+Session 狀態持久化系統，支援多種後端。
+
+```python
+from state_persistence import StatePersistence, StorageBackend
+
+# SQLite 後端（單機）
+persistence = StatePersistence(backend=StorageBackend.SQLITE)
+
+# Redis 後端（分散式）
+persistence = StatePersistence(
+    backend=StorageBackend.REDIS,
+    config={"redis_host": "localhost", "redis_port": 6379}
+)
+
+# 儲存 Session
+persistence.save_state(session_id, agent_id, state)
+
+# 載入 Session
+state = persistence.load_state(session_id)
+
+# 併發鎖定
+persistence.lock_session(session_id, owner="agent_002")
+persistence.unlock_session(session_id, owner="agent_002")
+```
+
+詳細案例：請參考 `docs/cases/case40_state_persistence.md`
 
 ---
 
