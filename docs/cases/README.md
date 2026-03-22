@@ -35,6 +35,8 @@
 | 29 | Hybrid Workflow | [case29_hybrid_workflow.md](case29_hybrid_workflow.md) | 智慧分流、小改自動、大改審查 |
 | 30 | P2P Orchestrator | [case30_p2p_orchestrator.md](case30_p2p_orchestrator.md) | 點對點代理協調、平等協作 |
 | 31 | HITL | [case31_hitl.md](case31_hitl.md) | 人類介入控制、產出負責制 |
+| 32 | Traceability | [case32_traceability.md](case32_traceability.md) | ASPICE 追溯性矩陣、執行鏈追蹤 |
+| 33 | Work Products | [case33_work_products.md](case33_work_products.md) | 工作產品結構化、驗證狀態追蹤 |
 
 ---
 
