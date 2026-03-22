@@ -1,6 +1,6 @@
 # methodology-v2
 
-> Multi-Agent Collaboration Development Methodology v5.18
+> Multi-Agent Collaboration Development Methodology v5.21
 
 ---
 
@@ -8,6 +8,8 @@
 
 | 版本 | 日期 | 說明 |
 |------|------|------|
+| v5.21 | 2026-03-23 | Constitution 憲章系統 + 標準化專案模板 + Markdown Checklists（基於v5.20） |
+| v5.20 | 2026-03-22 | Fault Tolerance 強化：四層架構、Framework 對照表、上手指南 |
 | v5.19 | 2026-03-22 | Human Intervention 人類介入界面（狀態儀表板、介入請求、批准流程） |
 | v5.18 | 2026-03-22 | Recovery Controller 災難恢復控制中心 |
 | v5.17 | 2026-03-22 | State Persistence 狀態持久化系統（支援 SQLite/Redis/檔案系統） |
