@@ -10,10 +10,48 @@
 |------|------|------|
 | v5.21 | 2026-03-23 | Constitution 憲章系統 + 標準化專案模板 + Markdown Checklists + 新手上路/客製化/工作流程文檔 |
 | v5.22 | 2026-03-23 | **實務驗證**：PolyTrade 專案完整開發記錄 (雙版本對比)、DEVELOPMENT_LOG.md、METHODOLOGY_USAGE.md |
+| v5.23 | 2026-03-23 | Anti-Shortcut Framework (6 模組) |
+| v5.25 | 2026-03-23 | TDAD Methodology (Mutation Testing, Hidden Tests, Impact Analysis) |
+| **v5.26** | **2026-03-23** | **AI Quality Gate + TDD + Multi-Agent + Security Scanner (突破 9.0)** |
 
 ---
 
-## 📋 實務驗證案例 (v5.22)
+## v5.26 新模組 (突破 9.0)
+
+| 模組 | 功能 | Quality Gate |
+|------|------|---------------|
+| ai_quality_gate | AI Code Review | score >= 90 |
+| tdd_runner | 自動化測試生成 | coverage >= 80% |
+| multi_agent_team | 4 Agent 協作 | 4 steps completed |
+| security_scanner | 安全掃描 | score >= 95 |
+
+### 使用方法
+
+```python
+# AI Quality Gate
+from ai_quality_gate import AIQualityGate
+gate = AIQualityGate()
+result = gate.scan_directory('src')
+
+# TDD Runner
+from tdd_runner import TDDRunner
+tdd = TDDRunner()
+tdd.generate_test_cases('src')
+
+# Multi-Agent Team
+from multi_agent_team import MultiAgentTeam
+team = MultiAgentTeam()
+team.run_workflow('src')
+
+# Security Scanner
+from security_scanner import SecurityScanner
+scanner = SecurityScanner()
+scanner.scan_directory('src')
+```
+
+---
+
+## 實務驗證案例 (v5.22)
 
 ### PolyTrade 套利系統
 
