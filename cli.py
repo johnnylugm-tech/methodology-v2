@@ -279,7 +279,7 @@ class MethodologyCLI:
         
         print("📊 Progress:")
         if summary:
-            print(f"   Total Items: {summary.get("total_items", 0)}")
+            print(f'   Total Items: {summary.get("total_items", 0)}')
             print(f"   Completed: {summary.get('completed_items', 0)}")
             print(f"   In Progress: {summary.get('in_progress_items', 0)}")
             print(f"   Completion: {summary.get('completion_rate', 0):.1f}%")
