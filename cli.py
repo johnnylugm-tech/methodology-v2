@@ -112,6 +112,8 @@ class MethodologyCLI:
             return self.cmd_bus(args)
         elif command == "constitution":
             return self.cmd_constitution(args)
+        elif command == "constitution-sync":
+            return self.cmd_constitution_sync(args)
         elif command == "version":
             return self.cmd_version(args)
         elif command == "term":
@@ -164,6 +166,8 @@ class MethodologyCLI:
             return self.cmd_enforcement_config(args)
         elif command == "enforcement":
             return self.cmd_enforcement(args)
+        elif command == "agent-proof-hook":
+            return self.cmd_agent_proof_hook(args)
         else:
             print(f"Unknown command: {command}")
             return 1
@@ -1389,6 +1393,16 @@ class MethodologyCLI:
             print("Available: view, thresholds, errors, check, edit, compile, verify")
         return 0
 
+    def cmd_constitution_sync(self, args):
+        """Sync Constitution to Policy Engine"""
+        from enforcement.constitution_policy_sync import ConstitutionPolicyGenerator
+        
+        generator = ConstitutionPolicyGenerator()
+        policies = generator.sync()
+        
+        print(f"\n✅ Synced {len(policies)} policies from Constitution")
+        return 0
+
     def cmd_version(self, args):
         """顯示版本"""
         print(f"Methodology v{self.VERSION}")
@@ -1805,6 +1819,24 @@ class MethodologyCLI:
             print("Available: run, check, status, install, config")
             return 1
 
+    def cmd_agent_proof_hook(self, args):
+        """Agent-Proof Hook Management"""
+        from enforcement.agent_proof_hook import AgentProofHook
+
+        hook = AgentProofHook()
+
+        if args.action == "install":
+            hook.install(force=True)
+        elif args.action == "verify":
+            if not hook.verify():
+                sys.exit(1)
+        elif args.action == "uninstall":
+            hook.uninstall()
+        else:
+            hook.install()
+
+        return 0
+
 
 # ==================== Main ====================
 
@@ -1865,6 +1897,9 @@ def main():
                                    choices=["view", "thresholds", "errors", "check", "edit", "compile", "verify"],
                                    help="Constitution subcommand")
     constitution_parser.add_argument("output", nargs="?", help="Output text to verify (for verify subcommand)")
+
+    # constitution-sync
+    subparsers.add_parser("constitution-sync", help="Sync Constitution to Policy Engine")
 
     # resources
     resources_parser = subparsers.add_parser("resources", help="Resource dashboard")
@@ -2069,6 +2104,11 @@ def main():
                                    help="Enforcement subcommand")
     enforcement_parser.add_argument("mode", nargs="?", choices=["local", "github", "gitlab", "jenkins", "azure"],
                                    help="Mode for 'config' subcommand")
+
+    # agent-proof-hook (Agent-Proof Hook Management)
+    agent_proof_hook_parser = subparsers.add_parser("agent-proof-hook", help="Agent-Proof Hook Management")
+    agent_proof_hook_parser.add_argument("action", nargs="?", choices=["install", "verify", "uninstall"],
+                                         help="Action: install, verify, uninstall")
 
     args = parser.parse_args()
     
