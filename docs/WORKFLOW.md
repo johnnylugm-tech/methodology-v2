@@ -36,6 +36,47 @@
 
 ---
 
+## 🛡️ Enforcement Framework (v5.30)
+
+本流程已整合 **Enforcement Framework**，從「建議」進化到「強制執行」：
+
+### 三層保護
+
+| 層次 | 元件 | 職責 |
+|------|------|------|
+| **Layer 1** | Policy Engine | 流程政策、BLOCK 等級 |
+| **Layer 2** | Execution Registry | 執行記錄、不可偽造 |
+| **Layer 3** | Constitution as Code | 業務規則、違反阻擋 |
+
+### CLI 命令
+
+```bash
+# 執行所有檢查
+python3 cli.py enforcement run
+
+# 查看狀態
+python3 cli.py enforcement status
+
+# 安裝 Hook
+python3 cli.py enforcement install
+
+# Agent-Proof Hook
+python3 cli.py agent-proof-hook install
+```
+
+### 閾值
+
+| 維度 | 閾值 |
+|------|------|
+| Quality Gate | >= 90 |
+| Security | >= 95 |
+| Coverage | >= 80 |
+| Commit Message | 必須包含 `[TASK-XXX]` |
+
+📖 詳見：[ENFORCEMENT_GETTING_STARTED.md](ENFORCEMENT_GETTING_STARTED.md)
+
+---
+
 ## 完整工作流程圖
 
 ```

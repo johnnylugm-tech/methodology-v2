@@ -48,6 +48,32 @@ python3 cli.py enforcement-config show
 python3 cli.py enforcement-config detect
 ```
 
+### 5. 執行 Enforcement 檢查（v5.30 新功能）
+
+```bash
+# 執行所有檢查
+python3 cli.py enforcement run
+
+# 查看狀態
+python3 cli.py enforcement status
+
+# 安裝 Pre-Commit Hook
+python3 cli.py enforcement install
+```
+
+### 6. Agent-Proof Hook（v5.30 新功能）
+
+```bash
+# 安裝 Agent-Proof Hook（放在 .methodology/，不易被發現/刪除）
+python3 cli.py agent-proof-hook install
+
+# 驗證 Hook 是否被篡改
+python3 cli.py agent-proof-hook verify
+
+# 解除安裝
+python3 cli.py agent-proof-hook uninstall
+```
+
 ## 各平台比較
 
 | 平台 | 設定值 | 需要的東西 |

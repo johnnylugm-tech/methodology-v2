@@ -438,6 +438,23 @@ message = MAPProtocol.encode(sender="agent-1", action="request", data={})
 
 三層保護機制，確保框架從「建議」變成「強制執行」：
 
+#### v5.30 CLI 命令
+
+```bash
+# 執行所有檢查
+python3 cli.py enforcement run
+
+# 查看狀態
+python3 cli.py enforcement status
+
+# 安裝 Hook
+python3 cli.py enforcement install
+
+# Agent-Proof Hook
+python3 cli.py agent-proof-hook install
+python3 cli.py agent-proof-hook verify
+```
+
 #### a) Policy Engine（政策引擎）
 
 ```python
