@@ -9,6 +9,60 @@
 | 版本 | 日期 | 說明 |
 |------|------|------|
 | v5.21 | 2026-03-23 | Constitution 憲章系統 + 標準化專案模板 + Markdown Checklists + 新手上路/客製化/工作流程文檔 |
+| v5.22 | 2026-03-23 | **實務驗證**：PolyTrade 專案完整開發記錄 (雙版本對比)、DEVELOPMENT_LOG.md、METHODOLOGY_USAGE.md |
+
+---
+
+## 📋 實務驗證案例 (v5.22)
+
+### PolyTrade 套利系統
+
+| 項目 | 結果 |
+|------|------|
+| 開發日期 | 2026-03-23 |
+| 開發時間 | 50 分鐘 |
+| 程式碼行數 | 754 (新版) vs 2045 (舊版) |
+| 測試用例 | 7 個 |
+| 通過率 | 100% |
+
+### 兩種開發方式對比
+
+| 維度 | 舊版 (快速) | 新版 (methodology-v2) |
+|------|-------------|----------------------|
+| 開發時間 | 30 min | 50 min |
+| 文件量 | 4 頁 | 20+ 頁 |
+| 狀態機 | ❌ | ✅ 4 states |
+| 回滾機制 | ❌ | ✅ |
+| 單元測試 | ❌ | ✅ |
+| 可維護性 | 低 | 高 |
+
+### methodology-v2 使用情況
+
+| 模組 | 狀態 |
+|------|------|
+| 雙 Agent 協作 | ❌ 未使用 |
+| Agent Quality Guard | ❌ 未使用 |
+| Reflection | ❌ 未使用 |
+| 錯誤分類 L1-L6 | ⚠️ 規格有，未實作 |
+| 測試框架 | ✅ 使用 |
+| 驗證 Gate | ✅ 使用 |
+| Heartbeat | ⚠️ 規格有 |
+
+**完整度：44%**
+
+### Lessons Learned
+
+1. **需要主動提議雙 Agent**：不是用戶要求的時候就該開
+2. **記錄開發日誌**：每次開發都要有 timestamp
+3. **使用 Agent Quality Guard**：品質把關不可或缺
+4. **小型專案也該有基礎文件**：即使不完整也要有
+
+### 產出文件
+
+- `DEVELOPMENT_LOG.md` - 完整時間線
+- `METHODOLOGY_USAGE.md` - 模組對照表
+- `METHODOLOGY_COMPARISON.md` - 詳細對比報告
+- `05-verify/VERIFICATION_REPORT.md` - 驗證報告
 | v5.20 | 2026-03-22 | Fault Tolerance 強化：四層架構 (Retry→Fallback→Classification→Checkpoint)、Framework 對照表、上手指南 |
 | v5.19 | 2026-03-22 | Human Intervention 人類介入界面（狀態儀表板、介入請求、批准流程） |
 | v5.18 | 2026-03-22 | Recovery Controller 災難恢復控制中心 |
