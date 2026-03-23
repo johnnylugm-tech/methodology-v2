@@ -156,6 +156,10 @@ class MethodologyCLI:
             return self.cmd_confirmations(args)
         elif command == "release":
             return self.cmd_release(args)
+        elif command == "policy":
+            return self.cmd_policy(args)
+        elif command == "install-hook":
+            return self.cmd_install_hook(args)
         else:
             print(f"Unknown command: {command}")
             return 1
@@ -1570,6 +1574,45 @@ class MethodologyCLI:
         
         return 0
 
+    def cmd_policy(self, args):
+        """Run Policy Engine checks"""
+        from enforcement.policy_engine import create_hard_block_engine
+        try:
+            engine = create_hard_block_engine()
+            results = engine.enforce_all()
+            summary = engine.get_summary()
+            print(f"\n📊 Policy Summary:")
+            print(f"   Passed: {summary['passed']}/{summary['total']}")
+            print(f"   Pass Rate: {summary['pass_rate']}%")
+            if summary['all_passed']:
+                print("\n✅ All policies passed")
+                return 0
+            else:
+                print("\n❌ Some policies failed")
+                return 1
+        except Exception as e:
+            print(f"\n❌ Policy check failed: {e}")
+            return 1
+
+    def cmd_install_hook(self, args):
+        """Install pre-commit hook"""
+        import shutil
+        import os
+        
+        hook_source = os.path.join(os.path.dirname(__file__), "pre-commit.template")
+        hook_dest = os.path.join(os.path.dirname(__file__), ".git", "hooks", "pre-commit")
+        
+        if os.path.exists(hook_dest):
+            response = input(f"Overwrite existing hook at {hook_dest}? [y/N] ")
+            if response.lower() != 'y':
+                print("Aborted")
+                return 0
+        
+        shutil.copy(hook_source, hook_dest)
+        os.chmod(hook_dest, 0o755)
+        print(f"✅ Pre-commit hook installed at {hook_dest}")
+        return 0
+
 
 # ==================== Main ====================
 
@@ -1813,6 +1856,12 @@ def main():
     release_parser.add_argument("--version", help="Version to release")
     release_parser.add_argument("--repo", help="Repository name")
     release_parser.add_argument("--confirm", action="store_true", help="Request confirmation before release")
+    
+    # policy (policy engine)
+    subparsers.add_parser("policy", help="Run Policy Engine checks")
+    
+    # install-hook (pre-commit hook installer)
+    subparsers.add_parser("install-hook", help="Install pre-commit hook")
     
     args = parser.parse_args()
     

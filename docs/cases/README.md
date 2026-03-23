@@ -52,6 +52,12 @@
 | 46 | Audit Logger | [case46_audit_logger.md](case46_audit_logger.md) | AI 操作審計日誌 |
 | 47 | Double Confirm | [case47_double_confirm.md](case47_double_confirm.md) | 雙重確認機制 |
 | 48 | Phase Hooks | [case48_phase_hooks.md](case48_phase_hooks.md) | 階段強制鉤子 |
+| 49 | Mutation Testing | [case49_mutation_testing.md](case49_mutation_testing.md) | 變異測試 |
+| 50 | TDAD Constitution | [case50_tdad_constitution.md](case50_tdad_constitution.md) | TDAD 憲法 |
+| 51 | Hidden Tests | [case51_hidden_tests.md](case51_hidden_tests.md) | 隱藏測試 |
+| 52 | Impact Analysis | [case52_impact_analysis.md](case52_impact_analysis.md) | 變更影響分析 |
+| 53 | Policy Engine | [case53_policy_engine.md](case53_policy_engine.md) | 政策引擎 (Hard Block) |
+| 54 | Pre-Commit Hook | [case54_pre_commit_hook.md](case54_pre_commit_hook.md) | Git Hook 自動化執行 |
 
 ---
 

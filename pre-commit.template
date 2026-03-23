@@ -1,0 +1,71 @@
+#!/bin/bash
+# pre-commit.template
+# =================
+# methodology-v2 Git Pre-Commit Hook
+# 自動化執行：每次 commit 都會觸發
+#
+# 安裝方式：
+#   cp pre-commit.template ../.git/hooks/pre-commit
+#   chmod +x ../.git/hooks/pre-commit
+#
+# 這個 hook 會：
+# 1. 檢查 commit message 格式
+# 2. 執行 Quality Gate
+# 3. 執行 TDD 驗證
+# 4. 執行 Security Scan
+#
+# 如果任何檢查失敗，commit 會被阻擋
+
+set -e  # 任何命令失敗就停止
+
+echo "🔍 methodology-v2 Pre-Commit Hook"
+echo "=================================="
+
+# 顏色
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No Color
+
+# 讀取 commit message
+COMMIT_MSG_FILE=$1
+if [ -f "$COMMIT_MSG_FILE" ]; then
+    COMMIT_MSG=$(cat "$COMMIT_MSG_FILE")
+else
+    echo -e "${RED}❌ Cannot read commit message file${NC}"
+    exit 1
+fi
+
+# 1. 檢查 Commit Message 格式
+echo ""
+echo "📝 Checking commit message format..."
+if echo "$COMMIT_MSG" | grep -qE '\[[A-Z]+-[0-9]+\]'; then
+    echo -e "${GREEN}✅ Commit message has task ID${NC}"
+else
+    echo -e "${RED}❌ Commit message MUST contain task ID (e.g., [TASK-123])${NC}"
+    echo -e "${YELLOW}   Your commit message: $COMMIT_MSG${NC}"
+    exit 1
+fi
+
+# 2. 執行 Policy Engine
+echo ""
+echo "⚙️ Running Policy Engine..."
+cd "$(dirname "$0")/.."  # 回到專案根目錄
+
+python3 -c "
+from enforcement.policy_engine import create_hard_block_engine
+engine = create_hard_block_engine()
+results = engine.enforce_all()
+summary = engine.get_summary()
+print(f'Passed: {summary[\"passed\"]}/{summary[\"total\"]}')
+if not summary['all_passed']:
+    exit(1)
+" || {
+    echo -e "${RED}❌ Policy Engine check failed${NC}"
+    echo -e "${YELLOW}   Some required policies did not pass${NC}"
+    exit 1
+}
+
+echo -e "${GREEN}✅ All pre-commit checks passed${NC}"
+echo ""
+echo "Proceeding with commit..."

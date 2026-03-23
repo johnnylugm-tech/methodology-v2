@@ -434,6 +434,72 @@ action = scaler.check_and_scale()
 message = MAPProtocol.encode(sender="agent-1", action="request", data={})
 ```
 
+### 6. Enforcement（強制執行層）
+
+三層保護機制，確保框架從「建議」變成「強制執行」：
+
+#### a) Policy Engine（政策引擎）
+
+```python
+from enforcement import PolicyEngine, EnforcementLevel
+
+engine = PolicyEngine()
+result = engine.evaluate(context, policies=[
+    {"name": "rate-limit", "max_requests": 100}
+])
+
+if result.enforcement == EnforcementLevel.HARD_BLOCK:
+    raise PolicyViolationException("Rate limit exceeded")
+```
+
+#### b) Execution Registry（執行登記處）
+
+```python
+from enforcement import ExecutionRegistry
+
+registry = ExecutionRegistry()
+
+# 記錄步驟執行
+sig = registry.record(
+    step="quality-gate",
+    artifact={"score": 95, "passed": True}
+)
+
+# 驗證步驟是否真的執行
+if registry.prove("quality-gate"):
+    print("✅ Quality Gate 已執行")
+```
+
+#### c) Constitution as Code（規範即代碼）
+
+```python
+from enforcement import ConstitutionAsCode, ConstitutionViolation
+
+constitution = ConstitutionAsCode()
+
+try:
+    constitution.enforce({
+        "commit_message": "[DEV-456] Add feature",
+        "quality_score": 95,
+    })
+except ConstitutionViolation as e:
+    print(f"❌ {e}")
+    sys.exit(1)
+```
+
+**預設規則：**
+| 規則 | 描述 | 嚴重性 |
+|------|------|--------|
+| R001 | Commit 必須有 task_id | CRITICAL |
+| R002 | 不允許 bypass/--no-verify | CRITICAL |
+| R003 | Quality Gate >= 90 | CRITICAL |
+| R004 | 測試覆蓋率 >= 80% | HIGH |
+| R005 | 安全分數 >= 95 | HIGH |
+| R006 | 不允許自己批准自己 | CRITICAL |
+| R007 | 新功能必須有測試 | HIGH |
+
+詳細文檔：[docs/cases/case55_execution_registry.md](docs/cases/case55_execution_registry.md) | [docs/cases/case56_constitution_as_code.md](docs/cases/case56_constitution_as_code.md)
+
 ---
 
 ## 🔗 工具相依 Skill
