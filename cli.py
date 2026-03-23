@@ -42,6 +42,7 @@ from approval_flow import ApprovalFlow, ApprovalLevel, ApprovalStatus
 from risk_registry import RiskRegistry, RiskLevel, RiskStatus
 from p2p_team_config import P2PTeamConfig
 from hitl_controller import HITLController, AgentOwner, OutputStatus
+from anti_shortcut.blacklist import CommandBlacklist, ViolationSeverity
 
 
 class MethodologyCLI:
@@ -73,6 +74,15 @@ class MethodologyCLI:
         self.registry = RiskRegistry()
         self.p2p_config: P2PTeamConfig = None
         self.hitl_controller = HITLController()
+        self.blacklist = CommandBlacklist()  # 危險操作黑名單
+    
+    def _check_command(self, command: str) -> bool:
+        """檢查命令是否危險"""
+        blocked = self.blacklist.check(command)
+        if blocked:
+            print(self.blacklist.explain(blocked))
+            return False
+        return True
     
     def run(self, args):
         """執行命令"""
