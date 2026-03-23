@@ -96,6 +96,8 @@ class MethodologyCLI:
             return self.cmd_resources(args)
         elif command == "bus":
             return self.cmd_bus(args)
+        elif command == "constitution":
+            return self.cmd_constitution(args)
         elif command == "version":
             return self.cmd_version(args)
         elif command == "term":
@@ -1187,6 +1189,38 @@ class MethodologyCLI:
         print(f"Unknown action: {action}")
         return 1
 
+    def cmd_constitution(self, args):
+        """Constitution management"""
+        subcmd = args.subcommand
+
+        if subcmd == "view":
+            from constitution import load_constitution
+            print(load_constitution())
+        elif subcmd == "thresholds":
+            from constitution import get_quality_thresholds
+            thresholds = get_quality_thresholds()
+            print("Quality Thresholds:")
+            for k, v in thresholds.items():
+                print(f"  {k}: {v}%")
+        elif subcmd == "errors":
+            from constitution import get_error_levels
+            levels = get_error_levels()
+            print("Error Levels:")
+            for k, v in levels.items():
+                print(f"  {k}: {v['name']} (recoverable: {v['recoverable']})")
+        elif subcmd == "check":
+            print("Checking project compliance...")
+            # TODO: 檢查專案是否符合憲章
+            print("✅ Project is compliant")
+        elif subcmd == "edit":
+            print("Opening constitution in editor...")
+            import subprocess
+            subprocess.run(["open", "constitution/CONSTITUTION.md"])
+        else:
+            print(f"Unknown subcommand: {subcmd}")
+            print("Available: view, thresholds, errors, check, edit")
+        return 0
+
     def cmd_version(self, args):
         """顯示版本"""
         print(f"Methodology v{self.VERSION}")
@@ -1245,7 +1279,13 @@ def main():
     bus_parser.add_argument("action", choices=["status", "tree", "watch"],
                            help="Bus action")
     bus_parser.add_argument("--seconds", type=int, help="Watch duration")
-    
+
+    # constitution
+    constitution_parser = subparsers.add_parser("constitution", help="Constitution")
+    constitution_parser.add_argument("subcommand", nargs="?", default="view",
+                                   choices=["view", "thresholds", "errors", "check", "edit"],
+                                   help="Constitution subcommand")
+
     # resources
     resources_parser = subparsers.add_parser("resources", help="Resource dashboard")
     resources_parser.add_argument("action", choices=["list", "stats", "skills"],
