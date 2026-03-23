@@ -2019,6 +2019,50 @@ class MethodologyCLI:
 
         return 0
 
+    def cmd_m27(self, args):
+        """M2.7 Self-Evolving Integration"""
+        from m27_integration import (
+            HybridAttention,
+            SelfIteration,
+            FailureAnalyzer,
+            HarnessOptimizer,
+            AttentionConfig
+        )
+
+        sub = args.sub
+
+        if sub == "status":
+            print("M2.7 Integration Status:")
+            print("  - Hybrid Attention: Ready")
+            print("  - Self Iteration: Ready")
+            print("  - Failure Analyzer: Ready")
+            print("  - Harness Optimizer: Ready")
+            return 0
+
+        elif sub == "analyze":
+            log = args.failure_log or "No failure log provided"
+            analyzer = FailureAnalyzer()
+            path = analyzer.analyze(log)
+            print(f"Failure Type: {path.failure_type.value}")
+            print(f"Root Cause: {path.root_cause}")
+            print(f"Confidence: {path.confidence}")
+            print("Recommendations:")
+            for r in path.recommendations:
+                print(f"  - {r}")
+            return 0
+
+        elif sub == "iterate":
+            print("Self Iteration: Ready (use in code with SelfIteration class)")
+            print("  from m27_integration import SelfIteration")
+            return 0
+
+        elif sub == "optimize":
+            print("Harness Optimizer: Ready (use in code with HarnessOptimizer class)")
+            print("  from m27_integration import HarnessOptimizer")
+            return 0
+
+        return 0
+
 
 # ==================== Main ====================
 
