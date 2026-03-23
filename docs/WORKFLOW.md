@@ -100,4 +100,54 @@ L5-L6 → Human Intervention
 
 ---
 
+## 階段強制鉤子 (Phase Hooks)
+
+每個階段結束時自動觸發驗證，確保品質標準不被繞過。
+
+### 鉤子類型
+
+| 階段 | 鉤子 | 說明 | 必填 |
+|------|------|------|------|
+| Development | `dev-lint` | 語法檢查 | ✓ |
+| Development | `dev-test` | 單元測試 | ✓ |
+| Development | `dev-constitution` | Constitution 合規 | ✓ |
+| Verification | `verify-quality` | Quality Gate | ✓ |
+| Verification | `verify-security` | 安全掃描 | ✓ |
+| Verification | `verify-coverage` | 覆蓋率檢查 | ✗ |
+| Release | `release-approval` | 審批確認 | ✓ |
+| Release | `release-version` | 版本確認 | ✓ |
+| Release | `release-changelog` | 更新日誌 | ✓ |
+
+### 使用方式
+
+```python
+from anti_shortcut import PhaseHooks, Phase
+
+hooks = PhaseHooks()
+
+# 執行 development 階段的鉤子
+result = hooks.execute_phase(Phase.DEVELOPMENT)
+
+# 檢查是否可以進入下一階段
+can_proceed, reason = hooks.can_proceed(
+    from_phase=Phase.DEVELOPMENT,
+    to_phase=Phase.VERIFICATION
+)
+
+if not can_proceed:
+    print(f"Blocked: {reason}")
+```
+
+### 跳過鉤子
+
+```python
+# 有正當理由時可跳過（需要記錄）
+hooks.skip_hook(
+    hook_id="verify-coverage",
+    reason="緊急修復，coverage 稍後補上"
+)
+```
+
+---
+
 *最後更新：2026-03-23*
