@@ -50,7 +50,7 @@ from anti_shortcut.double_confirm import DoubleConfirmation, ConfirmationLevel
 class MethodologyCLI:
     """統一 CLI 入口"""
     
-    VERSION = "5.21.0"
+    VERSION = "5.22.0"
     
     def __init__(self):
         self.progress = ProgressDashboard()

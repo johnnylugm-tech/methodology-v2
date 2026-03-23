@@ -46,6 +46,12 @@
 | 40 | State Persistence | [case40_state_persistence.md](case40_state_persistence.md) | Session 持久化、SQLite/Redis |
 | 41 | Recovery Controller | [case41_recovery_controller.md](case41_recovery_controller.md) | 災難恢復、6種失敗分類 |
 | 42 | Human Intervention | [case42_human_intervention.md](case42_human_intervention.md) | 人類介入、狀態儀表板 |
+| 43 | Blacklist | [case43_blacklist.md](case43_blacklist.md) | 危險操作黑名單 |
+| 44 | Gatekeeper | [case44_gatekeeper.md](case44_gatekeeper.md) | 工作流程守門員 |
+| 45 | Anti-Shortcut | [case45_anti_shortcut.md](case45_anti_shortcut.md) | 防範捷徑系統 |
+| 46 | Audit Logger | [case46_audit_logger.md](case46_audit_logger.md) | AI 操作審計日誌 |
+| 47 | Double Confirm | [case47_double_confirm.md](case47_double_confirm.md) | 雙重確認機制 |
+| 48 | Phase Hooks | [case48_phase_hooks.md](case48_phase_hooks.md) | 階段強制鉤子 |
 
 ---
 
