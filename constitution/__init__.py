@@ -117,3 +117,126 @@ def validate_constitution_compliance(project_path: str = ".") -> dict:
         "message": "Project is compliant with constitution",
         "checks": [],
     }
+
+
+# === TDAD 風格：編譯後 Artifact ===
+
+from typing import List, Dict, Optional, Callable
+import hashlib
+import re
+
+
+class CompiledConstitution:
+    """
+    編譯後的 Constitution
+    
+    TDAD 概念：將 Constitution 視為編譯後的 artifact
+    - 不可變更的約束
+    - 版本化的合規標準
+    - 可驗證的行為規格
+    """
+    
+    def __init__(self, constitution_text: str):
+        self.original_text = constitution_text
+        self.version = self._compute_version(constitution_text)
+        self.specs = self._parse_specs(constitution_text)
+        self.hash = self._compute_hash(constitution_text)
+    
+    def _compute_version(self, text: str) -> str:
+        """計算版本"""
+        return hashlib.md5(text.encode()).hexdigest()[:8]
+    
+    def _compute_hash(self, text: str) -> str:
+        """計算哈希"""
+        return hashlib.sha256(text.encode()).hexdigest()
+    
+    def _parse_specs(self, text: str) -> List[Dict]:
+        """解析行為規格"""
+        specs = []
+        # 解析章節作為 specs
+        sections = text.split('\n## ')
+        for section in sections:
+            if section.strip():
+                specs.append({
+                    "name": section.split('\n')[0],
+                    "content": section,
+                    "hash": hashlib.md5(section.encode()).hexdigest()[:8],
+                })
+        return specs
+    
+    def verify(self, agent_output: str) -> dict:
+        """
+        驗證 Agent 輸出是否符合 Constitution
+        
+        Args:
+            agent_output: Agent 的輸出
+        
+        Returns:
+            dict: {compliant: bool, violations: [], score: float}
+        """
+        violations = []
+        
+        # 檢查關鍵詞
+        forbidden_keywords = ['bypass', 'skip', '--no-verify']
+        for kw in forbidden_keywords:
+            if kw in agent_output.lower():
+                violations.append({
+                    "keyword": kw,
+                    "severity": "high",
+                    "description": f"Forbidden keyword '{kw}' found"
+                })
+        
+        # 檢查是否有 task_id
+        if not re.search(r'\[[A-Z]+-\d+\]', agent_output):
+            violations.append({
+                "keyword": "task_id",
+                "severity": "medium",
+                "description": "No task_id found in output"
+            })
+        
+        score = max(0, 100 - len(violations) * 20)
+        
+        return {
+            "compliant": len(violations) == 0,
+            "violations": violations,
+            "score": score,
+            "version": self.version,
+            "hash": self.hash,
+        }
+    
+    def to_json(self) -> str:
+        """輸出為 JSON"""
+        import json
+        return json.dumps({
+            "version": self.version,
+            "hash": self.hash,
+            "specs_count": len(self.specs),
+            "specs": self.specs,
+        }, indent=2, ensure_ascii=False)
+
+
+def compile_constitution(constitution_path: str = None) -> CompiledConstitution:
+    """
+    編譯 Constitution
+    
+    TDAD 概念：將 Constitution 視為編譯後的 artifact
+    
+    Returns:
+        CompiledConstitution
+    """
+    from pathlib import Path
+    
+    path = Path(constitution_path or __file__).parent / "CONSTITUTION.md"
+    text = path.read_text(encoding='utf-8')
+    
+    return CompiledConstitution(text)
+
+
+def verify_agent_output(constitution: CompiledConstitution, output: str) -> dict:
+    """
+    驗證 Agent 輸出
+    
+    Returns:
+        dict: 驗證結果
+    """
+    return constitution.verify(output)

@@ -1280,9 +1280,32 @@ class MethodologyCLI:
             print("Opening constitution in editor...")
             import subprocess
             subprocess.run(["open", "constitution/CONSTITUTION.md"])
+        elif subcmd == "compile":
+            from constitution import compile_constitution
+            compiled = compile_constitution()
+            print("Constitution compiled successfully!")
+            print(f"  Version: {compiled.version}")
+            print(f"  Hash: {compiled.hash}")
+            print(f"  Specs: {len(compiled.specs)} sections")
+        elif subcmd == "verify":
+            if not args.output:
+                print("Error: output text required for verify")
+                print("Usage: python3 cli.py constitution verify '<agent_output>'")
+                return 1
+            from constitution import compile_constitution, verify_agent_output
+            compiled = compile_constitution()
+            result = verify_agent_output(compiled, args.output)
+            print("Verification Result:")
+            print(f"  Compliant: {result['compliant']}")
+            print(f"  Score: {result['score']}/100")
+            print(f"  Version: {result['version']}")
+            if result['violations']:
+                print("  Violations:")
+                for v in result['violations']:
+                    print(f"    - [{v['severity']}] {v['description']}")
         else:
             print(f"Unknown subcommand: {subcmd}")
-            print("Available: view, thresholds, errors, check, edit")
+            print("Available: view, thresholds, errors, check, edit, compile, verify")
         return 0
 
     def cmd_version(self, args):
@@ -1531,8 +1554,9 @@ def main():
     # constitution
     constitution_parser = subparsers.add_parser("constitution", help="Constitution")
     constitution_parser.add_argument("subcommand", nargs="?", default="view",
-                                   choices=["view", "thresholds", "errors", "check", "edit"],
+                                   choices=["view", "thresholds", "errors", "check", "edit", "compile", "verify"],
                                    help="Constitution subcommand")
+    constitution_parser.add_argument("output", nargs="?", help="Output text to verify (for verify subcommand)")
 
     # resources
     resources_parser = subparsers.add_parser("resources", help="Resource dashboard")

@@ -127,5 +127,41 @@
 
 ---
 
+---
+
+## 6. TDAD 風格驗證
+
+### 6.1 編譯後 Artifact
+
+Constitution 被視為編譯後的 artifact，不可變更。
+
+- 所有約束條件在編譯時固化
+- 版本哈希用於驗證完整性
+- 行為規格可供自動驗證
+
+### 6.2 行為規格
+
+所有 Agent 輸出必須符合 Constitution 的行為規格。
+
+### 6.3 驗證機制
+
+| 檢查項 | 說明 |
+|--------|------|
+| 關鍵詞檢查 | 禁止 bypass/skip/--no-verify |
+| Task ID | 所有 commit 必須有 task_id |
+| 審批流程 | 危險操作必須經過審批 |
+
+### 6.4 CLI 命令
+
+```bash
+# 編譯 Constitution
+python3 cli.py constitution compile
+
+# 驗證輸出
+python3 cli.py constitution verify "<agent_output>"
+```
+
+---
+
 *本文檔最後更新：2026-03-23*
-*版本：1.0.0*
+*版本：1.1.0*
