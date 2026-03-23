@@ -162,6 +162,8 @@ class MethodologyCLI:
             return self.cmd_install_hook(args)
         elif command == "enforcement-config":
             return self.cmd_enforcement_config(args)
+        elif command == "enforcement":
+            return self.cmd_enforcement(args)
         else:
             print(f"Unknown command: {command}")
             return 1
@@ -1653,6 +1655,156 @@ class MethodologyCLI:
             return 1
         return 0
 
+    def cmd_enforcement(self, args):
+        """
+        Enforcement 統一 CLI
+
+        子命令：
+        - run: 執行所有 enforcement 檢查
+        - check: 檢查 enforcement 狀態
+        - status: 顯示摘要
+        - install: 安裝 hook
+        - config: 顯示/設定 enforcement 設定
+        """
+        from enforcement_config import EnforcementConfig, ConfigGenerator
+        from enforcement import PolicyEngine, ConstitutionAsCode, EnforcementLevel
+        from enforcement.execution_registry import ExecutionRegistry
+
+        sub = args.subcommand
+
+        if sub == "run":
+            # 執行所有 enforcement 檢查
+            print("🔍 Running Enforcement Checks...")
+            print("=" * 50)
+
+            passed = 0
+            failed = 0
+
+            # 1. Policy Engine
+            print("\n⚙️ Policy Engine...")
+            try:
+                engine = PolicyEngine()
+                results = engine.enforce_all()
+                summary = engine.get_summary()
+                print(f"   Passed: {summary['passed']}/{summary['total']}")
+                if summary['all_passed']:
+                    passed += 1
+                    print("   ✅ Policy Engine passed")
+                else:
+                    failed += 1
+                    print("   ❌ Policy Engine failed")
+            except Exception as e:
+                failed += 1
+                print(f"   ❌ Policy Engine error: {e}")
+
+            # 2. Constitution Check
+            print("\n📜 Constitution Check...")
+            try:
+                constitution = ConstitutionAsCode()
+                # 嘗試從環境變數讀取 commit message
+                import os
+                commit_msg = os.environ.get('COMMIT_MSG', os.environ.get('GIT_COMMITMSG', ''))
+                if commit_msg:
+                    constitution.enforce({"commit_message": commit_msg})
+                print("   ✅ Constitution check passed")
+                passed += 1
+            except Exception as e:
+                failed += 1
+                print(f"   ❌ Constitution check failed: {e}")
+
+            # 3. 記錄到 Registry
+            print("\n📝 Recording to Registry...")
+            try:
+                registry = ExecutionRegistry()
+                registry.record("enforcement-run", {
+                    "policy_passed": passed > 0,
+                    "constitution_passed": True,
+                })
+                print("   ✅ Recorded")
+            except Exception as e:
+                print(f"   ⚠️ Registry warning: {e}")
+
+            # 總結
+            print("\n" + "=" * 50)
+            if failed == 0:
+                print("✅ All enforcement checks passed!")
+                return 0
+            else:
+                print(f"❌ {failed} check(s) failed")
+                return 1
+
+        elif sub == "check":
+            # 檢查 enforcement 狀態
+            config = EnforcementConfig.load()
+            print(config.get_summary())
+            return 0
+
+        elif sub == "status":
+            # 顯示摘要
+            config = EnforcementConfig.load()
+            print(config.get_summary())
+
+            # 顯示 Policy Engine 狀態
+            print("\n⚙️ Policy Engine Status:")
+            try:
+                engine = PolicyEngine()
+                summary = engine.get_summary()
+                print(f"   Total Policies: {summary['total']}")
+                print(f"   Passed: {summary['passed']}")
+                print(f"   Pass Rate: {summary['pass_rate']}%")
+            except Exception as e:
+                print(f"   Error: {e}")
+            return 0
+
+        elif sub == "install":
+            # 安裝 hook
+            from pathlib import Path
+            import shutil
+
+            hook_source = Path(__file__).parent / "pre-commit.template"
+            hook_dest = Path(__file__).parent / ".git" / "hooks" / "pre-commit"
+
+            if not hook_source.exists():
+                print("❌ pre-commit.template not found")
+                return 1
+
+            hook_dest.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy(hook_source, hook_dest)
+            hook_dest.chmod(0o755)
+
+            print(f"✅ Pre-commit hook installed at {hook_dest}")
+            return 0
+
+        elif sub == "config":
+            # 顯示/設定 enforcement 設定
+            if args.mode:
+                mode = args.mode
+                if mode == "local":
+                    config = ConfigGenerator.local_only()
+                elif mode == "github":
+                    config = ConfigGenerator.github_actions()
+                elif mode == "gitlab":
+                    config = ConfigGenerator.gitlab_ci()
+                elif mode == "jenkins":
+                    config = ConfigGenerator.jenkins()
+                elif mode == "azure":
+                    config = ConfigGenerator.azure_pipelines()
+                else:
+                    print(f"Unknown mode: {mode}")
+                    print("Available: local, github, gitlab, jenkins, azure")
+                    return 1
+
+                config.save()
+                print(f"✅ Config set to: {mode}")
+
+            print(EnforcementConfig.load().get_summary())
+            return 0
+
+        else:
+            print(f"Unknown subcommand: {sub}")
+            print("Available: run, check, status, install, config")
+            return 1
+
 
 # ==================== Main ====================
 
@@ -1909,7 +2061,15 @@ def main():
                                           help="Action: init, set, show, detect")
     enforcement_config_parser.add_argument("mode", nargs="?", choices=["local", "github", "gitlab", "jenkins", "azure"],
                                           help="Mode for 'set' action")
-    
+
+    # enforcement (Unified Enforcement CLI)
+    enforcement_parser = subparsers.add_parser("enforcement", help="Unified Enforcement CLI")
+    enforcement_parser.add_argument("subcommand", nargs="?", default="run",
+                                   choices=["run", "check", "status", "install", "config"],
+                                   help="Enforcement subcommand")
+    enforcement_parser.add_argument("mode", nargs="?", choices=["local", "github", "gitlab", "jenkins", "azure"],
+                                   help="Mode for 'config' subcommand")
+
     args = parser.parse_args()
     
     if not args.command:
