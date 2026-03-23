@@ -144,6 +144,8 @@ class MethodologyCLI:
             return self.cmd_p2p(args)
         elif command == "hitl":
             return self.cmd_hitl(args)
+        elif command == "gatekeeper":
+            return self.cmd_gatekeeper(args)
         else:
             print(f"Unknown command: {command}")
             return 1
@@ -1236,6 +1238,40 @@ class MethodologyCLI:
         print(f"Methodology v{self.VERSION}")
         return 0
 
+    def cmd_gatekeeper(self, args):
+        """Workflow Gatekeeper"""
+        from anti_shortcut.gatekeeper import Gatekeeper, Phase
+        
+        gk = Gatekeeper()
+        action = args.action
+        
+        if action == "status":
+            gk.print_status()
+        elif action == "check":
+            print("檢查所有 Gates...")
+            all_passed = gk.check_all_gates()
+            gk.print_status()
+            if all_passed:
+                print("\n✅ 所有 Gates 通過")
+                return 0
+            else:
+                print("\n❌ 部分 Gates 未通過")
+                return 1
+        elif action == "enforce":
+            print("强制執行 Constitution...")
+            gk.start_phase(Phase.CONSTITUTION)
+            # 執行 Constitution gates
+            for gate in gk.phase_records[Phase.CONSTITUTION].gates:
+                gk.check_gate(gate.gate_id)
+            gk.print_status()
+            if gk.can_proceed_to_next_phase():
+                print("\n✅ Constitution 階段完成，可以進入下一階段")
+                return 0
+            else:
+                print("\n❌ Constitution 階段未完成")
+                return 1
+        return 0
+
 
 # ==================== Main ====================
 
@@ -1450,6 +1486,11 @@ def main():
 
     # version
     subparsers.add_parser("version", help="Show version")
+    
+    # gatekeeper
+    gatekeeper_parser = subparsers.add_parser("gatekeeper", help="Workflow Gatekeeper")
+    gatekeeper_parser.add_argument("action", choices=["status", "check", "enforce"],
+                                   help="Gatekeeper action")
     
     args = parser.parse_args()
     
