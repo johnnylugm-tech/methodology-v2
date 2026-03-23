@@ -21,6 +21,21 @@
 
 ---
 
+## 🧪 TDAD Testing Methodology
+
+本流程已整合 **TDAD (Test-Driven AI Agent Development)**，用測試驅動 Agent 開發：
+
+| 概念 | 實作 | 功能 |
+|------|------|------|
+| **Compiled Prompts** | `CompiledConstitution` | 將 Constitution 視為編譯後 artifact |
+| **Visible/Hidden Tests** | `QualityGateTDAD` | 防止 specification gaming |
+| **Mutation Testing** | `MutationTester` | 偵測測試有效性 |
+| **Impact Analysis** | `ImpactAnalyzer` | 圖形化變更影響分析 |
+
+📖 詳見：[TDAD_METHODOLOGY.md](TDAD_METHODOLOGY.md)
+
+---
+
 ## 完整工作流程圖
 
 ```
