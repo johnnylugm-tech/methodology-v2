@@ -186,6 +186,10 @@ class MethodologyCLI:
             return self.cmd_agent_proof_hook(args)
         elif command == "memory":
             return self.cmd_memory(args)
+        elif command == "roi":
+            return self.cmd_roi(args)
+        elif command == "m27":
+            return self.cmd_m27(args)
         else:
             print(f"Unknown command: {command}")
             return 1
@@ -1229,6 +1233,40 @@ class MethodologyCLI:
         print(f"Unknown action: {action}")
         return 1
 
+    def cmd_roi(self, args):
+        """ROI Dashboard"""
+        from roi_tracker import ROICalculator
+
+        calculator = ROICalculator()
+
+        if args.subcommand == "dashboard":
+            data = calculator.get_dashboard_data()
+            print("=" * 50)
+            print("ROI Dashboard")
+            print("=" * 50)
+            for period, report in data.items():
+                print(f"\n{period.upper()}:")
+                print(f"  Cost: ${report.total_cost:.2f}")
+                print(f"  Value: ${report.total_value:.2f}")
+                print(f"  ROI: {report.roi_percentage}%")
+                print(f"  Net: ${report.net_value:.2f}")
+                if hasattr(report, 'recommendation') and report.recommendation:
+                    print(f"  Recommendation: {report.recommendation}")
+            print()
+            return 0
+
+        elif args.subcommand == "report":
+            report = calculator.calculate(args.period)
+            print(f"ROI Report ({args.period})")
+            print("=" * 40)
+            print(f"Total Cost: ${report.total_cost:.2f}")
+            print(f"Total Value: ${report.total_value:.2f}")
+            print(f"ROI: {report.roi_percentage}%")
+            print(f"Net Value: ${report.net_value:.2f}")
+            print(f"Recommendation: {report.recommendation}")
+            print()
+            return 0
+
     def cmd_p2p(self, args):
         """P2P 團隊配置管理"""
         action = args.p2p_action
@@ -2185,6 +2223,14 @@ def main():
     risk_parser.add_argument("--risk-id", help="Risk ID")
     risk_parser.add_argument("--status", help="Filter by status (open, mitigated, accepted, closed)")
 
+    # roi (ROI Dashboard)
+    roi_parser = subparsers.add_parser("roi", help="ROI Tracking Dashboard")
+    roi_parser.add_argument("subcommand", nargs="?", default="dashboard",
+                           choices=["dashboard", "report"],
+                           help="ROI subcommand")
+    roi_parser.add_argument("period", nargs="?", choices=["day", "week", "month"], default="month",
+                           help="Time period for report")
+
     # p2p
     p2p_parser = subparsers.add_parser("p2p", help="P2P Team Config")
     p2p_sub = p2p_parser.add_subparsers(dest="p2p_action", help="P2P actions")
@@ -2268,6 +2314,13 @@ def main():
     memory_parser.add_argument("subcommand", nargs="?", default="status",
                               choices=["validate", "status", "audit", "resolve"],
                               help="Memory governance subcommand")
+
+    # m27 (M2.7 Self-Evolving Integration)
+    m27_parser = subparsers.add_parser("m27", help="M2.7 Self-Evolving Integration")
+    m27_parser.add_argument("sub", nargs="?", default="status",
+                           choices=["status", "analyze", "iterate", "optimize"],
+                           help="M2.7 action")
+    m27_parser.add_argument("--log", dest="failure_log", help="Failure log for analysis")
 
     args = parser.parse_args()
     
