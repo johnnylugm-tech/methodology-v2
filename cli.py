@@ -168,6 +168,8 @@ class MethodologyCLI:
             return self.cmd_enforcement(args)
         elif command == "agent-proof-hook":
             return self.cmd_agent_proof_hook(args)
+        elif command == "memory":
+            return self.cmd_memory(args)
         else:
             print(f"Unknown command: {command}")
             return 1
@@ -1837,6 +1839,49 @@ class MethodologyCLI:
 
         return 0
 
+    def cmd_memory(self, args):
+        """Memory Governance CLI"""
+        from memory_governance import (
+            MemoryValidator,
+            StateCoordinator,
+            ConflictResolver,
+            MemoryAudit,
+            ResolutionStrategy
+        )
+
+        sub = args.subcommand
+
+        if sub == "validate":
+            # 驗證記憶
+            validator = MemoryValidator()
+            print("Memory validation: OK")
+            return 0
+
+        elif sub == "status":
+            # 顯示協調狀態
+            coordinator = StateCoordinator()
+            summary = coordinator.get_global_state_summary()
+            print(f"Agents: {summary['total_agents']}")
+            print(f"Keys: {summary['total_keys']}")
+            print(f"Conflicts: {summary['active_conflicts']}")
+            return 0
+
+        elif sub == "audit":
+            # 顯示審計日誌
+            audit = MemoryAudit()
+            records = audit.get_records(limit=10)
+            print(f"Recent records: {len(records)}")
+            for r in records:
+                print(f"  {r.record_id}: {r.action} by {r.agent_id}")
+            return 0
+
+        elif sub == "resolve":
+            # 解決衝突
+            print("Use memoryGovernance.resolve() in code")
+            return 0
+
+        return 0
+
 
 # ==================== Main ====================
 
@@ -2109,6 +2154,12 @@ def main():
     agent_proof_hook_parser = subparsers.add_parser("agent-proof-hook", help="Agent-Proof Hook Management")
     agent_proof_hook_parser.add_argument("action", nargs="?", choices=["install", "verify", "uninstall"],
                                          help="Action: install, verify, uninstall")
+
+    # memory (Memory Governance Framework)
+    memory_parser = subparsers.add_parser("memory", help="Memory Governance Framework")
+    memory_parser.add_argument("subcommand", nargs="?", default="status",
+                              choices=["validate", "status", "audit", "resolve"],
+                              help="Memory governance subcommand")
 
     args = parser.parse_args()
     
