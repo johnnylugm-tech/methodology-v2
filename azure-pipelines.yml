@@ -1,0 +1,71 @@
+# azure-pipelines.yml
+# Azure DevOps Pipeline for methodology-v2 Enforcement
+
+trigger:
+  branches:
+    include:
+      - main
+      - develop
+  paths:
+    include:
+      - '**/*.py'
+
+pr:
+  branches:
+    include:
+      - main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+stages:
+  - stage: Validate
+    jobs:
+      - job: ConstitutionCheck
+        steps:
+          - task: UsePythonVersion@0
+            inputs:
+              versionSpec: '3.11'
+          - script: |
+              pip install -q methodology-v2
+              python3 cli.py constitution verify
+            displayName: 'Constitution Check'
+
+  - stage: Policy
+    dependsOn: Validate
+    jobs:
+      - job: PolicyEngine
+        steps:
+          - task: UsePythonVersion@0
+            inputs:
+              versionSpec: '3.11'
+          - script: |
+              pip install -q methodology-v2
+              python3 cli.py policy --strict
+            displayName: 'Policy Engine'
+
+  - stage: Quality
+    dependsOn: Policy
+    jobs:
+      - job: QualityGate
+        steps:
+          - task: UsePythonVersion@0
+            inputs:
+              versionSpec: '3.11'
+          - script: |
+              pip install -q methodology-v2
+              python3 cli.py quality gate
+            displayName: 'Quality Gate'
+
+  - stage: Security
+    dependsOn: Quality
+    jobs:
+      - job: SecurityScan
+        steps:
+          - task: UsePythonVersion@0
+            inputs:
+              versionSpec: '3.11'
+          - script: |
+              pip install -q methodology-v2
+              python3 cli.py security scan
+            displayName: 'Security Scan'

@@ -1,0 +1,17 @@
+{
+  "mode": "local",
+  "platform": "none",
+  "enforce_on_commit": true,
+  "enforce_on_push": false,
+  "enforce_on_pr": false,
+  "enforce_on_merge": false,
+  "strict_mode": true,
+  "allow_bypass": false,
+  "quality_gate_threshold": 90.0,
+  "security_threshold": 95.0,
+  "coverage_threshold": 80.0,
+  "enable_registry": true,
+  "enable_constitution_check": true,
+  "enable_policy_engine": true,
+  "_comment": "預設使用 LOCAL 模式（輕量級，適合個人/小專案）"
+}

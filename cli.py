@@ -160,6 +160,8 @@ class MethodologyCLI:
             return self.cmd_policy(args)
         elif command == "install-hook":
             return self.cmd_install_hook(args)
+        elif command == "enforcement-config":
+            return self.cmd_enforcement_config(args)
         else:
             print(f"Unknown command: {command}")
             return 1
@@ -1613,6 +1615,44 @@ class MethodologyCLI:
         print(f"✅ Pre-commit hook installed at {hook_dest}")
         return 0
 
+    def cmd_enforcement_config(self, args):
+        """Unified Enforcement Configuration"""
+        from enforcement_config import EnforcementConfig, ConfigGenerator, EnforcementMode
+        
+        action = args.action
+        
+        if not action or action == "show":
+            config = EnforcementConfig.load()
+            print(config.get_summary())
+        elif action == "init":
+            config = ConfigGenerator.local_only()
+            config.save()
+            print("✅ Initialized with LOCAL mode")
+            print("   Use 'python cli.py enforcement-config set <mode>' to change")
+        elif action == "set":
+            mode = args.mode or "local"
+            if mode == "github":
+                config = ConfigGenerator.github_actions()
+            elif mode == "gitlab":
+                config = ConfigGenerator.gitlab_ci()
+            elif mode == "jenkins":
+                config = ConfigGenerator.jenkins()
+            elif mode == "azure":
+                config = ConfigGenerator.azure_pipelines()
+            else:
+                config = ConfigGenerator.local_only()
+            config.save()
+            print(f"✅ Config set: {mode}")
+            print(config.get_summary())
+        elif action == "detect":
+            config = ConfigGenerator.auto_detect()
+            print(f"🔍 Detected: {config.mode.value} ({config.platform.value})")
+            print(config.get_summary())
+        else:
+            print(f"Unknown action: {action}")
+            return 1
+        return 0
+
 
 # ==================== Main ====================
 
@@ -1862,6 +1902,13 @@ def main():
     
     # install-hook (pre-commit hook installer)
     subparsers.add_parser("install-hook", help="Install pre-commit hook")
+    
+    # enforcement-config (Unified Enforcement Configuration)
+    enforcement_config_parser = subparsers.add_parser("enforcement-config", help="Unified Enforcement Configuration")
+    enforcement_config_parser.add_argument("action", nargs="?", choices=["init", "set", "show", "detect"],
+                                          help="Action: init, set, show, detect")
+    enforcement_config_parser.add_argument("mode", nargs="?", choices=["local", "github", "gitlab", "jenkins", "azure"],
+                                          help="Mode for 'set' action")
     
     args = parser.parse_args()
     
