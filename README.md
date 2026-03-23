@@ -843,6 +843,7 @@ class TeamMode(Enum):
 |------|------|
 | [FAULT_TOLERANCE_GUIDE.md](docs/FAULT_TOLERANCE_GUIDE.md) | 容錯與災難復原上手指南 |
 | [FAULT_TOLERANCE_COMPARISON.md](docs/FAULT_TOLERANCE_COMPARISON.md) | Framework 對照表 |
+| [ANTI_SHORTCUT_FRAMEWORK.md](docs/ANTI_SHORTCUT_FRAMEWORK.md) | 防範捷徑完整手冊 |
 
 ### 👥 新團隊
 | 文件 | 說明 |

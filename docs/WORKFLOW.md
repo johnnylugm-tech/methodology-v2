@@ -4,6 +4,23 @@
 
 ---
 
+## 🛡️ Anti-Shortcut Framework
+
+本流程已整合 **Anti-Shortcut Framework**，確保 AI Agent 無法走捷徑：
+
+| 模組 | 功能 |
+|------|------|
+| **Blacklist (B)** | 阻止危險操作 |
+| **Gatekeeper (A)** | 確保流程完整 |
+| **Enforcer (F)** | 防範捷徑 |
+| **Audit Logger (C)** | 記錄審計 |
+| **Double Confirm (D)** | 雙重確認 |
+| **Phase Hooks (E)** | 自動化驗證 |
+
+📖 詳見：[ANTI_SHORTCUT_FRAMEWORK.md](ANTI_SHORTCUT_FRAMEWORK.md)
+
+---
+
 ## 完整工作流程圖
 
 ```
