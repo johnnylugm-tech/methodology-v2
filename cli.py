@@ -51,7 +51,7 @@ from anti_shortcut.impact_analysis import ImpactAnalyzer
 class MethodologyCLI:
     """統一 CLI 入口"""
     
-    VERSION = "5.28.0"
+    VERSION = "5.29.0"
     
     def __init__(self):
         self.progress = ProgressDashboard()
