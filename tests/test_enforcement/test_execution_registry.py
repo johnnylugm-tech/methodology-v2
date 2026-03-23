@@ -8,17 +8,26 @@ import os
 import sys
 import tempfile
 import shutil
+import importlib.util
 from pathlib import Path
 
 # Add project root to path
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
-from enforcement.execution_registry import (
-    ExecutionRegistry,
-    ExecutionRecord,
-    create_minimal_registry
-)
+# Explicitly load modules without triggering package __init__.py
+def _load_module(name, path):
+    spec = importlib.util.spec_from_file_location(name, path)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[name] = module
+    spec.loader.exec_module(module)
+    return module
+
+execution_registry_mod = _load_module("execution_registry", project_root / "enforcement" / "execution_registry.py")
+
+ExecutionRegistry = execution_registry_mod.ExecutionRegistry
+ExecutionRecord = execution_registry_mod.ExecutionRecord
+create_minimal_registry = execution_registry_mod.create_minimal_registry
 
 
 class TestExecutionRegistry:

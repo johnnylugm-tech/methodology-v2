@@ -6,20 +6,29 @@ Policy Engine Tests
 import pytest
 import os
 import sys
+import importlib.util
 from pathlib import Path
 
-# Add project root to path
+# Add project root to path (but we'll load modules explicitly to avoid __init__.py issues)
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
-from enforcement.policy_engine import (
-    PolicyEngine,
-    Policy,
-    PolicyResult,
-    EnforcementLevel,
-    PolicyViolationException,
-    create_hard_block_engine
-)
+# Explicitly load modules without triggering package __init__.py
+def _load_module(name, path):
+    spec = importlib.util.spec_from_file_location(name, path)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[name] = module
+    spec.loader.exec_module(module)
+    return module
+
+policy_engine_mod = _load_module("policy_engine", project_root / "enforcement" / "policy_engine.py")
+
+PolicyEngine = policy_engine_mod.PolicyEngine
+Policy = policy_engine_mod.Policy
+PolicyResult = policy_engine_mod.PolicyResult
+EnforcementLevel = policy_engine_mod.EnforcementLevel
+PolicyViolationException = policy_engine_mod.PolicyViolationException
+create_hard_block_engine = policy_engine_mod.create_hard_block_engine
 
 
 class TestPolicyEngine:

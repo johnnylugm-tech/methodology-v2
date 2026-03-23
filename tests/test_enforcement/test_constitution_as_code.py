@@ -5,19 +5,28 @@ Constitution as Code Tests
 
 import pytest
 import sys
+import importlib.util
 from pathlib import Path
 
 # Add project root to path
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
-from enforcement.constitution_as_code import (
-    ConstitutionAsCode,
-    Rule,
-    RuleSeverity,
-    ConstitutionViolation,
-    ConstitutionWarning
-)
+# Explicitly load modules without triggering package __init__.py
+def _load_module(name, path):
+    spec = importlib.util.spec_from_file_location(name, path)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[name] = module
+    spec.loader.exec_module(module)
+    return module
+
+constitution_as_code_mod = _load_module("constitution_as_code", project_root / "enforcement" / "constitution_as_code.py")
+
+ConstitutionAsCode = constitution_as_code_mod.ConstitutionAsCode
+Rule = constitution_as_code_mod.Rule
+RuleSeverity = constitution_as_code_mod.RuleSeverity
+ConstitutionViolation = constitution_as_code_mod.ConstitutionViolation
+ConstitutionWarning = constitution_as_code_mod.ConstitutionWarning
 
 
 class TestConstitutionAsCode:
@@ -94,32 +103,34 @@ class TestConstitutionAsCode:
         c = ConstitutionAsCode()
         c.rules = []
         
+        # Use description matching a known check type (quality gate check_fn receives score)
         c.add_rule(Rule(
             id="TEST-R001",
-            description="Critical rule",
-            check_fn=lambda x: False,
+            description="Quality Gate check - must meet threshold",
+            check_fn=lambda score: False,  # Always fail
             severity=RuleSeverity.CRITICAL,
             error_message="Critical violation"
         ))
         
         with pytest.raises(ConstitutionViolation):
-            c.enforce({})
+            c.enforce({"quality_score": 50})
     
     def test_enforce_raises_warning(self):
         """測試 HIGH 違規拋警告"""
         c = ConstitutionAsCode()
         c.rules = []
         
+        # Use description matching a known check type (coverage check_fn receives coverage)
         c.add_rule(Rule(
             id="TEST-R001",
-            description="Warning rule",
-            check_fn=lambda x: False,
+            description="Coverage must meet threshold",
+            check_fn=lambda coverage: False,  # Always fail
             severity=RuleSeverity.HIGH,
             error_message="High violation"
         ))
         
         with pytest.raises(ConstitutionWarning):
-            c.enforce({})
+            c.enforce({"coverage": 50})
     
     def test_get_rules_summary(self):
         """測試取得規則摘要"""
