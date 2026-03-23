@@ -1,0 +1,33 @@
+name: 🪝 Install Enforcement Hooks
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:  # 手動觸發
+
+jobs:
+  install-hooks:
+    name: Install Pre-Commit Hooks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Hook
+        run: |
+          # 確保 hooks 目錄存在
+          mkdir -p .git/hooks
+          
+          # 安裝 pre-commit hook
+          if [ -f "pre-commit.template" ]; then
+            cp pre-commit.template .git/hooks/pre-commit
+            chmod +x .git/hooks/pre-commit
+            echo "✅ Pre-commit hook installed"
+          else
+            echo "⚠️ pre-commit.template not found"
+          fi
+          
+          # 確保無法刪除 hooks（Unix 層面）
+          chattr +i .git/hooks/pre-commit 2>/dev/null || {
+            echo "⚠️ Cannot make hook immutable (needs root)"
+          }

@@ -29,6 +29,8 @@ from .constitution_as_code import (
     ConstitutionWarning,
 )
 
+from .server_enforcer import ServerEnforcer
+
 __all__ = [
     # Policy Engine
     'PolicyEngine',
@@ -49,4 +51,7 @@ __all__ = [
     'RuleSeverity',
     'ConstitutionViolation',
     'ConstitutionWarning',
+    
+    # Server-Side Enforcer
+    'ServerEnforcer',
 ]
