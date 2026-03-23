@@ -937,6 +937,11 @@ class TeamMode(Enum):
 | [NEW_TEAM_ENFORCEMENT_GUIDE.md](docs/NEW_TEAM_ENFORCEMENT_GUIDE.md) | Enforcement 新團隊上手 |
 | [P2P_HITL_GUIDE.md](docs/P2P_HITL_GUIDE.md) | P2P + HITL 上手指南 |
 
+### 📊 研究與分析
+| 文件 | 說明 |
+|------|------|
+| [PAIN_POINTS_ANALYSIS.md](docs/PAIN_POINTS_ANALYSIS.md) | AI Agent 痛點與對應方案 |
+
 ### 🔗 其他
 | 文件 | 說明 |
 |------|------|
