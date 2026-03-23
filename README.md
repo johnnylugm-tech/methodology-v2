@@ -5,7 +5,7 @@
 
 ---
 
-[![Version](https://img.shields.io/badge/version-v5.19.0-blue.svg)](https://github.com/johnnylugm-tech/methodology-v2)
+[![Version](https://img.shields.io/badge/version-v5.20.0-blue.svg)](https://github.com/johnnylugm-tech/methodology-v2)
 [![Python](https://img.shields.io/badge/python-3.8+-green.svg)](https://python.org)
 [![Tests](https://img.shields.io/badge/tests-32%20passed-green.svg)]()
 
@@ -448,7 +448,7 @@ message = MAPProtocol.encode(sender="agent-1", action="request", data={})
 
 | 專案 | 版本 | 關係 | 說明 |
 |------|------|------|------|
-| **methodology-v2** | v5.19.0 | 主框架 | ✅ 內建，無需額外安裝 |
+| **methodology-v2** | v5.20.0 | 主框架 | ✅ 內建，無需額外安裝 |
 | Agent Quality Guard | v1.0.3 | 生態系 | 品質把關，可選 |
 | Model Router | v2.3.0 | 生態系 | 模型路由，可選 |
 | Agent Monitor | v3.2.0 | 生態系 | 監控警報，可選 |
@@ -829,11 +829,41 @@ class TeamMode(Enum):
 
 ---
 
+## 📖 文件導覽
+
+### 🆕 新手上路
+| 文件 | 說明 |
+|------|------|
+| [GETTING_STARTED.md](docs/GETTING_STARTED.md) | 5 分鐘快速上手 |
+| [WORKFLOW.md](docs/WORKFLOW.md) | 完整工作流程 |
+| [CUSTOMIZATION_GUIDE.md](docs/CUSTOMIZATION_GUIDE.md) | 自訂指南 |
+
+### 🛡️ Fault Tolerance
+| 文件 | 說明 |
+|------|------|
+| [FAULT_TOLERANCE_GUIDE.md](docs/FAULT_TOLERANCE_GUIDE.md) | 容錯與災難復原上手指南 |
+| [FAULT_TOLERANCE_COMPARISON.md](docs/FAULT_TOLERANCE_COMPARISON.md) | Framework 對照表 |
+
+### 👥 新團隊
+| 文件 | 說明 |
+|------|------|
+| [NEW_TEAM_GUIDE.md](docs/NEW_TEAM_GUIDE.md) | 完整新手上路 |
+| [P2P_HITL_GUIDE.md](docs/P2P_HITL_GUIDE.md) | P2P + HITL 上手指南 |
+
+### 🔗 其他
+| 文件 | 說明 |
+|------|------|
+| [HYBRID_WORKFLOW_GUIDE.md](docs/HYBRID_WORKFLOW_GUIDE.md) | Hybrid Workflow 指南 |
+| [docs/cases/README.md](docs/cases/README.md) | 42 個案例文檔 |
+
+---
+
 ## 📊 版本歷史
 
 | 版本 | 日期 | 說明 |
 |------|------|------|
-| v5.19.0 | 2026-03-22 | Hybrid Workflow: 智慧分流工作流 (Solution Y) |
+| v5.20.0 | 2026-03-22 | Fault Tolerance: Checkpoint + Recovery + Human Intervention |
+| v5.20.0 | 2026-03-22 | Hybrid Workflow: 智慧分流工作流 (Solution Y) |
 | v5.8.0 | 2026-03-20 | Trend Optimization: 強化 Guardrails 安全模組 |
 | v5.8.0 | 2026-03-20 | v4.5.0 Extensions 整合 |
 | v5.3.1 | 2026-03-20 | 工作流程案例 |
@@ -856,4 +886,4 @@ MIT License
 ---
 
 **GitHub**: https://github.com/johnnylugm-tech/methodology-v2
-**Release**: https://github.com/johnnylugm-tech/methodology-v2/releases/tag/v5.19.0
+**Release**: https://github.com/johnnylugm-tech/methodology-v2/releases/tag/v5.20.0
