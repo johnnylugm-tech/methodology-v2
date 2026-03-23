@@ -932,6 +932,7 @@ class TeamMode(Enum):
 ### 👥 新團隊
 | 文件 | 說明 |
 |------|------|
+| [CHECKLIST.md](CHECKLIST.md) | 🚨 前置檢查清單（新團隊必看） |
 | [NEW_TEAM_GUIDE.md](docs/NEW_TEAM_GUIDE.md) | 完整新手上路 |
 | [NEW_TEAM_ENFORCEMENT_GUIDE.md](docs/NEW_TEAM_ENFORCEMENT_GUIDE.md) | Enforcement 新團隊上手 |
 | [P2P_HITL_GUIDE.md](docs/P2P_HITL_GUIDE.md) | P2P + HITL 上手指南 |
