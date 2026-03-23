@@ -151,6 +151,10 @@ class MethodologyCLI:
             return self.cmd_hitl(args)
         elif command == "gatekeeper":
             return self.cmd_gatekeeper(args)
+        elif command == "confirmations":
+            return self.cmd_confirmations(args)
+        elif command == "release":
+            return self.cmd_release(args)
         else:
             print(f"Unknown command: {command}")
             return 1
@@ -1318,6 +1322,156 @@ class MethodologyCLI:
             else:
                 print("\n❌ Constitution 階段未完成")
                 return 1
+        return 0
+
+    def cmd_confirmations(self, args):
+        """Double Confirmation Management"""
+        dc = DoubleConfirmation(timeout_minutes=30)
+        action = args.action
+        
+        if action == "list":
+            pending = dc.get_pending(operation=args.operation)
+            if not pending:
+                print("沒有待確認的操作")
+                return 0
+            print(f"待確認操作 ({len(pending)} 個):")
+            for p in pending:
+                required = 1 if p.level == ConfirmationLevel.SINGLE else 2
+                print(f"  [{p.confirmation_id}] {p.operation}")
+                print(f"      描述: {p.description}")
+                print(f"      等級: {p.level.value} (需要 {required} 人確認)")
+                print(f"      已確認: {len(p.confirmations)}/{required}")
+                print()
+            return 0
+        
+        elif action == "confirm":
+            if not args.confirmation_id or not args.confirmed_by:
+                print("錯誤：需要 --id 和 --by 參數")
+                return 1
+            success = dc.confirm(args.confirmation_id, args.confirmed_by)
+            if success:
+                status = dc.get_status(args.confirmation_id)
+                if status and status.get("status") == "approved":
+                    print(f"✓ 確認完成，操作已批准")
+                else:
+                    print(f"✓ 確認已記錄，等待更多人確認...")
+                return 0
+            else:
+                print(f"✗ 確認失敗，ID 不存在或已過期")
+                return 1
+        
+        elif action == "reject":
+            if not args.confirmation_id or not args.confirmed_by:
+                print("錯誤：需要 --id 和 --by 參數")
+                return 1
+            success = dc.reject(args.confirmation_id, args.confirmed_by, args.reason or "")
+            if success:
+                print(f"✓ 操作已拒絕")
+                return 0
+            else:
+                print(f"✗ 拒絕失敗，ID 不存在或已過期")
+                return 1
+        
+        elif action == "status":
+            if not args.confirmation_id:
+                print("錯誤：需要 --id 參數")
+                return 1
+            status = dc.get_status(args.confirmation_id)
+            if status:
+                print(f"確認狀態:")
+                print(f"  ID: {status['confirmation_id']}")
+                print(f"  操作: {status['operation']}")
+                print(f"  描述: {status.get('description', 'N/A')}")
+                print(f"  等級: {status.get('level', 'N/A')}")
+                print(f"  狀態: {status['status']}")
+                print(f"  已確認: {status['confirmations']}")
+                if 'required' in status:
+                    print(f"  需要: {status['required']} 人")
+                return 0
+            else:
+                print(f"✗ 找不到確認 ID")
+                return 1
+        
+        elif action == "check":
+            if not args.operation:
+                print("錯誤：需要 --operation 參數")
+                return 1
+            level = dc.requires_confirmation(args.operation)
+            print(f"操作 '{args.operation}' 需要確認等級: {level.value}")
+            if level == ConfirmationLevel.BLOCKED:
+                print("  ⚠️ 此操作被阻止")
+            elif level == ConfirmationLevel.APPROVAL:
+                print("  需要人類審批")
+            elif level == ConfirmationLevel.DOUBLE:
+                print("  需要 2 人確認")
+            elif level == ConfirmationLevel.SINGLE:
+                print("  需要 1 人確認")
+            return 0
+        
+        return 0
+
+    def cmd_release(self, args):
+        """Release Management with Double Confirmation"""
+        if not args.version:
+            print("錯誤：需要 --version 參數")
+            return 1
+        
+        dc = DoubleConfirmation(timeout_minutes=30)
+        operation = "release"
+        description = f"發布版本 {args.version} 到 GitHub"
+        metadata = {"version": args.version, "repo": args.repo or "main"}
+        
+        level = dc.requires_confirmation(operation)
+        
+        if level == ConfirmationLevel.BLOCKED:
+            print("❌ 此操作被系統阻止")
+            return 1
+        
+        if level == ConfirmationLevel.NONE:
+            print(f"✅ 發布 {args.version} - 不需要確認")
+            return 0
+        
+        if not args.confirm:
+            print(f"⚠️  發布 {args.version} 需要確認")
+            print(f"   使用 --confirm 參數來請求確認")
+            conf_id = dc.create_pending(operation, description, metadata)
+            if conf_id:
+                print(f"   確認 ID: {conf_id}")
+            return 1
+        
+        # 創建待確認
+        conf_id = dc.create_pending(operation, description, metadata)
+        
+        if conf_id == "__BLOCKED__":
+            print("❌ 此操作被阻止")
+            return 1
+        
+        # Agent 確認 (第一次)
+        print("Waiting for confirmation...")
+        dc.confirm(conf_id, confirmed_by="agent-cli")
+        
+        pending = dc._find_pending(conf_id)
+        if pending:
+            required = 1 if pending.level == ConfirmationLevel.SINGLE else 2
+            current = len(pending.confirmations)
+            print(f"[{current}/{required}] Agent confirmed")
+            
+            if current < required:
+                print(f"[{required}/{required}] Waiting for human confirmation...")
+                print(f"\n請在另一個 terminal 執行:")
+                print(f"  python cli.py confirmations confirm --id {conf_id} --by human-admin")
+                print(f"\n或查看狀態:")
+                print(f"  python cli.py confirmations status --id {conf_id}")
+                return 1
+        else:
+            status = dc.get_status(conf_id)
+            if status and status.get("status") == "approved":
+                print("✓ Release approved")
+                return 0
+            else:
+                print("✗ Release not approved")
+                return 1
+        
         return 0
 
 
