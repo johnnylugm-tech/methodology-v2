@@ -166,4 +166,21 @@ print(f"Error Level: L{result['level']}")
 
 ---
 
+## 進階：自訂憲章
+
+根據團隊需求調整 methodology-v2：
+
+- [CUSTOMIZATION_GUIDE.md](CUSTOMIZATION_GUIDE.md) - 調整品質閾值、錯誤分類
+- [Constitution](../constitution/CONSTITUTION.md) - 團隊憲章核心原則
+- [PROJECT_STRUCTURE.md](../templates/PROJECT_STRUCTURE.md) - 標準化專案結構
+
+使用 Constitution CLI 查看：
+```bash
+python3 cli.py constitution view      # 查看憲章
+python3 cli.py constitution thresholds # 查看品質閾值
+python3 cli.py constitution errors     # 查看錯誤等級
+```
+
+---
+
 *最後更新：2026-03-23*
