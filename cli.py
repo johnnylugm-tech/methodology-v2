@@ -43,6 +43,8 @@ from risk_registry import RiskRegistry, RiskLevel, RiskStatus
 from p2p_team_config import P2PTeamConfig
 from hitl_controller import HITLController, AgentOwner, OutputStatus
 from anti_shortcut.blacklist import CommandBlacklist, ViolationSeverity
+from anti_shortcut.audit_logger import AIAuditLogger, ActionType
+from anti_shortcut.double_confirm import DoubleConfirmation, ConfirmationLevel
 
 
 class MethodologyCLI:
@@ -75,6 +77,7 @@ class MethodologyCLI:
         self.p2p_config: P2PTeamConfig = None
         self.hitl_controller = HITLController()
         self.blacklist = CommandBlacklist()  # 危險操作黑名單
+        self.ai_audit = AIAuditLogger()  # AI 操作審計日誌
     
     def _check_command(self, command: str) -> bool:
         """檢查命令是否危險"""
@@ -120,6 +123,8 @@ class MethodologyCLI:
             return self.cmd_quality(args)
         elif command == "enterprise":
             return self.cmd_enterprise(args)
+        elif command == "audit":
+            return self.cmd_audit(args)
         elif command == "migrate":
             return self.cmd_migrate(args)
         elif command == "wizard":
@@ -506,6 +511,49 @@ class MethodologyCLI:
                 print(f"  {k}: {v}")
         elif action == "audit":
             print(self.enterprise.audit.generate_report())
+        return 0
+    
+    def cmd_audit(self, args):
+        """AI Audit Logger - AI 操作審計"""
+        action = args.action
+        
+        if action == "status":
+            print("🔍 AI Audit Status")
+            print("=" * 50)
+            report = self.ai_audit.get_audit_report()
+            print(f"Total Operations: {report['total_operations']}")
+            print(f"\nBy Type:")
+            for op_type, count in report['by_type'].items():
+                print(f"  - {op_type}: {count}")
+            print(f"\nAnomalies: {report['anomalies']['total']} "
+                  f"({report['anomalies']['critical']} critical, "
+                  f"{report['anomalies']['high']} high)")
+        
+        elif action == "anomalies":
+            print("🚨 AI Audit Anomalies")
+            print("=" * 50)
+            agent_id = getattr(args, 'agent', None)
+            severity = getattr(args, 'severity', None)
+            
+            anomalies = self.ai_audit.get_anomalies(agent_id=agent_id, severity=severity)
+            
+            if not anomalies:
+                print("No anomalies detected.")
+                return 0
+            
+            for i, anomaly in enumerate(anomalies, 1):
+                print(f"\n{i}. [{anomaly.severity.upper()}] {anomaly.anomaly_type.value}")
+                print(f"   Agent: {anomaly.agent_id}")
+                print(f"   Description: {anomaly.description}")
+                print(f"   Time: {anomaly.timestamp.isoformat()}")
+        
+        elif action == "report":
+            print("📊 AI Audit Report")
+            print("=" * 50)
+            agent_id = getattr(args, 'agent', None)
+            report = self.ai_audit.get_audit_report(agent_id=agent_id)
+            print(json.dumps(report, indent=2))
+        
         return 0
     
     def cmd_wizard(self, args):
@@ -1386,6 +1434,13 @@ def main():
     enterprise_parser = subparsers.add_parser("enterprise", help="Enterprise Hub")
     enterprise_parser.add_argument("action", choices=["status", "audit"], default="status")
     
+    # audit
+    audit_parser = subparsers.add_parser("audit", help="AI Audit Logger")
+    audit_parser.add_argument("action", choices=["status", "anomalies", "report"], default="status")
+    audit_parser.add_argument("--agent", help="Filter by agent ID")
+    audit_parser.add_argument("--severity", choices=["low", "medium", "high", "critical"],
+                              help="Filter by severity")
+    
     # migrate
     migrate_parser = subparsers.add_parser("migrate", help="Framework Migration (CrewAI ↔ LangGraph)")
     migrate_parser.add_argument("file", help="File to migrate")
@@ -1491,6 +1546,21 @@ def main():
     gatekeeper_parser = subparsers.add_parser("gatekeeper", help="Workflow Gatekeeper")
     gatekeeper_parser.add_argument("action", choices=["status", "check", "enforce"],
                                    help="Gatekeeper action")
+    
+    # confirmations (double confirmation)
+    confirmations_parser = subparsers.add_parser("confirmations", help="Double Confirmation Management")
+    confirmations_parser.add_argument("action", choices=["list", "confirm", "reject", "status", "check"],
+                                      help="Confirmation action")
+    confirmations_parser.add_argument("--id", dest="confirmation_id", help="Confirmation ID")
+    confirmations_parser.add_argument("--by", dest="confirmed_by", help="Confirmed by (agent or human)")
+    confirmations_parser.add_argument("--reason", help="Rejection reason")
+    confirmations_parser.add_argument("--operation", help="Filter by operation type")
+    
+    # release (with double confirmation)
+    release_parser = subparsers.add_parser("release", help="Release Management (requires confirmation)")
+    release_parser.add_argument("--version", help="Version to release")
+    release_parser.add_argument("--repo", help="Repository name")
+    release_parser.add_argument("--confirm", action="store_true", help="Request confirmation before release")
     
     args = parser.parse_args()
     
