@@ -45,6 +45,7 @@ from hitl_controller import HITLController, AgentOwner, OutputStatus
 from anti_shortcut.blacklist import CommandBlacklist, ViolationSeverity
 from anti_shortcut.audit_logger import AIAuditLogger, ActionType
 from anti_shortcut.double_confirm import DoubleConfirmation, ConfirmationLevel
+from anti_shortcut.impact_analysis import ImpactAnalyzer
 
 
 class MethodologyCLI:
@@ -798,19 +799,91 @@ class MethodologyCLI:
         
         return 0
     
+    def _print_impact_report(self, impact):
+        """列印 Impact Analysis 報告"""
+        risk_label = "🟢 Low" if impact.risk_score < 40 else "🟡 Medium" if impact.risk_score < 70 else "🔴 High"
+        print()
+        print("=" * 50)
+        print("    Impact Analysis Report")
+        print("=" * 50)
+        print(f"📁 Changed File: {impact.changed_file}")
+        print()
+        print(f"📊 Risk Score: {impact.risk_score}/100 ({risk_label} Risk)")
+        print()
+        if impact.affected_tests:
+            print(f"🔴 Affected Tests ({len(impact.affected_tests)}):")
+            for test in impact.affected_tests:
+                print(f"   - {test}")
+            print()
+        if impact.affected_modules:
+            print(f"🟡 Affected Modules ({len(impact.affected_modules)}):")
+            for mod in impact.affected_modules[:10]:  # Limit to 10
+                print(f"   - {mod}")
+            if len(impact.affected_modules) > 10:
+                print(f"   ... and {len(impact.affected_modules) - 10} more")
+            print()
+        if impact.recommendations:
+            print("💡 Recommendations:")
+            for rec in impact.recommendations:
+                print(f"   - {rec}")
+            print()
+    
+    def _print_risk_report(self, report):
+        """列印 Risk Report"""
+        print()
+        print("=" * 50)
+        print("    Dependency Risk Report")
+        print("=" * 50)
+        print(f"📊 Total Nodes: {report['total_nodes']}")
+        print(f"🔗 Total Edges: {report['total_edges']}")
+        print(f"🧪 Test Files: {report['test_files']}")
+        print()
+    
     def cmd_trace(self, args):
         """Agent Trace - 視覺化追蹤"""
-        agent_id = args.agent_id
+        action = args.action
         
+        # Impact Analysis commands (no agent_id required)
+        if action == "impact":
+            if not args.file:
+                print("Error: --file required for impact analysis")
+                return 1
+            analyzer = ImpactAnalyzer(project_path=".")
+            analyzer.scan_project()
+            impact = analyzer.analyze_change(args.file)
+            self._print_impact_report(impact)
+            return 0
+        
+        elif action == "graphviz":
+            analyzer = ImpactAnalyzer(project_path=".")
+            analyzer.scan_project()
+            report = analyzer.get_dependency_report()
+            if args.output:
+                with open(args.output, 'w') as f:
+                    f.write(report['graphviz'])
+                print(f"✅ Dependency graph exported to {args.output}")
+            else:
+                print(report['graphviz'])
+            return 0
+        
+        elif action == "risk-report":
+            analyzer = ImpactAnalyzer(project_path=".")
+            analyzer.scan_project()
+            report = analyzer.get_dependency_report()
+            self._print_risk_report(report)
+            return 0
+        
+        # Agent Trace commands (require agent_id)
+        agent_id = args.agent_id
         if not agent_id:
-            print("Error: --agent-id required")
+            print("Error: --agent-id required for this action")
             return 1
         
-        if args.action == "view":
+        if action == "view":
             # 視覺化 trace
             print(self.debugger.visualize(agent_id, max_events=args.limit or 50))
         
-        elif args.action == "correlation":
+        elif action == "correlation":
             # 視覺化 correlation
             correlation_id = args.correlation
             if correlation_id:
@@ -819,7 +892,7 @@ class MethodologyCLI:
                 print("Error: --correlation required for correlation view")
                 return 1
         
-        elif args.action == "export":
+        elif action == "export":
             # 導出 JSON
             json_data = self.debugger.export(agent_id)
             if args.output:
@@ -1653,12 +1726,13 @@ def main():
     
     # trace
     trace_parser = subparsers.add_parser("trace", help="Agent Trace Visualization")
-    trace_parser.add_argument("action", choices=["view", "correlation", "export"],
+    trace_parser.add_argument("action", choices=["view", "correlation", "export", "impact", "graphviz", "risk-report"],
                             help="Trace action")
     trace_parser.add_argument("--agent-id", help="Agent ID")
     trace_parser.add_argument("--correlation", help="Correlation ID")
     trace_parser.add_argument("--limit", type=int, help="Limit events")
     trace_parser.add_argument("--output", "-o", help="Output file")
+    trace_parser.add_argument("--file", "-f", help="File path for impact analysis")
     
     # approval
     approval_parser = subparsers.add_parser("approval", help="Human Approval Management")

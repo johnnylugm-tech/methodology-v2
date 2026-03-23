@@ -21,6 +21,14 @@ from .mutation_tester import (
     MutationTester,
     run_mutation_testing,
 )
+from .impact_analysis import (
+    DependencyType,
+    Dependency,
+    ChangeImpact,
+    DependencyGraph,
+    ImpactAnalyzer,
+    analyze_change_impact,
+)
 
 __all__ = [
     "CommandBlacklist",
@@ -53,4 +61,10 @@ __all__ = [
     "MutationGenerator",
     "MutationTester",
     "run_mutation_testing",
+    "DependencyType",
+    "Dependency",
+    "ChangeImpact",
+    "DependencyGraph",
+    "ImpactAnalyzer",
+    "analyze_change_impact",
 ]
