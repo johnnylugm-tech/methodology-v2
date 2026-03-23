@@ -13,6 +13,14 @@ from .double_confirm import (
     get_status,
 )
 from .phase_hooks import PhaseHooks, Phase, HookStatus, Hook, PhaseRecord
+from .mutation_tester import (
+    MutationType,
+    Mutation,
+    MutationResult,
+    MutationGenerator,
+    MutationTester,
+    run_mutation_testing,
+)
 
 __all__ = [
     "CommandBlacklist",
@@ -39,4 +47,10 @@ __all__ = [
     "HookStatus",
     "Hook",
     "PhaseRecord",
+    "MutationType",
+    "Mutation",
+    "MutationResult",
+    "MutationGenerator",
+    "MutationTester",
+    "run_mutation_testing",
 ]
