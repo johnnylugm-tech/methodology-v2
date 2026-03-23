@@ -362,6 +362,159 @@ class AutoQualityGate:
 
 
 # ============================================================================
+# TDAD Style Hidden Tests
+# ============================================================================
+
+from typing import Callable, Dict, List
+
+
+class HiddenTestsMixin:
+    """
+    TDAD 風格的隱藏測試
+    
+    Visible Tests：開發者可見，用於引導開發
+    Hidden Tests：僅用於最終驗證，防止 specification gaming
+    """
+    
+    def __init__(self):
+        self.visible_tests: List[dict] = []
+        self.hidden_tests: List[dict] = []
+        self._hidden_results: Dict[str, bool] = {}
+    
+    def add_visible_test(self, test_id: str, test_fn: Callable, description: str):
+        """添加可見測試"""
+        self.visible_tests.append({
+            "id": test_id,
+            "fn": test_fn,
+            "description": description,
+        })
+    
+    def add_hidden_test(self, test_id: str, test_fn: Callable):
+        """添加隱藏測試（開發者不可見）"""
+        self.hidden_tests.append({
+            "id": test_id,
+            "fn": test_fn,
+        })
+    
+    def run_visible_tests(self) -> dict:
+        """執行可見測試"""
+        results = []
+        for test in self.visible_tests:
+            try:
+                passed = test["fn"]()
+                results.append({
+                    "id": test["id"],
+                    "description": test["description"],
+                    "passed": passed,
+                })
+            except Exception as e:
+                results.append({
+                    "id": test["id"],
+                    "description": test["description"],
+                    "passed": False,
+                    "error": str(e),
+                })
+        
+        return {
+            "total": len(results),
+            "passed": sum(1 for r in results if r["passed"]),
+            "failed": sum(1 for r in results if not r["passed"]),
+            "results": results,
+        }
+    
+    def run_hidden_tests(self) -> dict:
+        """
+        執行隱藏測試（不出現詳細結果）
+        
+        Returns:
+            dict: {total: int, passed: int, failed: int}
+        """
+        results = []
+        for test in self.hidden_tests:
+            try:
+                passed = test["fn"]()
+                results.append({
+                    "id": test["id"],
+                    "passed": passed,
+                })
+                self._hidden_results[test["id"]] = passed
+            except Exception:
+                results.append({
+                    "id": test["id"],
+                    "passed": False,
+                })
+                self._hidden_results[test["id"]] = False
+        
+        return {
+            "total": len(results),
+            "passed": sum(1 for r in results if r["passed"]),
+            "failed": sum(1 for r in results if not r["passed"]),
+        }
+    
+    def get_hidden_pass_rate(self) -> float:
+        """
+        取得隱藏測試通過率（ TDAD 核心指標）
+        
+        Returns:
+            float: 0-100%
+        """
+        if not self._hidden_results:
+            return 0.0
+        passed = sum(1 for v in self._hidden_results.values() if v)
+        return round(passed / len(self._hidden_results) * 100, 2)
+
+
+class QualityGateTDAD(HiddenTestsMixin):
+    """
+    TDAD 風格的 Quality Gate
+    
+    特點：
+    - Visible/Hidden Test Splits
+    - Mutation Score
+    - Regression Safety
+    """
+    
+    def __init__(self):
+        super().__init__()
+        self.mutation_score = 0.0
+        self.regression_safety = 0.0
+    
+    def run_full_gate(self) -> dict:
+        """
+        執行完整 TDAD Gate
+        
+        Returns:
+            dict: {
+                visible_results: dict,
+                hidden_results: dict,
+                hidden_pass_rate: float,  # TDAD 核心指標
+                mutation_score: float,
+                regression_safety: float,
+                passed: bool,
+            }
+        """
+        # 執行 Visible Tests
+        visible = self.run_visible_tests()
+        
+        # 執行 Hidden Tests
+        hidden = self.run_hidden_tests()
+        
+        # 計算指標
+        hidden_pass_rate = self.get_hidden_pass_rate()
+        
+        return {
+            "visible_results": visible,
+            "hidden_results": hidden,
+            "hidden_pass_rate": hidden_pass_rate,
+            "mutation_score": self.mutation_score,
+            "regression_safety": self.regression_safety,
+            "passed": visible["failed"] == 0 and hidden["failed"] == 0,
+            # TDAD target: hidden_pass_rate >= 95%
+            "tdad_compliant": hidden_pass_rate >= 95.0,
+        }
+
+
+# ============================================================================
 # Main
 # ============================================================================
 
