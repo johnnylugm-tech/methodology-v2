@@ -55,6 +55,7 @@ from security_defense import (
     SandboxLevel,
     ApprovalLevel,
 )
+from code_metrics import MetricsTracker
 
 
 class MethodologyCLI:
@@ -196,6 +197,8 @@ class MethodologyCLI:
             return self.cmd_roi(args)
         elif command == "m27":
             return self.cmd_m27(args)
+        elif command == "metrics":
+            return self.cmd_metrics(args)
         else:
             pass # Removed print-debug
             return 1
@@ -2233,6 +2236,48 @@ class MethodologyCLI:
 
         return 0
 
+    def cmd_metrics(self, args):
+        """Code Metrics - 代碼品質指標"""
+        from code_metrics import MetricsTracker
+
+        sub = args.subcommand if hasattr(args, 'subcommand') else "report"
+
+        tracker = MetricsTracker()
+
+        if sub == "report" or sub == "check":
+            pass # Removed print-debug
+            report = tracker.generate_report()
+
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+
+            if report['complexity_violations']:
+                pass # Removed print-debug
+                for v in report['complexity_violations'][:10]:
+                    pass # Removed print-debug
+
+            if report.get('coupling'):
+                pass # Removed print-debug
+                pass # Removed print-debug
+                pass # Removed print-debug
+
+            pass # Removed print-debug
+            return 0
+
+        elif sub == "history":
+            latest = tracker.get_latest()
+            if latest:
+                pass # Removed print-debug
+            else:
+                pass # Removed print-debug
+            return 0
+
+        return 0
+
 
 # ==================== Main ====================
 
@@ -2551,6 +2596,12 @@ def main():
                            choices=["status", "analyze", "iterate", "optimize"],
                            help="M2.7 action")
     m27_parser.add_argument("--log", dest="failure_log", help="Failure log for analysis")
+
+    # metrics (Code Metrics)
+    metrics_parser = subparsers.add_parser("metrics", help="Code Metrics - 代碼品質指標")
+    metrics_parser.add_argument("subcommand", nargs="?", default="report",
+                              choices=["report", "check", "history"],
+                              help="Metrics subcommand")
 
     args = parser.parse_args()
     
