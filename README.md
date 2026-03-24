@@ -5,7 +5,7 @@
 
 ---
 
-[![Version](https://img.shields.io/badge/version-v5.37.0-blue.svg)](https://github.com/johnnylugm-tech/methodology-v2)
+[![Version](https://img.shields.io/badge/version-v5.40.0-blue.svg)](https://github.com/johnnylugm-tech/methodology-v2)
 [![Python](https://img.shields.io/badge/python-3.8+-green.svg)](https://python.org)
 [![Tests](https://img.shields.io/badge/tests-32%20passed-green.svg)]()
 
@@ -556,7 +556,7 @@ except ConstitutionViolation as e:
 
 | 專案 | 版本 | 關係 | 說明 |
 |------|------|------|------|
-| **methodology-v2** | v5.37.0 | 主框架 | ✅ 內建，無需額外安裝 |
+| **methodology-v2** | v5.40.0 | 主框架 | ✅ 內建，無需額外安裝 |
 | Agent Quality Guard | v1.0.3 | 生態系 | 品質把關，可選 |
 | Model Router | v2.3.0 | 生態系 | 模型路由，可選 |
 | Agent Monitor | v3.2.0 | 生態系 | 監控警報，可選 |
@@ -982,6 +982,7 @@ class TeamMode(Enum):
 
 | 版本 | 日期 | 說明 |
 |------|------|------|
+| v5.40.0 | 2026-03-24 | Quality Watch + Constitution + Enforcement 三層品質保障整合 |
 | v5.37.0 | 2026-03-24 | Quality Watch: 持續品質監控（每次存檔自動檢查） |
 | v5.37.0 | 2026-03-22 | Fault Tolerance: Checkpoint + Recovery + Human Intervention |
 | v5.35.0 | 2026-03-22 | Hybrid Workflow: 智慧分流工作流 (Solution Y) |
@@ -1007,4 +1008,4 @@ MIT License
 ---
 
 **GitHub**: https://github.com/johnnylugm-tech/methodology-v2
-**Release**: https://github.com/johnnylugm-tech/methodology-v2/releases/tag/v5.37.0
+**Release**: https://github.com/johnnylugm-tech/methodology-v2/releases/tag/v5.40.0

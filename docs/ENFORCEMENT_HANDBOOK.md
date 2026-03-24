@@ -1,6 +1,6 @@
 # methodology-v2 Enforcement Handbook
 
-> v5.37.0 - 新團隊完全上手指南
+> v5.40.0 - 新團隊完全上手指南
 
 ---
 

@@ -1,6 +1,6 @@
 # methodology-v2 完整工作流程
 
-> 從專案啟動到發布的完整流程 · v5.37
+> 從專案啟動到發布的完整流程 · v5.40
 
 ---
 
@@ -29,7 +29,88 @@
 | **develop** | `python3 quality_watch.py start` | 持續監控檔案變更，每次變更觸發 quality-gate | `.methodology/quality_log.json` |
 | **finish** | `python3 cli.py finish` | 停止 daemon，寫入最終品質報告 | 專案關閉、清盤 |
 
-### Quality Watch 流程圖
+## 🏛️ Constitution + Enforcement + Quality Gate 三者關係
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           三層品質保障體系                                   │
+│                                                                             │
+│   ┌───────────────────┐                                                     │
+│   │    Constitution   │  「我們要達到什麼標準？」—— 品質原則與目標定義         │
+│   │  (品質標準定義)    │  - 正確性 >= 80%                                    │
+│   └────────┬──────────┘  - 安全性 >= 95%                                    │
+│            │               - 可維護性 >= 70%                                 │
+│            │               - 覆蓋率 >= 80%                                   │
+│            ▼               - 必須有 [TASK-XXX] commit message                │
+│   ┌───────────────────┐                                                     │
+│   │    Enforcement    │  「你是否遵守了規則？」—— 強制執行層                   │
+│   │  (強制執行層)      │  - git hook 提交阻擋                                │
+│   └────────┬──────────┘  - Policy Engine 等級 BLOCK                         │
+│            │               - Execution Registry 不可偽造記錄                  │
+│            ▼               - Constitution as Code 業務規則                    │
+│   ┌───────────────────┐                                                     │
+│   │   Quality Gate    │  「你的產出符合標準嗎？」—— 閘門驗證層                 │
+│   │  (閘門驗證層)      │  - doc_checker: ASPICE 文檔檢查                     │
+│   └────────┬──────────┘  - phase_artifact_enforcer: Phase 產物引用鏈        │
+│            │               - quality-gate check: 每次存檔自動觸發            │
+│            ▼                                                             │
+│   ┌───────────────────┐                                                     │
+│   │  Quality Watch    │  「持續監控，無論何時」—— 持續監控 daemon             │
+│   │  (持續監控層)      │  - watchdog: 檔案變更偵測                           │
+│   └───────────────────┘  - 2秒 debounce 防抖動                             │
+│                             - quality_log.json: 所有檢查結果                 │
+│                             - CRITICAL 問題即時警告                          │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### 三者如何協作
+
+```
+   Quality Watch daemon
+         │
+         │ 檔案變更
+         ▼
+   Quality Gate Runner ──► Constitution 標準查詢
+         │                      │
+         │                      │ 閾值
+         ▼                      ▼
+   Enforcement check ◄── Policy Engine
+         │
+         │ BLOCK?
+         ▼
+   Execution Registry 記錄
+         │
+         │ commit 成功 / 阻擋
+         ▼
+   ┌─────────────────────────────────┐
+   │      專案產出 quality_log.json  │
+   └─────────────────────────────────┘
+```
+
+### Quality Watch 在各階段的角色
+
+| 階段 | Quality Watch 行為 | 觸發時機 |
+|------|-------------------|----------|
+| **init** | 啟動 daemon，寫入 watch.pid | `python3 cli.py init` |
+| **develop** | 持續監控：偵測 → Quality Gate → Enforcement | 每次存檔自動觸發 |
+| **finish** | 停止 daemon，寫入最終品質報告 | `python3 cli.py finish` |
+
+### Enforcement 政策速查
+
+| Policy ID | 說明 | 等級 |
+|-----------|------|------|
+| `commit-has-task-id` | Commit 必須有 `[TASK-XXX]` | BLOCK |
+| `quality-gate-90` | Quality Gate >= 90 | BLOCK |
+| `no-bypass-commands` | 禁止使用 `--no-verify` | BLOCK |
+| `test-coverage-80` | 測試覆蓋率 >= 80% | BLOCK |
+| `security-score-95` | 安全分數 >= 95 | BLOCK |
+| `aspice-docs-required` | ASPICE 文檔必須存在 | BLOCK |
+| `phase-artifact-reference` | Phase 必須引用上階段產物 | BLOCK |
+
+---
+
+## 🛡️ Quality Watch 流程圖
 
 ```
 init (Quality Watch 啟動)
@@ -416,4 +497,4 @@ python3 cli.py sprint start <sprint-id>
 
 ---
 
-*最後更新：2026-03-24 (v5.37)*
+*最後更新：2026-03-24 (v5.40)*
