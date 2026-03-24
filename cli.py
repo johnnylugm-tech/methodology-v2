@@ -108,6 +108,8 @@ class MethodologyCLI:
         
         if command == "init":
             return self.cmd_init(args)
+        elif command == "finish":
+            return self.cmd_finish(args)
         elif command == "task":
             return self.cmd_task(args)
         elif command == "sprint":
@@ -219,6 +221,33 @@ class MethodologyCLI:
         pass # Removed print-debug
         pass # Removed print-debug
         pass # Removed print-debug
+        
+        # 啟動 quality_watch daemon
+        import subprocess
+        project_path = Path.cwd()
+        subprocess.Popen(
+            [sys.executable, "quality_watch.py", "start", "--project", str(project_path)],
+            cwd=str(project_path)
+        )
+        
+        print(f"✅ Initialized: {project_name}")
+        print(f"🚀 Quality Watch started")
+        
+        return 0
+    
+    def cmd_finish(self, args):
+        """Finish project and stop quality watch"""
+        project_path = Path.cwd()
+        
+        # 停止 quality_watch
+        result = subprocess.run(
+            [sys.executable, "quality_watch.py", "stop", "--project", str(project_path)],
+            capture_output=True,
+            text=True
+        )
+        
+        print(f"✅ Project finished")
+        print(f"🛑 Quality Watch stopped")
         
         return 0
     
@@ -2141,6 +2170,9 @@ def main():
     # init
     init_parser = subparsers.add_parser("init", help="Initialize project")
     init_parser.add_argument("name", nargs="?", help="Project name")
+    
+    # finish
+    subparsers.add_parser("finish", help="Finish project and stop quality watch")
     
     # task
     task_parser = subparsers.add_parser("task", help="Task management")
