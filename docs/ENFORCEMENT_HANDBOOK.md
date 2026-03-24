@@ -262,6 +262,27 @@ python3 quality_watch.py stop
 
 ---
 
+## 📜 Constitution 整合
+
+Constitution 是品質的「憲法」，定義不可違背的原則。
+
+### Constitution 與 Enforcement 的關係
+
+```
+Constitution (原則定義) → Enforcement (強制執行) → Policy Engine → Quality Gate
+```
+
+### Constitution 檢查命令
+
+```bash
+python3 cli.py quality-gate constitution  # 只檢查 Constitution 合規
+python3 cli.py quality-gate check         # 執行所有檢查
+```
+
+詳細說明：[CONSTITUTION_GUIDE.md](./CONSTITUTION_GUIDE.md)
+
+---
+
 ## 📚 相關文件
 
 - [CHECKLIST.md](../CHECKLIST.md) - 前置檢查清單
