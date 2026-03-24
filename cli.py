@@ -199,6 +199,8 @@ class MethodologyCLI:
             return self.cmd_m27(args)
         elif command == "metrics":
             return self.cmd_metrics(args)
+        elif command == "debt":
+            return self.cmd_debt(args)
         else:
             pass # Removed print-debug
             return 1
@@ -2278,6 +2280,81 @@ class MethodologyCLI:
 
         return 0
 
+    def cmd_debt(self, args):
+        """Technical Debt - 技術債務追蹤"""
+        from technical_debt import DebtRegistry
+
+        sub = args.subcommand if hasattr(args, 'subcommand') else "list"
+        action_args = args.args if hasattr(args, 'args') else []
+
+        registry = DebtRegistry()
+
+        if sub == "add":
+            if len(action_args) < 1:
+                print("Usage: debt add <description> [--severity high|medium|low] [--ticket TASK-XXX]")
+                return 1
+
+            description = action_args[0]
+            severity = args.severity if hasattr(args, 'severity') and args.severity else "medium"
+            ticket = args.ticket if hasattr(args, 'ticket') and args.ticket else None
+
+            debt_id = registry.add(description, severity, ticket)
+            print(f"✅ Debt added: {debt_id}")
+            print(f"   Description: {description}")
+            print(f"   Severity: {severity}")
+            if ticket:
+                print(f"   Ticket: {ticket}")
+            return 0
+
+        elif sub == "list" or sub == "ls":
+            debts = registry.list_all()
+            if not debts:
+                print("No technical debt recorded.")
+            else:
+                print(f"{'ID':<15} {'Severity':<12} {'Status':<10} {'Description'}")
+                print("-" * 70)
+                for d in debts:
+                    print(f"{d.id:<15} {d.severity:<12} {d.status:<10} {d.description[:40]}")
+            return 0
+
+        elif sub == "open":
+            debts = registry.list_open()
+            print(f"Open debts: {len(debts)}")
+            for d in debts:
+                print(f"  [{d.severity}] {d.description}")
+            return 0
+
+        elif sub == "resolve":
+            if len(action_args) < 1:
+                print("Usage: debt resolve <debt-id>")
+                return 1
+
+            debt_id = action_args[0]
+            if registry.resolve(debt_id):
+                print(f"✅ Debt resolved: {debt_id}")
+            else:
+                print(f"❌ Debt not found: {debt_id}")
+            return 0
+
+        elif sub == "accept":
+            if len(action_args) < 2:
+                print("Usage: debt accept <debt-id> <reason>")
+                return 1
+
+            debt_id = action_args[0]
+            reason = action_args[1]
+            if registry.accept(debt_id, reason):
+                print(f"✅ Debt accepted: {debt_id}")
+            else:
+                print(f"❌ Debt not found: {debt_id}")
+            return 0
+
+        elif sub == "report":
+            print(registry.generate_report())
+            return 0
+
+        return 0
+
 
 # ==================== Main ====================
 
@@ -2602,6 +2679,15 @@ def main():
     metrics_parser.add_argument("subcommand", nargs="?", default="report",
                               choices=["report", "check", "history"],
                               help="Metrics subcommand")
+
+    # debt (Technical Debt Registry - 技術債務追蹤)
+    debt_parser = subparsers.add_parser("debt", help="Technical Debt Registry - 技術債務追蹤")
+    debt_parser.add_argument("subcommand", nargs="?", default="list",
+                            choices=["add", "list", "ls", "open", "resolve", "accept", "report"],
+                            help="Debt subcommand")
+    debt_parser.add_argument("args", nargs="*", help="Arguments for subcommand")
+    debt_parser.add_argument("--severity", dest="severity", help="Severity level (high|medium|low)")
+    debt_parser.add_argument("--ticket", dest="ticket", help="Associated ticket ID")
 
     args = parser.parse_args()
     
