@@ -24,25 +24,35 @@ class DocumentChecker:
     """文檔檢查器"""
 
     # Phase 1: 需求文檔
-    SRS_PATTERN = r"SRS.*\.md"
-    # Phase 2: 架構文檔
-    SAD_PATTERN = r"SAD.*\.md"
+    # Phase 1: 需求文檔 (SRS = Software Requirements Specification)
+    SRS_PATTERNS = [
+        r"SRS.*\.md",
+        r"Software_Requirements.*\.md",
+        r"requirements.*\.md",
+    ]
+    # Phase 2: 架構文檔 (SAD = Software Architecture Document)
+    SAD_PATTERNS = [
+        r"SAD.*\.md",
+        r"Architecture_Design.*\.md",
+    ]
     # Phase 3: 測試相關文檔
-    TEST_PLAN_PATTERN = r"TEST_PLAN.*\.md"
+    TEST_PLAN_PATTERNS = [
+        r"TEST_PLAN.*\.md",
+    ]
 
     # 按 Phase 分組的文檔需求
     PHASE_REQUIREMENTS = {
         "phase_1": [
-            DocumentRequirement("SRS", [SRS_PATTERN], "phase_1"),
+            DocumentRequirement("SRS", SRS_PATTERNS, "phase_1"),
         ],
         "phase_2": [
-            DocumentRequirement("SAD", [SAD_PATTERN], "phase_2"),
+            DocumentRequirement("SAD", SAD_PATTERNS, "phase_2"),
         ],
         "phase_3": [
-            DocumentRequirement("Architecture", [SAD_PATTERN], "phase_3"),
+            DocumentRequirement("Architecture", SAD_PATTERNS, "phase_3"),
         ],
         "phase_4": [
-            DocumentRequirement("TestPlan", [TEST_PLAN_PATTERN], "phase_4"),
+            DocumentRequirement("TestPlan", TEST_PLAN_PATTERNS, "phase_4"),
         ],
     }
 

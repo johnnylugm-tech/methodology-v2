@@ -6,7 +6,7 @@ Quality Gate - 品質閘道模組
 - PhaseArtifactEnforcer: Phase 產物強制執行
 """
 
-from quality_gate.doc_checker import DocumentChecker
-from quality_gate.phase_artifact_enforcer import PhaseArtifactEnforcer
+from .doc_checker import DocumentChecker, DocumentRequirement
+from .phase_artifact_enforcer import PhaseArtifactEnforcer, PhaseDependency
 
-__all__ = ["DocumentChecker", "PhaseArtifactEnforcer"]
+__all__ = ["DocumentChecker", "DocumentRequirement", "PhaseArtifactEnforcer", "PhaseDependency"]
