@@ -182,6 +182,8 @@ class MethodologyCLI:
             return self.cmd_enforcement_config(args)
         elif command == "enforcement":
             return self.cmd_enforcement(args)
+        elif command == "quality-gate" or command == "qg":
+            return self.cmd_quality_gate(args)
         elif command == "agent-proof-hook":
             return self.cmd_agent_proof_hook(args)
         elif command == "memory":
@@ -1958,6 +1960,68 @@ class MethodologyCLI:
             pass # Removed print-debug
             return 1
 
+    def cmd_quality_gate(self, args):
+        """Quality Gate - 品質閘道檢查"""
+        from quality_gate.doc_checker import DocumentChecker
+        from quality_gate.phase_artifact_enforcer import PhaseArtifactEnforcer
+
+        sub = args.subcommand
+
+        if sub == "check" or sub == "all":
+            # 執行所有檢查
+            print("=" * 50)
+            print("Quality Gate Check")
+            print("=" * 50)
+
+            # 1. Doc Checker
+            print("\n📄 Document Checker...")
+            checker = DocumentChecker()
+            doc_result = checker.check_all()
+            print(f"   Result: {doc_result}")
+
+            # 2. Phase Artifact Enforcer
+            print("\n🔗 Phase Artifact Enforcer...")
+            enforcer = PhaseArtifactEnforcer()
+            phase_result = enforcer.enforce_all()
+            print(f"   Result: {phase_result}")
+
+            # 總結
+            print("\n" + "=" * 50)
+            if doc_result["passed"] and phase_result["passed"]:
+                print("✅ All checks passed!")
+            else:
+                print("❌ Some checks failed")
+                return 1
+
+        elif sub == "doc" or sub == "docs":
+            # 只檢查文檔
+            checker = DocumentChecker()
+            result = checker.check_all()
+            print(json.dumps(result, indent=2))
+            return 0 if result["passed"] else 1
+
+        elif sub == "phase":
+            # 只檢查 Phase 產物
+            enforcer = PhaseArtifactEnforcer()
+            result = enforcer.enforce_all()
+            print(json.dumps(result, indent=2))
+            return 0 if result["passed"] else 1
+
+        elif sub == "aspice":
+            # ASPICE 合規檢查
+            print("ASPICE Compliance Check")
+            print("-" * 40)
+            checker = DocumentChecker()
+            result = checker.check_all()
+            print(json.dumps(result, indent=2))
+            return 0 if result["passed"] else 1
+
+        else:
+            print(f"Unknown subcommand: {sub}")
+            return 1
+
+        return 0
+
     def cmd_agent_proof_hook(self, args):
         """Agent-Proof Hook Management"""
         from enforcement.agent_proof_hook import AgentProofHook
@@ -2347,6 +2411,12 @@ def main():
                                    help="Enforcement subcommand")
     enforcement_parser.add_argument("mode", nargs="?", choices=["local", "github", "gitlab", "jenkins", "azure"],
                                    help="Mode for 'config' subcommand")
+
+    # quality-gate (Quality Gate - 品質閘道)
+    quality_gate_parser = subparsers.add_parser("quality-gate", aliases=["qg"], help="Quality Gate - 品質閘道檢查")
+    quality_gate_parser.add_argument("subcommand", nargs="?", default="check",
+                                     choices=["check", "all", "doc", "docs", "phase", "aspice"],
+                                     help="Quality gate subcommand")
 
     # agent-proof-hook (Agent-Proof Hook Management)
     agent_proof_hook_parser = subparsers.add_parser("agent-proof-hook", help="Agent-Proof Hook Management")
