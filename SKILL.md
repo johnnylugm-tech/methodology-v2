@@ -241,6 +241,211 @@ python quick_start.py quick         # 快速啟動完整團隊
 需求 → 優先級 → 開發 → 品質 → 文檔 → 發布
 ```
 
+---
+
+## 🔒 品質閘道（手動執行）
+
+> **重要**：quality_watch.py daemon 功能已移除。所有檢查都需要手動執行！
+
+### 每個 Phase 結束必須執行的檢查
+
+| Phase | 檢查內容 | 命令 |
+|-------|----------|------|
+| Phase 1 | ASPICE 文檔檢查 | `python3 quality_gate/doc_checker.py` |
+| Phase 1 | Constitution 檢查 | `python3 quality_gate/constitution/runner.py --type srs` |
+| Phase 2 | ASPICE 文檔檢查 | `python3 quality_gate/doc_checker.py` |
+| Phase 2 | Constitution 檢查 | `python3 quality_gate/constitution/runner.py --type sad` |
+| Phase 3 | ASPICE 文檔檢查 | `python3 quality_gate/doc_checker.py` |
+| Phase 3 | Constitution 檢查 | `python3 quality_gate/constitution/runner.py` |
+| Phase 4 | ASPICE 文檔檢查 | `python3 quality_gate/doc_checker.py` |
+| Phase 4 | Constitution 檢查 | `python3 quality_gate/constitution/runner.py --type test_plan` |
+| Phase 5-8 | ASPICE 文檔檢查 | `python3 quality_gate/doc_checker.py` |
+| Phase 5-8 | Constitution 檢查 | `python3 quality_gate/constitution/runner.py` |
+
+---
+
+### 檢查命令清單
+
+#### 1. ASPICE 文檔檢查（必需）
+
+```bash
+# 檢查當前目錄
+python3 quality_gate/doc_checker.py
+
+# 檢查指定目錄
+python3 quality_gate/doc_checker.py --path /path/to/project
+
+# JSON 輸出
+python3 quality_gate/doc_checker.py --format json
+```
+
+**檢查內容**：
+- SRS.md（需求規格）
+- SAD.md（架構設計）
+- TEST_PLAN.md（測試計劃）
+- TEST_RESULTS.md（測試結果）
+- QUALITY_REPORT.md（品質報告）
+- RISK_ASSESSMENT.md（風險評估）
+- CONFIG_RECORDS.md（配置記錄）
+
+#### 2. Constitution 品質檢查（必需）
+
+```bash
+# 執行 Constitution 檢查
+python3 quality_gate/constitution/runner.py
+
+# 指定類型檢查
+python3 quality_gate/constitution/runner.py --type srs      # 需求規格
+python3 quality_gate/constitution/runner.py --type sad      # 架構設計
+python3 quality_gate/constitution/runner.py --type test_plan # 測試計劃
+python3 quality_gate/constitution/runner.py --type all       # 全部
+```
+
+**檢查維度**：
+| 維度 | 目標 | 權重 |
+|------|------|------|
+| 正確性 | 100% | 25% |
+| 安全性 | 100% | 25% |
+| 可維護性 | >70% | 25% |
+| 測試覆蓋率 | >80% | 25% |
+
+#### 3. Decision Gate（推薦）
+
+```bash
+# 檢查風險決策是否已確認
+python3 .methodology/decisions/check_decisions.py
+```
+
+**用途**：確保所有 MEDIUM/HIGH 風險決策都已確認
+
+#### 4. Phase Enforcer（推薦）
+
+```bash
+# 確保 Phase 依賴順序正確
+python3 quality_gate/phase_artifact_enforcer.py
+```
+
+**用途**：檢查 Phase 1 必須在 Phase 2 之前完成
+
+#### 5. Unified Gate（可選）
+
+```bash
+# 一次執行全部檢查
+python3 quality_gate/unified_gate.py
+```
+
+**用途**：整合 ASPICE + Constitution + Phase Enforcer 一次執行
+
+---
+
+### 驗證要求
+
+每次執行檢查後，**必須**：
+
+1. **記錄輸出**：將檢查結果複製到 `DEVELOPMENT_LOG.md`
+2. **確認通過**：檢查 `passed=True` 或 `Compliance Rate > 80%` 才能進入下一 Phase
+3. **禁止假裝**：必須有實際命令輸出，不能只寫「已檢查」
+
+#### 正確範例
+
+```markdown
+### Phase 1 Quality Gate 結果
+
+執行命令：
+python3 quality_gate/doc_checker.py
+
+結果：
+- Compliance Rate: 87.5%
+- Passed: 7/8 phases
+
+### Phase 1 Constitution 結果
+
+執行命令：
+python3 quality_gate/constitution/runner.py --type srs
+
+結果：
+- 正確性: 100%
+- 安全性: 100%
+- 可維護性: 75%
+- 覆蓋率: 85%
+```
+
+#### 錯誤範例（禁止）
+
+```markdown
+### Phase 1 Quality Gate
+✅ 已通過
+```
+
+---
+
+### 🚫 已移除的功能
+
+| 功能 | 原因 | 替代方案 |
+|------|------|----------|
+| `quality_watch.py start` (daemon) | 依賴 watchdog 套件，常失效 | 手動執行命令 |
+| 自動檔案監控 | 環境限制 | 每 Phase 手動檢查 |
+| Git commit hook | 需要設定 | 手動檢查後再 commit |
+
+---
+
+### 📋 完整開發流程
+
+```
+1. Phase 1: 功能規格
+   ├── 撰寫 SRS.md
+   ├── 執行 quality_gate/doc_checker.py
+   ├── 執行 quality_gate/constitution/runner.py --type srs
+   └── 記錄結果到 DEVELOPMENT_LOG.md
+
+2. Phase 2: 架構設計
+   ├── 撰寫 SAD.md
+   ├── 執行 quality_gate/doc_checker.py
+   ├── 執行 quality_gate/constitution/runner.py --type sad
+   └── 記錄結果到 DEVELOPMENT_LOG.md
+
+3. Phase 3: 代碼實現
+   ├── 撰寫程式碼
+   ├── 撰寫單元測試
+   ├── 執行 quality_gate/doc_checker.py
+   ├── 執行 quality_gate/constitution/runner.py
+   └── 記錄結果到 DEVELOPMENT_LOG.md
+
+4. Phase 4: 測試
+   ├── 撰寫 TEST_PLAN.md
+   ├── 執行 quality_gate/doc_checker.py
+   ├── 執行 quality_gate/constitution/runner.py --type test_plan
+   └── 記錄結果到 DEVELOPMENT_LOG.md
+
+5-8. Phase 5-8: 驗證/交付/品質/風險/配置
+   ├── 補齊缺失文檔
+   ├── 執行 quality_gate/doc_checker.py
+   ├── 執行 quality_gate/constitution/runner.py
+   └── 記錄結果到 DEVELOPMENT_LOG.md
+```
+
+---
+
+### 🎯 目標
+
+| 指標 | 目標 |
+|------|------|
+| ASPICE 合規率 | > 80% |
+| Constitution 總分 | > 70/100 |
+| 檢查執行率 | 100% (每 Phase 都要) |
+
+---
+
+### 📁 文件位置
+
+| 功能 | 路徑 |
+|------|------|
+| Quality Gate | `quality_gate/doc_checker.py` |
+| Constitution | `quality_gate/constitution/runner.py` |
+| Decision Gate | `.methodology/decisions/` |
+| Phase Enforcer | `quality_gate/phase_artifact_enforcer.py` |
+| Unified Gate | `quality_gate/unified_gate.py` |
+
 ### 發布檢查清單
 
 - [ ] 版本號更新
