@@ -201,6 +201,8 @@ class MethodologyCLI:
             return self.cmd_metrics(args)
         elif command == "debt":
             return self.cmd_debt(args)
+        elif command == "adr":
+            return self.cmd_adr(args)
         else:
             pass # Removed print-debug
             return 1
@@ -2355,6 +2357,86 @@ class MethodologyCLI:
 
         return 0
 
+    def cmd_adr(self, args):
+        """ADR - Architecture Decision Records"""
+        from adr import ADR, ADRRegistry
+
+        sub = args.adr_action if hasattr(args, 'adr_action') else "list"
+        action_args = args.args if hasattr(args, 'args') else []
+
+        registry = ADRRegistry()
+
+        if sub == "create" or sub == "new":
+            title = action_args[0] if action_args else "(no title)"
+
+            adr = ADR(
+                title=title,
+                context="(describe context)",
+                decision="(describe decision)",
+                consequences="(describe consequences)"
+            )
+
+            adr_id = registry.save(adr)
+            print(f"✅ ADR created: ADR-{adr_id}")
+            print(f"   Title: {title}")
+            return 0
+
+        elif sub == "list" or sub == "ls":
+            adrs = registry.list_all()
+            if not adrs:
+                print("No ADRs yet.")
+                print("Usage: adr create <title>")
+            else:
+                print(f"{'ID':<8} {'Status':<12} {'Title'}")
+                print("-" * 60)
+                for adr in adrs:
+                    print(f"ADR-{adr.id:<5} {adr.status:<12} {adr.title[:40]}")
+            return 0
+
+        elif sub == "get" or sub == "show":
+            adr_id = action_args[0] if action_args else None
+            if not adr_id:
+                print("Usage: adr get <id>")
+                return 1
+
+            adr = registry.get(adr_id)
+            if adr:
+                print(adr.to_markdown())
+            else:
+                print(f"ADR-{adr_id} not found")
+            return 0
+
+        elif sub == "status":
+            adr_id = action_args[0] if len(action_args) > 0 else None
+            new_status = action_args[1] if len(action_args) > 1 else None
+            if not adr_id or not new_status:
+                print("Usage: adr status <id> <new_status>")
+                return 1
+
+            if registry.update_status(adr_id, new_status):
+                print(f"✅ ADR-{adr_id} status updated to {new_status}")
+            else:
+                print(f"❌ ADR-{adr_id} not found")
+            return 0
+
+        elif sub == "export":
+            count = registry.export_markdown("docs/adr/")
+            print(f"✅ Exported {count} ADRs to docs/adr/")
+            return 0
+
+        elif sub == "report":
+            print(registry.generate_report())
+            return 0
+
+        print("ADR commands:")
+        print("  adr create <title>   - Create new ADR")
+        print("  adr list            - List all ADRs")
+        print("  adr get <id>        - Show ADR details")
+        print("  adr status <id> <s> - Update ADR status")
+        print("  adr export          - Export all ADRs to Markdown")
+        print("  adr report          - Generate ADR report")
+        return 0
+
 
 # ==================== Main ====================
 
@@ -2688,6 +2770,13 @@ def main():
     debt_parser.add_argument("args", nargs="*", help="Arguments for subcommand")
     debt_parser.add_argument("--severity", dest="severity", help="Severity level (high|medium|low)")
     debt_parser.add_argument("--ticket", dest="ticket", help="Associated ticket ID")
+
+    # adr (Architecture Decision Records)
+    adr_parser = subparsers.add_parser("adr", help="Architecture Decision Records - 架構決策記錄")
+    adr_parser.add_argument("adr_action", nargs="?", default="list",
+                           choices=["create", "new", "list", "ls", "get", "show", "status", "export", "report"],
+                           help="ADR action")
+    adr_parser.add_argument("args", nargs="*", help="Arguments for ADR subcommand")
 
     args = parser.parse_args()
     

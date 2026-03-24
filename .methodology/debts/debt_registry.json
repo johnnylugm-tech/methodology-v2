@@ -1,0 +1,12 @@
+[
+  {
+    "id": "debt-c25338f1",
+    "description": "使用 eval() 而非 ast.literal_eval",
+    "severity": "high",
+    "ticket": "TASK-123",
+    "created_at": "2026-03-24T21:43:19.979045",
+    "resolved_at": "2026-03-24T21:43:29.365429",
+    "status": "resolved",
+    "reason": null
+  }
+]
