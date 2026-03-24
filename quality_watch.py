@@ -55,6 +55,59 @@ def _check_watchdog():
 # Constitution 檢查器路徑
 CONSTITUTION_CHECKER_PATH = Path(__file__).parent / "quality_gate" / "constitution"
 
+# Decision Gate 路徑
+DECISION_LOG_PATH = Path(__file__).parent / ".methodology" / "decisions" / "decision_log.json"
+
+
+class DecisionRunner:
+    """執行 Decision Gate 檢查"""
+    
+    def __init__(self, project_path: str):
+        self.project_path = Path(project_path)
+        self.decision_log = self.project_path / ".methodology" / "decisions" / "decision_log.json"
+    
+    def run(self) -> Dict:
+        """執行 Decision Gate 檢查
+        
+        檢查是否有未確認的 MEDIUM/HIGH 風險決策
+        
+        Returns:
+            檢查結果字典
+        """
+        if not self.decision_log.exists():
+            return {
+                "timestamp": datetime.now().isoformat(),
+                "passed": True,
+                "unconfirmed_decisions": [],
+                "severity": "INFO"
+            }
+        
+        try:
+            decisions = json.loads(self.decision_log.read_text())
+            
+            # 找出未確認的 MEDIUM/HIGH 風險決策
+            unconfirmed = [
+                d for d in decisions
+                if d.get("risk") in ["MEDIUM", "HIGH"] and not d.get("confirmed", False)
+            ]
+            
+            passed = len(unconfirmed) == 0
+            
+            return {
+                "timestamp": datetime.now().isoformat(),
+                "passed": passed,
+                "unconfirmed_decisions": unconfirmed,
+                "total_decisions": len(decisions),
+                "severity": "CRITICAL" if not passed else "INFO"
+            }
+        except (json.JSONDecodeError, IOError) as e:
+            return {
+                "timestamp": datetime.now().isoformat(),
+                "passed": False,
+                "error": str(e),
+                "severity": "ERROR"
+            }
+
 
 class QualityLog:
     """品質日誌"""
@@ -213,12 +266,14 @@ class WatchdogHandler:
     """檔案變更監控處理"""
     
     def __init__(self, project_path: str, log: QualityLog, runner: QualityGateRunner, 
-                 constitution_runner: ConstitutionRunner = None, enable_constitution: bool = False):
+                 constitution_runner: ConstitutionRunner = None, enable_constitution: bool = False,
+                 decision_runner: DecisionRunner = None):
         self.project_path = project_path
         self.log = log
         self.runner = runner
         self.constitution_runner = constitution_runner
         self.enable_constitution = enable_constitution
+        self.decision_runner = decision_runner
         self.last_check = {}  # 防止重複檢查
         self.debounce_seconds = 2  # 防抖動秒數
     
@@ -232,6 +287,26 @@ class WatchdogHandler:
         
         self.last_check[file_path] = now
         return True
+    
+    def _trigger_decision_check(self):
+        """觸發 Decision Gate 檢查"""
+        if not self.decision_runner:
+            return
+        
+        result = self.decision_runner.run()
+        self.log.append({
+            "type": "decision_gate",
+            **result
+        })
+        
+        if not result["passed"]:
+            unconfirmed = result.get("unconfirmed_decisions", [])
+            print(f"[QualityWatch] ⚠️ Decision Gate: {len(unconfirmed)} unconfirmed decision(s)")
+            for d in unconfirmed[:3]:
+                print(f"[QualityWatch] 🔴 [{d.get('risk')}] {d.get('key')}: {d.get('description', '')}")
+        else:
+            total = result.get("total_decisions", 0)
+            print(f"[QualityWatch] ✅ Decision Gate: {total} decision(s) checked")
     
     def _trigger_constitution_check(self, file_path: str):
         """觸發 Constitution 檢查"""
@@ -284,6 +359,9 @@ class WatchdogHandler:
             if self.enable_constitution and "docs" in event.src_path:
                 self._trigger_constitution_check(event.src_path)
             
+            # Decision Gate 檢查
+            self._trigger_decision_check()
+            
             if not result["passed"]:
                 print(f"[QualityWatch] ⚠️ Quality check FAILED")
                 if result.get("severity") == "CRITICAL":
@@ -299,6 +377,7 @@ class QualityWatch:
         self.log = QualityLog(str(self.project_path))
         self.runner = QualityGateRunner(str(self.project_path))
         self.constitution_runner = ConstitutionRunner(str(self.project_path))
+        self.decision_runner = DecisionRunner(str(self.project_path))
         self.enable_constitution = enable_constitution
         self.observer: Optional[Observer] = None
         self._setup_signal_handlers()
@@ -354,7 +433,8 @@ class QualityWatch:
             self.log, 
             self.runner,
             self.constitution_runner,
-            self.enable_constitution
+            self.enable_constitution,
+            self.decision_runner
         )
         self.observer = Observer()
         self.observer.schedule(handler, str(self.project_path), recursive=True)

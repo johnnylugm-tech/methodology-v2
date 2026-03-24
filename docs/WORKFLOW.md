@@ -110,6 +110,80 @@
 
 ---
 
+## 🚪 Decision Gate - 決策分類閘道
+
+Decision Gate 確保所有技術決策都有踪跡可循。
+
+### 三級風險分類
+
+| 等級 | 決策類型 | 處理方式 |
+|------|----------|----------|
+| 🔴 HIGH | 架構、API、核心演算法 | 必須照 spec，需 user 確認 |
+| 🟡 MEDIUM | 預設值、工具選型 | 列出選項 + 建議 |
+| 🔵 LOW | 目錄結構、檔案命名 | 可自主決定 |
+
+### 決策流程
+
+```
+遇到技術決策
+     │
+     ▼
+┌───────────────────────────────────────┐
+│  Decision Gate 分類                   │
+│  - HIGH → 停等 user 確認              │
+│  - MEDIUM → 列出選項 + 建議            │
+│  - LOW → 自主決定                      │
+└──────────────────┬────────────────────┘
+                   │
+         ┌─────────┴─────────┐
+         │                   │
+      HIGH              MEDIUM/LOW
+         │                   │
+         ▼                   ▼
+  ┌─────────────┐    ┌─────────────────┐
+  │ User 確認    │    │ 執行並記錄       │
+  │ 選擇或建議   │    │ decision_log    │
+  └─────────────┘    └─────────────────┘
+```
+
+### CLI 命令
+
+```bash
+# 分類一個決策
+python3 cli.py decision classify <key> "<description>"
+
+# 列出所有決策
+python3 cli.py decision list
+
+# 確認 HIGH 風險決策
+python3 cli.py decision confirm <id> "<value>"
+
+# 查看決策日誌
+python3 cli.py decision log
+```
+
+### Decision Gate 整合 Quality Watch
+
+Quality Watch 在檢查時也會驗證決策日誌：
+
+```
+quality_watch daemon
+       │
+       ▼
+   Quality Gate
+       │
+       ▼
+   Decision Gate 檢查
+       │
+       ├── MEDIUM/HIGH 決策已確認？
+       │
+       └── 未確認 → CRITICAL 警告
+```
+
+📖 詳見：[DECISION_GATE_GUIDE.md](DECISION_GATE_GUIDE.md)
+
+---
+
 ## 🛡️ Quality Watch 流程圖
 
 ```
