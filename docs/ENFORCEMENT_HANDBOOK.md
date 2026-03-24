@@ -67,45 +67,6 @@ python3 quality_gate/doc_checker.py
 
 ---
 
-## 📋 模板使用時機指南
-
-每個 Phase 應該使用對應的模板：
-
-| Phase | 使用的模板 | 產出文件 |
-|-------|-----------|----------|
-| Phase 1: 需求分析 | `SRS_TEMPLATE.md` | Software Requirements Specification |
-| Phase 2: 架構設計 | `SAD_TEMPLATE.md` | Software Architecture Description |
-| Phase 3: 實作與整合 | `INTEGRATION_PLAN.md` | 整合計畫 |
-| Phase 4: 測試 | `TEST_PLAN_TEMPLATE.md` | Test Plan + Test Specification |
-| Phase 5: 驗證與交付 | `RELEASE_NOTES_v*.md` | Release Notes |
-| Phase 6: 品質報告 | `QUALITY_REPORT_TEMPLATE.md` | Quality Report |
-| Phase 7: 風險管理 | `RISK_ASSESSMENT_TEMPLATE.md` | Risk Assessment |
-
-### 模板位置
-
-所有模板位於 `docs/templates/` 目錄：
-
-```
-docs/templates/
-├── SRS_TEMPLATE.md              # 需求規格模板
-├── SAD_TEMPLATE.md              # 架構設計模板
-├── TEST_PLAN_TEMPLATE.md       # 測試計畫模板
-├── QUALITY_REPORT_TEMPLATE.md  # 品質報告模板
-└── RISK_ASSESSMENT_TEMPLATE.md # 風險評估模板
-```
-
-### 使用方式
-
-```bash
-# 複製模板到專案
-cp docs/templates/SRS_TEMPLATE.md ./SPEC.md
-
-# 或使用 CLI（如果支援）
-methodology init --template srs
-```
-
----
-
 ## 🔄 Phase 產物傳遞
 
 ### 為什麼要檢查？

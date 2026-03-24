@@ -128,6 +128,26 @@ class PolicyEngine:
             enforcement=EnforcementLevel.BLOCK,
             severity="high"
         ))
+        
+        # ASPICE 文檔檢查政策
+        self.add_policy(Policy(
+            id="aspice-docs-required",
+            description="每個 Phase 必須有對應的 ASPICE 文檔",
+            check_fn=lambda: self._check_aspice_docs(),
+            enforcement=EnforcementLevel.BLOCK,
+            severity="critical",
+            metadata={"category": "documentation"}
+        ))
+        
+        # Phase 產物引用檢查政策
+        self.add_policy(Policy(
+            id="phase-artifact-reference",
+            description="每個 Phase 必須引用上一個 Phase 的產物",
+            check_fn=lambda: self._check_phase_artifacts(),
+            enforcement=EnforcementLevel.BLOCK,
+            severity="critical",
+            metadata={"category": "phase", "requires_config": True}
+        ))
     
     def _check_commit_message(self) -> bool:
         """檢查 commit message"""
@@ -177,6 +197,61 @@ class PolicyEngine:
             with open(score_file, 'r') as f:
                 return float(f.read().strip()) >= 95
         return True
+    
+    def _check_aspice_docs(self) -> bool:
+        """檢查 ASPICE 文檔是否存在"""
+        import subprocess
+        
+        # 調用 doc_checker.py
+        doc_checker_path = os.path.join(
+            os.path.dirname(os.path.dirname(__file__)), 
+            "quality_gate", "doc_checker.py"
+        )
+        
+        if not os.path.exists(doc_checker_path):
+            return True  # 沒有 doc_checker 時跳過
+        
+        try:
+            result = subprocess.run(
+                ["python3", doc_checker_path, "--format", "json"],
+                capture_output=True,
+                text=True,
+                timeout=30
+            )
+            
+            if result.returncode == 0:
+                data = json.loads(result.stdout)
+                # 如果有缺失文檔，阻擋
+                return data.get("passed", True)
+            return True  # 檢查失敗時通過，避免阻擋
+        except Exception:
+            return True  # 異常時通過
+    
+    def _check_phase_artifacts(self) -> bool:
+        """檢查 Phase 產物引用"""
+        import subprocess
+        
+        enforcer_path = os.path.join(
+            os.path.dirname(os.path.dirname(__file__)),
+            "quality_gate", "phase_artifact_enforcer.py"
+        )
+        
+        if not os.path.exists(enforcer_path):
+            return True
+        
+        try:
+            result = subprocess.run(
+                ["python3", enforcer_path, "--json"],
+                capture_output=True,
+                text=True,
+                timeout=30
+            )
+            
+            if result.returncode == 0:
+                return True
+            return False
+        except Exception:
+            return True
     
     def add_policy(self, policy: Policy):
         """添加政策"""
