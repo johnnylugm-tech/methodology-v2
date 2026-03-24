@@ -50,15 +50,15 @@
 | | - System Test Spec | test_framework.py | ✅ | |
 | | - System Test Results | agent_evaluator.py | ✅ | |
 | **SWE.5** | Software Requirements Specification | | | |
-| | - Software Requirements Doc | doc_generator.py | ✅ | SRS 模板 needed |
-| | - Software Architecture Doc | doc_generator.py | ✅ | SAD 模板 needed |
+| | - Software Requirements Doc | doc_generator.py | ✅ | ✅ 已補 (v5.35) |
+| | - Software Architecture Doc | doc_generator.py | ✅ | ✅ 已補 (v5.35) |
 | **SWE.6** | Software Integration | | | |
 | | - Software Integration Plan | delivery_manager.py | ✅ | |
 | | - Integration Build Spec | parallel_executor.py | ✅ | |
 | | - Integration Results | delivery_tracker.py | ✅ | |
 | **SWE.7** | Software Qualification | | | |
 | | - Software Test Plan | test_generator.py | ✅ | |
-| | - Software Test Spec | test_framework.py | ✅ | Test Plan 模板 needed |
+| | - Software Test Spec | test_framework.py | ✅ | ✅ 已補 (v5.35) |
 | | - Test Progress Reports | agent_evaluator.py | ✅ | |
 
 ### Supporting Processes (SUP.8 - SUP.10)
@@ -71,12 +71,12 @@
 | | - Change Control Records | approval_flow.py | ✅ | |
 | **SUP.9** | Information Management | | | |
 | | - Project Archives | knowledge_base.py | ✅ | |
-| | - Management Reports | dashboard.py | ✅ | Quality Report 模板 needed |
+| | - Management Reports | dashboard.py | ✅ | ✅ 已補 (v5.35) |
 | | - Meeting Notes | memory/ | ✅ | |
 | **SUP.10** | Change Request Management | | | |
 | | - Change Request Log | approval_flow.py | ✅ | |
 | | - Impact Analysis | risk_registry.py | ✅ | |
-| | - Change Status Reports | project.py | ✅ | Risk Assessment 模板 needed |
+| | - Change Status Reports | project.py | ✅ | ✅ 已補 (v5.35) |
 
 ### Management Processes (MAN.3, MAN.5)
 
@@ -90,7 +90,7 @@
 | **MAN.5** | Risk Management | | | |
 | | - Risk Management Plan | risk_registry.py | ✅ | |
 | | - Risk List | risk_registry.py | ✅ | |
-| | - Risk Assessment Reports | risk_dashboard.py | ✅ | Risk Assessment 模板 needed |
+| | - Risk Assessment Reports | risk_dashboard.py | ✅ | ✅ 已補 (v5.35) |
 | | - Risk Mitigation Actions | recovery_controller.py | ✅ | |
 
 ---
@@ -101,11 +101,11 @@
 
 | 缺口 | ASPICE 參考 | 建議模板 | 狀態 |
 |------|-------------|----------|------|
-| SRS 模板 | SWE.5 | Software Requirements Specification | ❌ |
-| SAD 模板 | SWE.5 | Software Architecture Description | ❌ |
-| Test Plan 模板 | SWE.7 | Software Test Plan | ❌ |
-| Quality Report 模板 | SUP.9 | Quality Report | ❌ |
-| Risk Assessment 模板 | MAN.5 | Risk Assessment Report | ❌ |
+| SRS 模板 | SWE.5 | Software Requirements Specification | ✅ 已補 (v5.35) |
+| SAD 模板 | SWE.5 | Software Architecture Description | ✅ 已補 (v5.35) |
+| Test Plan 模板 | SWE.7 | Software Test Plan | ✅ 已補 (v5.35) |
+| Quality Report 模板 | SUP.9 | Quality Report | ✅ 已補 (v5.35) |
+| Risk Assessment 模板 | MAN.5 | Risk Assessment Report | ✅ 已補 (v5.35) |
 
 ### 中優先級缺口 (建議補齊)
 
@@ -146,20 +146,20 @@
 |--------|----------|------|------|
 | SWE.1 | Business Goals, Stakeholder Requests | workflow_graph.py | ✅ |
 | SWE.2 | System Requirements Specification | doc_generator.py | ✅ |
-| SWE.5 | **SRS (Software Requirements Specification)** | ❌ | ❌ |
+| SWE.5 | **SRS (Software Requirements Specification)** | SRS_TEMPLATE.md | ✅ |
 
 ### Phase 2: 架構設計
 
 | ASPICE | 必需文檔 | 現有 | 缺口 |
 |--------|----------|------|------|
-| SWE.5 | **SAD (Software Architecture Description)** | ❌ | ❌ |
+| SWE.5 | **SAD (Software Architecture Description)** | SAD_TEMPLATE.md | ✅ |
 
 ### Phase 3: 實作與整合
 
 | ASPICE | 必需文檔 | 現有 | 缺口 |
 |--------|----------|------|------|
 | SWE.6 | Integration Plan, Build Spec | delivery_manager.py | ✅ |
-| SWE.7 | **Test Plan**, Test Spec, Test Results | test_generator.py | Test Plan ✅ |
+| SWE.7 | **Test Plan**, Test Spec, Test Results | test_generator.py, TEST_PLAN_TEMPLATE.md | ✅ |
 
 ### Phase 4: 驗證與交付
 
@@ -167,7 +167,7 @@
 |--------|----------|------|------|
 | SWE.4 | System Test Results | agent_evaluator.py | ✅ |
 | SUP.8 | Baseline Records | delivery_tracker.py | ✅ |
-| SUP.9 | **Quality Report** | ❌ | ❌ |
+| SUP.9 | **Quality Report** | QUALITY_REPORT_TEMPLATE.md | ✅ |
 | SUP.10 | Change Request Log | approval_flow.py | ✅ |
 
 ### Phase 5: 風險管理
@@ -175,17 +175,29 @@
 | ASPICE | 必需文檔 | 現有 | 缺口 |
 |--------|----------|------|------|
 | MAN.3 | Project Plan, Schedule | project.py | ✅ |
-| MAN.5 | **Risk Assessment Report** | risk_registry.py | Risk Assessment ✅ |
+| MAN.5 | **Risk Assessment Report** | RISK_ASSESSMENT_TEMPLATE.md | ✅ |
+
+---
+
+## 📦 已支援模板 (v5.35)
+
+| 模板檔案 | ASPICE 對應 | 狀態 |
+|----------|-------------|------|
+| `SRS_TEMPLATE.md` | SWE.5 | ✅ 已補 (v5.35) |
+| `SAD_TEMPLATE.md` | SWE.5 | ✅ 已補 (v5.35) |
+| `TEST_PLAN_TEMPLATE.md` | SWE.7 | ✅ 已補 (v5.35) |
+| `QUALITY_REPORT_TEMPLATE.md` | SUP.9 | ✅ 已補 (v5.35) |
+| `RISK_ASSESSMENT_TEMPLATE.md` | MAN.5 | ✅ 已補 (v5.35) |
 
 ---
 
 ## ✅ Action Items
 
-- [ ] 建立 SRS Template (`docs/templates/SRS_TEMPLATE.md`)
-- [ ] 建立 SAD Template (`docs/templates/SAD_TEMPLATE.md`)
-- [ ] 建立 Test Plan Template (`docs/templates/TEST_PLAN_TEMPLATE.md`)
-- [ ] 建立 Quality Report Template (`docs/templates/QUALITY_REPORT_TEMPLATE.md`)
-- [ ] 建立 Risk Assessment Template (`docs/templates/RISK_ASSESSMENT_TEMPLATE.md`)
+- [x] 建立 SRS Template (`docs/templates/SRS_TEMPLATE.md`)
+- [x] 建立 SAD Template (`docs/templates/SAD_TEMPLATE.md`)
+- [x] 建立 Test Plan Template (`docs/templates/TEST_PLAN_TEMPLATE.md`)
+- [x] 建立 Quality Report Template (`docs/templates/QUALITY_REPORT_TEMPLATE.md`)
+- [x] 建立 Risk Assessment Template (`docs/templates/RISK_ASSESSMENT_TEMPLATE.md`)
 - [ ] 建立 CHANGELOG.md
 - [ ] 建立文檔命名規範 (`docs/naming_convention.md`)
 - [ ] 建立 Quality Gate 文檔檢查模組 (`quality_gate/doc_checker.py`)
