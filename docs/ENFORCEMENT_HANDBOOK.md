@@ -1,6 +1,6 @@
 # methodology-v2 Enforcement Handbook
 
-> v5.35.0 - 新團隊完全上手指南
+> v5.37.0 - 新團隊完全上手指南
 
 ---
 
@@ -210,6 +210,55 @@ A: **不行**。所有 BYPASS 都被禁止（`no-bypass-commands` 政策）。
 ### Q: 可以調整閾值嗎？
 
 A: 可以。編輯 `enforcement_config.default.json`，但建議保持預設值以確保品質。
+
+---
+
+## 🔄 Quality Watch 整合
+
+Enforcement Framework 現在與 Quality Watch 無縫整合：
+
+| 觸發方式 | 檢查範圍 | 速度 |
+|----------|----------|------|
+| 檔案存檔 | 當前檔案 | 即時 |
+| git commit | 所有變更 | 秒級 |
+| 定期報告 | 完整檢查 | 分鐘級 |
+
+### 啟動流程
+
+```bash
+python3 cli.py init "my-project"
+# → 建立 .methodology/
+# → 啟動 quality_watch daemon
+# → 持續監控直到 finish
+```
+
+### 與 Git Hooks 的區別
+
+| 項目 | Git Hooks | Quality Watch |
+|------|-----------|---------------|
+| 觸發時機 | commit 時 | 每次存檔 |
+| 阻擋點 | commit | 存檔 |
+| 通知方式 | 拒絕 commit | 日誌 + 警告 |
+| 適用場景 | 代碼進入 repository | 代碼正在編寫 |
+
+**建議**：兩者同時啟用，形成完整防護網。
+
+---
+
+## 🔧 Quality Watch CLI
+
+```bash
+# 狀態
+python3 quality_watch.py status
+
+# 日誌
+python3 quality_watch.py log
+
+# 停止
+python3 quality_watch.py stop
+```
+
+詳細說明：[QUALITY_WATCH_GUIDE.md](./QUALITY_WATCH_GUIDE.md)
 
 ---
 
