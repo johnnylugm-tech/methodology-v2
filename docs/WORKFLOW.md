@@ -23,11 +23,11 @@
 
 ### Lifecycle 階段說明
 
-| 階段 | 命令 | Quality Watch 行為 | 產出 |
+| 階段 | 命令 | Quality Gate 行為 | 產出 |
 |------|------|-------------------|------|
-| **init** | `python3 cli.py init [name]` | 啟動 daemon（PID → `.methodology/watch.pid`） | 專案結構、`.methodology/` |
-| **develop** | `python3 quality_watch.py start` | 持續監控檔案變更，每次變更觸發 quality-gate | `.methodology/quality_log.json` |
-| **finish** | `python3 cli.py finish` | 停止 daemon，寫入最終品質報告 | 專案關閉、清盤 |
+| **init** | `python3 cli.py init [name]` | 初始化品質閘道設定 | 專案結構、`.methodology/` |
+| **develop** | `python3 cli.py quality-gate check` | 手動執行 Quality Gate（每 Phase 結束） | `.methodology/quality_log.json` |
+| **finish** | `python3 cli.py finish` | 執行最終 Quality Gate，寫入品質報告 | 專案關閉、清盤 |
 
 ## 🏛️ Constitution + Enforcement + Quality Gate 三者關係
 
@@ -258,28 +258,32 @@ init (Quality Watch 啟動)
 
 ---
 
-## 🛡️ Quality Watch
+## 🛡️ 品質閘道（v5.45 - 手動執行模式）
+
+> **v5.45 更新**：quality_watch.py daemon 功能已移除。所有檢查都需要手動執行！
 
 ### 角色定位
 
-**Quality Watch** 是一個持續品質監控 Daemon，嵌入 Lifecycle 的 develop 階段，確保 AI Agent 無法在開發過程中降低品質標準。
+**品質閘道（Quality Gate）** 是一個手動執行的品質驗證系統，嵌入每個 Phase 結束時，確保 AI Agent 的產出符合 ASPICE 標準與 Constitution 憲章。
 
-### 核心元件
+### 每個 Phase 結束必須執行的檢查
 
-| 元件 | 檔案/位置 | 職責 |
-|------|-----------|------|
-| **Daemon** | `quality_watch.py` | 啟動/停止/狀態管理 |
-| **PID 檔** | `.methodology/watch.pid` | 防止重複啟動 |
-| **品質日誌** | `.methodology/quality_log.json` | 所有檢查結果（不可偽造） |
-| **檔案監控** | `watchdog`  library | 即時偵測程式碼變更 |
-| **品質閘道** | `quality_gate/` | 實際執行檢查（doc_checker + phase_artifact_enforcer） |
+| Phase | 檢查內容 | 命令 |
+|-------|----------|------|
+| Phase 1 | ASPICE 文檔檢查 | `python3 quality_gate/doc_checker.py` |
+| Phase 1 | Constitution 檢查 | `python3 quality_gate/constitution/runner.py --type srs` |
+| Phase 2 | ASPICE 文檔檢查 | `python3 quality_gate/doc_checker.py` |
+| Phase 2 | Constitution 檢查 | `python3 quality_gate/constitution/runner.py --type sad` |
+| Phase 3 | ASPICE 文檔檢查 | `python3 quality_gate/doc_checker.py` |
+| Phase 3 | Constitution 檢查 | `python3 quality_gate/constitution/runner.py` |
+| Phase 4 | ASPICE 文檔檢查 | `python3 quality_gate/doc_checker.py` |
+| Phase 4 | Constitution 檢查 | `python3 quality_gate/constitution/runner.py --type test_plan` |
+| Phase 5-8 | ASPICE 文檔檢查 | `python3 quality_gate/doc_checker.py` |
+| Phase 5-8 | Constitution 檢查 | `python3 quality_gate/constitution/runner.py` |
 
-### Quality Gate 檢查
+### Quality Gate 檢查命令
 
 ```bash
-# 手動執行一次檢查
-python3 quality_watch.py watch
-
 # 完整 Quality Gate（含 ASPICE + Phase 產物）
 python3 cli.py quality-gate check
 python3 cli.py quality-gate all        # 別名
@@ -290,6 +294,12 @@ python3 cli.py quality-gate docs       # 別名
 
 # 只檢查 Phase 產物
 python3 cli.py quality-gate phase
+
+# 直接執行 ASPICE 文檔檢查
+python3 quality_gate/doc_checker.py
+
+# 直接執行 Constitution 檢查
+python3 quality_gate/constitution/runner.py --type <srs|sad|test_plan>
 ```
 
 ---
@@ -580,30 +590,16 @@ hooks.skip_hook(
 ### 專案 Lifecycle
 
 ```bash
-# 初始化專案（同時啟動 quality_watch）
+# 初始化專案
 python3 cli.py init "專案名"
 
-# 結束專案（停止 quality_watch）
+# 結束專案
 python3 cli.py finish
 ```
 
-### Quality Watch
+### Quality Gate（v5.45 手動執行）
 
-```bash
-# 啟動 daemon
-python3 quality_watch.py start [--project <path>]
-
-# 停止 daemon
-python3 quality_watch.py stop [--project <path>]
-
-# 查看狀態
-python3 quality_watch.py status [--project <path>]
-
-# 手動執行一次檢查
-python3 quality_watch.py watch [--project <path>]
-```
-
-### Quality Gate
+> **v5.45 更新**：quality_watch.py daemon 已移除，所有檢查改為手動執行。
 
 ```bash
 # 完整檢查（ASPICE + Phase 產物）
@@ -658,4 +654,4 @@ python3 cli.py sprint start <sprint-id>
 
 ---
 
-*最後更新：2026-03-24 (v5.44.0)*
+*最後更新：2026-03-25 (v5.45.0)*

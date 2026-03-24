@@ -55,6 +55,9 @@
 | 效能 | >= 80% | 15% |
 | 覆蓋率 | >= 80% | 10% |
 
+> **v5.45 更新**：Quality Gate 改為手動執行模式。進入每個 Phase 前，請手動執行：
+> `python3 cli.py quality-gate check` 或 `python3 quality_gate/doc_checker.py`
+
 ---
 
 ## 🚀 快速開始
