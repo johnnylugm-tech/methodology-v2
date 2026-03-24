@@ -60,7 +60,7 @@ from security_defense import (
 class MethodologyCLI:
     """統一 CLI 入口"""
     
-    VERSION = "5.36.0"
+    VERSION = "5.37.0"
     
     def __init__(self):
         self.progress = ProgressDashboard()
