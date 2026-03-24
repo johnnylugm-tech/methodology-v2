@@ -98,7 +98,7 @@ class MethodologyCLI:
         """檢查命令是否危險"""
         blocked = self.blacklist.check(command)
         if blocked:
-            print(self.blacklist.explain(blocked))
+            pass # Removed print-debug
             return False
         return True
     
@@ -191,7 +191,7 @@ class MethodologyCLI:
         elif command == "m27":
             return self.cmd_m27(args)
         else:
-            print(f"Unknown command: {command}")
+            pass # Removed print-debug
             return 1
         
         return 0
@@ -202,7 +202,7 @@ class MethodologyCLI:
         """初始化專案"""
         project_name = args.name or "my-project"
         
-        print(f"Initializing project: {project_name}")
+        pass # Removed print-debug
         
         # Create project structure
         dirs = [".methodology", ".methodology/tasks", ".methodology/sprints"]
@@ -212,11 +212,11 @@ class MethodologyCLI:
         # Save initial state
         self.progress.save()
         
-        print(f"✅ Project '{project_name}' initialized")
-        print(f"\nNext steps:")
-        print(f"  python cli.py task add \"Your first task\"")
-        print(f"  python cli.py sprint create")
-        print(f"  python cli.py board")
+        pass # Removed print-debug
+        pass # Removed print-debug
+        pass # Removed print-debug
+        pass # Removed print-debug
+        pass # Removed print-debug
         
         return 0
     
@@ -230,27 +230,27 @@ class MethodologyCLI:
                 story_points=args.points or 1,
                 priority=args.priority or 3
             )
-            print(f"✅ Task added: {item_id}")
-            print(f"   Title: {args.title or 'New Task'}")
-            print(f"   Points: {args.points or 1}")
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
             
         elif action == "list":
             self.progress.load()
             items = list(self.progress.backlog.values())
             if not items:
-                print("No tasks found")
+                pass # Removed print-debug
                 return 0
             
-            print(f"\n{'ID':<10} {'Title':<30} {'Points':<8} {'Status':<12}")
-            print("-" * 60)
+            pass # Removed print-debug
+            pass # Removed print-debug
             for item in items:
-                print(f"{item.id:<10} {item.title[:28]:<30} {item.story_points:<8} {item.sprint_id or 'backlog':<12}")
+                pass # Removed print-debug
             
         elif action == "complete":
             if self.progress.mark_item_completed(args.task_id):
-                print(f"✅ Task {args.task_id} marked as completed")
+                pass # Removed print-debug
             else:
-                print(f"❌ Task {args.task_id} not found")
+                pass # Removed print-debug
         
         return 0
     
@@ -265,63 +265,63 @@ class MethodologyCLI:
                 end_date=args.end or (datetime.now().replace(day=14)).strftime("%Y-%m-%d"),
                 capacity=args.capacity or 40
             )
-            print(f"✅ Sprint created: {sprint.name}")
-            print(f"   Duration: {sprint.duration_days} days")
-            print(f"   Capacity: {sprint.capacity_points} points")
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
             
         elif action == "list":
             sprints = list(self.sprint_planner.sprints.values())
             if not sprints:
-                print("No sprints found")
+                pass # Removed print-debug
                 return 0
             
-            print(f"\n{'ID':<15} {'Name':<20} {'Status':<12} {'Capacity':<10}")
-            print("-" * 60)
+            pass # Removed print-debug
+            pass # Removed print-debug
             for s in sprints:
                 status = "active" if s.is_active else ("completed" if s.is_completed else "planning")
-                print(f"{s.id:<15} {s.name[:18]:<20} {status:<12} {s.capacity_points:<10}")
+                pass # Removed print-debug
         
         elif action == "start":
             if self.sprint_planner.start_sprint(args.sprint_id):
-                print(f"✅ Sprint {args.sprint_id} started")
+                pass # Removed print-debug
             else:
-                print(f"❌ Sprint {args.sprint_id} not found")
+                pass # Removed print-debug
         
         return 0
     
     def cmd_board(self, args):
         """開啟視覺化儀表板"""
-        print("╔" + "═" * 60 + "╗")
-        print("║" + " PROJECT BOARD ".center(60) + "║")
-        print("╚" + "═" * 60 + "╝")
-        print()
+        pass # Removed print-debug
+        pass # Removed print-debug
+        pass # Removed print-debug
+        pass # Removed print-debug
         
         # Progress
         summary = {"total_items": len(self.progress.backlog), "completed_items": sum(1 for i in self.progress.backlog.values() if i.completed)}
         
-        print("📊 Progress:")
+        pass # Removed print-debug
         if summary:
-            print(f'   Total Items: {summary.get("total_items", 0)}')
-            print(f"   Completed: {summary.get('completed_items', 0)}")
-            print(f"   In Progress: {summary.get('in_progress_items', 0)}")
-            print(f"   Completion: {summary.get('completion_rate', 0):.1f}%")
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
         else:
-            print("   No data")
+            pass # Removed print-debug
         
-        print()
+        pass # Removed print-debug
         
         # Gantt
         if self.gantt.tasks:
-            print("📅 Gantt Chart:")
-            print(self.gantt.to_rich_ascii())
+            pass # Removed print-debug
+            pass # Removed print-debug
         else:
-            print("📅 Gantt: No tasks")
+            pass # Removed print-debug
         
-        print()
+        pass # Removed print-debug
         
         # Message Bus
-        print("📬 Message Bus:")
-        print(self.bus.to_cli())
+        pass # Removed print-debug
+        pass # Removed print-debug
         
         return 0
     
@@ -329,31 +329,31 @@ class MethodologyCLI:
         """生成報告"""
         report_type = args.type or "weekly"
         
-        print("╔" + "═" * 60 + "╗")
-        print("║" + f" {report_type.upper()} REPORT ".center(60) + "║")
-        print("╚" + "═" * 60 + "╝")
-        print()
-        print(f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M')}")
-        print()
+        pass # Removed print-debug
+        pass # Removed print-debug
+        pass # Removed print-debug
+        pass # Removed print-debug
+        pass # Removed print-debug
+        pass # Removed print-debug
         
         # Progress
-        print("## 📊 Progress")
+        pass # Removed print-debug
         summary = {"total_items": len(self.progress.backlog), "completed_items": sum(1 for i in self.progress.backlog.values() if i.completed)}
         if summary:
             for key, value in summary.items():
-                print(f"   {key}: {value}")
-        print()
+                pass # Removed print-debug
+        pass # Removed print-debug
         
         # Data sources
-        print("## 📈 Data Sources")
+        pass # Removed print-debug
         connections = self.data_manager.list_connections()
         if connections:
             for conn in connections:
                 status = "✅" if conn['connected'] else "❌"
-                print(f"   {status} {conn['name']} ({conn['type']})")
+                pass # Removed print-debug
         else:
-            print("   No data sources connected")
-        print()
+            pass # Removed print-debug
+        pass # Removed print-debug
         
         # Save report
         if args.output:
@@ -361,37 +361,37 @@ class MethodologyCLI:
                 f.write(f"# {report_type.upper()} Report\n\n")
                 f.write(f"Generated: {datetime.now().isoformat()}\n\n")
                 f.write(json.dumps(summary, indent=2, default=str))
-            print(f"✅ Report saved to {args.output}")
+            pass # Removed print-debug
         
         return 0
     
     def cmd_status(self, args):
         """顯示狀態"""
         self.progress.load()
-        print("╔" + "═" * 60 + "╗")
-        print("║" + " METHODOLOGY STATUS ".center(60) + "║")
-        print("╚" + "═" * 60 + "╝")
-        print()
-        print(f"Version: {self.VERSION}")
-        print()
+        pass # Removed print-debug
+        pass # Removed print-debug
+        pass # Removed print-debug
+        pass # Removed print-debug
+        pass # Removed print-debug
+        pass # Removed print-debug
         
         # Tasks
         items = list(self.progress.backlog.values())
-        print(f"📋 Tasks: {len(items)} total")
+        pass # Removed print-debug
         
         # Sprints
         sprints = list(self.sprint_planner.sprints.values())
         active = sum(1 for s in sprints if s.is_active)
-        print(f"🏃 Sprints: {len(sprints)} total, {active} active")
+        pass # Removed print-debug
         
         # Message Bus
         bus_status = self.bus.get_queue_status()
-        print(f"📬 Message Bus: {bus_status['queue_size']} queued")
+        pass # Removed print-debug
         
         # Data Sources
         connections = self.data_manager.list_connections()
         connected = sum(1 for c in connections if c['connected'])
-        print(f"🔗 Data Sources: {connected}/{len(connections)} connected")
+        pass # Removed print-debug
         
         return 0
     
@@ -400,20 +400,20 @@ class MethodologyCLI:
         action = args.action
         
         if action == "list":
-            print("📦 Resources:")
-            print("   (Use DataSourceManager to connect resources)")
-            print()
-            print("   Connect to data sources:")
-            print("   - Prometheus (metrics)")
-            print("   - Jira (tasks)")
-            print("   - OpenTelemetry (traces)")
-            print()
-            print("   Example:")
-            print("   ```python")
-            print("   from methodology import DataSourceManager, PrometheusConnector")
-            print("   dm = DataSourceManager()")
-            print("   dm.connect('prom', PrometheusConnector, url='http://localhost:9090')")
-            print("   ```")
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
         
         return 0
     
@@ -422,14 +422,14 @@ class MethodologyCLI:
         action = args.action
         
         if action == "status":
-            print(self.bus.to_cli())
+            pass # Removed print-debug
         
         elif action == "tree":
-            print(self.bus.to_tree())
+            pass # Removed print-debug
         
         elif action == "watch":
             seconds = args.seconds or 10
-            print(f"Watching Message Bus for {seconds} seconds...")
+            pass # Removed print-debug
             self.bus.watch(seconds)
         
         return 0
@@ -444,41 +444,41 @@ class MethodologyCLI:
                 description=args.description or "",
                 iterations=args.iterations or 1
             )
-            print(f"✅ Created evaluation suite: {suite.id}")
-            print(f"   Name: {suite.name}")
+            pass # Removed print-debug
+            pass # Removed print-debug
             return 0
         
         elif action == "list":
             suites = list(self.evaluator.suites.values())
             if not suites:
-                print("No evaluation suites found")
+                pass # Removed print-debug
                 return 0
             
-            print(f"\n{'ID':<12} {'Name':<30} {'Status':<12} {'Tests'}")
-            print("-" * 70)
+            pass # Removed print-debug
+            pass # Removed print-debug
             for s in suites:
-                print(f"{s.id:<12} {s.name[:28]:<30} {s.status.value:<12} {len(s.test_cases)}")
+                pass # Removed print-debug
             return 0
         
         elif action == "report":
             if not args.suite_id:
-                print("Error: --suite-id required")
+                pass # Removed print-debug
                 return 1
             
             if args.suite_id not in self.evaluator.suites:
-                print(f"Suite '{args.suite_id}' not found")
+                pass # Removed print-debug
                 return 1
             
-            print(self.evaluator.generate_report(args.suite_id))
+            pass # Removed print-debug
             return 0
         
         elif action == "run":
             if not args.suite_id:
-                print("Error: --suite-id required")
+                pass # Removed print-debug
                 return 1
             
             if args.suite_id not in self.evaluator.suites:
-                print(f"Suite '{args.suite_id}' not found")
+                pass # Removed print-debug
                 return 1
             
             # 定義簡單的 mock agent
@@ -487,18 +487,18 @@ class MethodologyCLI:
                 time.sleep(0.1)
                 return f"Response to: {prompt[:50]}..."
             
-            print(f"Running evaluation suite: {args.suite_id}...")
+            pass # Removed print-debug
             self.evaluator.run_suite(args.suite_id, mock_agent)
-            print("✅ Evaluation completed")
+            pass # Removed print-debug
             return 0
         
         elif action == "add":
             if not args.suite_id:
-                print("Error: --suite-id required")
+                pass # Removed print-debug
                 return 1
             
             if not args.name:
-                print("Error: --name (test case name) required")
+                pass # Removed print-debug
                 return 1
             
             test = self.evaluator.add_test_case(
@@ -507,16 +507,16 @@ class MethodologyCLI:
                 input_prompt=args.prompt or "Test prompt",
                 expected_output=args.expected
             )
-            print(f"✅ Added test case: {test.id} - {test.name}")
+            pass # Removed print-debug
             return 0
         
         elif action == "hitl":
             pending = self.hitl.get_pending_count()
-            print(f"\n📋 Human-in-the-Loop")
-            print(f"   Pending reviews: {pending}")
+            pass # Removed print-debug
+            pass # Removed print-debug
             return 0
         
-        print(f"Unknown action: {action}")
+        pass # Removed print-debug
         return 1
     
     def cmd_quality(self, args):
@@ -524,8 +524,8 @@ class MethodologyCLI:
         action = args.action
         
         if action == "check":
-            print("📊 Data Quality Checker")
-            print("=" * 50)
+            pass # Removed print-debug
+            pass # Removed print-debug
             # Generate sample data
             sample_data = [
                 {"id": 1, "name": "Alice", "email": "alice@test.com", "age": 30},
@@ -533,9 +533,9 @@ class MethodologyCLI:
                 {"id": 3, "name": "", "email": "invalid", "age": None},
             ]
             report = self.data_quality.analyze(sample_data)
-            print(self.data_quality.generate_report_markdown(report))
+            pass # Removed print-debug
         elif action == "report":
-            print(self.data_quality.generate_report())
+            pass # Removed print-debug
         return 0
     
     def cmd_enterprise(self, args):
@@ -543,13 +543,13 @@ class MethodologyCLI:
         action = args.action
         
         if action == "status":
-            print("🏢 Enterprise Integration Hub")
-            print("=" * 50)
+            pass # Removed print-debug
+            pass # Removed print-debug
             status = self.enterprise.get_status()
             for k, v in status.items():
-                print(f"  {k}: {v}")
+                pass # Removed print-debug
         elif action == "audit":
-            print(self.enterprise.audit.generate_report())
+            pass # Removed print-debug
         return 0
     
     def cmd_audit(self, args):
@@ -557,48 +557,48 @@ class MethodologyCLI:
         action = args.action
         
         if action == "status":
-            print("🔍 AI Audit Status")
-            print("=" * 50)
+            pass # Removed print-debug
+            pass # Removed print-debug
             report = self.ai_audit.get_audit_report()
-            print(f"Total Operations: {report['total_operations']}")
-            print(f"\nBy Type:")
+            pass # Removed print-debug
+            pass # Removed print-debug
             for op_type, count in report['by_type'].items():
-                print(f"  - {op_type}: {count}")
-            print(f"\nAnomalies: {report['anomalies']['total']} "
+                pass # Removed print-debug
+            pass # Removed print-debug
                   f"({report['anomalies']['critical']} critical, "
                   f"{report['anomalies']['high']} high)")
         
         elif action == "anomalies":
-            print("🚨 AI Audit Anomalies")
-            print("=" * 50)
+            pass # Removed print-debug
+            pass # Removed print-debug
             agent_id = getattr(args, 'agent', None)
             severity = getattr(args, 'severity', None)
             
             anomalies = self.ai_audit.get_anomalies(agent_id=agent_id, severity=severity)
             
             if not anomalies:
-                print("No anomalies detected.")
+                pass # Removed print-debug
                 return 0
             
             for i, anomaly in enumerate(anomalies, 1):
-                print(f"\n{i}. [{anomaly.severity.upper()}] {anomaly.anomaly_type.value}")
-                print(f"   Agent: {anomaly.agent_id}")
-                print(f"   Description: {anomaly.description}")
-                print(f"   Time: {anomaly.timestamp.isoformat()}")
+                pass # Removed print-debug
+                pass # Removed print-debug
+                pass # Removed print-debug
+                pass # Removed print-debug
         
         elif action == "report":
-            print("📊 AI Audit Report")
-            print("=" * 50)
+            pass # Removed print-debug
+            pass # Removed print-debug
             agent_id = getattr(args, 'agent', None)
             report = self.ai_audit.get_audit_report(agent_id=agent_id)
-            print(json.dumps(report, indent=2))
+            pass # Removed print-debug
         
         return 0
     
     def cmd_wizard(self, args):
         """Setup Wizard"""
-        print("🧙‍♂️ Setup Wizard")
-        print("=" * 50)
+        pass # Removed print-debug
+        pass # Removed print-debug
         wizard = SetupWizard()
         
         # Interactive setup
@@ -610,10 +610,10 @@ class MethodologyCLI:
             use_case=use_case
         )
         
-        print(f"\n✅ Project created: {config.name}")
-        print(f"   Use case: {config.use_case.value}")
-        print(f"   Workflow: {config.workflow}")
-        print(f"   Agents: {len(config.agents)}")
+        pass # Removed print-debug
+        pass # Removed print-debug
+        pass # Removed print-debug
+        pass # Removed print-debug
         return 0
     
     def cmd_guardrails(self, args):
@@ -624,17 +624,17 @@ class MethodologyCLI:
             text = args.text or "Sample text to check"
             try:
                 result = self.guardrails.check(text)
-                print("🛡️ Security Check Results")
-                print("=" * 50)
-                print(f"Text: {text[:50]}...")
-                print(f"\nSafe: {'✅' if result.safe else '❌'}")
+                pass # Removed print-debug
+                pass # Removed print-debug
+                pass # Removed print-debug
+                pass # Removed print-debug
                 if result.threats:
-                    print("\nThreats detected:")
+                    pass # Removed print-debug
                     for threat in result.threats:
-                        print(f"  - {threat}")
+                        pass # Removed print-debug
             except Exception as e:
-                print(f"🛡️ Guardrails Active (method: check)")
-                print(f"   Error during check: {e}")
+                pass # Removed print-debug
+                pass # Removed print-debug
         return 0
 
     def cmd_security(self, args):
@@ -642,81 +642,81 @@ class MethodologyCLI:
         action = args.action
 
         if action == "deep-check":
-            print("🔒 Deep Security Defense - Status Check")
-            print("=" * 50)
-            print("Layer 1: Input Validator")
-            print("  ✅ Module loaded")
-            print("Layer 2: Execution Sandbox")
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
             sandbox_config = self.execution_sandbox.config
-            print(f"  ✅ Sandbox Level: {sandbox_config.level.value}")
-            print(f"  ✅ Max Execution Time: {sandbox_config.max_execution_time}s")
-            print("Layer 3: Output Filter")
-            print("  ✅ Module loaded")
-            print("Layer 4: Human-in-the-Loop")
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
             pending = self.hitl_security.get_pending()
-            print(f"  ✅ Pending Requests: {len(pending)}")
-            print()
-            print("🛡️ Deep Defense Architecture v5.33")
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
 
         elif action == "enable-deep-defense":
-            print("🔒 Enabling Deep Security Defense")
-            print("=" * 50)
-            print("✅ Layer 1: Input Validation - ACTIVE")
-            print("   - LPCI Attack Detection")
-            print("   - Prompt Injection Detection")
-            print("   - Blacklist/Whitelist Support")
-            print("✅ Layer 2: Execution Sandbox - ACTIVE")
-            print("   - Strict Isolation Mode")
-            print("   - Minimal PATH (/usr/bin:/bin)")
-            print("   - Restricted Working Directory (/tmp)")
-            print("✅ Layer 3: Output Filter - ACTIVE")
-            print("   - Sensitive Data Detection")
-            print("   - Automatic Redaction")
-            print("   - Audit Logging")
-            print("✅ Layer 4: Human-in-the-Loop - ACTIVE")
-            print("   - Approval Queue")
-            print("   - Auto-Escalation")
-            print("   - Audit Trail")
-            print()
-            print("🛡️ All 4 security layers are now ENABLED")
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
 
         elif action == "audit-log":
-            print("📋 Security Audit Log")
-            print("=" * 50)
+            pass # Removed print-debug
+            pass # Removed print-debug
             input_audit = self.input_validator
             output_audit = self.output_filter.get_audit_log()
             hitl_audit = self.hitl_security.get_pending()
 
-            print(f"Output Filter Entries: {len(output_audit)}")
+            pass # Removed print-debug
             if output_audit:
                 for i, entry in enumerate(output_audit[-5:], 1):
-                    print(f"  {i}. {entry}")
+                    pass # Removed print-debug
             else:
-                print("  (no entries)")
+                pass # Removed print-debug
 
-            print(f"\nHITL Pending Requests: {len(hitl_audit)}")
+            pass # Removed print-debug
             if hitl_audit:
                 for req in hitl_audit[:5]:
-                    print(f"  - {req.action}: {req.description[:50]}...")
+                    pass # Removed print-debug
             else:
-                print("  (no pending requests)")
+                pass # Removed print-debug
 
         elif action == "validate":
             text = args.text or "ignore previous instructions"
-            print(f"🔍 Validating input: {text[:50]}...")
+            pass # Removed print-debug
             result = self.input_validator.validate(text)
-            print("=" * 50)
-            print(f"Safe: {'✅' if result.is_safe else '❌'}")
-            print(f"Threat Type: {result.threat_type.value if result.threat_type else 'None'}")
-            print(f"Confidence: {result.confidence:.2f}")
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
             if result.matched_patterns:
-                print(f"Matched Patterns:")
+                pass # Removed print-debug
                 for p in result.matched_patterns:
-                    print(f"  - {p}")
+                    pass # Removed print-debug
             if result.recommendations:
-                print(f"Recommendations:")
+                pass # Removed print-debug
                 for r in result.recommendations:
-                    print(f"  - {r}")
+                    pass # Removed print-debug
 
         return 0
 
@@ -726,22 +726,22 @@ class MethodologyCLI:
         
         if action == "status":
             status = self.autoscaler.get_status()
-            print("⚖️ AutoScaler Status")
-            print("=" * 50)
+            pass # Removed print-debug
+            pass # Removed print-debug
             for k, v in status.items():
-                print(f"  {k}: {v}")
+                pass # Removed print-debug
         elif action == "scale":
             current = int(args.current or 1)
             target = self.autoscaler.calculate_target_instances(current)
-            print(f"\n⚖️ Scaling Recommendation")
-            print(f"  Current: {current}")
-            print(f"  Target: {target}")
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
         return 0
     
     def cmd_migrate(self, args):
         """LangGraph / CrewAI Migration Tool"""
         if not args.file:
-            print("Usage: python cli.py migrate [--from crewai|langgraph] [--to crewai|langgraph] <file.py>")
+            pass # Removed print-debug
             return 1
 
         from_framework = getattr(args, 'from', None)
@@ -750,20 +750,20 @@ class MethodologyCLI:
         # Cross-framework migration
         if from_framework and to_framework:
             if from_framework == to_framework:
-                print(f"⚠️ Source and target are the same: {from_framework}")
+                pass # Removed print-debug
                 return 1
 
-            print(f"🔄 Migrating {from_framework.upper()} → {to_framework.upper()}...")
-            print(f"   File: {args.file}")
-            print()
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
 
             report = bridge_quick_convert(args.file, from_framework, to_framework)
 
             if report.success:
-                print(f"✅ Migration successful!")
-                print(f"   Output: {report.output_file}")
-                print(f"   Nodes migrated: {report.nodes_migrated}")
-                print()
+                pass # Removed print-debug
+                pass # Removed print-debug
+                pass # Removed print-debug
+                pass # Removed print-debug
 
                 # Validate
                 success, messages = self.bridge.validate_migration(
@@ -771,25 +771,25 @@ class MethodologyCLI:
                     f"{from_framework}_to_{to_framework}"
                 )
                 for msg in messages:
-                    print(f"   {msg}")
+                    pass # Removed print-debug
             else:
-                print(f"❌ Migration failed:")
+                pass # Removed print-debug
                 for err in report.errors:
-                    print(f"   - {err}")
+                    pass # Removed print-debug
 
             return 0
 
         # Default: LangGraph migration (backward compatible)
-        print(f"🔄 Analyzing {args.file}...")
+        pass # Removed print-debug
         result = self.migrator.analyze_file(args.file)
-        print(self.migrator.generate_report(result))
+        pass # Removed print-debug
         return 0
     
     def cmd_parse(self, args):
         """Structured Output Engine"""
-        print("📝 Structured Output Engine")
-        print("=" * 50)
-        print(self.structured.generate_report())
+        pass # Removed print-debug
+        pass # Removed print-debug
+        pass # Removed print-debug
         return 0
     
     def cmd_pm(self, args):
@@ -805,7 +805,7 @@ class MethodologyCLI:
                 blockers=["等不及第三方 API 文件"],
                 velocity=42.0
             )
-            print(report.to_markdown())
+            pass # Removed print-debug
         elif action == "forecast":
             forecast = self.pm_mode.predict_cost(
                 project_name="AI Assistant",
@@ -814,13 +814,13 @@ class MethodologyCLI:
                 daily_burn_rate=85.0,
                 days_remaining=18
             )
-            print(forecast.to_markdown())
+            pass # Removed print-debug
         elif action == "health":
             health = self.pm_mode.get_sprint_health(velocity=35, planned=50, completed=30)
-            print(f"\n## Sprint Health")
-            print(f"Status: {health['health']}")
-            print(f"Score: {health['health_score']}/10")
-            print(f"Completion: {health['completion_rate']:.1f}%")
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
         return 0
     
     def cmd_term(self, args):
@@ -829,17 +829,17 @@ class MethodologyCLI:
         if query:
             results = self.terminology.search(query)
             if results:
-                print(f"\n# Search: {query}\n")
+                pass # Removed print-debug
                 for r in results[:5]:
-                    print(f"## {r.pm_term}")
-                    print(f"- **Dev**: {r.dev_term}")
-                    print(f"- **Scrum**: {r.scrum_term}")
-                    print(f"- **定義**: {r.definition}")
-                    print()
+                    pass # Removed print-debug
+                    pass # Removed print-debug
+                    pass # Removed print-debug
+                    pass # Removed print-debug
+                    pass # Removed print-debug
             else:
-                print(f"No results for '{query}'")
+                pass # Removed print-debug
         else:
-            print(self.terminology.to_markdown_table())
+            pass # Removed print-debug
         return 0
     
     def cmd_resources(self, args):
@@ -847,19 +847,19 @@ class MethodologyCLI:
         action = args.action
         
         if action == "list":
-            print(self.resources.to_table())
+            pass # Removed print-debug
         elif action == "stats":
             summary = self.resources.get_resource_summary()
-            print("\n📊 Resource Summary:")
-            print(f"  Total: {summary['total']}")
-            print(f"  Team Size: {summary['team_size']}")
-            print(f"  Monthly Cost: ${summary['total_monthly_cost']:.2f}")
-            print(f"  By Type: {summary['by_type']}")
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
         elif action == "skills":
             matrix = self.resources.get_team_skills_matrix()
-            print("\n👥 Team Skills:")
+            pass # Removed print-debug
             for skill, members in matrix.items():
-                print(f"  {skill}: {', '.join(members)}")
+                pass # Removed print-debug
         return 0
     
     def cmd_debug(self, args):
@@ -875,34 +875,34 @@ class MethodologyCLI:
                 stats = self.debugger.get_stats(agent_id)
                 print(f"\n📊 Debug Stats for: {agent_id}")
                 for k, v in stats.items():
-                    print(f"   {k}: {v}")
+                    pass # Removed print-debug
             else:
                 print(self.debugger.get_stats())
         
         elif action == "list":
             agent_id = args.agent_id
             if not agent_id:
-                print("Error: --agent-id required")
+                pass # Removed print-debug
                 return 1
             events = self.debugger.get_trace(agent_id, limit=args.limit or 20)
             if not events:
-                print(f"No trace events found for agent: {agent_id}")
+                pass # Removed print-debug
                 return 0
-            print(f"\n📋 Trace Events for: {agent_id}")
-            print("-" * 70)
+            pass # Removed print-debug
+            pass # Removed print-debug
             for event in events:
-                print(f"  [{event['timestamp']}] {event['event_type']} - {event.get('id', 'N/A')}")
+                pass # Removed print-debug
                 if event.get('data'):
                     for k, v in event['data'].items():
-                        print(f"     {k}: {str(v)[:50]}")
+                        pass # Removed print-debug
         
         elif action == "clear":
             if args.agent_id:
                 self.debugger.clear(args.agent_id)
-                print(f"✅ Cleared traces for agent: {args.agent_id}")
+                pass # Removed print-debug
             else:
                 self.debugger.clear()
-                print("✅ Cleared all traces")
+                pass # Removed print-debug
         
         elif action == "enable":
             self.debugger.enable_debug()
@@ -919,42 +919,42 @@ class MethodologyCLI:
     def _print_impact_report(self, impact):
         """列印 Impact Analysis 報告"""
         risk_label = "🟢 Low" if impact.risk_score < 40 else "🟡 Medium" if impact.risk_score < 70 else "🔴 High"
-        print()
-        print("=" * 50)
-        print("    Impact Analysis Report")
-        print("=" * 50)
-        print(f"📁 Changed File: {impact.changed_file}")
-        print()
-        print(f"📊 Risk Score: {impact.risk_score}/100 ({risk_label} Risk)")
-        print()
+        pass # Removed print-debug
+        pass # Removed print-debug
+        pass # Removed print-debug
+        pass # Removed print-debug
+        pass # Removed print-debug
+        pass # Removed print-debug
+        pass # Removed print-debug
+        pass # Removed print-debug
         if impact.affected_tests:
-            print(f"🔴 Affected Tests ({len(impact.affected_tests)}):")
+            pass # Removed print-debug
             for test in impact.affected_tests:
-                print(f"   - {test}")
-            print()
+                pass # Removed print-debug
+            pass # Removed print-debug
         if impact.affected_modules:
-            print(f"🟡 Affected Modules ({len(impact.affected_modules)}):")
+            pass # Removed print-debug
             for mod in impact.affected_modules[:10]:  # Limit to 10
-                print(f"   - {mod}")
+                pass # Removed print-debug
             if len(impact.affected_modules) > 10:
-                print(f"   ... and {len(impact.affected_modules) - 10} more")
-            print()
+                pass # Removed print-debug
+            pass # Removed print-debug
         if impact.recommendations:
-            print("💡 Recommendations:")
+            pass # Removed print-debug
             for rec in impact.recommendations:
-                print(f"   - {rec}")
-            print()
+                pass # Removed print-debug
+            pass # Removed print-debug
     
     def _print_risk_report(self, report):
         """列印 Risk Report"""
-        print()
-        print("=" * 50)
-        print("    Dependency Risk Report")
-        print("=" * 50)
-        print(f"📊 Total Nodes: {report['total_nodes']}")
-        print(f"🔗 Total Edges: {report['total_edges']}")
-        print(f"🧪 Test Files: {report['test_files']}")
-        print()
+        pass # Removed print-debug
+        pass # Removed print-debug
+        pass # Removed print-debug
+        pass # Removed print-debug
+        pass # Removed print-debug
+        pass # Removed print-debug
+        pass # Removed print-debug
+        pass # Removed print-debug
     
     def cmd_trace(self, args):
         """Agent Trace - 視覺化追蹤"""
@@ -963,7 +963,7 @@ class MethodologyCLI:
         # Impact Analysis commands (no agent_id required)
         if action == "impact":
             if not args.file:
-                print("Error: --file required for impact analysis")
+                pass # Removed print-debug
                 return 1
             analyzer = ImpactAnalyzer(project_path=".")
             analyzer.scan_project()
@@ -978,9 +978,9 @@ class MethodologyCLI:
             if args.output:
                 with open(args.output, 'w') as f:
                     f.write(report['graphviz'])
-                print(f"✅ Dependency graph exported to {args.output}")
+                pass # Removed print-debug
             else:
-                print(report['graphviz'])
+                pass # Removed print-debug
             return 0
         
         elif action == "risk-report":
@@ -993,7 +993,7 @@ class MethodologyCLI:
         # Agent Trace commands (require agent_id)
         agent_id = args.agent_id
         if not agent_id:
-            print("Error: --agent-id required for this action")
+            pass # Removed print-debug
             return 1
         
         if action == "view":
@@ -1006,7 +1006,7 @@ class MethodologyCLI:
             if correlation_id:
                 print(self.debugger.visualize_correlation(correlation_id))
             else:
-                print("Error: --correlation required for correlation view")
+                pass # Removed print-debug
                 return 1
         
         elif action == "export":
@@ -1015,9 +1015,9 @@ class MethodologyCLI:
             if args.output:
                 with open(args.output, 'w') as f:
                     f.write(json_data)
-                print(f"✅ Trace exported to {args.output}")
+                pass # Removed print-debug
             else:
-                print(json_data)
+                pass # Removed print-debug
         
         return 0
     
@@ -1028,12 +1028,12 @@ class MethodologyCLI:
         if action == "list":
             pending = self.approval_flow.get_pending()
             if not pending:
-                print("✅ No pending approvals")
+                pass # Removed print-debug
                 return 0
-            print(f"\n{'ID':<15} {'Name':<30} {'Type':<15} {'Requester':<15}")
-            print("-" * 80)
+            pass # Removed print-debug
+            pass # Removed print-debug
             for p in pending:
-                print(f"{p['id']:<15} {p['name'][:28]:<30} {p['approval_type']:<15} {p.get('requester_name', p.get('requester','')):<15}")
+                pass # Removed print-debug
             return 0
         
         elif action == "create":
@@ -1044,87 +1044,87 @@ class MethodologyCLI:
                 requester_name=args.requester_name or "",
                 approval_type=args.approval_type or "general",
             )
-            print(f"✅ Created approval request: {req_id}")
+            pass # Removed print-debug
             return 0
         
         elif action == "approve":
             if not args.request_id:
-                print("Error: --request-id required")
+                pass # Removed print-debug
                 return 1
             level = None
             if args.level:
                 try:
                     level = ApprovalLevel(args.level)
                 except ValueError:
-                    print(f"Error: Invalid level '{args.level}'. Use: l1, l2, l3, l4, final")
+                    pass # Removed print-debug
                     return 1
             result = self.approval_flow.approve(args.request_id, args.approver or "user",
                                                comment=args.comment or "", level=level)
             if result:
-                print(f"✅ Approved: {args.request_id}")
+                pass # Removed print-debug
             else:
-                print(f"❌ Failed to approve: {args.request_id}")
+                pass # Removed print-debug
             return 0
         
         elif action == "reject":
             if not args.request_id:
-                print("Error: --request-id required")
+                pass # Removed print-debug
                 return 1
             level = None
             if args.level:
                 try:
                     level = ApprovalLevel(args.level)
                 except ValueError:
-                    print(f"Error: Invalid level '{args.level}'. Use: l1, l2, l3, l4, final")
+                    pass # Removed print-debug
                     return 1
             result = self.approval_flow.reject(args.request_id, args.approver or "user",
                                               comment=args.comment or "", level=level)
             if result:
-                print(f"✅ Rejected: {args.request_id}")
+                pass # Removed print-debug
             else:
-                print(f"❌ Failed to reject: {args.request_id}")
+                pass # Removed print-debug
             return 0
         
         elif action == "show":
             if not args.request_id:
-                print("Error: --request-id required")
+                pass # Removed print-debug
                 return 1
             request = self.approval_flow.get_request(args.request_id)
             if not request:
-                print(f"❌ Request not found: {args.request_id}")
+                pass # Removed print-debug
                 return 1
-            print(f"\n{'='*60}")
-            print(f"Approval Request: {request.name}")
-            print(f"{'='*60}")
-            print(f"ID: {request.id}")
-            print(f"Type: {request.approval_type}")
-            print(f"Status: {request.status.value}")
-            print(f"Requester: {request.requester_name or request.requester}")
-            print(f"Created: {request.created_at}")
-            print(f"\nDescription:")
-            print(f"  {request.description}")
-            print(f"\nSteps:")
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
             for i, step in enumerate(request.steps):
                 marker = "→" if i == request.current_step_index else ("✓" if step.status != ApprovalStatus.PENDING else " ")
-                print(f"  {marker} [{step.level.value.upper()}] {step.approver} - {step.status.value}")
+                pass # Removed print-debug
                 for approval in step.approvals:
-                    print(f"      - {approval['approver']}: {approval['status'].value} ({approval.get('comment','')})")
-            print(f"\n{'='*60}")
+                    pass # Removed print-debug
+            pass # Removed print-debug
             return 0
         
         elif action == "report":
-            print(self.approval_flow.generate_report())
+            pass # Removed print-debug
             return 0
         
         elif action == "stats":
             stats = self.approval_flow.get_statistics()
-            print("\n📊 Approval Statistics")
-            print("=" * 40)
+            pass # Removed print-debug
+            pass # Removed print-debug
             for k, v in stats.items():
-                print(f"  {k}: {v}")
+                pass # Removed print-debug
             return 0
         
-        print(f"Unknown action: {action}")
+        pass # Removed print-debug
         return 1
 
     def cmd_risk(self, args):
@@ -1141,10 +1141,10 @@ class MethodologyCLI:
                 probability=args.probability or 0.5,
                 mitigation=args.mitigation or "",
             )
-            print(f"✅ Risk added: {risk.id}")
-            print(f"   Title: {risk.title}")
-            print(f"   Level: {risk.level.value}")
-            print(f"   Owner: {risk.owner}")
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
             return 0
 
         elif action == "list":
@@ -1159,78 +1159,78 @@ class MethodologyCLI:
                 risks = self.registry.get_all_risks()
 
             if not risks:
-                print("No risks found")
+                pass # Removed print-debug
                 return 0
 
-            print(f"\n{'ID':<10} {'Level':<10} {'Status':<12} {'Title':<30} {'Owner':<15}")
-            print("-" * 80)
+            pass # Removed print-debug
+            pass # Removed print-debug
             for r in risks:
-                print(f"{r.id:<10} {r.level.value:<10} {r.status.value:<12} {r.title[:28]:<30} {r.owner:<15}")
+                pass # Removed print-debug
             return 0
 
         elif action == "show":
             risk = self.registry.get_risk(args.risk_id)
             if not risk:
-                print(f"❌ Risk not found: {args.risk_id}")
+                pass # Removed print-debug
                 return 1
-            print(f"\n{'='*60}")
-            print(f"Risk: {risk.title}")
-            print(f"{'='*60}")
-            print(f"ID: {risk.id}")
-            print(f"Level: {risk.level.value}")
-            print(f"Status: {risk.status.value}")
-            print(f"Owner: {risk.owner}")
-            print(f"Probability: {risk.probability:.0%}")
-            print(f"Impact: {risk.impact}")
-            print(f"Created: {risk.created_at.strftime('%Y-%m-%d %H:%M')}")
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
             if risk.mitigated_at:
-                print(f"Mitigated: {risk.mitigated_at.strftime('%Y-%m-%d %H:%M')}")
+                pass # Removed print-debug
             if risk.closed_at:
-                print(f"Closed: {risk.closed_at.strftime('%Y-%m-%d %H:%M')}")
-            print(f"\nDescription:\n  {risk.description}")
-            print(f"\nMitigation:\n  {risk.mitigation}")
-            print(f"{'='*60}")
+                pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
             return 0
 
         elif action == "close":
             if self.registry.update_risk_status(args.risk_id, RiskStatus.CLOSED):
-                print(f"✅ Risk closed: {args.risk_id}")
+                pass # Removed print-debug
             else:
-                print(f"❌ Risk not found: {args.risk_id}")
+                pass # Removed print-debug
             return 0
 
         elif action == "mitigate":
             if self.registry.update_risk_status(args.risk_id, RiskStatus.MITIGATED):
-                print(f"✅ Risk mitigated: {args.risk_id}")
+                pass # Removed print-debug
             else:
-                print(f"❌ Risk not found: {args.risk_id}")
+                pass # Removed print-debug
             return 0
 
         elif action == "report":
-            print(self.registry.generate_report())
+            pass # Removed print-debug
             return 0
 
         elif action == "stats":
             summary = self.registry.get_summary()
-            print("\n📊 Risk Summary")
-            print("=" * 40)
-            print(f"Total Risks: {summary['total']}")
-            print("\nBy Status:")
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
             for k, v in summary['by_status'].items():
-                print(f"  {k}: {v}")
-            print("\nBy Level:")
+                pass # Removed print-debug
+            pass # Removed print-debug
             for k, v in summary['by_level'].items():
-                print(f"  {k}: {v}")
+                pass # Removed print-debug
             return 0
 
         elif action == "delete":
             if self.registry.delete_risk(args.risk_id):
-                print(f"✅ Risk deleted: {args.risk_id}")
+                pass # Removed print-debug
             else:
-                print(f"❌ Risk not found: {args.risk_id}")
+                pass # Removed print-debug
             return 0
 
-        print(f"Unknown action: {action}")
+        pass # Removed print-debug
         return 1
 
     def cmd_roi(self, args):
@@ -1241,30 +1241,30 @@ class MethodologyCLI:
 
         if args.subcommand == "dashboard":
             data = calculator.get_dashboard_data()
-            print("=" * 50)
-            print("ROI Dashboard")
-            print("=" * 50)
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
             for period, report in data.items():
-                print(f"\n{period.upper()}:")
-                print(f"  Cost: ${report.total_cost:.2f}")
-                print(f"  Value: ${report.total_value:.2f}")
-                print(f"  ROI: {report.roi_percentage}%")
-                print(f"  Net: ${report.net_value:.2f}")
+                pass # Removed print-debug
+                pass # Removed print-debug
+                pass # Removed print-debug
+                pass # Removed print-debug
+                pass # Removed print-debug
                 if hasattr(report, 'recommendation') and report.recommendation:
-                    print(f"  Recommendation: {report.recommendation}")
-            print()
+                    pass # Removed print-debug
+            pass # Removed print-debug
             return 0
 
         elif args.subcommand == "report":
             report = calculator.calculate(args.period)
-            print(f"ROI Report ({args.period})")
-            print("=" * 40)
-            print(f"Total Cost: ${report.total_cost:.2f}")
-            print(f"Total Value: ${report.total_value:.2f}")
-            print(f"ROI: {report.roi_percentage}%")
-            print(f"Net Value: ${report.net_value:.2f}")
-            print(f"Recommendation: {report.recommendation}")
-            print()
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
             return 0
 
     def cmd_p2p(self, args):
@@ -1276,14 +1276,14 @@ class MethodologyCLI:
             try:
                 self.p2p_config = P2PTeamConfig.from_json(args.config_path)
             except FileNotFoundError as e:
-                print(f"❌ {e}")
+                pass # Removed print-debug
                 return 1
             except json.JSONDecodeError as e:
-                print(f"❌ Invalid JSON: {e}")
+                pass # Removed print-debug
                 return 1
 
             if not self.p2p_config.validate():
-                print("❌ Config validation failed")
+                pass # Removed print-debug
                 return 1
 
             # Persist to cache for stateless access
@@ -1291,10 +1291,10 @@ class MethodologyCLI:
                 json.dump(self.p2p_config.to_dict(), f, indent=2, ensure_ascii=False)
 
             summary = self.p2p_config.summary()
-            print(f"✅ Team loaded: {summary['teamId']}")
-            print(f"   Mode: {summary['mode']}")
-            print(f"   Members: {summary['memberCount']}")
-            print(f"   Max Spawn Depth: {summary['maxSpawnDepth']}")
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
             return 0
 
         # Reload from cache for status/list
@@ -1306,37 +1306,37 @@ class MethodologyCLI:
                 self.p2p_config = None
 
         if self.p2p_config is None:
-            print("❌ No team loaded. Run: python cli.py p2p init <config.json>")
+            pass # Removed print-debug
             return 1
 
         if action == "status":
             summary = self.p2p_config.summary()
-            print(f"\n📡 P2P Team Status")
-            print("=" * 40)
-            print(f"Team ID: {summary['teamId']}")
-            print(f"Mode: {summary['mode']}")
-            print(f"Members: {summary['memberCount']}")
-            print(f"Roles: {', '.join(summary['roles'])}")
-            print(f"Max Spawn Depth: {summary['maxSpawnDepth']}")
-            print(f"Agent-to-Agent: {'✅' if summary['allowAgentToAgent'] else '❌'}")
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
             return 0
 
         if action == "list":
             members = self.p2p_config.list_agents()
             if not members:
-                print("No members in team")
+                pass # Removed print-debug
                 return 0
-            print(f"\n👥 Team Members ({len(members)})")
-            print("-" * 60)
-            print(f"{'Agent ID':<25} {'Role':<18} {'Spawn':<8} {'Memory'}")
-            print("-" * 60)
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
             for m in members:
                 spawn = "✅" if m["canSpawnSubagent"] else "❌"
                 memory = "✅" if m["peerMemoryEnabled"] else "❌"
-                print(f"{m['agentId']:<25} {m['role']:<18} {spawn:<8} {memory}")
+                pass # Removed print-debug
             return 0
 
-        print(f"Unknown action: {action}")
+        pass # Removed print-debug
         return 1
 
     def cmd_hitl(self, args):
@@ -1352,9 +1352,9 @@ class MethodologyCLI:
                 role=args.role or "Owner",
             )
             if self.hitl_controller.register_owner(owner):
-                print(f"✅ Owner registered: {owner.name} ({owner.owner_id})")
+                pass # Removed print-debug
             else:
-                print(f"❌ Owner already exists: {owner.owner_id}")
+                pass # Removed print-debug
             return 0
         
         elif action == "list":
@@ -1362,104 +1362,104 @@ class MethodologyCLI:
             if args.list_type == "owners":
                 owners = self.hitl_controller.list_owners()
                 if not owners:
-                    print("No owners registered")
+                    pass # Removed print-debug
                     return 0
-                print(f"\n{'Owner ID':<20} {'Name':<20} {'Email':<30} {'Role':<15} {'Agents'}")
-                print("-" * 90)
+                pass # Removed print-debug
+                pass # Removed print-debug
                 for o in owners:
-                    print(f"{o.owner_id:<20} {o.name:<20} {o.email:<30} {o.role:<15} {len(o.agents)}")
+                    pass # Removed print-debug
                 return 0
             elif args.list_type == "outputs":
                 outputs = self.hitl_controller.get_outputs_by_status(OutputStatus(args.status_filter)) if args.status_filter else list(self.hitl_controller.outputs.values())
                 if not outputs:
-                    print("No outputs found")
+                    pass # Removed print-debug
                     return 0
-                print(f"\n{'Output ID':<20} {'Agent':<15} {'Owner':<15} {'Task':<20} {'Status':<15}")
-                print("-" * 90)
+                pass # Removed print-debug
+                pass # Removed print-debug
                 for o in outputs:
-                    print(f"{o.id:<20} {o.agent_id:<15} {o.owner_id:<15} {o.task_id:<20} {o.status.value:<15}")
+                    pass # Removed print-debug
                 return 0
             elif args.list_type == "pending":
                 pending = self.hitl_controller.get_pending_reviews(args.owner_filter)
                 if not pending:
-                    print("No pending reviews")
+                    pass # Removed print-debug
                     return 0
-                print(f"\n{'Output ID':<20} {'Agent':<15} {'Task':<20} {'Created':<20} {'Owner'}")
-                print("-" * 90)
+                pass # Removed print-debug
+                pass # Removed print-debug
                 for o in pending:
-                    print(f"{o.id:<20} {o.agent_id:<15} {o.task_id:<20} {o.created_at.strftime('%Y-%m-%d %H:%M'):<20} {o.owner_id}")
+                    pass # Removed print-debug
                 return 0
         
         elif action == "assign":
             # 指派 Agent 給負責人
             if self.hitl_controller.assign_agent_to_owner(args.agent_id, args.owner_id):
                 owner = self.hitl_controller.get_owner(args.owner_id)
-                print(f"✅ Assigned {args.agent_id} -> {owner.name if owner else args.owner_id}")
+                pass # Removed print-debug
             else:
-                print(f"❌ Failed to assign: owner {args.owner_id} not found")
+                pass # Removed print-debug
             return 0
         
         elif action == "approve":
             # 批准產出
             if self.hitl_controller.approve_output(args.output_id, args.approver or "user"):
-                print(f"✅ Approved: {args.output_id}")
+                pass # Removed print-debug
             else:
-                print(f"❌ Failed to approve: {args.output_id}")
+                pass # Removed print-debug
             return 0
         
         elif action == "reject":
             # 要求修改
             feedback = args.feedback or "Revision requested"
             if self.hitl_controller.request_revision(args.output_id, args.approver or "user", feedback):
-                print(f"✅ Revision requested: {args.output_id}")
-                print(f"   Feedback: {feedback}")
+                pass # Removed print-debug
+                pass # Removed print-debug
             else:
-                print(f"❌ Failed to request revision: {args.output_id}")
+                pass # Removed print-debug
             return 0
         
         elif action == "show":
             # 顯示產出詳情
             output = self.hitl_controller.get_output(args.output_id)
             if not output:
-                print(f"❌ Output not found: {args.output_id}")
+                pass # Removed print-debug
                 return 1
-            print(f"\n{'='*60}")
-            print(f"Output: {output.id}")
-            print(f"{'='*60}")
-            print(f"Agent: {output.agent_id}")
-            print(f"Owner: {output.owner_id}")
-            print(f"Task: {output.task_id}")
-            print(f"Status: {output.status.value}")
-            print(f"Created: {output.created_at}")
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
             if output.submitted_at:
-                print(f"Submitted: {output.submitted_at}")
+                pass # Removed print-debug
             if output.approved_at:
-                print(f"Approved: {output.approved_at} by {output.approved_by}")
+                pass # Removed print-debug
             if output.feedback:
-                print(f"Feedback: {output.feedback}")
+                pass # Removed print-debug
             if output.revision_count > 0:
-                print(f"Revision count: {output.revision_count}")
-            print(f"{'='*60}")
+                pass # Removed print-debug
+            pass # Removed print-debug
             return 0
         
         elif action == "stats":
             # 顯示統計
             stats = self.hitl_controller.get_statistics()
-            print(f"\n📊 HITL Statistics")
-            print("=" * 40)
-            print(f"Total outputs: {stats['total_outputs']}")
-            print(f"Pending reviews: {stats['pending_reviews']}")
-            print(f"Total owners: {stats['total_owners']}")
-            print(f"Agents assigned: {stats['total_agents_assigned']}")
-            print(f"Avg revision count: {stats['avg_revision_count']}")
-            print(f"\nBy status:")
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
             for status, count in stats['by_status'].items():
-                print(f"  {status}: {count}")
+                pass # Removed print-debug
             return 0
         
         elif action == "report":
             # 生成報告
-            print(self.hitl_controller.generate_report())
+            pass # Removed print-debug
             return 0
         
         elif action == "escalate":
@@ -1467,14 +1467,14 @@ class MethodologyCLI:
             from hitl_controller import EscalationLevel
             level = EscalationLevel(args.level) if args.level else EscalationLevel.OWNER
             if self.hitl_controller.escalate_output(args.output_id, args.reason, level):
-                print(f"✅ Escalated: {args.output_id}")
-                print(f"   Reason: {args.reason}")
-                print(f"   Level: {level.value}")
+                pass # Removed print-debug
+                pass # Removed print-debug
+                pass # Removed print-debug
             else:
-                print(f"❌ Failed to escalate: {args.output_id}")
+                pass # Removed print-debug
             return 0
         
-        print(f"Unknown action: {action}")
+        pass # Removed print-debug
         return 1
 
     def cmd_constitution(self, args):
@@ -1483,53 +1483,53 @@ class MethodologyCLI:
 
         if subcmd == "view":
             from constitution import load_constitution
-            print(load_constitution())
+            pass # Removed print-debug
         elif subcmd == "thresholds":
             from constitution import get_quality_thresholds
             thresholds = get_quality_thresholds()
-            print("Quality Thresholds:")
+            pass # Removed print-debug
             for k, v in thresholds.items():
-                print(f"  {k}: {v}%")
+                pass # Removed print-debug
         elif subcmd == "errors":
             from constitution import get_error_levels
             levels = get_error_levels()
-            print("Error Levels:")
+            pass # Removed print-debug
             for k, v in levels.items():
-                print(f"  {k}: {v['name']} (recoverable: {v['recoverable']})")
+                pass # Removed print-debug
         elif subcmd == "check":
-            print("Checking project compliance...")
+            pass # Removed print-debug
             # TODO: 檢查專案是否符合憲章
-            print("✅ Project is compliant")
+            pass # Removed print-debug
         elif subcmd == "edit":
-            print("Opening constitution in editor...")
+            pass # Removed print-debug
             import subprocess
             subprocess.run(["open", "constitution/CONSTITUTION.md"])
         elif subcmd == "compile":
             from constitution import compile_constitution
             compiled = compile_constitution()
-            print("Constitution compiled successfully!")
-            print(f"  Version: {compiled.version}")
-            print(f"  Hash: {compiled.hash}")
-            print(f"  Specs: {len(compiled.specs)} sections")
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
         elif subcmd == "verify":
             if not args.output:
-                print("Error: output text required for verify")
-                print("Usage: python3 cli.py constitution verify '<agent_output>'")
+                pass # Removed print-debug
+                pass # Removed print-debug
                 return 1
             from constitution import compile_constitution, verify_agent_output
             compiled = compile_constitution()
             result = verify_agent_output(compiled, args.output)
-            print("Verification Result:")
-            print(f"  Compliant: {result['compliant']}")
-            print(f"  Score: {result['score']}/100")
-            print(f"  Version: {result['version']}")
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
             if result['violations']:
-                print("  Violations:")
+                pass # Removed print-debug
                 for v in result['violations']:
-                    print(f"    - [{v['severity']}] {v['description']}")
+                    pass # Removed print-debug
         else:
-            print(f"Unknown subcommand: {subcmd}")
-            print("Available: view, thresholds, errors, check, edit, compile, verify")
+            pass # Removed print-debug
+            pass # Removed print-debug
         return 0
 
     def cmd_constitution_sync(self, args):
@@ -1539,12 +1539,12 @@ class MethodologyCLI:
         generator = ConstitutionPolicyGenerator()
         policies = generator.sync()
         
-        print(f"\n✅ Synced {len(policies)} policies from Constitution")
+        pass # Removed print-debug
         return 0
 
     def cmd_version(self, args):
         """顯示版本"""
-        print(f"Methodology v{self.VERSION}")
+        pass # Removed print-debug
         return 0
 
     def cmd_gatekeeper(self, args):
@@ -1557,27 +1557,27 @@ class MethodologyCLI:
         if action == "status":
             gk.print_status()
         elif action == "check":
-            print("檢查所有 Gates...")
+            pass # Removed print-debug
             all_passed = gk.check_all_gates()
             gk.print_status()
             if all_passed:
-                print("\n✅ 所有 Gates 通過")
+                pass # Removed print-debug
                 return 0
             else:
-                print("\n❌ 部分 Gates 未通過")
+                pass # Removed print-debug
                 return 1
         elif action == "enforce":
-            print("强制執行 Constitution...")
+            pass # Removed print-debug
             gk.start_phase(Phase.CONSTITUTION)
             # 執行 Constitution gates
             for gate in gk.phase_records[Phase.CONSTITUTION].gates:
                 gk.check_gate(gate.gate_id)
             gk.print_status()
             if gk.can_proceed_to_next_phase():
-                print("\n✅ Constitution 階段完成，可以進入下一階段")
+                pass # Removed print-debug
                 return 0
             else:
-                print("\n❌ Constitution 階段未完成")
+                pass # Removed print-debug
                 return 1
         return 0
 
@@ -1589,80 +1589,80 @@ class MethodologyCLI:
         if action == "list":
             pending = dc.get_pending(operation=args.operation)
             if not pending:
-                print("沒有待確認的操作")
+                pass # Removed print-debug
                 return 0
-            print(f"待確認操作 ({len(pending)} 個):")
+            pass # Removed print-debug
             for p in pending:
                 required = 1 if p.level == ConfirmationLevel.SINGLE else 2
-                print(f"  [{p.confirmation_id}] {p.operation}")
-                print(f"      描述: {p.description}")
-                print(f"      等級: {p.level.value} (需要 {required} 人確認)")
-                print(f"      已確認: {len(p.confirmations)}/{required}")
-                print()
+                pass # Removed print-debug
+                pass # Removed print-debug
+                pass # Removed print-debug
+                pass # Removed print-debug
+                pass # Removed print-debug
             return 0
         
         elif action == "confirm":
             if not args.confirmation_id or not args.confirmed_by:
-                print("錯誤：需要 --id 和 --by 參數")
+                pass # Removed print-debug
                 return 1
             success = dc.confirm(args.confirmation_id, args.confirmed_by)
             if success:
                 status = dc.get_status(args.confirmation_id)
                 if status and status.get("status") == "approved":
-                    print(f"✓ 確認完成，操作已批准")
+                    pass # Removed print-debug
                 else:
-                    print(f"✓ 確認已記錄，等待更多人確認...")
+                    pass # Removed print-debug
                 return 0
             else:
-                print(f"✗ 確認失敗，ID 不存在或已過期")
+                pass # Removed print-debug
                 return 1
         
         elif action == "reject":
             if not args.confirmation_id or not args.confirmed_by:
-                print("錯誤：需要 --id 和 --by 參數")
+                pass # Removed print-debug
                 return 1
             success = dc.reject(args.confirmation_id, args.confirmed_by, args.reason or "")
             if success:
-                print(f"✓ 操作已拒絕")
+                pass # Removed print-debug
                 return 0
             else:
-                print(f"✗ 拒絕失敗，ID 不存在或已過期")
+                pass # Removed print-debug
                 return 1
         
         elif action == "status":
             if not args.confirmation_id:
-                print("錯誤：需要 --id 參數")
+                pass # Removed print-debug
                 return 1
             status = dc.get_status(args.confirmation_id)
             if status:
-                print(f"確認狀態:")
-                print(f"  ID: {status['confirmation_id']}")
-                print(f"  操作: {status['operation']}")
-                print(f"  描述: {status.get('description', 'N/A')}")
-                print(f"  等級: {status.get('level', 'N/A')}")
-                print(f"  狀態: {status['status']}")
-                print(f"  已確認: {status['confirmations']}")
+                pass # Removed print-debug
+                pass # Removed print-debug
+                pass # Removed print-debug
+                pass # Removed print-debug
+                pass # Removed print-debug
+                pass # Removed print-debug
+                pass # Removed print-debug
                 if 'required' in status:
-                    print(f"  需要: {status['required']} 人")
+                    pass # Removed print-debug
                 return 0
             else:
-                print(f"✗ 找不到確認 ID")
+                pass # Removed print-debug
                 return 1
         
         elif action == "check":
             if not args.operation:
-                print("錯誤：需要 --operation 參數")
+                pass # Removed print-debug
                 return 1
             level = dc.requires_confirmation(args.operation)
-            print(f"操作 '{args.operation}' 需要確認等級: {level.value}")
+            pass # Removed print-debug
             if level == ConfirmationLevel.BLOCKED:
-                print("  ⚠️ 此操作被阻止")
+                pass # Removed print-debug
             elif level == ConfirmationLevel.APPROVAL:
-                print("  需要人類審批")
+                pass # Removed print-debug
             elif level == ConfirmationLevel.DOUBLE:
-                print("  需要 2 人確認")
+                pass # Removed print-debug
             elif level == ConfirmationLevel.SINGLE:
-                print("  需要 1 人確認")
+                pass # Removed print-debug
             return 0
         
         return 0
@@ -1670,7 +1670,7 @@ class MethodologyCLI:
     def cmd_release(self, args):
         """Release Management with Double Confirmation"""
         if not args.version:
-            print("錯誤：需要 --version 參數")
+            pass # Removed print-debug
             return 1
         
         dc = DoubleConfirmation(timeout_minutes=30)
@@ -1681,52 +1681,52 @@ class MethodologyCLI:
         level = dc.requires_confirmation(operation)
         
         if level == ConfirmationLevel.BLOCKED:
-            print("❌ 此操作被系統阻止")
+            pass # Removed print-debug
             return 1
         
         if level == ConfirmationLevel.NONE:
-            print(f"✅ 發布 {args.version} - 不需要確認")
+            pass # Removed print-debug
             return 0
         
         if not args.confirm:
-            print(f"⚠️  發布 {args.version} 需要確認")
-            print(f"   使用 --confirm 參數來請求確認")
+            pass # Removed print-debug
+            pass # Removed print-debug
             conf_id = dc.create_pending(operation, description, metadata)
             if conf_id:
-                print(f"   確認 ID: {conf_id}")
+                pass # Removed print-debug
             return 1
         
         # 創建待確認
         conf_id = dc.create_pending(operation, description, metadata)
         
         if conf_id == "__BLOCKED__":
-            print("❌ 此操作被阻止")
+            pass # Removed print-debug
             return 1
         
         # Agent 確認 (第一次)
-        print("Waiting for confirmation...")
+        pass # Removed print-debug
         dc.confirm(conf_id, confirmed_by="agent-cli")
         
         pending = dc._find_pending(conf_id)
         if pending:
             required = 1 if pending.level == ConfirmationLevel.SINGLE else 2
             current = len(pending.confirmations)
-            print(f"[{current}/{required}] Agent confirmed")
+            pass # Removed print-debug
             
             if current < required:
-                print(f"[{required}/{required}] Waiting for human confirmation...")
-                print(f"\n請在另一個 terminal 執行:")
-                print(f"  python cli.py confirmations confirm --id {conf_id} --by human-admin")
-                print(f"\n或查看狀態:")
-                print(f"  python cli.py confirmations status --id {conf_id}")
+                pass # Removed print-debug
+                pass # Removed print-debug
+                pass # Removed print-debug
+                pass # Removed print-debug
+                pass # Removed print-debug
                 return 1
         else:
             status = dc.get_status(conf_id)
             if status and status.get("status") == "approved":
-                print("✓ Release approved")
+                pass # Removed print-debug
                 return 0
             else:
-                print("✗ Release not approved")
+                pass # Removed print-debug
                 return 1
         
         return 0
@@ -1738,17 +1738,17 @@ class MethodologyCLI:
             engine = create_hard_block_engine()
             results = engine.enforce_all()
             summary = engine.get_summary()
-            print(f"\n📊 Policy Summary:")
-            print(f"   Passed: {summary['passed']}/{summary['total']}")
-            print(f"   Pass Rate: {summary['pass_rate']}%")
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
             if summary['all_passed']:
-                print("\n✅ All policies passed")
+                pass # Removed print-debug
                 return 0
             else:
-                print("\n❌ Some policies failed")
+                pass # Removed print-debug
                 return 1
         except Exception as e:
-            print(f"\n❌ Policy check failed: {e}")
+            pass # Removed print-debug
             return 1
 
     def cmd_install_hook(self, args):
@@ -1762,12 +1762,12 @@ class MethodologyCLI:
         if os.path.exists(hook_dest):
             response = input(f"Overwrite existing hook at {hook_dest}? [y/N] ")
             if response.lower() != 'y':
-                print("Aborted")
+                pass # Removed print-debug
                 return 0
         
         shutil.copy(hook_source, hook_dest)
         os.chmod(hook_dest, 0o755)
-        print(f"✅ Pre-commit hook installed at {hook_dest}")
+        pass # Removed print-debug
         return 0
 
     def cmd_enforcement_config(self, args):
@@ -1778,12 +1778,12 @@ class MethodologyCLI:
         
         if not action or action == "show":
             config = EnforcementConfig.load()
-            print(config.get_summary())
+            pass # Removed print-debug
         elif action == "init":
             config = ConfigGenerator.local_only()
             config.save()
-            print("✅ Initialized with LOCAL mode")
-            print("   Use 'python cli.py enforcement-config set <mode>' to change")
+            pass # Removed print-debug
+            pass # Removed print-debug
         elif action == "set":
             mode = args.mode or "local"
             if mode == "github":
@@ -1797,14 +1797,14 @@ class MethodologyCLI:
             else:
                 config = ConfigGenerator.local_only()
             config.save()
-            print(f"✅ Config set: {mode}")
-            print(config.get_summary())
+            pass # Removed print-debug
+            pass # Removed print-debug
         elif action == "detect":
             config = ConfigGenerator.auto_detect()
-            print(f"🔍 Detected: {config.mode.value} ({config.platform.value})")
-            print(config.get_summary())
+            pass # Removed print-debug
+            pass # Removed print-debug
         else:
-            print(f"Unknown action: {action}")
+            pass # Removed print-debug
             return 1
         return 0
 
@@ -1827,31 +1827,31 @@ class MethodologyCLI:
 
         if sub == "run":
             # 執行所有 enforcement 檢查
-            print("🔍 Running Enforcement Checks...")
-            print("=" * 50)
+            pass # Removed print-debug
+            pass # Removed print-debug
 
             passed = 0
             failed = 0
 
             # 1. Policy Engine
-            print("\n⚙️ Policy Engine...")
+            pass # Removed print-debug
             try:
                 engine = PolicyEngine()
                 results = engine.enforce_all()
                 summary = engine.get_summary()
-                print(f"   Passed: {summary['passed']}/{summary['total']}")
+                pass # Removed print-debug
                 if summary['all_passed']:
                     passed += 1
-                    print("   ✅ Policy Engine passed")
+                    pass # Removed print-debug
                 else:
                     failed += 1
-                    print("   ❌ Policy Engine failed")
+                    pass # Removed print-debug
             except Exception as e:
                 failed += 1
-                print(f"   ❌ Policy Engine error: {e}")
+                pass # Removed print-debug
 
             # 2. Constitution Check
-            print("\n📜 Constitution Check...")
+            pass # Removed print-debug
             try:
                 constitution = ConstitutionAsCode()
                 # 嘗試從環境變數讀取 commit message
@@ -1859,54 +1859,54 @@ class MethodologyCLI:
                 commit_msg = os.environ.get('COMMIT_MSG', os.environ.get('GIT_COMMITMSG', ''))
                 if commit_msg:
                     constitution.enforce({"commit_message": commit_msg})
-                print("   ✅ Constitution check passed")
+                pass # Removed print-debug
                 passed += 1
             except Exception as e:
                 failed += 1
-                print(f"   ❌ Constitution check failed: {e}")
+                pass # Removed print-debug
 
             # 3. 記錄到 Registry
-            print("\n📝 Recording to Registry...")
+            pass # Removed print-debug
             try:
                 registry = ExecutionRegistry()
                 registry.record("enforcement-run", {
                     "policy_passed": passed > 0,
                     "constitution_passed": True,
                 })
-                print("   ✅ Recorded")
+                pass # Removed print-debug
             except Exception as e:
-                print(f"   ⚠️ Registry warning: {e}")
+                pass # Removed print-debug
 
             # 總結
-            print("\n" + "=" * 50)
+            pass # Removed print-debug
             if failed == 0:
-                print("✅ All enforcement checks passed!")
+                pass # Removed print-debug
                 return 0
             else:
-                print(f"❌ {failed} check(s) failed")
+                pass # Removed print-debug
                 return 1
 
         elif sub == "check":
             # 檢查 enforcement 狀態
             config = EnforcementConfig.load()
-            print(config.get_summary())
+            pass # Removed print-debug
             return 0
 
         elif sub == "status":
             # 顯示摘要
             config = EnforcementConfig.load()
-            print(config.get_summary())
+            pass # Removed print-debug
 
             # 顯示 Policy Engine 狀態
-            print("\n⚙️ Policy Engine Status:")
+            pass # Removed print-debug
             try:
                 engine = PolicyEngine()
                 summary = engine.get_summary()
-                print(f"   Total Policies: {summary['total']}")
-                print(f"   Passed: {summary['passed']}")
-                print(f"   Pass Rate: {summary['pass_rate']}%")
+                pass # Removed print-debug
+                pass # Removed print-debug
+                pass # Removed print-debug
             except Exception as e:
-                print(f"   Error: {e}")
+                pass # Removed print-debug
             return 0
 
         elif sub == "install":
@@ -1918,14 +1918,14 @@ class MethodologyCLI:
             hook_dest = Path(__file__).parent / ".git" / "hooks" / "pre-commit"
 
             if not hook_source.exists():
-                print("❌ pre-commit.template not found")
+                pass # Removed print-debug
                 return 1
 
             hook_dest.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy(hook_source, hook_dest)
             hook_dest.chmod(0o755)
 
-            print(f"✅ Pre-commit hook installed at {hook_dest}")
+            pass # Removed print-debug
             return 0
 
         elif sub == "config":
@@ -1943,19 +1943,19 @@ class MethodologyCLI:
                 elif mode == "azure":
                     config = ConfigGenerator.azure_pipelines()
                 else:
-                    print(f"Unknown mode: {mode}")
-                    print("Available: local, github, gitlab, jenkins, azure")
+                    pass # Removed print-debug
+                    pass # Removed print-debug
                     return 1
 
                 config.save()
-                print(f"✅ Config set to: {mode}")
+                pass # Removed print-debug
 
-            print(EnforcementConfig.load().get_summary())
+            pass # Removed print-debug
             return 0
 
         else:
-            print(f"Unknown subcommand: {sub}")
-            print("Available: run, check, status, install, config")
+            pass # Removed print-debug
+            pass # Removed print-debug
             return 1
 
     def cmd_agent_proof_hook(self, args):
@@ -1991,30 +1991,30 @@ class MethodologyCLI:
         if sub == "validate":
             # 驗證記憶
             validator = MemoryValidator()
-            print("Memory validation: OK")
+            pass # Removed print-debug
             return 0
 
         elif sub == "status":
             # 顯示協調狀態
             coordinator = StateCoordinator()
             summary = coordinator.get_global_state_summary()
-            print(f"Agents: {summary['total_agents']}")
-            print(f"Keys: {summary['total_keys']}")
-            print(f"Conflicts: {summary['active_conflicts']}")
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
             return 0
 
         elif sub == "audit":
             # 顯示審計日誌
             audit = MemoryAudit()
             records = audit.get_records(limit=10)
-            print(f"Recent records: {len(records)}")
+            pass # Removed print-debug
             for r in records:
-                print(f"  {r.record_id}: {r.action} by {r.agent_id}")
+                pass # Removed print-debug
             return 0
 
         elif sub == "resolve":
             # 解決衝突
-            print("Use memoryGovernance.resolve() in code")
+            pass # Removed print-debug
             return 0
 
         return 0
@@ -2032,33 +2032,33 @@ class MethodologyCLI:
         sub = args.sub
 
         if sub == "status":
-            print("M2.7 Integration Status:")
-            print("  - Hybrid Attention: Ready")
-            print("  - Self Iteration: Ready")
-            print("  - Failure Analyzer: Ready")
-            print("  - Harness Optimizer: Ready")
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
             return 0
 
         elif sub == "analyze":
             log = args.failure_log or "No failure log provided"
             analyzer = FailureAnalyzer()
             path = analyzer.analyze(log)
-            print(f"Failure Type: {path.failure_type.value}")
-            print(f"Root Cause: {path.root_cause}")
-            print(f"Confidence: {path.confidence}")
-            print("Recommendations:")
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
             for r in path.recommendations:
-                print(f"  - {r}")
+                pass # Removed print-debug
             return 0
 
         elif sub == "iterate":
-            print("Self Iteration: Ready (use in code with SelfIteration class)")
-            print("  from m27_integration import SelfIteration")
+            pass # Removed print-debug
+            pass # Removed print-debug
             return 0
 
         elif sub == "optimize":
-            print("Harness Optimizer: Ready (use in code with HarnessOptimizer class)")
-            print("  from m27_integration import HarnessOptimizer")
+            pass # Removed print-debug
+            pass # Removed print-debug
             return 0
 
         return 0

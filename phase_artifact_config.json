@@ -1,0 +1,81 @@
+{
+  "version": "1.0.0",
+  "description": "Phase Artifact Configuration for methodology-v2",
+  "enforce_phase_chain": true,
+  "phases": [
+    {
+      "id": "phase_0",
+      "name": "Constitution",
+      "directory": "00-constitution",
+      "required_artifacts": [
+        "CONSTITUTION.md",
+        "constitution/*.md"
+      ],
+      "referenced_by": ["phase_1"]
+    },
+    {
+      "id": "phase_1",
+      "name": "Specify",
+      "directory": "01-specify",
+      "required_artifacts": [
+        "requirements.md",
+        "SPEC.md",
+        "*.md"
+      ],
+      "references": ["phase_0"],
+      "referenced_by": ["phase_2"]
+    },
+    {
+      "id": "phase_2",
+      "name": "Plan",
+      "directory": "02-plan",
+      "required_artifacts": [
+        "architecture.md",
+        "roadmap.md",
+        "*.md"
+      ],
+      "references": ["phase_1"],
+      "referenced_by": ["phase_3"]
+    },
+    {
+      "id": "phase_3",
+      "name": "Implement",
+      "directory": "03-implement",
+      "required_artifacts": [
+        "src/**/*",
+        "*.py"
+      ],
+      "references": ["phase_2"],
+      "referenced_by": ["phase_4"]
+    },
+    {
+      "id": "phase_4",
+      "name": "Verify",
+      "directory": "04-verify",
+      "required_artifacts": [
+        "gates.md",
+        "test-results.md",
+        "*.md"
+      ],
+      "references": ["phase_3"],
+      "referenced_by": ["phase_5"]
+    },
+    {
+      "id": "phase_5",
+      "name": "Release",
+      "directory": "05-release",
+      "required_artifacts": [
+        "CHANGELOG.md",
+        "RELEASE_NOTES*.md"
+      ],
+      "references": ["phase_4"],
+      "referenced_by": []
+    }
+  ],
+  "validation_rules": {
+    "require_references": true,
+    "allow_missing_optional": true,
+    "strict_mode": false
+  },
+  "_comment": "此配置用於 phase_artifact_enforcer.py 的 phase-artifact-reference 政策檢查"
+}
