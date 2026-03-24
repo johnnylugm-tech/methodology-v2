@@ -186,6 +186,8 @@ class MethodologyCLI:
             return self.cmd_enforcement(args)
         elif command == "quality-gate" or command == "qg":
             return self.cmd_quality_gate(args)
+        elif command == "decision" or command == "dec":
+            return self.cmd_decision_gate(args)
         elif command == "agent-proof-hook":
             return self.cmd_agent_proof_hook(args)
         elif command == "memory":
@@ -596,8 +598,6 @@ class MethodologyCLI:
             for op_type, count in report['by_type'].items():
                 pass # Removed print-debug
             pass # Removed print-debug
-                  f"({report['anomalies']['critical']} critical, "
-                  f"{report['anomalies']['high']} high)")
         
         elif action == "anomalies":
             pass # Removed print-debug
@@ -2057,6 +2057,77 @@ class MethodologyCLI:
 
         return 0
 
+    def cmd_decision_gate(self, args):
+        """Decision Gate - 決策分類閘道"""
+        from decision_gate import DecisionRecorder
+
+        sub = args.subcommand
+        cmd_args = args.args or []
+
+        recorder = DecisionRecorder()
+
+        if sub == "classify" or sub == "add":
+            # 新增並分類決策
+            if len(cmd_args) < 2:
+                print("Usage: decision classify <item> <description> [spec_ref]")
+                sys.exit(1)
+
+            item = cmd_args[0]
+            description = cmd_args[1]
+            spec_ref = cmd_args[2] if len(cmd_args) > 2 else None
+
+            result = recorder.classify_and_record(item, description, spec_ref)
+
+            print(f"✅ Decision classified:")
+            print(f"   ID: {result.decision_id}")
+            print(f"   Risk: {result.risk_level.value}")
+            print(f"   Type: {result.decision_type.value}")
+            if result.requires_confirmation:
+                print(f"   ⚠️  Requires user confirmation!")
+            if result.options:
+                print(f"   Options: {', '.join(result.options)}")
+            if result.recommendation:
+                print(f"   Recommendation: {result.recommendation}")
+
+        elif sub == "list" or sub == "ls":
+            decisions = recorder.get_all()
+            if not decisions:
+                print("No decisions recorded yet.")
+            else:
+                print(f"{'ID':<10} {'Item':<20} {'Risk':<15} {'Decision':<15} {'Status':<10}")
+                print("-" * 70)
+                for d in decisions:
+                    print(f"{d['id']:<10} {d['item']:<20} {d['risk']:<15} {d['decision']:<15} {d['status']:<10}")
+
+        elif sub == "pending" or sub == "p":
+            pending = recorder.get_pending()
+            print(f"Pending decisions: {len(pending)}")
+            for d in pending:
+                print(f"  {d['id']}: {d['item']} ({d['risk']})")
+
+        elif sub == "confirm":
+            if len(cmd_args) < 2:
+                print("Usage: decision confirm <id> <value>")
+                sys.exit(1)
+
+            decision_id = cmd_args[0]
+            value = cmd_args[1]
+            recorder.confirm(decision_id, value)
+            print(f"✅ Decision {decision_id} confirmed: {value}")
+
+        elif sub == "report":
+            print(recorder.generate_report())
+
+        else:
+            print("Usage:")
+            print("  decision classify <item> <description> [spec_ref]")
+            print("  decision list")
+            print("  decision pending")
+            print("  decision confirm <id> <value>")
+            print("  decision report")
+
+        return 0
+
     def cmd_agent_proof_hook(self, args):
         """Agent-Proof Hook Management"""
         from enforcement.agent_proof_hook import AgentProofHook
@@ -2455,6 +2526,13 @@ def main():
     quality_gate_parser.add_argument("subcommand", nargs="?", default="check",
                                      choices=["check", "all", "doc", "docs", "phase", "aspice"],
                                      help="Quality gate subcommand")
+
+    # decision (Decision Gate - 決策分類閘道)
+    decision_parser = subparsers.add_parser("decision", aliases=["dec"], help="Decision Gate - 決策分類閘道")
+    decision_parser.add_argument("subcommand", nargs="?", default="list",
+                                choices=["classify", "add", "list", "ls", "pending", "p", "confirm", "report"],
+                                help="Decision gate subcommand")
+    decision_parser.add_argument("args", nargs="*", help="Arguments for subcommand")
 
     # agent-proof-hook (Agent-Proof Hook Management)
     agent_proof_hook_parser = subparsers.add_parser("agent-proof-hook", help="Agent-Proof Hook Management")
