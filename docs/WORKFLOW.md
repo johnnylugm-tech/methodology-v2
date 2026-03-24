@@ -1,6 +1,156 @@
 # methodology-v2 完整工作流程
 
-> 從專案啟動到發布的完整流程
+> 從專案啟動到發布的完整流程 · v5.37
+
+---
+
+## 🔄 專案生命週期
+
+```
+┌──────────────────────────────────────────────────────────────────┐
+│                                                                  │
+│   ┌─────────────┐      ┌──────────────────────┐      ┌────────┐ │
+│   │    init    │ ───► │      develop         │ ───► │ finish │ │
+│   └─────────────┘      └──────────────────────┘      └────────┘ │
+│        │                        │                        │       │
+│        ▼                        ▼                        ▼       │
+│   quality_watch          quality_watch              quality_watch │
+│      start                  daemon                    stop       │
+│                         (continuous)                              │
+│                                                                  │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+### Lifecycle 階段說明
+
+| 階段 | 命令 | Quality Watch 行為 | 產出 |
+|------|------|-------------------|------|
+| **init** | `python3 cli.py init [name]` | 啟動 daemon（PID → `.methodology/watch.pid`） | 專案結構、`.methodology/` |
+| **develop** | `python3 quality_watch.py start` | 持續監控檔案變更，每次變更觸發 quality-gate | `.methodology/quality_log.json` |
+| **finish** | `python3 cli.py finish` | 停止 daemon，寫入最終品質報告 | 專案關閉、清盤 |
+
+### Quality Watch 流程圖
+
+```
+init (Quality Watch 啟動)
+        │
+        ▼
+┌───────────────────────────────────────────────────────┐
+│  檔案變更偵測 (watchdog)                               │
+│  - .py, .md, .json, .yaml, .yml, .sh                  │
+│  - 防抖動：2 秒 debounce                               │
+└─────────────────────┬─────────────────────────────────┘
+                      │
+                      ▼
+┌───────────────────────────────────────────────────────┐
+│  Quality Gate Runner                                    │
+│  → python3 cli.py quality-gate check                  │
+│  → Timeout: 60 秒                                     │
+└─────────────────────┬─────────────────────────────────┘
+                      │
+            ┌─────────┴─────────┐
+            │                   │
+         PASS                  FAIL
+            │                   │
+            │                   ▼
+            │         ┌─────────────────────┐
+            │         │ 寫入 quality_log.json │
+            │         │ severity: CRITICAL   │
+            │         └─────────────────────┘
+            │                   │
+            ▼                   ▼
+     (silent)          [QualityWatch] ⚠️ Quality check FAILED
+                             [QualityWatch] 🔴 CRITICAL: <error>
+```
+
+---
+
+## 🛡️ Quality Watch
+
+### 角色定位
+
+**Quality Watch** 是一個持續品質監控 Daemon，嵌入 Lifecycle 的 develop 階段，確保 AI Agent 無法在開發過程中降低品質標準。
+
+### 核心元件
+
+| 元件 | 檔案/位置 | 職責 |
+|------|-----------|------|
+| **Daemon** | `quality_watch.py` | 啟動/停止/狀態管理 |
+| **PID 檔** | `.methodology/watch.pid` | 防止重複啟動 |
+| **品質日誌** | `.methodology/quality_log.json` | 所有檢查結果（不可偽造） |
+| **檔案監控** | `watchdog`  library | 即時偵測程式碼變更 |
+| **品質閘道** | `quality_gate/` | 實際執行檢查（doc_checker + phase_artifact_enforcer） |
+
+### Quality Gate 檢查
+
+```bash
+# 手動執行一次檢查
+python3 quality_watch.py watch
+
+# 完整 Quality Gate（含 ASPICE + Phase 產物）
+python3 cli.py quality-gate check
+python3 cli.py quality-gate all        # 別名
+
+# 只檢查文檔
+python3 cli.py quality-gate doc
+python3 cli.py quality-gate docs       # 別名
+
+# 只檢查 Phase 產物
+python3 cli.py quality-gate phase
+```
+
+---
+
+## 🛡️ Enforcement Framework（整合 Quality Watch）
+
+Enforcement 是**閘道層**，Quality Watch 是**持續監控層**。兩者整合：
+
+```
+Enforcement Gateway（Policy Engine + Constitution as Code）
+        │
+        ├── 提交時阻擋（git hook）
+        │
+        └── 持續監控（Quality Watch daemon）
+                   │
+                   ▼
+           quality_log.json（審計日誌）
+                   │
+                   ▼
+           Enforcement Registry（不可偽造）
+```
+
+### 三層保護
+
+| 層次 | 元件 | 職責 |
+|------|------|------|
+| **Layer 1** | Policy Engine | 流程政策、BLOCK 等級 |
+| **Layer 2** | Execution Registry | 執行記錄、不可偽造 |
+| **Layer 3** | Constitution as Code | 業務規則、違反阻擋 |
+
+### CLI 命令
+
+```bash
+# 執行所有檢查
+python3 cli.py enforcement run
+
+# 查看狀態
+python3 cli.py enforcement status
+
+# 安裝 Hook
+python3 cli.py enforcement install
+
+# Agent-Proof Hook
+python3 cli.py agent-proof-hook install
+```
+
+### 閾值
+
+| 維度 | 閾值 |
+|------|------|
+| Quality Gate | >= 90 |
+| Security | >= 95 |
+| Coverage | >= 80 |
+| Commit Message | 必須包含 `[TASK-XXX]` |
 
 ---
 
@@ -36,52 +186,12 @@
 
 ---
 
-## 🛡️ Enforcement Framework (v5.30)
-
-本流程已整合 **Enforcement Framework**，從「建議」進化到「強制執行」：
-
-### 三層保護
-
-| 層次 | 元件 | 職責 |
-|------|------|------|
-| **Layer 1** | Policy Engine | 流程政策、BLOCK 等級 |
-| **Layer 2** | Execution Registry | 執行記錄、不可偽造 |
-| **Layer 3** | Constitution as Code | 業務規則、違反阻擋 |
-
-### CLI 命令
-
-```bash
-# 執行所有檢查
-python3 cli.py enforcement run
-
-# 查看狀態
-python3 cli.py enforcement status
-
-# 安裝 Hook
-python3 cli.py enforcement install
-
-# Agent-Proof Hook
-python3 cli.py agent-proof-hook install
-```
-
-### 閾值
-
-| 維度 | 閾值 |
-|------|------|
-| Quality Gate | >= 90 |
-| Security | >= 95 |
-| Coverage | >= 80 |
-| Commit Message | 必須包含 `[TASK-XXX]` |
-
-📖 詳見：[ENFORCEMENT_GETTING_STARTED.md](ENFORCEMENT_GETTING_STARTED.md)
-
----
-
-## 完整工作流程圖
+## 完整工作流程圖（傳統視圖）
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                     專案啟動                                 │
+│                     專案啟動（init）                          │
+│              → quality_watch daemon 啟動                    │
 └─────────────────────┬───────────────────────────────────────┘
                       ↓
 ┌─────────────────────────────────────────────────────────────┐
@@ -106,7 +216,7 @@ python3 cli.py agent-proof-hook install
 └─────────────────────┬───────────────────────────────────────┘
                       ↓
 ┌─────────────────────────────────────────────────────────────┐
-│ 4. Tasks 階段                                              │
+│ 4. Tasks 階段（develop → Quality Watch 持續監控）            │
 │    - 實作功能                                               │
 │    - 單元測試                                               │
 │    - Code Review                                            │
@@ -121,7 +231,7 @@ python3 cli.py agent-proof-hook install
 └─────────────────────┬───────────────────────────────────────┘
                       ↓
 ┌─────────────────────────────────────────────────────────────┐
-│ 6. 發布                                                    │
+│ 6. 發布（finish → quality_watch daemon 停止）               │
 │    - 整合測試                                               │
 │    - 部署                                                   │
 │    - 監控                                                   │
@@ -223,4 +333,87 @@ hooks.skip_hook(
 
 ---
 
-*最後更新：2026-03-23*
+## 命令速查表
+
+### 專案 Lifecycle
+
+```bash
+# 初始化專案（同時啟動 quality_watch）
+python3 cli.py init "專案名"
+
+# 結束專案（停止 quality_watch）
+python3 cli.py finish
+```
+
+### Quality Watch
+
+```bash
+# 啟動 daemon
+python3 quality_watch.py start [--project <path>]
+
+# 停止 daemon
+python3 quality_watch.py stop [--project <path>]
+
+# 查看狀態
+python3 quality_watch.py status [--project <path>]
+
+# 手動執行一次檢查
+python3 quality_watch.py watch [--project <path>]
+```
+
+### Quality Gate
+
+```bash
+# 完整檢查（ASPICE + Phase 產物）
+python3 cli.py quality-gate check
+python3 cli.py quality-gate all          # 別名
+
+# 只檢查文檔
+python3 cli.py quality-gate doc
+python3 cli.py quality-gate docs         # 別名
+
+# 只檢查 Phase 產物
+python3 cli.py quality-gate phase
+
+# ASPICE 合規檢查
+python3 cli.py quality-gate aspice
+```
+
+### Enforcement
+
+```bash
+# 執行所有 enforcement 檢查
+python3 cli.py enforcement run
+
+# 查看狀態
+python3 cli.py enforcement status
+
+# 安裝 git hook
+python3 cli.py enforcement install
+
+# Agent-Proof Hook
+python3 cli.py agent-proof-hook install
+
+# Policy Engine
+python3 cli.py policy
+```
+
+### 任務管理
+
+```bash
+python3 cli.py task add "任務名" --points 5 --priority 3
+python3 cli.py task list
+python3 cli.py task complete <task-id>
+```
+
+### Sprint
+
+```bash
+python3 cli.py sprint create "Sprint 1" --start 2026-03-24 --end 2026-04-07
+python3 cli.py sprint list
+python3 cli.py sprint start <sprint-id>
+```
+
+---
+
+*最後更新：2026-03-24 (v5.37)*
