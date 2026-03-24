@@ -61,7 +61,7 @@ from code_metrics import MetricsTracker
 class MethodologyCLI:
     """統一 CLI 入口"""
     
-    VERSION = "5.42.0"
+    VERSION = "5.44.0"
     
     def __init__(self):
         self.progress = ProgressDashboard()
