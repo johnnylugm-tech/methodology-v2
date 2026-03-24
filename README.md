@@ -5,7 +5,7 @@
 
 ---
 
-[![Version](https://img.shields.io/badge/version-v5.42.0-blue.svg)](https://github.com/johnnylugm-tech/methodology-v2)
+[![Version](https://img.shields.io/badge/version-v5.44.0-blue.svg)](https://github.com/johnnylugm-tech/methodology-v2)
 [![Python](https://img.shields.io/badge/python-3.8+-green.svg)](https://python.org)
 [![Tests](https://img.shields.io/badge/tests-32%20passed-green.svg)]()
 
@@ -336,6 +336,13 @@
 ---
 
 ## ⭐ 關鍵亮點
+### 🆕 Code Metrics + Technical Debt + ADR (2026-03-24)
+- 新增 `code_metrics.py`：Cyclomatic Complexity、Coupling、Instability 追蹤
+- 新增 `technical_debt.py`：債務添加/追蹤/解決/報告
+- 新增 `adr.py`：Architecture Decision Records 管理
+- CLI: `python3 cli.py metrics|debt|adr`
+- 來源: 任務 Code Metrics
+
 ### 🆕 Quality Watch 持續監控 (2026-03-24)
 - 新增 `quality_watch.py`：每次存檔自動品質檢查
 - 即時 CRITICAL 警告 + JSON 日誌記錄
@@ -1004,6 +1011,7 @@ class TeamMode(Enum):
 
 | 版本 | 日期 | 說明 |
 |------|------|------|
+| v5.44.0 | 2026-03-24 | Code Metrics + Technical Debt + ADR 整合 |
 | v5.42.0 | 2026-03-24 | Decision Gate: 技術決策分類閘道整合 |
 | v5.42.0 | 2026-03-24 | Decision Gate + Decision Gate 章節完整更新 |
 | v5.40.0 | 2026-03-24 | Quality Watch + Constitution + Enforcement 三層品質保障整合 |
@@ -1032,4 +1040,4 @@ MIT License
 ---
 
 **GitHub**: https://github.com/johnnylugm-tech/methodology-v2
-**Release**: https://github.com/johnnylugm-tech/methodology-v2/releases/tag/v5.42.0
+**Release**: https://github.com/johnnylugm-tech/methodology-v2/releases/tag/v5.44.0

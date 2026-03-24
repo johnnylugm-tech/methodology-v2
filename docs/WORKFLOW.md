@@ -364,6 +364,55 @@ python3 cli.py agent-proof-hook install
 
 ---
 
+## 📊 Code Metrics - 代碼品質指標
+
+### 功能
+- Cyclomatic Complexity 追蹤
+- Coupling 分析
+- Instability 指標
+
+### 命令
+```bash
+python3 cli.py metrics report
+python3 cli.py metrics history
+```
+
+---
+
+## 🔧 Technical Debt - 技術債務
+
+### 功能
+- 債務添加/追蹤/解決
+- 嚴重性分級
+- 報告生成
+
+### 命令
+```bash
+python3 cli.py debt add <description> [--severity high|medium|low]
+python3 cli.py debt list
+python3 cli.py debt resolve <id>
+python3 cli.py debt report
+```
+
+---
+
+## 📋 ADR - Architecture Decision Records
+
+### 功能
+- 正式架構決策記錄
+- Markdown 導出
+- 狀態追蹤
+
+### 命令
+```bash
+python3 cli.py adr create <title>
+python3 cli.py adr list
+python3 cli.py adr get <id>
+python3 cli.py adr export
+```
+
+---
+
 ## 🧪 TDAD Testing Methodology
 
 本流程已整合 **TDAD (Test-Driven AI Agent Development)**，用測試驅動 Agent 開發：
@@ -609,4 +658,4 @@ python3 cli.py sprint start <sprint-id>
 
 ---
 
-*最後更新：2026-03-24 (v5.42)*
+*最後更新：2026-03-24 (v5.44.0)*
