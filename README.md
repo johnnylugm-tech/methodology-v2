@@ -5,7 +5,7 @@
 
 ---
 
-[![Version](https://img.shields.io/badge/version-v5.35.0-blue.svg)](https://github.com/johnnylugm-tech/methodology-v2)
+[![Version](https://img.shields.io/badge/version-v5.37.0-blue.svg)](https://github.com/johnnylugm-tech/methodology-v2)
 [![Python](https://img.shields.io/badge/python-3.8+-green.svg)](https://python.org)
 [![Tests](https://img.shields.io/badge/tests-32%20passed-green.svg)]()
 
@@ -336,6 +336,11 @@
 ---
 
 ## ⭐ 關鍵亮點
+### 🆕 Quality Watch 持續監控 (2026-03-24)
+- 新增 `quality_watch.py`：每次存檔自動品質檢查
+- 即時 CRITICAL 警告 + JSON 日誌記錄
+- 來源: 任務 Quality Watch
+
 ### 🆕 P2P + HITL + Unified Config (2026-03-22)
 - 新增 `p2p_orchestrator.py`：點對點代理協調
 - 新增 `hitl_controller.py`：人類介入控制
@@ -434,6 +439,26 @@ action = scaler.check_and_scale()
 message = MAPProtocol.encode(sender="agent-1", action="request", data={})
 ```
 
+### 🔄 Quality Watch（持續監控）
+
+| 功能 | 說明 |
+|------|------|
+| 檔案監控 | 每次存檔自動檢查 |
+| 即時警告 | CRITICAL 問題立即顯示 |
+| 日誌記錄 | 所有檢查結果存入 JSON |
+
+**命令：**
+
+```bash
+python3 cli.py init "project"   # 啟動監控
+python3 cli.py finish           # 停止監控
+python3 quality_watch.py status # 查看狀態
+```
+
+**文件：** [QUALITY_WATCH_GUIDE.md](docs/QUALITY_WATCH_GUIDE.md)
+
+---
+
 ### 6. Enforcement（強制執行層）
 
 三層保護機制，確保框架從「建議」變成「強制執行」：
@@ -531,7 +556,7 @@ except ConstitutionViolation as e:
 
 | 專案 | 版本 | 關係 | 說明 |
 |------|------|------|------|
-| **methodology-v2** | v5.35.0 | 主框架 | ✅ 內建，無需額外安裝 |
+| **methodology-v2** | v5.37.0 | 主框架 | ✅ 內建，無需額外安裝 |
 | Agent Quality Guard | v1.0.3 | 生態系 | 品質把關，可選 |
 | Model Router | v2.3.0 | 生態系 | 模型路由，可選 |
 | Agent Monitor | v3.2.0 | 生態系 | 監控警報，可選 |
@@ -957,7 +982,8 @@ class TeamMode(Enum):
 
 | 版本 | 日期 | 說明 |
 |------|------|------|
-| v5.35.0 | 2026-03-22 | Fault Tolerance: Checkpoint + Recovery + Human Intervention |
+| v5.37.0 | 2026-03-24 | Quality Watch: 持續品質監控（每次存檔自動檢查） |
+| v5.37.0 | 2026-03-22 | Fault Tolerance: Checkpoint + Recovery + Human Intervention |
 | v5.35.0 | 2026-03-22 | Hybrid Workflow: 智慧分流工作流 (Solution Y) |
 | v5.8.0 | 2026-03-20 | Trend Optimization: 強化 Guardrails 安全模組 |
 | v5.8.0 | 2026-03-20 | v4.5.0 Extensions 整合 |
@@ -981,4 +1007,4 @@ MIT License
 ---
 
 **GitHub**: https://github.com/johnnylugm-tech/methodology-v2
-**Release**: https://github.com/johnnylugm-tech/methodology-v2/releases/tag/v5.35.0
+**Release**: https://github.com/johnnylugm-tech/methodology-v2/releases/tag/v5.37.0
