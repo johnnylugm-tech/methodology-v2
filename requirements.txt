@@ -12,3 +12,4 @@ urllib3>=1.26
 # ollama>=0.1
 # deepseek>=1.0
 # huggingface>=0.0
+watchdog>=3.0.0
