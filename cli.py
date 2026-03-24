@@ -1990,63 +1990,69 @@ class MethodologyCLI:
             return 1
 
     def cmd_quality_gate(self, args):
-        """Quality Gate - 品質閘道檢查"""
-        from quality_gate.doc_checker import DocumentChecker
-        from quality_gate.phase_artifact_enforcer import PhaseArtifactEnforcer
+        """Quality Gate - 統一品質閘道檢查"""
+        from quality_gate import UnifiedGate
 
         sub = args.subcommand
 
         if sub == "check" or sub == "all":
-            # 執行所有檢查
             print("=" * 50)
-            print("Quality Gate Check")
+            print("Quality Gate - Unified Check")
             print("=" * 50)
 
-            # 1. Doc Checker
-            print("\n📄 Document Checker...")
-            checker = DocumentChecker()
-            doc_result = checker.check_all()
-            print(f"   Result: {doc_result}")
+            gate = UnifiedGate()
+            result = gate.check_all()
 
-            # 2. Phase Artifact Enforcer
-            print("\n🔗 Phase Artifact Enforcer...")
-            enforcer = PhaseArtifactEnforcer()
-            phase_result = enforcer.enforce_all()
-            print(f"   Result: {phase_result}")
+            print(f"\nOverall Score: {result.overall_score}%")
+            print(f"Status: {'✅ PASSED' if result.passed else '❌ FAILED'}")
 
-            # 總結
-            print("\n" + "=" * 50)
-            if doc_result["passed"] and phase_result["passed"]:
-                print("✅ All checks passed!")
-            else:
-                print("❌ Some checks failed")
-                return 1
+            print("\nChecks:")
+            for check in result.checks:
+                status = "✅" if check.passed else "❌"
+                print(f"  {status} {check.name}: {check.score}%")
+                if check.violations:
+                    for v in check.violations[:3]:
+                        print(f"      - {v}")
+
+            sys.exit(0 if result.passed else 1)
 
         elif sub == "doc" or sub == "docs":
-            # 只檢查文檔
-            checker = DocumentChecker()
-            result = checker.check_all()
-            print(json.dumps(result, indent=2))
-            return 0 if result["passed"] else 1
+            gate = UnifiedGate()
+            result = gate.check_documents_only()
+            print(f"Document Existence: {'✅' if result.passed else '❌'}")
+            if result.violations:
+                for v in result.violations:
+                    print(f"  - {v}")
+            sys.exit(0 if result.passed else 1)
+
+        elif sub == "constitution":
+            gate = UnifiedGate()
+            result = gate.check_constitution_only()
+            print(f"Constitution Compliance: {'✅' if result.passed else '❌'}")
+            if result.violations:
+                for v in result.violations[:5]:
+                    print(f"  - {v}")
+            sys.exit(0 if result.passed else 1)
 
         elif sub == "phase":
-            # 只檢查 Phase 產物
-            enforcer = PhaseArtifactEnforcer()
-            result = enforcer.enforce_all()
-            print(json.dumps(result, indent=2))
-            return 0 if result["passed"] else 1
+            gate = UnifiedGate()
+            result = gate.check_phase_only()
+            print(f"Phase References: {'✅' if result.passed else '❌'}")
+            if result.violations:
+                for v in result.violations:
+                    print(f"  - {v}")
+            sys.exit(0 if result.passed else 1)
 
         elif sub == "aspice":
-            # ASPICE 合規檢查
-            print("ASPICE Compliance Check")
-            print("-" * 40)
-            checker = DocumentChecker()
-            result = checker.check_all()
-            print(json.dumps(result, indent=2))
-            return 0 if result["passed"] else 1
+            # ASPICE 合規檢查（使用 Document Existence）
+            gate = UnifiedGate()
+            result = gate.check_documents_only()
+            print(json.dumps(result.to_dict() if hasattr(result, 'to_dict') else result, indent=2))
+            sys.exit(0 if result.passed else 1)
 
         else:
             print(f"Unknown subcommand: {sub}")
+            print("Available: check, doc, constitution, phase, aspice")
             return 1
 
         return 0
