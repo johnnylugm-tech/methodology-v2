@@ -5,7 +5,7 @@
 
 ---
 
-[![Version](https://img.shields.io/badge/version-v5.40.0-blue.svg)](https://github.com/johnnylugm-tech/methodology-v2)
+[![Version](https://img.shields.io/badge/version-v5.42.0-blue.svg)](https://github.com/johnnylugm-tech/methodology-v2)
 [![Python](https://img.shields.io/badge/python-3.8+-green.svg)](https://python.org)
 [![Tests](https://img.shields.io/badge/tests-32%20passed-green.svg)]()
 
@@ -456,6 +456,28 @@ python3 quality_watch.py status # 查看狀態
 ```
 
 **文件：** [QUALITY_WATCH_GUIDE.md](docs/QUALITY_WATCH_GUIDE.md)
+
+---
+
+### 🔴🟡🔵 Decision Gate（決策分類閘道）
+
+| 功能 | 說明 |
+|------|------|
+| 風險分類 | 三級風險分類（HIGH/MEDIUM/LOW） |
+| 決策紀錄 | 所有技術決策都有踪跡 |
+| 確認流程 | HIGH 風險需 user 確認 |
+
+**命令：**
+
+```bash
+python3 cli.py decision classify <item> <description>   # 新增並分類
+python3 cli.py decision list                          # 列出所有
+python3 cli.py decision pending                        # 待確認
+python3 cli.py decision confirm <id> <value>           # 確認
+python3 cli.py decision report                        # 報告
+```
+
+**文件：** [DECISION_GATE_GUIDE.md](docs/DECISION_GATE_GUIDE.md)
 
 ---
 
@@ -982,6 +1004,8 @@ class TeamMode(Enum):
 
 | 版本 | 日期 | 說明 |
 |------|------|------|
+| v5.42.0 | 2026-03-24 | Decision Gate: 技術決策分類閘道整合 |
+| v5.42.0 | 2026-03-24 | Decision Gate + Decision Gate 章節完整更新 |
 | v5.40.0 | 2026-03-24 | Quality Watch + Constitution + Enforcement 三層品質保障整合 |
 | v5.37.0 | 2026-03-24 | Quality Watch: 持續品質監控（每次存檔自動檢查） |
 | v5.37.0 | 2026-03-22 | Fault Tolerance: Checkpoint + Recovery + Human Intervention |
@@ -1008,4 +1032,4 @@ MIT License
 ---
 
 **GitHub**: https://github.com/johnnylugm-tech/methodology-v2
-**Release**: https://github.com/johnnylugm-tech/methodology-v2/releases/tag/v5.40.0
+**Release**: https://github.com/johnnylugm-tech/methodology-v2/releases/tag/v5.42.0

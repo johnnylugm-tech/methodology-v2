@@ -195,4 +195,41 @@ python3 cli.py constitution errors     # 查看錯誤等級
 
 ---
 
-*最後更新：2026-03-23*
+---
+
+## 🔴🟡🔵 Decision Gate（決策分類閘道）
+
+在技術決策時使用 Decision Gate 追蹤所有重大選擇，HIGH 風險決策需確認後才能執行。
+
+### 基本用法
+
+```bash
+# 新增技術決策並自動分類
+python3 cli.py decision classify "遷移到 PostgreSQL" "將資料庫從 MySQL 遷移到 PostgreSQL"
+
+# 列出所有決策
+python3 cli.py decision list
+
+# 查看待確認的 HIGH 風險決策
+python3 cli.py decision pending
+
+# 確認決策（提供具體採用的值）
+python3 cli.py decision confirm <id> "PostgreSQL 15.3 + pgvector"
+
+# 產生決策報告
+python3 cli.py decision report
+```
+
+### 風險等級
+
+| 等級 | 意義 | 需要確認 |
+|------|------|----------|
+| HIGH | 重大架構變更、不可逆決策 | ✅ 需要 |
+| MEDIUM | 中等影響、局部變更 | ❌ 不需要 |
+| LOW | 小調整、純粹實施細節 | ❌ 不需要 |
+
+詳見：[DECISION_GATE_GUIDE.md](DECISION_GATE_GUIDE.md)
+
+---
+
+*最後更新：2026-03-24*
