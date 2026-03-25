@@ -203,6 +203,10 @@ class MethodologyCLI:
             return self.cmd_debt(args)
         elif command == "adr":
             return self.cmd_adr(args)
+        elif command == "guide":
+            return self.cmd_guide(args)
+        elif command == "roadmap":
+            return self.cmd_roadmap(args)
         else:
             pass # Removed print-debug
             return 1
