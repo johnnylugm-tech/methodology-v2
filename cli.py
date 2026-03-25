@@ -2441,6 +2441,36 @@ class MethodologyCLI:
         print("  adr report          - Generate ADR report")
         return 0
 
+    def cmd_guide(self, args):
+        """Learning Guide - 學習指引"""
+        from pathlib import Path
+        
+        print("=" * 50)
+        print("methodology-v2 學習指引")
+        print("=" * 50)
+        print("\n選擇你的角色：")
+        print("1. 🐣 菜鳥開發者 (< 1 年經驗)")
+        print("2. 🐥 中級工程師 (1-3 年經驗)")
+        print("3. 🦅 資深工程師 (3+ 年經驗)")
+        print("4. 🏛️ CTO/架構師")
+        print("\n建議：python3 -m http.server 8080 來閱讀文檔")
+        print("\n快速入口：")
+        print("  - 30 分鐘上手：GETTING_STARTED_30MIN.md")
+        print("  - 學習路徑：docs/LEARNING_PATH.md")
+        print("  - 學習地圖：docs/ROADMAP.md")
+        return 0
+
+    def cmd_roadmap(self, args):
+        """Learning Roadmap - 學習地圖"""
+        from pathlib import Path
+        
+        roadmap = Path("docs/ROADMAP.md")
+        if roadmap.exists():
+            print(roadmap.read_text())
+        else:
+            print("請參考 GETTING_STARTED_30MIN.md")
+        return 0
+
 
 # ==================== Main ====================
 
