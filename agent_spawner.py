@@ -364,6 +364,82 @@ class AgentSpawner:
 
 
 # ============================================================================
+# spawn_with_persona - 帶人格的 Spawn
+# ============================================================================
+
+def _role_to_persona(role: str) -> str:
+    """根據 role 自動選擇對應的 AgentPersona"""
+    mapping = {
+        "developer": "developer",
+        "dev": "developer",
+        "coder": "developer",
+        "architect": "architect",
+        "design": "architect",
+        "reviewer": "reviewer",
+        "review": "reviewer",
+        "qa": "qa",
+        "tester": "qa",
+        "test": "qa",
+        "pm": "pm",
+        "product": "pm",
+        "manager": "pm",
+        "devops": "devops",
+        "ops": "devops",
+        "deployment": "devops",
+    }
+    return mapping.get(role.lower(), "developer")  # 預設為 developer
+
+
+def spawn_with_persona(
+    role: str,
+    task: str,
+    persona_type: str = None,
+    **kwargs
+) -> str:
+    """
+    Spawn Agent 並預設套用 AgentPersona
+
+    Args:
+        role: Agent 角色 (developer, reviewer, qa, etc.)
+        task: 任務描述
+        persona_type: 人格類型 (developer, architect, qa, pm, devops, reviewer)
+        **kwargs: 其他 sessions_spawn 參數
+
+    Returns:
+        session_key: 新建的 session key
+    """
+    from agent_personas import generate_persona_prompt
+
+    # 1. 如果有指定 persona_type，使用它
+    if persona_type:
+        system_prompt = generate_persona_prompt(persona_type, task)
+    else:
+        # 2. 否則根據 role 自動選擇預設人格
+        persona_type = _role_to_persona(role)
+        system_prompt = generate_persona_prompt(persona_type, task)
+
+    # 3. 帶入 system_prompt 呼叫 sessions_spawn
+    # 注意：這裡呼叫底層的 sessions_spawn（需由外部框架提供）
+    # 如果沒有 sessions_spawn，則模擬返回一個 session key
+    try:
+        from openclaw import sessions_spawn
+        return sessions_spawn(
+            task=task,
+            system_prompt=system_prompt,
+            **kwargs
+        )
+    except ImportError:
+        # Fallback: 返回模擬的 session key
+        import uuid
+        session_key = f"session-{role}-{uuid.uuid4().hex[:8]}"
+        print(f"[spawn_with_persona] Simulated spawn: {session_key}")
+        print(f"  role: {role}, persona: {persona_type}")
+        print(f"  task: {task[:100]}..." if len(task) > 100 else f"  task: {task}")
+        print(f"  system_prompt: {system_prompt[:200]}..." if len(system_prompt) > 200 else f"  system_prompt: {system_prompt}")
+        return session_key
+
+
+# ============================================================================
 # Main
 # ============================================================================
 

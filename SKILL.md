@@ -1,6 +1,6 @@
 # methodology-v2
 
-> Multi-Agent Collaboration Development Methodology v5.55
+> Multi-Agent Collaboration Development Methodology v5.56
 
 ---
 
@@ -16,6 +16,7 @@
 | **v5.50** | **2026-03-26** | **Framework Enforcement（Framework 內建）+ Git Enforcement 互補，所有環境皆可觸發** |
 | **v5.54** | **2026-03-26** | **Traceability Matrix CLI + Dockerfile/Deployment 模板 + Framework Enforcement 自動化章節** |
 | **v5.55** | **2026-03-26** | **TRACEABILITY Matrix 完整整合 FrameworkEnforcer + SPEC vs TRACE 定義 + CLI Constitution 驗證增強** |
+| **v5.56** | **2026-03-26** | **Agent Personas 與 sessions_spawn 綁定 + CLI persona 命令** |
 
 ---
 
@@ -1654,6 +1655,53 @@ role = registry.get("role-dev-001")
 | Project Manager | role-pm | read, write, approve, delete |
 
 詳細案例：請參考 `docs/cases/case34_agent_role.md`
+
+---
+
+## Agent Persona（預設套用）
+
+### 概念
+
+Agent Persona 為每個 Agent 賦予豐富的角色內涵，不僅是 role 名稱，還包括：
+- **Goal**: Agent 的目標
+- **Backstory**: Agent 的背景故事
+- **Personality**: Agent 的人格特徵
+
+### 預設人格類型
+
+| 人格 | 適用場景 |
+|------|----------|
+| `architect` | Phase 1-2 需求分析、架構設計 |
+| `developer` | Phase 3 代碼實作 |
+| `reviewer` | 代碼審查、安全審查 |
+| `qa` | Phase 4 測試、邊界 case |
+| `pm` | 需求管理、優先級排序 |
+| `devops` | Phase 5-8 部署、CI/CD |
+
+### 使用方式
+
+```python
+# 方式 1: 自動套用（根據 role）
+from agent_spawner import spawn_with_persona
+session = spawn_with_persona(role="developer", task="實作登入功能")
+
+# 方式 2: 明確指定人格
+session = spawn_with_persona(
+    role="developer",
+    persona_type="architect",
+    task="設計系統架構"
+)
+```
+
+### CLI 命令
+
+```bash
+# 列出所有人格
+methodology persona list
+
+# 套用到當前任務
+methodology persona apply developer
+```
 
 ---
 

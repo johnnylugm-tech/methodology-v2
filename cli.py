@@ -61,7 +61,7 @@ from code_metrics import MetricsTracker
 class MethodologyCLI:
     """統一 CLI 入口"""
     
-    VERSION = "5.54.0"
+    VERSION = "5.56.0"
     
     def __init__(self):
         self.progress = ProgressDashboard()
@@ -211,6 +211,8 @@ class MethodologyCLI:
             return self.cmd_guide(args)
         elif command == "roadmap":
             return self.cmd_roadmap(args)
+        elif command == "persona":
+            return self.cmd_persona(args)
         else:
             pass # Removed print-debug
             return 1
@@ -2686,6 +2688,43 @@ class MethodologyCLI:
         print("  - 學習地圖：docs/ROADMAP.md")
         return 0
 
+    def cmd_persona(self, args):
+        """Agent Persona - 角色人格管理"""
+        from agent_personas import generate_persona_prompt
+
+        action = args.action
+
+        if action == "list":
+            print("📋 Available Agent Personas:")
+            print("=" * 50)
+            personas = ["architect", "developer", "reviewer", "qa", "pm", "devops"]
+            for p in personas:
+                prompt = generate_persona_prompt(p)
+                print(f"\n### {p.upper()}")
+                print(prompt[:200] + "..." if len(prompt) > 200 else prompt)
+            return 0
+
+        elif action == "show":
+            if not args.persona_type:
+                print("❌ Please specify persona type")
+                return 1
+            prompt = generate_persona_prompt(args.persona_type)
+            print(f"### {args.persona_type.upper()}")
+            print(prompt)
+            return 0
+
+        elif action == "apply":
+            if not args.persona_type:
+                print("❌ Please specify persona type")
+                return 1
+            # 顯示如何使用的範例
+            print(f"✅ To apply {args.persona_type} persona:")
+            print(f"   from agent_spawner import spawn_with_persona")
+            print(f"   spawn_with_persona(role='developer', persona_type='{args.persona_type}', task='...')")
+            return 0
+
+        return 0
+
     def cmd_roadmap(self, args):
         """Learning Roadmap - 學習地圖"""
         from pathlib import Path
@@ -3055,6 +3094,13 @@ def main():
                            choices=["create", "new", "list", "ls", "get", "show", "status", "export", "report"],
                            help="ADR action")
     adr_parser.add_argument("args", nargs="*", help="Arguments for ADR subcommand")
+
+    # persona
+    persona_parser = subparsers.add_parser("persona", help="Agent Persona")
+    persona_parser.add_argument("action", choices=["list", "apply", "show"],
+                              help="Persona action")
+    persona_parser.add_argument("persona_type", nargs="?",
+                              help="Persona type (developer, architect, qa, pm, devops, reviewer)")
 
     args = parser.parse_args()
     
