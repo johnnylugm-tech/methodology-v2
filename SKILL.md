@@ -1,6 +1,6 @@
 # methodology-v2
 
-> Multi-Agent Collaboration Development Methodology v5.21
+> Multi-Agent Collaboration Development Methodology v5.50
 
 ---
 
@@ -13,6 +13,7 @@
 | v5.23 | 2026-03-23 | Anti-Shortcut Framework (6 模組) |
 | v5.25 | 2026-03-23 | TDAD Methodology (Mutation Testing, Hidden Tests, Impact Analysis) |
 | **v5.26** | **2026-03-23** | **AI Quality Gate + TDD + Multi-Agent + Security Scanner (突破 9.0)** |
+| **v5.50** | **2026-03-26** | **Framework Enforcement（Framework 內建）+ Git Enforcement 互補，所有環境皆可觸發** |
 
 ---
 
@@ -403,6 +404,8 @@ python3 quality_gate/constitution/runner.py --type srs
 ✅ 已通過
 ```
 
+> ⚠️ **Enforcement 觸發**：執行 `methodology quality` 時，Framework Enforcement 會自動執行。請參閱 [Enforcement（Framework 內建）](#enforcementframework-內建) 章節。
+
 ---
 
 ### 🚫 已移除的功能
@@ -412,6 +415,64 @@ python3 quality_gate/constitution/runner.py --type srs
 | `quality_watch.py start` (daemon) | 依賴 watchdog 套件，常失效 | 手動執行命令 |
 | 自動檔案監控 | 環境限制 | 每 Phase 手動檢查 |
 | Git commit hook | 需要設定 | 手動檢查後再 commit |
+
+---
+
+## Enforcement（Framework 內建）
+
+> 任何環境都能觸發，不依賴 Git Hook
+
+### 執行方式
+
+```bash
+methodology quality
+```
+
+### 等級與檢查項目
+
+| 等級 | 檢查項目 | 觸發條件 | 失敗行為 |
+|------|----------|----------|----------|
+| 🔴 BLOCK | SPEC_TRACKING.md 存在 | 每次 quality 執行 | 阻擋 |
+| 🔴 BLOCK | 規格完整性 > 90% | 每次 quality 執行 | 阻擋 |
+| 🔴 BLOCK | Constitution Score > 60% | 每次 quality 執行 | 阻擋 |
+| 🟡 WARN | Decision Framework 存在 | 每次 quality 執行 | 警告 |
+| 🟡 WARN | enhanced_checklist.md 更新 | 每次 quality 執行 | 警告 |
+
+### 流程
+
+```
+1. 執行 methodology quality
+2. 自動觸發 Framework Enforcement
+3. 依序檢查所有 BLOCK 項目
+4. 若有 BLOCK 失敗 → 顯示錯誤並阻擋
+5. 若有 WARN → 顯示警告
+6. 全部通過 → 繼續流程
+```
+
+### 與 Git Enforcement 的關係
+
+| 類型 | 觸發時機 | 環境依賴 |
+|------|----------|----------|
+| **Framework Enforcement** | 執行 `methodology quality` | 無（任何環境）|
+| **Git Enforcement** | commit/push/pr | Git + CI/CD |
+
+兩者互補，都需要開啟。
+
+### 範例輸出
+
+```
+🔴 [BLOCK] SPEC_TRACKING.md 不存在
+   請執行: methodology spec-track init
+
+🟡 [WARN] Decision Framework 未建立
+   建議建立 DECISION_FRAMEWORK.md
+
+✅ Framework Enforcement 通過
+```
+
+### Python 實作（可選）
+
+如需要，可呼叫 `quality_gate/spec_tracking_checker.py` 的 `SpecTrackingChecker`
 
 ---
 
