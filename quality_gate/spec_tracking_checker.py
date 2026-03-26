@@ -94,10 +94,51 @@ class SpecTrackingChecker:
         return entries
     
     def run(self) -> bool:
-        """執行規格追蹤檢查"""
+        """執行規格追蹤檢查（向後相容，返回布林）"""
         if not self.check_exists():
             return False
         return self.check_completeness()["complete"]
+    
+    def run_enforcement(self) -> Dict:
+        """
+        執行規格追蹤檢查（for Enforcement 整合）
+        
+        Returns:
+            Dict with keys:
+                - exists: bool
+                - completeness: int (0-100)
+                - complete: bool
+                - missing: List[str]
+                - errors: List[str]
+        """
+        exists = self.check_exists()
+        if not exists:
+            return {
+                "exists": False,
+                "completeness": 0,
+                "complete": False,
+                "missing": ["SPEC_TRACKING.md 不存在"],
+                "errors": []
+            }
+        
+        completeness_result = self.check_completeness()
+        content = self.spec_file.read_text(encoding="utf-8")
+        stats = self._count_status(content)
+        
+        total = sum(stats.values())
+        completed = stats.get("✅ 完成", 0)
+        
+        # 計算完整度百分比
+        completeness_pct = int((completed / max(total, 1)) * 100) if total > 0 else 0
+        
+        return {
+            "exists": True,
+            "completeness": completeness_pct,
+            "complete": completeness_result["complete"],
+            "missing": completeness_result["missing"],
+            "errors": completeness_result["errors"],
+            "stats": stats
+        }
     
     def print_report(self):
         """打印規格追蹤報告"""

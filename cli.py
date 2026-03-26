@@ -61,7 +61,7 @@ from code_metrics import MetricsTracker
 class MethodologyCLI:
     """統一 CLI 入口"""
     
-    VERSION = "5.49.0"
+    VERSION = "5.51.0"
     
     def __init__(self):
         self.progress = ProgressDashboard()
@@ -189,6 +189,8 @@ class MethodologyCLI:
             return self.cmd_enforcement(args)
         elif command == "quality-gate" or command == "qg":
             return self.cmd_quality_gate(args)
+        elif command == "enforce":
+            return self.cmd_enforce(args)
         elif command == "decision" or command == "dec":
             return self.cmd_decision_gate(args)
         elif command == "agent-proof-hook":
@@ -2052,6 +2054,7 @@ class MethodologyCLI:
     def cmd_quality_gate(self, args):
         """Quality Gate - 統一品質閘道檢查"""
         from quality_gate import UnifiedGate
+        from quality_gate.spec_tracking_checker import SpecTrackingChecker
 
         sub = args.subcommand
 
@@ -2073,6 +2076,26 @@ class MethodologyCLI:
                 if check.violations:
                     for v in check.violations[:3]:
                         print(f"      - {v}")
+
+            # Framework Enforcement - SPEC_TRACKING
+            print("\n--- Framework Enforcement ---")
+            project_root = os.getcwd()
+            checker = SpecTrackingChecker(project_root)
+            spec_result = checker.run_enforcement()
+
+            if not spec_result.get('exists', False):
+                print("🔴 [BLOCK] SPEC_TRACKING.md 不存在")
+                print("   請執行: methodology spec-track init")
+                sys.exit(1)
+            else:
+                completeness = spec_result.get('completeness', 0)
+                if completeness < 90:
+                    print(f"🔴 [BLOCK] 規格完整性 {completeness}% < 90%")
+                    sys.exit(1)
+                print(f"✅ SPEC_TRACKING: {completeness}% 完成")
+                if spec_result.get('missing'):
+                    for m in spec_result['missing'][:3]:
+                        print(f"   ⚠️ {m}")
 
             sys.exit(0 if result.passed else 1)
 
@@ -2116,6 +2139,48 @@ class MethodologyCLI:
             return 1
 
         return 0
+
+    def cmd_enforce(self, args):
+        """Framework Enforcement - 統一執行所有 enforcement"""
+        from enforcement.framework_enforcer import FrameworkEnforcer
+        
+        level = args.level
+        project_root = args.project
+        
+        print("=" * 50)
+        print(f"Framework Enforcement - {level}")
+        print("=" * 50)
+        
+        enforcer = FrameworkEnforcer(project_root)
+        result = enforcer.run(level=level)
+        
+        violations = result.violations
+        warnings = result.warnings
+        
+        print("\n🔴 BLOCK Violations:")
+        if violations:
+            for msg, fix in violations:
+                print(f"   🔴 {msg}")
+                if fix:
+                    print(f"      請執行: {fix}")
+        else:
+            print("   ✅ 無 BLOCK 違規")
+        
+        print("\n🟡 Warnings:")
+        if warnings:
+            for msg, fix in warnings:
+                print(f"   🟡 {msg}")
+                if fix:
+                    print(f"      {fix}")
+        else:
+            print("   ✅ 無警告")
+        
+        if result.passed:
+            print("\n✅ Framework Enforcement 通過")
+            return 0
+        else:
+            print("\n❌ Framework Enforcement 失敗")
+            return 1
 
     def cmd_decision_gate(self, args):
         """Decision Gate - 決策分類閘道"""
@@ -2818,6 +2883,14 @@ def main():
     quality_gate_parser.add_argument("subcommand", nargs="?", default="check",
                                      choices=["check", "all", "doc", "docs", "phase", "aspice"],
                                      help="Quality gate subcommand")
+
+    # enforce (Framework Enforcement)
+    enforce_parser = subparsers.add_parser("enforce", help="Framework Enforcement - 統一執行所有 enforcement")
+    enforce_parser.add_argument("--level", choices=["BLOCK", "WARN", "ALL"], default="ALL",
+                               help="Enforcement level")
+    enforce_parser.add_argument("--spec", action="store_true", help="Only spec tracking")
+    enforce_parser.add_argument("--constitution", action="store_true", help="Only constitution")
+    enforce_parser.add_argument("--project", default=".", help="Project root path")
 
     # decision (Decision Gate - 決策分類閘道)
     decision_parser = subparsers.add_parser("decision", aliases=["dec"], help="Decision Gate - 決策分類閘道")

@@ -66,6 +66,28 @@ if not summary['all_passed']:
     exit 1
 }
 
+# 3. 執行 Framework Enforcement (BLOCK level)
+echo ""
+echo "🔒 Running Framework Enforcement..."
+python3 -c "
+from enforcement.framework_enforcer import FrameworkEnforcer
+import os
+enforcer = FrameworkEnforcer(os.getcwd())
+result = enforcer.run(level='BLOCK')
+if not result.passed:
+    print('❌ Framework Enforcement BLOCK checks failed')
+    for msg, fix in result.violations:
+        print(f'   🔴 {msg}')
+        if fix:
+            print(f'      請執行: {fix}')
+    exit(1)
+print('✅ Framework Enforcement BLOCK checks passed')
+" || {
+    echo -e "${RED}❌ Framework Enforcement failed${NC}"
+    echo -e "${YELLOW}   SPEC_TRACKING or Constitution checks did not pass${NC}"
+    exit 1
+}
+
 echo -e "${GREEN}✅ All pre-commit checks passed${NC}"
 echo ""
 echo "Proceeding with commit..."

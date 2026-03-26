@@ -30,6 +30,7 @@ from .constitution_as_code import (
 )
 
 from .server_enforcer import ServerEnforcer
+from .framework_enforcer import FrameworkEnforcer, EnforcementResult
 
 __all__ = [
     # Policy Engine
@@ -54,4 +55,8 @@ __all__ = [
     
     # Server-Side Enforcer
     'ServerEnforcer',
+    
+    # Framework Enforcer
+    'FrameworkEnforcer',
+    'EnforcementResult',
 ]

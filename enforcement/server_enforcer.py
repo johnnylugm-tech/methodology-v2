@@ -172,6 +172,36 @@ class ServerEnforcer:
         print("")
         print("This check cannot be bypassed with --no-verify")
 
+    def on_git_hook(self, hook_type: str = "pre-commit") -> bool:
+        """
+        Git Hook 觸發 enforcement
+        
+        用於在 Git hook 環境中執行 Framework Enforcement。
+        
+        Args:
+            hook_type: Hook 類型 (pre-commit, pre-push, etc.)
+        
+        Returns:
+            True if passed, False otherwise
+        """
+        from enforcement.framework_enforcer import FrameworkEnforcer
+        
+        print(f"Running Framework Enforcement for {hook_type}...")
+        
+        enforcer = FrameworkEnforcer(os.getcwd())
+        result = enforcer.run(level="BLOCK")
+        
+        if not result.passed:
+            print("\n🔴 Enforcement Failed:")
+            for msg, fix in result.violations:
+                print(f"   🔴 {msg}")
+                if fix:
+                    print(f"      請執行: {fix}")
+            return False
+        
+        print("✅ Framework Enforcement passed")
+        return True
+
 
 def main():
     """CLI 入口"""
