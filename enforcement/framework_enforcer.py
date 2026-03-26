@@ -147,6 +147,59 @@ class FrameworkEnforcer:
             "path": str(checklist_file)
         }
     
+    def check_traceability_matrix(self) -> Dict:
+        """
+        檢查 TRACEABILITY_MATRIX.md 完整性
+        
+        Returns:
+            Dict with keys: exists, complete, completeness, missing_tests, missing_constitution
+        """
+        from pathlib import Path
+        
+        trace_file = self.project_root / "TRACEABILITY_MATRIX.md"
+        if not trace_file.exists():
+            return {
+                "exists": False, 
+                "complete": False, 
+                "completeness": 0,
+                "missing_tests": [],
+                "missing_constitution": []
+            }
+        
+        content = trace_file.read_text()
+        lines = content.split("\n")
+        
+        missing_tests = []
+        missing_constitution = []
+        completed = 0
+        total = 0
+        
+        for line in lines:
+            if "src/" in line or ".py" in line:
+                total += 1
+                # 檢查是否有測試
+                if "test_" not in line and "| ✅ |" not in line:
+                    # 實作了但狀態不是已完成
+                    pass
+                # 檢查 Constitution 欄位
+                if "❌" in line or "⚠️" in line:
+                    missing_constitution.append(line)
+                if "✅" in line:
+                    completed += 1
+        
+        completeness = (completed / total * 100) if total > 0 else 0
+        complete = completeness >= 90 and len(missing_tests) == 0
+        
+        return {
+            "exists": True,
+            "complete": complete,
+            "completeness": completeness,
+            "total": total,
+            "completed": completed,
+            "missing_tests": missing_tests,
+            "missing_constitution": missing_constitution
+        }
+    
     def check_phase_traceability(self) -> Dict:
         """
         檢查 Phase 間追溯性（ASPICE 要求）
@@ -380,6 +433,27 @@ class FrameworkEnforcer:
                 result.add_violation(
                     f"ASPICE 文檔缺失: {', '.join(aspice['missing_docs'][:3])}",
                     "請補齊所有 Phase 的文檔"
+                )
+            
+            # 5. TRACEABILITY Matrix
+            trace = self.check_traceability_matrix()
+            trace_passed = trace['complete']
+            result.add_block_check("TRACEABILITY_COMPLETE", trace_passed)
+            
+            if not trace.get('exists', False):
+                result.add_violation(
+                    "TRACEABILITY_MATRIX.md 不存在",
+                    "methodology trace init"
+                )
+            elif not trace_passed:
+                missing = []
+                if trace.get('missing_tests'):
+                    missing.append(f"{len(trace['missing_tests'])} 項缺少測試")
+                if trace.get('missing_constitution'):
+                    missing.append(f"{len(trace['missing_constitution'])} 項 Constitution 未通過")
+                result.add_violation(
+                    f"TRACEABILITY 不完整: {', '.join(missing)}",
+                    "methodology trace check"
                 )
         
         # WARN 檢查

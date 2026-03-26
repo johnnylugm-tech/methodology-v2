@@ -2,23 +2,26 @@
 
 > 本文件追蹤需求從規格到實作到測試的完整鏈路
 
-## 使用方式
+## ⚠️ 重要說明
 
-每次新增需求時，在下方表格新增一列。
+- **Constitution 欄位**：必須通過 Constitution 檢查才能標記 ✅
+- **狀態欄位**：只有 Constitution 通過且測試通過才能標記 ✅
 
 ## 需求追蹤表
 
-| 需求 ID | 規格頁碼 | 實作檔案 | 測試檔 | Constitution 檢查 | 狀態 |
-|---------|----------|----------|--------|-------------------|------|
-| F1.1 | P1 | src/tts_engine.py | tests/test_tts_engine.py | ✅ | ✅ 完成 |
-| F1.2 | P2 | src/text_processor.py | tests/test_text_processor.py | ✅ | ✅ 完成 |
+| 需求 ID | 規格頁碼 | 實作檔案 | 測試檔 | Constitution | 狀態 |
+|---------|----------|----------|--------|--------------|------|
+| F1.1 | P1 | src/tts_engine.py | tests/test_tts_engine.py | ✅ | ✅ |
 | ... | ... | ... | ... | ... | ... |
 
-## 更新原則
+## 狀態說明
 
-- 每次完成一個需求，更新狀態為 ✅
-- 每次發現問題，在備註欄記錄
-- 定期更新 Constitution 檢查結果
+| 狀態 | 含義 |
+|------|------|
+| ⬜ 待處理 | 尚未開始 |
+| 🔄 進行中 | 實作中 |
+| ✅ 完成 | 實作+測試+Constitution 都通過 |
+| ❌ 失敗 | 失敗 |
 
 ## CLI 整合
 
@@ -26,8 +29,11 @@
 # 初始化追蹤矩陣
 methodology trace init
 
+# 檢查狀態
+methodology trace check
+
 # 更新狀態
-methodology trace update F1.1 --status "in-progress"
+methodology trace update F1.1 --status completed
 
 # 生成報告
 methodology trace report

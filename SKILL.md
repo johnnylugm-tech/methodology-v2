@@ -1,6 +1,6 @@
 # methodology-v2
 
-> Multi-Agent Collaboration Development Methodology v5.54
+> Multi-Agent Collaboration Development Methodology v5.55
 
 ---
 
@@ -15,6 +15,7 @@
 | **v5.26** | **2026-03-23** | **AI Quality Gate + TDD + Multi-Agent + Security Scanner (突破 9.0)** |
 | **v5.50** | **2026-03-26** | **Framework Enforcement（Framework 內建）+ Git Enforcement 互補，所有環境皆可觸發** |
 | **v5.54** | **2026-03-26** | **Traceability Matrix CLI + Dockerfile/Deployment 模板 + Framework Enforcement 自動化章節** |
+| **v5.55** | **2026-03-26** | **TRACEABILITY Matrix 完整整合 FrameworkEnforcer + SPEC vs TRACE 定義 + CLI Constitution 驗證增強** |
 
 ---
 
@@ -491,6 +492,30 @@ methodology quality
 | `methodology enforce --level BLOCK` | 所有 BLOCK 檢查 |
 | `methodology spec-track check` | 規格完整性 ≥90% |
 | `methodology constitution check` | Constitution Score ≥60% |
+
+### SPEC_TRACKING vs TRACEABILITY Matrix
+
+#### 兩個文件的區別
+
+| 維度 | SPEC_TRACKING.md | TRACEABILITY_MATRIX.md |
+|------|------------------|----------------------|
+| 用途 | 規格書對照 | 需求追蹤 |
+| 起點 | PDF 規格書 | 使用者需求 |
+| 追蹤 | 規格 → 實作 | 需求 → 實作 → 測試 |
+| 使用時機 | 有外部規格書時 | 任何專案 |
+
+#### 選擇方式
+
+```
+有 PDF 規格書 → 使用 SPEC_TRACKING + TRACEABILITY
+沒有規格書 → 只使用 TRACEABILITY
+```
+
+#### 建議
+
+新專案應該同時建立兩個文件：
+- `SPEC_TRACKING.md` - 對照外部規格
+- `TRACEABILITY_MATRIX.md` - 內部需求追蹤
 
 ### 專案初始化時
 

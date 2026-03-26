@@ -1094,20 +1094,31 @@ class MethodologyCLI:
             trace_file = Path(os.getcwd()) / "TRACEABILITY_MATRIX.md"
             if not trace_file.exists():
                 pass # Removed print-debug
+                print("   Run: methodology trace init")
                 return 1
             
             content = trace_file.read_text()
-            # 簡單檢查：計算 ✅ 數量
+            
+            # 統計
+            total = content.count("|")
             completed = content.count("✅")
-            total_lines = [l for l in content.split('\n') if l.startswith('|') and '---' not in l]
-            total = len(total_lines) - 1  # subtract header row
+            missing_constitution = content.count("❌")
+            
+            completeness = (completed / max(total, 1)) * 100
             
             pass # Removed print-debug
-            if completed < total:
+            print("=" * 50)
+            print(f"Completed: {completed}/{total} ({completeness:.1f}%)")
+            
+            if missing_constitution > 0:
+                print(f"⚠️  Constitution failures: {missing_constitution}")
+            
+            if completeness >= 90 and missing_constitution == 0:
+                pass # Removed print-debug
+                return 0
+            else:
                 pass # Removed print-debug
                 return 1
-            pass # Removed print-debug
-            return 0
         
         elif action == "report":
             pass # Removed print-debug
