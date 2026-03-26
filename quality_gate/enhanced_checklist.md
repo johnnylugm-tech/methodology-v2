@@ -55,6 +55,14 @@ for temp_file in temp_files:
 [ ] 與規格不符時是否有 DECISIONS.md 記錄？
 ```
 
+### 6. 語氣控制檢查（PDF P8 建議）
+```
+[ ] 是否有 prosody_manager 或等效模組？
+[ ] 停頓時間是否符合建議值？（逗號200ms、句號500ms、換行1000ms）
+[ ] 是否使用 SSML 或等效機制？
+[ ] CLI 是否提供 --prosody 開關？
+```
+
 ### 6. 測試覆蓋
 ```
 [ ] 核心路徑是否有單元測試？

@@ -33,6 +33,7 @@ class SpecComplianceChecker:
             self.check_retry_mechanism,
             self.check_circuit_breaker,
             self.check_logging,
+            self.check_prosody_control,  # 新增：語氣控制檢查
         ]
         
         for check in checks:
@@ -133,6 +134,40 @@ class SpecComplianceChecker:
             self.passed.append("錯誤日誌：已實現 logging")
         elif "print(" in content:
             self.issues.append("錯誤日誌：僅使用 print()，建議改用 logging")
+    
+    def check_prosody_control(self):
+        """檢查語氣控制是否完整實現（PDF P8）"""
+        prosody_file = self.project_path / "src" / "prosody_manager.py"
+        
+        if not prosody_file.exists():
+            self.issues.append("語氣控制：prosody_manager.py 不存在 (P8)")
+            return
+        
+        content = prosody_file.read_text()
+        
+        # 檢查停頓配置是否存在（支援數字或字串）
+        has_200 = '"200"' in content or "'200'" in content or ": 200" in content
+        has_500 = '"500"' in content or "'500'" in content or ": 500" in content
+        has_1000 = '"1000"' in content or "'1000'" in content or ": 1000" in content
+        
+        if not has_200:
+            self.issues.append("語氣控制：逗號停頓時間未設定（應為200ms）")
+        if not has_500:
+            self.issues.append("語氣控制：句號停頓時間未設定（應為500ms）")
+        if not has_1000:
+            self.issues.append("語氣控制：換行停頓時間未設定（應為1000ms）")
+        
+        if has_200 and has_500 and has_1000:
+            self.passed.append("語氣控制：停頓時間正確實現 (P8)")
+            
+            # 檢查 CLI 整合
+            cli_file = self.project_path / "src" / "cli.py"
+            if cli_file.exists():
+                cli_content = cli_file.read_text()
+                if "ProsodyManager" in cli_content:
+                    self.passed.append("語氣控制：已整合到 CLI")
+                else:
+                    self.issues.append("語氣控制：未整合到 CLI")
 
 
 def main():
