@@ -7,6 +7,11 @@ Modules:
     - srs_constitution_checker: SRS 文件原則檢查
     - sad_constitution_checker: SAD 文件原則檢查
     - test_plan_constitution_checker: 測試計畫原則檢查
+    - implementation_constitution_checker: 實作原則檢查 (Phase 3)
+    - verification_constitution_checker: 驗證原則檢查 (Phase 5)
+    - quality_report_constitution_checker: 品質報告原則檢查 (Phase 6)
+    - risk_management_constitution_checker: 風險管理原則檢查 (Phase 7)
+    - configuration_constitution_checker: 配置管理原則檢查 (Phase 8)
     - runner: 統一執行介面
 
 Usage:
@@ -39,7 +44,7 @@ ERROR_LEVELS = {
 @dataclass
 class ConstitutionCheckResult:
     """Constitution 檢查結果"""
-    check_type: str  # "srs", "sad", "test_plan"
+    check_type: str  # "srs", "sad", "test_plan", "implementation", "verification", "quality_report", "risk_management", "configuration"
     passed: bool
     score: float
     violations: List[Dict]
@@ -62,6 +67,11 @@ def load_constitution_documents(docs_path: str) -> Dict[str, Optional[str]]:
         "srs": None,
         "sad": None,
         "test_plan": None,
+        "implementation": None,
+        "verification": None,
+        "quality_report": None,
+        "risk_management": None,
+        "configuration": None,
         "constitution": None,
     }
     
@@ -101,16 +111,29 @@ def run_constitution_check(check_type: str, docs_path: str) -> ConstitutionCheck
     """執行 Constitution 檢查
     
     Args:
-        check_type: 檢查類型 ("srs", "sad", "test_plan", "all")
+        check_type: 檢查類型 ("srs", "sad", "test_plan", "implementation", "verification", "quality_report", "risk_management", "configuration", "all")
         docs_path: docs 目錄路徑
         
     Returns:
         ConstitutionCheckResult
     """
+    # 更新 check_type 映射
+    type_mapping = {
+        "srs": "srs_constitution_checker",
+        "sad": "sad_constitution_checker",
+        "test_plan": "test_plan_constitution_checker",
+        "implementation": "implementation_constitution_checker",
+        "verification": "verification_constitution_checker",
+        "quality_report": "quality_report_constitution_checker",
+        "risk_management": "risk_management_constitution_checker",
+        "configuration": "configuration_constitution_checker",
+    }
+    
     if check_type == "all":
         # 執行所有檢查
         results = []
-        for ct in ["srs", "sad", "test_plan"]:
+        for ct in ["srs", "sad", "test_plan", "implementation", 
+                   "verification", "quality_report", "risk_management", "configuration"]:
             result = run_constitution_check(ct, docs_path)
             results.append(result)
         
@@ -129,20 +152,17 @@ def run_constitution_check(check_type: str, docs_path: str) -> ConstitutionCheck
             passed=all_passed,
             score=avg_score,
             violations=all_violations,
-            details={},
+            details={"phases_checked": len(results)},
             recommendations=all_recommendations
         )
     
     # 單一檢查
-    if check_type == "srs":
-        from .srs_constitution_checker import check_srs_constitution
-        return check_srs_constitution(docs_path)
-    elif check_type == "sad":
-        from .sad_constitution_checker import check_sad_constitution
-        return check_sad_constitution(docs_path)
-    elif check_type == "test_plan":
-        from .test_plan_constitution_checker import check_test_plan_constitution
-        return check_test_plan_constitution(docs_path)
+    checker_module = type_mapping.get(check_type)
+    if checker_module:
+        from importlib import import_module
+        module = import_module(f".{checker_module}", package="quality_gate.constitution")
+        checker_fn = getattr(module, f"check_{check_type}_constitution")
+        return checker_fn(docs_path)
     else:
         return ConstitutionCheckResult(
             check_type=check_type,
@@ -150,7 +170,7 @@ def run_constitution_check(check_type: str, docs_path: str) -> ConstitutionCheck
             score=0,
             violations=[{"type": "unknown_check_type", "message": f"Unknown check type: {check_type}"}],
             details={},
-            recommendations=[f"Valid check types: srs, sad, test_plan, all"]
+            recommendations=[f"Valid check types: {', '.join(type_mapping.keys())}, all"]
         )
 
 
