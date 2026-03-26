@@ -131,6 +131,94 @@ class PhaseArtifactRegistry:
         
         return required
     
+    def verify_phase_link(self, prev_phase: Phase, current_phase: Phase) -> ArtifactCheckResult:
+        """
+        驗證 current_phase 是否正確引用 prev_phase 的產物
+        
+        檢查方式：
+        1. 確認 prev_phase 的產物目錄存在
+        2. 掃描 current_phase 的相關檔案，檢查是否有引用 prev_phase 的關鍵字
+        """
+        prev_config = self.PHASE_ARTIFACTS.get(prev_phase, {})
+        curr_config = self.PHASE_ARTIFACTS.get(current_phase, {})
+        
+        prev_output_dir = prev_config.get("output_dir", "")
+        curr_output_dir = curr_config.get("output_dir", "")
+        
+        # 檢查 prev_phase 的產物是否存在
+        prev_path = self.project_root / prev_output_dir
+        if not prev_path.exists():
+            return ArtifactCheckResult(
+                phase=current_phase,
+                passed=False,
+                message=f"Previous phase artifact directory not found: {prev_output_dir}"
+            )
+        
+        # 收集 prev_phase 的所有檔案
+        prev_files = []
+        if prev_path.exists():
+            prev_files = [str(f.relative_to(self.project_root)) for f in prev_path.rglob("*") if f.is_file()]
+        
+        # 收集 current_phase 的所有檔案內容
+        curr_path = self.project_root / curr_output_dir
+        curr_content = ""
+        if curr_path.exists():
+            for f in curr_path.rglob("*"):
+                if f.is_file():
+                    try:
+                        content = f.read_text(encoding="utf-8", errors="ignore")
+                        curr_content += content + "\n"
+                    except Exception:
+                        pass
+        
+        # 檢查 current_phase 是否引用了 prev_phase 的關鍵字
+        referenced = []
+        missing_refs = []
+        
+        # 檢查 phase 名稱/目錄名稱是否出現在 current_phase 的內容中
+        prev_phase_markers = [
+            prev_phase.value,
+            prev_output_dir,
+            prev_output_dir.replace("/", "").replace("-", "_"),
+        ]
+        
+        for marker in prev_phase_markers:
+            if marker in curr_content or marker.lower() in curr_content.lower():
+                referenced.append(marker)
+        
+        # 檢查是否有引用 prev_phase 的檔案
+        for pf in prev_files:
+            pf_name = Path(pf).name
+            if pf_name in curr_content:
+                referenced.append(pf)
+        
+        # 檢查通用引用模式
+        reference_patterns = [
+            r"based on",
+            r"derived from",
+            r"according to",
+            r"based upon",
+            r"continuation of",
+            r"extends",
+            r"following the",
+            r"per the",
+            r"as defined in",
+        ]
+        
+        for pattern in reference_patterns:
+            if re.search(pattern, curr_content, re.IGNORECASE):
+                referenced.append(f"pattern:{pattern}")
+        
+        passed = len(referenced) > 0 or len(prev_files) == 0
+        
+        return ArtifactCheckResult(
+            phase=current_phase,
+            passed=passed,
+            referenced_artifacts=referenced,
+            missing_references=missing_refs if not passed else [],
+            message=f"Phase link verification: {'passed' if passed else 'failed'}"
+        )
+    
     def check_phase_dependencies(self, phase: Phase) -> ArtifactCheckResult:
         """檢查某個 Phase 的依賴是否滿足"""
         required_artifacts = self.get_required_artifacts(phase)

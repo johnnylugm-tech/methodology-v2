@@ -61,7 +61,7 @@ from code_metrics import MetricsTracker
 class MethodologyCLI:
     """統一 CLI 入口"""
     
-    VERSION = "5.51.0"
+    VERSION = "5.52.0"
     
     def __init__(self):
         self.progress = ProgressDashboard()
@@ -2147,6 +2147,13 @@ class MethodologyCLI:
         level = args.level
         project_root = args.project
         
+        # Handle --aspice-report first
+        if getattr(args, 'aspice_report', False):
+            enforcer = FrameworkEnforcer(project_root)
+            report = enforcer.generate_aspice_report()
+            print(report)
+            return 0
+        
         print("=" * 50)
         print(f"Framework Enforcement - {level}")
         print("=" * 50)
@@ -2891,6 +2898,8 @@ def main():
     enforce_parser.add_argument("--spec", action="store_true", help="Only spec tracking")
     enforce_parser.add_argument("--constitution", action="store_true", help="Only constitution")
     enforce_parser.add_argument("--project", default=".", help="Project root path")
+    enforce_parser.add_argument("--aspice-report", action="store_true",
+                              help="Generate ASPICE traceability report")
 
     # decision (Decision Gate - 決策分類閘道)
     decision_parser = subparsers.add_parser("decision", aliases=["dec"], help="Decision Gate - 決策分類閘道")

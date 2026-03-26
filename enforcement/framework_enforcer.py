@@ -147,6 +147,175 @@ class FrameworkEnforcer:
             "path": str(checklist_file)
         }
     
+    def check_phase_traceability(self) -> Dict:
+        """
+        檢查 Phase 間追溯性（ASPICE 要求）
+        
+        驗證：
+        - Phase 2 是否有引用 Phase 1 的產物
+        - Phase 3 是否有引用 Phase 2 的產物
+        - ...
+        
+        Returns:
+            Dict with keys: all_verified, verified_phases, missing_links
+        """
+        from quality_gate.phase_artifact_enforcer import PhaseArtifactRegistry, Phase
+        
+        registry = PhaseArtifactRegistry(str(self.project_root))
+        
+        # 驗證所有 Phase 間的引用
+        verified = []
+        missing = []
+        
+        for phase in Phase:
+            config = PhaseArtifactRegistry.PHASE_ARTIFACTS.get(phase, {})
+            depends_on = config.get("depends_on", [])
+            
+            for prev_phase in depends_on:
+                # 檢查是否有引用上一個 Phase 的產物
+                ref_check = registry.verify_phase_link(prev_phase, phase)
+                if ref_check.passed:
+                    verified.append(f"{prev_phase.value} → {phase.value}")
+                else:
+                    missing.append(f"{prev_phase.value} → {phase.value}")
+        
+        return {
+            "all_verified": len(missing) == 0,
+            "verified_phases": verified,
+            "missing_links": missing,
+            "stats": {
+                "total": len(verified) + len(missing),
+                "verified": len(verified),
+                "missing": len(missing)
+            }
+        }
+    
+    def check_aspice_completeness(self) -> Dict:
+        """
+        檢查 ASPICE 8 階段文檔完整性
+        
+        ASPICE 要求每個 Phase 有對應文檔：
+        - Phase 1: SRS.md (Software Requirements Specification)
+        - Phase 2: SAD.md (Software Architecture Description)
+        - Phase 3: IMPLEMENTATION.md
+        - Phase 4: TEST_PLAN.md, TEST_RESULTS.md
+        - Phase 5: BASELINE.md
+        - Phase 6: QUALITY_REPORT.md
+        - Phase 7: RISK_ASSESSMENT.md, RISK_REGISTER.md
+        - Phase 8: CONFIG_RECORDS.md
+        
+        Returns:
+            Dict with keys: complete, missing_docs, phase_coverage
+        """
+        docs_path = self.project_root / "docs"
+        
+        required_by_phase = {
+            "Phase 1": ["SRS.md", "SPEC.md"],
+            "Phase 2": ["SAD.md", "ARCHITECTURE.md"],
+            "Phase 3": ["IMPLEMENTATION.md"],
+            "Phase 4": ["TEST_PLAN.md", "TEST_RESULTS.md"],
+            "Phase 5": ["BASELINE.md"],
+            "Phase 6": ["QUALITY_REPORT.md"],
+            "Phase 7": ["RISK_ASSESSMENT.md", "RISK_REGISTER.md"],
+            "Phase 8": ["CONFIG_RECORDS.md"],
+        }
+        
+        missing = []
+        found = []
+        
+        for phase, docs in required_by_phase.items():
+            for doc in docs:
+                doc_path = docs_path / doc
+                if doc_path.exists():
+                    found.append(f"{phase}/{doc}")
+                else:
+                    # 也檢查根目錄
+                    root_path = self.project_root / doc
+                    if root_path.exists():
+                        found.append(f"{phase}/{doc} (root)")
+                    else:
+                        missing.append(f"{phase}/{doc}")
+        
+        return {
+            "complete": len(missing) == 0,
+            "missing_docs": missing,
+            "phase_coverage": {
+                "total_phases": 8,
+                "phases_with_docs": 8 - len(set([m.split("/")[0] for m in missing])),
+                "total_docs": sum(len(d) for d in required_by_phase.values()),
+                "found": len(found)
+            }
+        }
+    
+    def generate_aspice_report(self) -> str:
+        """
+        生成 ASPICE 追溯報告
+        
+        報告內容：
+        1. Phase 間追溯鏈
+        2. ASPICE 文檔完整性
+        3. Constitution 分數
+        4. 規格追蹤狀態
+        
+        Returns:
+            str: 格式化的報告
+        """
+        lines = []
+        lines.append("=" * 60)
+        lines.append("ASPICE TRACEABILITY REPORT")
+        lines.append("=" * 60)
+        lines.append("")
+        
+        # Phase 間追溯
+        trace = self.check_phase_traceability()
+        lines.append("## Phase Traceability")
+        lines.append(f"Total Links: {trace['stats']['total']}")
+        lines.append(f"Verified: {trace['stats']['verified']}")
+        lines.append(f"Missing: {trace['stats']['missing']}")
+        lines.append("")
+        lines.append("### Verified Links")
+        for link in trace['verified_phases']:
+            lines.append(f"  ✅ {link}")
+        lines.append("")
+        lines.append("### Missing Links")
+        if trace['missing_links']:
+            for link in trace['missing_links']:
+                lines.append(f"  ❌ {link}")
+        else:
+            lines.append("  (none)")
+        lines.append("")
+        
+        # ASPICE 文檔完整性
+        aspice = self.check_aspice_completeness()
+        lines.append("## ASPICE Document Completeness")
+        lines.append(f"Coverage: {aspice['phase_coverage']['found']}/{aspice['phase_coverage']['total_docs']} docs")
+        lines.append(f"Phases: {aspice['phase_coverage']['phases_with_docs']}/{aspice['phase_coverage']['total_phases']}")
+        lines.append("")
+        if aspice['missing_docs']:
+            lines.append("### Missing Documents")
+            for doc in aspice['missing_docs']:
+                lines.append(f"  ❌ {doc}")
+        lines.append("")
+        
+        # Constitution Score
+        const = self.check_constitution()
+        lines.append("## Constitution Score")
+        lines.append(f"Score: {const.get('score', 0)}%")
+        lines.append(f"Threshold: 60%")
+        lines.append(f"Status: {'✅ PASS' if const.get('passed') else '❌ FAIL'}")
+        lines.append("")
+        
+        # SPEC Tracking
+        spec = self.check_spec_tracking()
+        lines.append("## Specification Tracking")
+        lines.append(f"Completeness: {spec.get('completeness', 0)}%")
+        lines.append(f"Threshold: 90%")
+        lines.append(f"Status: {'✅ PASS' if spec.get('complete') else '❌ FAIL'}")
+        lines.append("")
+        
+        lines.append("=" * 60)
+        return "\n".join(lines)
+    
     def run(self, level: str = "ALL") -> EnforcementResult:
         """
         執行 Enforcement
@@ -189,6 +358,28 @@ class FrameworkEnforcer:
                 result.add_violation(
                     f"Constitution Score {const.get('score', 0)}% < 60%",
                     "methodology constitution check"
+                )
+            
+            # 3. ASPICE Phase Traceability
+            trace = self.check_phase_traceability()
+            trace_passed = trace['all_verified']
+            result.add_block_check("ASPICE_PHASE_TRACE", trace_passed)
+            
+            if not trace_passed:
+                result.add_violation(
+                    f"ASPICE Phase 追溯性未完成: {', '.join(trace['missing_links'])}",
+                    "請確保每個 Phase 引用上一個 Phase 的產物"
+                )
+            
+            # 4. ASPICE Document Completeness
+            aspice = self.check_aspice_completeness()
+            aspice_passed = aspice['complete']
+            result.add_block_check("ASPICE_COMPLETE", aspice_passed)
+            
+            if not aspice_passed:
+                result.add_violation(
+                    f"ASPICE 文檔缺失: {', '.join(aspice['missing_docs'][:3])}",
+                    "請補齊所有 Phase 的文檔"
                 )
         
         # WARN 檢查
