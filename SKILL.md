@@ -262,6 +262,32 @@ python quick_start.py quick         # 快速啟動完整團隊
 | Phase 5-8 | ASPICE 文檔檢查 | `python3 quality_gate/doc_checker.py` |
 | Phase 5-8 | Constitution 檢查 | `python3 quality_gate/constitution/runner.py` |
 
+### 規格追蹤整合（v5.49+）
+
+當執行 quality gate 時，額外檢查：
+
+| Phase | 檢查內容 | 命令 |
+|-------|----------|------|
+| All | SPEC_TRACKING.md 存在性 | 自動檢查 |
+| All | 規格意圖分類 | 參考 `spec_intent_classifier.md` |
+| All | 決策框架對照 | 參考 `DECISION_FRAMEWORK.md` |
+| All | 強化檢查清單 | 使用 `quality_gate/enhanced_checklist.md` |
+| All | 規格合規驗證 | `python3 scripts/verify_spec_compliance.py` |
+
+**整合流程**：
+1. 檢查 `SPEC_TRACKING.md` 是否存在
+2. 若存在，執行 `spec_intent_classifier` 檢查
+3. 對照 `DECISION_FRAMEWORK` 確認決策有記錄
+4. 使用 `enhanced_checklist.md` 進行檢查
+5. 執行 `scripts/verify_spec_compliance.py` 驗證
+
+**CLI 命令**：
+```bash
+python3 cli.py spec-track init    # 初始化 SPEC_TRACKING.md
+python3 cli.py spec-track check   # 檢查規格追蹤完整性
+python3 cli.py spec-track report  # 生成規格追蹤報告
+```
+
 ---
 
 ### 檢查命令清單

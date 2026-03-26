@@ -61,7 +61,7 @@ from code_metrics import MetricsTracker
 class MethodologyCLI:
     """統一 CLI 入口"""
     
-    VERSION = "5.46.0"
+    VERSION = "5.49.0"
     
     def __init__(self):
         self.progress = ProgressDashboard()
@@ -131,6 +131,8 @@ class MethodologyCLI:
             return self.cmd_constitution(args)
         elif command == "constitution-sync":
             return self.cmd_constitution_sync(args)
+        elif command == "spec-track":
+            return self.cmd_spec_track(args)
         elif command == "version":
             return self.cmd_version(args)
         elif command == "term":
@@ -1584,6 +1586,53 @@ class MethodologyCLI:
         pass # Removed print-debug
         return 0
 
+    def cmd_spec_track(self, args):
+        """Spec Tracking - 規格追蹤"""
+        from quality_gate.spec_tracking_checker import SpecTrackingChecker
+        
+        action = args.action
+        project_root = os.getcwd()
+        
+        checker = SpecTrackingChecker(project_root)
+        
+        if action == "init":
+            # Copy template to project root
+            import shutil
+            src = os.path.join(os.path.dirname(os.path.abspath(__file__)), 
+                             "templates", "SPEC_TRACKING.md")
+            dst = os.path.join(project_root, "SPEC_TRACKING.md")
+            
+            if os.path.exists(dst):
+                pass # Removed print-debug
+                return 1
+            
+            shutil.copy(src, dst)
+            pass # Removed print-debug
+            return 0
+        
+        elif action == "check":
+            exists = checker.check_exists()
+            if not exists:
+                pass # Removed print-debug
+                return 1
+            
+            completeness = checker.check_completeness()
+            if completeness.get("complete"):
+                pass # Removed print-debug
+                return 0
+            else:
+                missing = completeness.get("missing", [])
+                for item in missing:
+                    pass # Removed print-debug
+                return 1
+        
+        elif action == "report":
+            result = checker.run()
+            checker.print_report()
+            return 0
+        
+        return 0
+
     def cmd_version(self, args):
         """顯示版本"""
         pass # Removed print-debug
@@ -2537,6 +2586,11 @@ def main():
 
     # constitution-sync
     subparsers.add_parser("constitution-sync", help="Sync Constitution to Policy Engine")
+
+    # spec-track
+    spec_track_parser = subparsers.add_parser("spec-track", help="Spec Tracking")
+    spec_track_parser.add_argument("action", choices=["init", "check", "report"],
+                                   help="Spec tracking action")
 
     # resources
     resources_parser = subparsers.add_parser("resources", help="Resource dashboard")

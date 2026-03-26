@@ -128,4 +128,75 @@ for temp_file in temp_files:
 
 ---
 
+## 🔗 整合進 methodology-v2（v5.49+）
+
+本檢查清單已整合進 methodology-v2 framework：
+
+### 自動化整合
+
+| 檢查項目 | 自動化工具 | 命令 |
+|----------|-----------|------|
+| 規格追蹤 | `spec_tracking_checker.py` | `python3 cli.py spec-track check` |
+| 決策框架 | `framework_integrator.py` | `python3 decision_gate/framework_integrator.py` |
+| 規格合規 | `verify_spec_compliance.py` | `python3 scripts/verify_spec_compliance.py` |
+
+### Quality Gate 流程整合
+
+當執行 `python3 cli.py quality-gate` 時，自動執行：
+
+1. **SPEC_TRACKING.md 檢查**
+   - 檔案是否存在
+   - 規格對照是否完整
+   - 狀態是否正確標記
+
+2. **意圖分類驗證**
+   - 對照 `spec_intent_classifier.md`
+   - SHOULD 是否被錯誤分類為 MAY
+
+3. **決策框架驗證**
+   - 對照 `DECISION_FRAMEWORK.md`
+   - 檢查 DECISIONS.md 是否存在
+   - 驗證 Q1/Q2/Q3 結構
+
+4. **強化檢查清單**
+   - 使用本增強檢查清單
+   - 特別注意 ⚠️ 關鍵檢查
+
+5. **規格合規驗證**
+   - 執行 `scripts/verify_spec_compliance.py`
+   - 確認所有 MUST/SHOULD 已實現
+
+### CLI 命令
+
+```bash
+# 初始化規格追蹤
+python3 cli.py spec-track init
+
+# 檢查規格追蹤完整性
+python3 cli.py spec-track check
+
+# 生成規格追蹤報告
+python3 cli.py spec-track report
+
+# 決策框架驗證
+python3 decision_gate/framework_integrator.py .
+
+# 規格合規驗證
+python3 scripts/verify_spec_compliance.py .
+```
+
+### 手動審查清單
+
+```
+[ ] SPEC_TRACKING.md 是否存在？
+[ ] 所有 MUST 項目是否已實現？
+[ ] 所有 SHOULD 項目是否已實現？（不實現需記錄在 DECISIONS.md）
+[ ] DECISIONS.md 是否包含 Q1/Q2/Q3 結構？
+[ ] enhanced_checklist.md 的 ⚠️ 項目是否全部通過？
+[ ] verify_spec_compliance.py 是否全部通過？
+```
+
+---
+
 *基於 2026-03-26 TTS 專案問題經驗更新*
+*整合進 methodology-v2 v5.49+*
