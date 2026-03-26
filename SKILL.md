@@ -1,6 +1,6 @@
 # methodology-v2
 
-> Multi-Agent Collaboration Development Methodology v5.50
+> Multi-Agent Collaboration Development Methodology v5.54
 
 ---
 
@@ -14,6 +14,7 @@
 | v5.25 | 2026-03-23 | TDAD Methodology (Mutation Testing, Hidden Tests, Impact Analysis) |
 | **v5.26** | **2026-03-23** | **AI Quality Gate + TDD + Multi-Agent + Security Scanner (突破 9.0)** |
 | **v5.50** | **2026-03-26** | **Framework Enforcement（Framework 內建）+ Git Enforcement 互補，所有環境皆可觸發** |
+| **v5.54** | **2026-03-26** | **Traceability Matrix CLI + Dockerfile/Deployment 模板 + Framework Enforcement 自動化章節** |
 
 ---
 
@@ -473,6 +474,65 @@ methodology quality
 ### Python 實作（可選）
 
 如需要，可呼叫 `quality_gate/spec_tracking_checker.py` 的 `SpecTrackingChecker`
+
+---
+
+## Framework Enforcement（自動化）
+
+> 透過 SKILL.md 定義，所有執行 `methodology` 命令的環境都會自動遵守
+
+### 自動執行點
+
+當執行以下命令時，會自動觸發對應檢查：
+
+| 命令 | 觸發檢查 |
+|------|----------|
+| `methodology quality-gate check` | SPEC_TRACKING + Constitution + ASPICE |
+| `methodology enforce --level BLOCK` | 所有 BLOCK 檢查 |
+| `methodology spec-track check` | 規格完整性 ≥90% |
+| `methodology constitution check` | Constitution Score ≥60% |
+
+### 專案初始化時
+
+```bash
+# 初始化專案（自動建立追蹤矩陣）
+methodology init
+
+# 這會自動：
+# 1. 建立 TRACABILITY_MATRIX.md
+# 2. 建立 SPEC_TRACKING.md
+# 3. 建立 Phase 目錄結構
+```
+
+### 每日開發時
+
+```bash
+# 每次完成任務
+methodology task complete <task-id>
+
+# 這會自動：
+# 1. 更新 TRACABILITY_MATRIX.md
+# 2. 檢查 Constitution 狀態
+```
+
+### CI-free Enforcement
+
+> 不需要 GitHub Actions 等外部 CI
+
+Enforcement 透過以下方式保證：
+
+1. **CLI 入口把關**：`methodology quality-gate check` 失敗無法繼續
+2. **Git Hook 可選**：如需，在 `.git/hooks/pre-commit` 加入：
+   ```bash
+   #!/bin/bash
+   methodology enforce --level BLOCK
+   ```
+3. **團隊協定**：約定每次 commit 前執行 `methodology enforce`
+
+這種方式的優點：
+- 不依賴外部服務
+- 任何 Git 主機都適用
+- 可離線工作
 
 ---
 

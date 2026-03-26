@@ -61,7 +61,7 @@ from code_metrics import MetricsTracker
 class MethodologyCLI:
     """統一 CLI 入口"""
     
-    VERSION = "5.52.0"
+    VERSION = "5.54.0"
     
     def __init__(self):
         self.progress = ProgressDashboard()
@@ -1003,10 +1003,14 @@ class MethodologyCLI:
         pass # Removed print-debug
     
     def cmd_trace(self, args):
-        """Agent Trace - 視覺化追蹤"""
+        """Traceability Matrix / Agent Trace"""
         action = args.action
         
-        # Impact Analysis commands (no agent_id required)
+        # === Traceability Matrix commands ===
+        if action in ("init", "update", "report", "check"):
+            return self._cmd_trace_matrix(args)
+        
+        # === Impact Analysis commands (no agent_id required) ===
         if action == "impact":
             if not args.file:
                 pass # Removed print-debug
@@ -1036,7 +1040,7 @@ class MethodologyCLI:
             self._print_risk_report(report)
             return 0
         
-        # Agent Trace commands (require agent_id)
+        # === Agent Trace commands (require agent_id) ===
         agent_id = args.agent_id
         if not agent_id:
             pass # Removed print-debug
@@ -1064,6 +1068,90 @@ class MethodologyCLI:
                 pass # Removed print-debug
             else:
                 pass # Removed print-debug
+        
+        return 0
+    
+    def _cmd_trace_matrix(self, args):
+        """Traceability Matrix - 需求追蹤"""
+        action = args.action
+        import shutil
+        from pathlib import Path
+        
+        if action == "init":
+            # Copy template to project root
+            src = os.path.join(os.path.dirname(os.path.abspath(__file__)), 
+                             "templates", "TRACEABILITY_MATRIX.md")
+            dst = os.path.join(os.getcwd(), "TRACEABILITY_MATRIX.md")
+            if os.path.exists(dst):
+                pass # Removed print-debug
+                return 1
+            shutil.copy(src, dst)
+            pass # Removed print-debug
+            return 0
+        
+        elif action == "check":
+            # 檢查追蹤矩陣完整性
+            trace_file = Path(os.getcwd()) / "TRACEABILITY_MATRIX.md"
+            if not trace_file.exists():
+                pass # Removed print-debug
+                return 1
+            
+            content = trace_file.read_text()
+            # 簡單檢查：計算 ✅ 數量
+            completed = content.count("✅")
+            total_lines = [l for l in content.split('\n') if l.startswith('|') and '---' not in l]
+            total = len(total_lines) - 1  # subtract header row
+            
+            pass # Removed print-debug
+            if completed < total:
+                pass # Removed print-debug
+                return 1
+            pass # Removed print-debug
+            return 0
+        
+        elif action == "report":
+            pass # Removed print-debug
+            return 0
+        
+        elif action == "update":
+            if not args.id:
+                pass # Removed print-debug
+                return 1
+            
+            trace_file = Path(os.getcwd()) / "TRACEABILITY_MATRIX.md"
+            if not trace_file.exists():
+                pass # Removed print-debug
+                return 1
+            
+            content = trace_file.read_text()
+            # 簡單替換：找到對應 ID 的行並更新狀態
+            status_map = {
+                "pending": "⏳ 待處理",
+                "in-progress": "🔄 進行中",
+                "completed": "✅ 完成"
+            }
+            new_status = status_map.get(args.status, args.status or "✅ 完成")
+            
+            # 找到 ID 並更新（簡單實現：替換整行中的狀態）
+            lines = content.split('\n')
+            updated = False
+            for i, line in enumerate(lines):
+                if f"| {args.id} |" in line or f"|{args.id}|" in line:
+                    # 找到狀態列並更新
+                    parts = line.split('|')
+                    if len(parts) >= 7:
+                        parts[-2] = f" {new_status} "
+                        lines[i] = '|'.join(parts)
+                        updated = True
+                        break
+            
+            if updated:
+                trace_file.write_text('\n'.join(lines))
+                pass # Removed print-debug
+                return 0
+            else:
+                pass # Removed print-debug
+                return 1
         
         return 0
     
@@ -1847,19 +1935,25 @@ class MethodologyCLI:
     def cmd_install_hook(self, args):
         """Install pre-commit hook"""
         import shutil
-        import os
+        from pathlib import Path
         
-        hook_source = os.path.join(os.path.dirname(__file__), "pre-commit.template")
-        hook_dest = os.path.join(os.path.dirname(__file__), ".git", "hooks", "pre-commit")
+        # Try new template location first, fall back to old
+        hook_source = Path(__file__).parent / "templates" / "pre-commit-hook.sh"
+        if not hook_source.exists():
+            hook_source = Path(__file__).parent / "pre-commit.template"
         
-        if os.path.exists(hook_dest):
-            response = input(f"Overwrite existing hook at {hook_dest}? [y/N] ")
-            if response.lower() != 'y':
-                pass # Removed print-debug
-                return 0
+        if not hook_source.exists():
+            pass # Removed print-debug
+            return 1
+        
+        hook_dest = Path(".git") / "hooks" / "pre-commit"
+        
+        if hook_dest.exists() and not args.force:
+            pass # Removed print-debug
+            return 1
         
         shutil.copy(hook_source, hook_dest)
-        os.chmod(hook_dest, 0o755)
+        hook_dest.chmod(0o755)
         pass # Removed print-debug
         return 0
 
@@ -2767,14 +2861,16 @@ def main():
     debug_parser.add_argument("--limit", type=int, help="Limit events")
     
     # trace
-    trace_parser = subparsers.add_parser("trace", help="Agent Trace Visualization")
-    trace_parser.add_argument("action", choices=["view", "correlation", "export", "impact", "graphviz", "risk-report"],
+    trace_parser = subparsers.add_parser("trace", help="Traceability Matrix / Agent Trace")
+    trace_parser.add_argument("action", choices=["view", "correlation", "export", "impact", "graphviz", "risk-report", "init", "update", "report", "check"],
                             help="Trace action")
-    trace_parser.add_argument("--agent-id", help="Agent ID")
+    trace_parser.add_argument("--agent-id", help="Agent ID (for view/correlation/export)")
     trace_parser.add_argument("--correlation", help="Correlation ID")
     trace_parser.add_argument("--limit", type=int, help="Limit events")
     trace_parser.add_argument("--output", "-o", help="Output file")
     trace_parser.add_argument("--file", "-f", help="File path for impact analysis")
+    trace_parser.add_argument("--id", help="Requirement ID (for update)")
+    trace_parser.add_argument("--status", help="Status: pending|in-progress|completed (for update)")
     
     # approval
     approval_parser = subparsers.add_parser("approval", help="Human Approval Management")
@@ -2868,7 +2964,8 @@ def main():
     subparsers.add_parser("policy", help="Run Policy Engine checks")
     
     # install-hook (pre-commit hook installer)
-    subparsers.add_parser("install-hook", help="Install pre-commit hook")
+    install_hook_parser = subparsers.add_parser("install-hook", help="Install pre-commit hook")
+    install_hook_parser.add_argument("--force", action="store_true", help="Overwrite existing hooks")
     
     # enforcement-config (Unified Enforcement Configuration)
     enforcement_config_parser = subparsers.add_parser("enforcement-config", help="Unified Enforcement Configuration")
