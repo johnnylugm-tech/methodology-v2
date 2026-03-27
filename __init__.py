@@ -467,3 +467,33 @@ __all__ += [
     "get_traceability_matrix",
     "reset_traceability_matrix",
 ]
+
+# A/B Enforcer v2.0 (v5.66) - 代碼層級整合，無法饒過
+from .ab_enforcer import (
+    ABEnforcerV2,
+    ABTaskLifecycle,
+    RestrictedAgentSpawner,
+    ABQualityGate,
+    get_ab_enforcer,
+    enforce_phase_complete,
+    enforce_tool_call,
+    enforce_quality_gate,
+    PermissionDenied,
+    SwapReviewError,
+    ReviewEvidenceRequired,
+)
+
+__all__ += [
+    # A/B Enforcer v2.0
+    "ABEnforcerV2",
+    "ABTaskLifecycle",
+    "RestrictedAgentSpawner",
+    "ABQualityGate",
+    "get_ab_enforcer",
+    "enforce_phase_complete",
+    "enforce_tool_call",
+    "enforce_quality_gate",
+    "PermissionDenied",
+    "SwapReviewError",
+    "ReviewEvidenceRequired",
+]
