@@ -10,6 +10,8 @@ Usage:
     python runner.py --type srs               # 只檢查 SRS
     python runner.py --type all               # 檢查所有
     python runner.py --format json            # JSON 輸出
+    python runner.py --current-phase 3       # 只檢查到 Phase 3 (階段性檢查)
+    python runner.py -cp 5                    # 只檢查到 Phase 5
 """
 
 import os
@@ -109,6 +111,13 @@ def main():
         choices=["srs", "sad", "test_plan", "all"],
         default="all",
         help="Type of check to run"
+    )
+    parser.add_argument(
+        "--current-phase", "-cp",
+        type=int,
+        choices=[1, 2, 3, 4, 5, 6, 7, 8],
+        default=None,
+        help="只檢查到指定 Phase (1-8)。用於階段性檢查，例如：--current-phase 3 只檢查 Phase 1-3"
     )
     parser.add_argument(
         "--format", "-f",
