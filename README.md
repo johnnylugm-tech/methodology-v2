@@ -5,7 +5,7 @@
 
 ---
 
-[![Version](https://img.shields.io/badge/version-v5.45.0-blue.svg)](https://github.com/johnnylugm-tech/methodology-v2)
+[![Version](https://img.shields.io/badge/version-v5.58.0-blue.svg)](https://github.com/johnnylugm-tech/methodology-v2)
 [![Python](https://img.shields.io/badge/python-3.8+-green.svg)](https://python.org)
 [![Tests](https://img.shields.io/badge/tests-32%20passed-green.svg)]()
 
@@ -1011,7 +1011,7 @@ class TeamMode(Enum):
 
 | 版本 | 日期 | 說明 |
 |------|------|------|
-| v5.45.0 | 2026-03-25 | 品質閘道（手動執行模式）：移除 quality_watch.py daemon，所有檢查改為手動執行 |
+| v5.58.0 | 2026-03-25 | 品質閘道（手動執行模式）：移除 quality_watch.py daemon，所有檢查改為手動執行 |
 | v5.44.0 | 2026-03-24 | Code Metrics + Technical Debt + ADR 整合 |
 | v5.42.0 | 2026-03-24 | Decision Gate: 技術決策分類閘道整合 |
 | v5.42.0 | 2026-03-24 | Decision Gate + Decision Gate 章節完整更新 |
@@ -1041,4 +1041,4 @@ MIT License
 ---
 
 **GitHub**: https://github.com/johnnylugm-tech/methodology-v2
-**Release**: https://github.com/johnnylugm-tech/methodology-v2/releases/tag/v5.45.0
+**Release**: https://github.com/johnnylugm-tech/methodology-v2/releases/tag/v5.58.0
