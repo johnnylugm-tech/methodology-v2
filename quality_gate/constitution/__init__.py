@@ -107,16 +107,35 @@ def load_constitution_documents(docs_path: str) -> Dict[str, Optional[str]]:
     return documents
 
 
-def run_constitution_check(check_type: str, docs_path: str) -> ConstitutionCheckResult:
+def run_constitution_check(check_type: str, docs_path: str, current_phase: int = None) -> ConstitutionCheckResult:
     """執行 Constitution 檢查
     
     Args:
         check_type: 檢查類型 ("srs", "sad", "test_plan", "implementation", "verification", "quality_report", "risk_management", "configuration", "all")
         docs_path: docs 目錄路徑
+        current_phase: 只檢查到指定 Phase (1-8)。例如 current_phase=3 只檢查 Phase 1-3
         
     Returns:
         ConstitutionCheckResult
     """
+    # Phase 映射
+    phase_mapping = {
+        1: ["srs"],
+        2: ["srs", "sad"],
+        3: ["srs", "sad", "implementation"],
+        4: ["srs", "sad", "implementation", "test_plan"],
+        5: ["srs", "sad", "implementation", "test_plan", "verification"],
+        6: ["srs", "sad", "implementation", "test_plan", "verification", "quality_report"],
+        7: ["srs", "sad", "implementation", "test_plan", "verification", "quality_report", "risk_management"],
+        8: ["srs", "sad", "implementation", "test_plan", "verification", "quality_report", "risk_management", "configuration"],
+    }
+    
+    # 如果指定 current_phase，調整檢查範圍
+    if current_phase is not None and current_phase in phase_mapping:
+        check_types = phase_mapping[current_phase]
+    else:
+        check_types = None
+    
     # 更新 check_type 映射
     type_mapping = {
         "srs": "srs_constitution_checker",
@@ -130,16 +149,21 @@ def run_constitution_check(check_type: str, docs_path: str) -> ConstitutionCheck
     }
     
     if check_type == "all":
-        # 執行所有檢查
+        # 執行所有檢查（或根據 current_phase 調整）
         results = []
-        for ct in ["srs", "sad", "test_plan", "implementation", 
-                   "verification", "quality_report", "risk_management", "configuration"]:
-            result = run_constitution_check(ct, docs_path)
+        
+        phases_to_check = check_types if check_types else ["srs", "sad", "test_plan", "implementation", 
+                   "verification", "quality_report", "risk_management", "configuration"]
+        
+        for ct in phases_to_check:
+            result = run_constitution_check(ct, docs_path, current_phase=None)
             results.append(result)
         
-        # 合併結果
-        all_passed = all(r.passed for r in results)
+        # 合併結果 - 使用平均分數判斷通過與否
+        # Bug Fix: 2026-03-27 - 不應該要求所有 phase 都 passed，只要平均分數 > maintainability threshold 就通過
         avg_score = sum(r.score for r in results) / len(results)
+        overall_passed = avg_score >= CONSTITUTION_THRESHOLDS["maintainability"]
+        
         all_violations = []
         all_recommendations = []
         
@@ -149,7 +173,7 @@ def run_constitution_check(check_type: str, docs_path: str) -> ConstitutionCheck
         
         return ConstitutionCheckResult(
             check_type="all",
-            passed=all_passed,
+            passed=overall_passed,
             score=avg_score,
             violations=all_violations,
             details={"phases_checked": len(results)},

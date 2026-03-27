@@ -152,7 +152,7 @@ def main():
         print(f"Check type: {args.type}")
     
     # 執行檢查
-    result = run_constitution_check(args.type, str(docs_path))
+    result = run_constitution_check(args.type, str(docs_path), args.current_phase)
     
     # 輸出結果
     if args.format == "json":
