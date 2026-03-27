@@ -24,12 +24,12 @@ from pathlib import Path
 from typing import Dict, List, Optional
 from dataclasses import dataclass, asdict
 
-# Constitution 原則閾值
+# Constitution 原則閾值（2026-03-27 調整 - 對標第三方審計目標）
 CONSTITUTION_THRESHOLDS = {
     "correctness": 100,      # 正確性 100%
     "security": 100,         # 安全性 100%
-    "maintainability": 70,   # 可維護性 > 70%
-    "coverage": 80,          # 覆蓋率 > 80%
+    "maintainability": 80,   # 可維護性 > 80%（舊值 70%）
+    "coverage": 90,          # 覆蓋率 > 90%（舊值 80%）
 }
 
 # 錯誤等級定義
@@ -156,7 +156,12 @@ def run_constitution_check(check_type: str, docs_path: str, current_phase: int =
                    "verification", "quality_report", "risk_management", "configuration"]
         
         for ct in phases_to_check:
-            result = run_constitution_check(ct, docs_path, current_phase=None)
+            # For implementation check, use project root (parent of docs)
+            if ct == "implementation":
+                impl_path = Path(docs_path).parent
+                result = run_constitution_check(ct, str(impl_path), current_phase=None)
+            else:
+                result = run_constitution_check(ct, docs_path, current_phase=None)
             results.append(result)
         
         # 合併結果 - 使用平均分數判斷通過與否

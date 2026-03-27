@@ -152,6 +152,8 @@ def main():
         print(f"Check type: {args.type}")
     
     # 執行檢查
+    # Phase 3 (implementation) 需要專案根目錄，不是 docs 目錄
+    # 其他檢查需要 docs 目錄
     result = run_constitution_check(args.type, str(docs_path), args.current_phase)
     
     # 輸出結果
