@@ -1816,3 +1816,98 @@ Agent 會自動：
 ---
 
 *這個方法論幫助團隊標準化多 Agent 協作開發流程*
+
+---
+
+## 2026-03-27 改善方案：強制使用 A/B 協作機制
+
+### 問題診斷
+
+| 問題 | 原因 |
+|------|------|
+| 只有 1 個 Agent | 沒用 quick_start() |
+| 沒人審查 code | 沒用 Agent Evaluator |
+| 失敗還繼續 | 沒用 Hybrid Workflow |
+| 品質爛 | 沒分工，沒人把關 |
+
+### 解決方案：直接使用現有機制
+
+#### 1. 啟動 Multi-Agent 協作
+
+```python
+from methodology import quick_start
+
+# 2 Agent: Developer + Reviewer（推薦）
+team = quick_start("dev")
+
+# 或 4 Agent: Architect + Dev + Reviewer + Tester
+team = quick_start("full")
+```
+
+#### 2. 強制 A/B 審查
+
+```python
+from agent_evaluator import AgentEvaluator
+
+evaluator = AgentEvaluator()
+
+# 每次 commit 前都要 A/B 評估
+result = evaluator.evaluate(code_a, code_b)
+if not result.approved:
+    # 阻止 commit
+    raise Exception("Code not approved")
+```
+
+#### 3. Hybrid Workflow 模式
+
+```python
+from hybrid_workflow import HybridWorkflow
+
+# OFF: 直接執行
+# HYBRID: 簡單直接，複雜 A/B
+# ON: 強制 A/B 審查
+workflow = HybridWorkflow(mode="ON")  # 強制
+```
+
+#### 4. 角色分工
+
+| 角色 | 職責 |
+|------|------|
+| Developer | 寫代碼 |
+| Code Reviewer | 審查代碼（不能是同一人） |
+| Tester | 實際執行測試 |
+| Architect | 確認架構 |
+
+#### 5. 檢查清單（每次 commit 前）
+
+- [ ] Developer 寫完 code
+- [ ] Code Reviewer 審查並 approve
+- [ ] Tester 執行 pytest 通過
+- [ ] Architect 確認架構 OK
+- [ ] Hybrid Workflow mode = ON
+
+### 禁止事項
+
+| 禁止 | 原因 |
+|------|------|
+| ❌ 只有 1 個 Agent | 必須用 quick_start("dev") |
+| ❌ 自己寫自己審 | 必須不同人審查 |
+| ❌ 不跑測試就 commit | Tester 必須實際執行 |
+| ❌ QG 失敗還繼續 | 失敗就停止，不能給藉口 |
+
+### 驗證命令
+
+```bash
+# 確認有 2+ Agent 運行
+team.list_agents()
+
+# 確認 Hybrid Workflow 模式
+workflow.mode  # 應該是 "ON"
+
+# 執行 A/B 評估
+python -m agent_evaluator --check
+```
+
+---
+
+*改善方案日期: 2026-03-27*
