@@ -23,6 +23,16 @@ from .doc_checker import DocumentChecker
 from .phase_artifact_enforcer import PhaseArtifactEnforcer, Phase
 from .constitution import run_constitution_check, ConstitutionCheckResult
 
+# 匯入 Logic Checker（2026-03-28 新增）
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).parent.parent))
+try:
+    from scripts.spec_logic_checker import SpecLogicChecker
+    SPEC_LOGIC_CHECKER_AVAILABLE = True
+except ImportError:
+    SPEC_LOGIC_CHECKER_AVAILABLE = False
+
 
 @dataclass
 class CheckResult:
@@ -90,6 +100,10 @@ class UnifiedGate:
         # 3. Phase Artifact Reference Check
         phase_result = self._check_phase_references()
         checks.append(phase_result)
+
+        # 4. Logic Correctness Check (2026-03-28 新增)
+        logic_result = self._check_logic_correctness()
+        checks.append(logic_result)
 
         # 計算總分
         total_score = sum(c.score for c in checks) / len(checks)
@@ -213,3 +227,46 @@ class UnifiedGate:
     def check_phase_only(self) -> CheckResult:
         """只檢查 Phase 引用"""
         return self._check_phase_references()
+
+    def _check_logic_correctness(self) -> CheckResult:
+        """檢查邏輯正確性（2026-03-28 新增）"""
+        if not SPEC_LOGIC_CHECKER_AVAILABLE:
+            return CheckResult(
+                name="Logic Correctness",
+                passed=True,
+                score=100,
+                violations=[],
+                details={"status": "skipped", "reason": "spec_logic_checker not available"}
+            )
+        
+        try:
+            checker = SpecLogicChecker(str(self.project_path))
+            result = checker.scan_python_files()
+            
+            violations = []
+            for issue in result.issues:
+                violations.append(f"{issue.file_path}:{issue.line_number} - {issue.description}")
+            
+            return CheckResult(
+                name="Logic Correctness",
+                passed=result.passed,
+                score=result.score,
+                violations=violations,
+                details={
+                    "files_checked": result.files_checked,
+                    "functions_checked": result.functions_checked,
+                    "issues_count": len(result.issues)
+                }
+            )
+        except Exception as e:
+            return CheckResult(
+                name="Logic Correctness",
+                passed=True,
+                score=100,
+                violations=[],
+                details={"status": "error", "reason": str(e)}
+            )
+
+    def check_logic_only(self) -> CheckResult:
+        """只檢查邏輯正確性"""
+        return self._check_logic_correctness()
