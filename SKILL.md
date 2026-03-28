@@ -638,10 +638,26 @@ Enforcement 透過以下方式保證：
    └── 記錄結果到 DEVELOPMENT_LOG.md
 
 5-8. Phase 5-8: 驗證/交付/品質/風險/配置
+   ├── 領域知識確認（實作前查閱領域知識清單）
+   ├── 邏輯正確性自我檢查（輸出≤輸入、分支一致、Lazy check）
    ├── 補齊缺失文檔
    ├── 執行 quality_gate/doc_checker.py
    ├── 執行 quality_gate/constitution/runner.py
+   ├── 執行 scripts/spec_logic_checker.py（邏輯正確性檢查）
    └── 記錄結果到 DEVELOPMENT_LOG.md
+
+   ### 5-8 Quality Gate 持續檢查（強制）
+
+   每個 Phase 完成後都必須通過 Quality Gate：
+   
+   | Phase | 檢查項目 | 門檻 |
+   |-------|----------|------|
+   | Phase 5 | Constitution | ≥ 80% |
+   | Phase 6 | Constitution | ≥ 80% |
+   | Phase 7 | Constitution | ≥ 80% |
+   | Phase 8 | Constitution | ≥ 80% |
+
+   **注意**：Phase 5-8 也需要執行 Logic Correctness 檢查，確保交付品質不低於開發品質。
 ```
 
 ---
@@ -798,6 +814,68 @@ Enforcement 透過以下方式保證：
 
 ## 5. 回歸測試
 [之前失敗的測試是否通過]
+```
+
+#### 集成測試模板（Phase 3-4）
+
+```markdown
+## tests/test_integration.py 模板
+
+```python
+import pytest
+from src.module import MainClass
+
+class TestIntegration:
+    """端到端集成測試"""
+    
+    def test_full_pipeline_text_to_audio(self):
+        """驗證：文字 → 音訊完整流程"""
+        # 1. 輸入文字
+        text = "大家好。我是導引員。"
+        
+        # 2. 執行完整流程
+        result = main_class.process(text)
+        
+        # 3. 驗證輸出
+        assert result.audio_file.exists()
+        assert result.duration > 0
+    
+    def test_output_not_exceed_input(self):
+        """驗證：輸出不應比輸入多字符（字串操作）"""
+        text = "大家好。我是導引員。今天天氣好。"
+        processor = TextProcessor()
+        chunks = processor.split(text)
+        
+        # 關鍵：合併後的字符不應多於原文
+        merged = ''.join(chunks)
+        assert len(merged) <= len(text), "輸出多於原文！"
+    
+    def test_single_file_format_consistency(self):
+        """驗證：單一檔案與多檔案格式一致"""
+        merger = AudioMerger()
+        
+        single_output = merger.merge(["file1.mp3"], "single.mp3")
+        multi_output = merger.merge(["file1.mp3", "file2.mp3"], "multi.mp3")
+        
+        # 格式應一致（bitrate, codec 等）
+        assert get_format(single_output) == get_format(multi_output)
+    
+    def test_error_recovery(self):
+        """驗證：錯誤復原流程"""
+        # 模擬錯誤情況
+        with pytest.raises(ExpectedError):
+            main_class.process(invalid_input)
+        
+        # 驗證可以復原
+        result = main_class.process(valid_input)
+        assert result.success
+```
+
+**注意**：集成測試應覆蓋以下關鍵場景：
+- [ ] 文字 → 音訊完整流程
+- [ ] 輸出不超過輸入（字串操作）
+- [ ] 單一檔案格式 = 多檔案格式
+- [ ] 錯誤復原流程
 ```
 
 #### BASELINE.md 模板（Phase 5）
