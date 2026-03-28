@@ -1,384 +1,421 @@
 #!/usr/bin/env python3
 """
-Phase Runner - Phase 1-2 自動化腳本（Johnny v5.56 完整版）
-用法: python3 phase_runner.py 1  # 執行 Phase 1
-      python3 phase_runner.py 2  # 執行 Phase 2
+Phase Runner - Phase 1-2 完整版指引生成器
+用法: python3 phase_runner.py --phase 1 --project tts-project-v581
 
-更新：2026-03-29
-- 整合 quick_start("dev") 強制 A/B 團隊
-- 整合 Spec Logic Mapping
-- 整合 Anti-Shortcuts 檢查
-- 整合 70/100 門檻
-- 整合 BLOCK 項目阻擋
+完整版：包含 Johnny 規範的所有細節
 """
 
 import sys
-import os
-import yaml
 import json
-import time
-import subprocess
+import getopt
 from pathlib import Path
 from datetime import datetime
 
-# 設定路徑
-SCRIPT_DIR = Path(__file__).parent
-METHODOLOGY_PATH = "/workspace/methodology-v2"
+DEFAULT_METHODOLOGY_PATH = "/workspace"
 
-class PhaseRunner:
-    def __init__(self, phase_num):
-        self.phase = phase_num
-        self.config = self.load_config()
-        self.log_file = SCRIPT_DIR / "logs" / f"phase_{phase_num}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log"
-        self.log_file.parent.mkdir(exist_ok=True)
-        
-    def log(self, message, level="INFO"):
-        """日誌記錄"""
-        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        log_line = f"[{timestamp}] [{level}] {message}"
-        print(log_line)
-        with open(self.log_file, "a") as f:
-            f.write(log_line + "\n")
-            
-    def load_config(self):
-        """載入 Phase 配置"""
-        config_path = SCRIPT_DIR / "phase_config.yaml"
-        with open(config_path, "r") as f:
-            all_config = yaml.safe_load(f)
-        return all_config["phases"][self.phase]
+
+def log(message, level="INFO"):
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    print(f"[{timestamp}] [{level}] {message}")
+
+
+def load_config(phase_num):
+    script_dir = Path(__file__).parent
+    config_path = script_dir / "phase_config.json"
+    with open(config_path, "r") as f:
+        all_config = json.load(f)
+    return all_config["phases"][str(phase_num)]
+
+
+def generate_architect_task(phase, config, project_name):
+    methodology_path = f"{DEFAULT_METHODOLOGY_PATH}/{project_name}"
+    tool_path = f"{DEFAULT_METHODOLOGY_PATH}/methodology-v2"
     
-    def start(self):
-        """啟動 Phase 執行（Johnny v5.56 完整流程）"""
-        self.log(f"🚀 啟動 Phase {self.phase}: {self.config['name']}")
-        self.log("📋 使用 methodology-v2 v5.56 規範")
-        
-        try:
-            # ====================
-            # Step 1: 啟動 A/B 團隊（強制 quick_start("dev")）
-            # ====================
-            self.log("🔄 Step 1: 啟動 A/B 團隊 (quick_start('dev'))...")
-            self.log("   ⚠️ 禁止單一 Agent 自編自審")
-            
-            # 這裡應該調用：
-            # from methodology import quick_start
-            # team = quick_start("dev")  # Developer + Reviewer
-            
-            self.log("   ✅ A/B 團隊已啟動（Developer + Reviewer）")
-            
-            # ====================
-            # Step 2: 角色 A (Creator) 撰寫 SRS.md + Spec Logic Mapping
-            # ====================
-            self.log("📝 Step 2: 角色 A 撰寫 SRS.md + 邏輯驗證方法...")
-            self.log("   ⚠️ 必須包含 Spec Logic Mapping（邏輯驗證方法）")
-            
-            architect_prompt = self.load_template("architect_prompt.md")
-            architect_session = self.spawn_agent("Architect", architect_prompt)
-            
-            # ====================
-            # Step 3: 邏輯審查對話（角色 B）
-            # ====================
-            self.log("🔍 Step 3: A/B 審查對話...")
-            self.log("   角色 B 必須確認：")
-            self.log("   - [ ] 是否包含負面測試場景？")
-            self.log("   - [ ] 邏輯驗證方法是否可被程式碼量化？")
-            
-            architect_result = self.wait_for_completion(architect_session, timeout=600)
-            
-            # ====================
-            # Step 4: 執行 Quality Gate（Phase 1: srs）
-            # ====================
-            self.log("⚙️ Step 4: 執行 Quality Gate...")
-            qg_result = self.run_quality_gate()
-            
-            # ====================
-            # Step 5: 門檻檢查（70/100）
-            # ====================
-            self.log("🎯 Step 5: 門檻檢查...")
-            
-            constitution_score = qg_result.get("constitution_score", 0)
-            self.log(f"   Constitution Score: {constitution_score}/100")
-            
-            if constitution_score < 70:
-                self.log("❌ Phase 1 未完成：Constitution < 70/100", "ERROR")
-                self.log("   禁止進入 Phase 2", "ERROR")
-                return {"status": "failed", "reason": "Constitution < 70", "score": constitution_score}
-            
-            if not qg_result["passed"]:
-                self.log("❌ Quality Gate 失敗，需要修復", "ERROR")
-                return {"status": "failed", "reason": "QG_failed", "detail": qg_result}
-            
-            # ====================
-            # Step 6: 執行 Enforcement（BLOCK 項目）
-            # ====================
-            self.log("🔒 Step 6: 執行 Enforcement (BLOCK 檢查)...")
-            enforcement_result = self.run_enforcement()
-            
-            if not enforcement_result["passed"]:
-                self.log("❌ BLOCK 項目存在，禁止進入 Phase 2", "ERROR")
-                return {"status": "blocked", "reason": "BLOCK_items", "details": enforcement_result}
-            
-            # ====================
-            # Step 7: Reviewer 最終批准
-            # ====================
-            self.log("📝 Step 7: Reviewer 最終批准...")
-            reviewer_prompt = self.load_template("reviewer_prompt.md")
-            reviewer_session = self.spawn_agent("Reviewer", reviewer_prompt)
-            
-            reviewer_result = self.wait_for_completion(reviewer_session, timeout=300)
-            
-            # ====================
-            # Step 8: 產出 STAGE_PASS
-            # ====================
-            if reviewer_result.get("approved"):
-                self.log("✅ 通過，產出 STAGE_PASS...")
-                stage_pass = self.generate_stage_pass(qg_result, reviewer_result)
-                return {"status": "passed", "stage_pass": stage_pass}
-            else:
-                self.log("❌ Reviewer 退回", "ERROR")
-                return {"status": "rework", "reason": reviewer_result.get("reason")}
-                
-        except Exception as e:
-            self.log(f"❌ 執行失敗: {str(e)}", "ERROR")
-            return {"status": "error", "reason": str(e)}
-    
-    def load_template(self, template_name):
-        """載入 Agent Prompt 模板"""
-        template_path = SCRIPT_DIR / "agent_templates" / template_name
-        with open(template_path, "r") as f:
-            return f.read()
-    
-    def spawn_agent(self, role, prompt):
-        """Spawn Agent（實際會調用 sessions_spawn）"""
-        self.log(f"🔄 {role} Agent 已啟動")
-        # 實際實現需要：
-        # from tools import sessions_spawn
-        # result = sessions_spawn({
-        #     "label": f"Phase{self.phase}-{role}",
-        #     "mode": "run",
-        #     "runtime": "subagent",
-        #     "task": prompt
-        # })
-        return f"phase{self.phase}-{role.lower()}"
-    
-    def wait_for_completion(self, session_key, timeout=300):
-        """等待 Agent 完成"""
-        self.log(f"⏳ 等待完成（超時: {timeout}秒）...")
-        time.sleep(2)  # 模擬等待
-        
-        return {
-            "status": "completed",
-            "deliverable": f"Phase{self.phase}_deliverable.md",
-            "log": "development_log.md"
-        }
-    
-    def check_phase1_completion(self):
-        """Phase 2 專用：檢查 Phase 1 是否已完成"""
-        self.log("   檢查 Phase 1 完成狀態...")
-        
-        # 檢查 STAGE_PASS_P1.md 是否存在
-        stage_pass_p1 = Path(METHODOLOGY_PATH) / "STAGE_PASS_P1.md"
-        if not stage_pass_p1.exists():
-            self.log("   ⚠️ STAGE_PASS_P1.md 不存在", "WARNING")
-            return False
-        
-        # 檢查 Phase 1 目錄是否有 SAD.md（Phase 2 需要）
-        phase1_dir = Path(METHODOLOGY_PATH) / "01-requirements"
-        if not phase1_dir.exists():
-            self.log("   ⚠️ 01-requirements 目錄不存在", "WARNING")
-            return False
-        
-        self.log("   ✅ Phase 1 已完成確認")
-        return True
-    
-    def run_quality_gate(self):
-        """執行 Quality Gate（Phase 1-2 不同檢查項目）"""
-        results = []
-        constitution_score = 0
-        
-        # Phase 2 專用：先檢查 Phase 1 是否已完成
-        if self.phase == 2:
-            self.log("🔍 Phase 2 專用：檢查 Phase 1 是否已完成...")
-            phase1_check = self.check_phase1_completion()
-            if not phase1_check:
-                self.log("❌ Phase 1 未完成，禁止進入 Phase 2", "ERROR")
-                results.append({
-                    "command": "Phase 1 completion check",
-                    "passed": False,
-                    "error": "Phase 1 not completed"
-                })
-                return {
-                    "passed": False,
-                    "constitution_score": 0,
-                    "details": results
-                }
-            self.log("   ✅ Phase 1 已完成")
-        
-        for qg in self.config.get("quality_gates", []):
-            command = qg["command"]
-            self.log(f"📋 執行: {command}")
-            
-            try:
-                result = subprocess.run(
-                    command.split(),
-                    cwd=METHODOLOGY_PATH,
-                    capture_output=True,
-                    text=True,
-                    timeout=60
-                )
-                
-                output = result.stdout
-                passed = self.parse_qg_output(output, qg["threshold"])
-                
-                # 嘗試解析 Constitution 分數
-                if "constitution" in command.lower():
-                    constitution_score = self.parse_constitution_score(output)
-                
-                results.append({
-                    "command": command,
-                    "passed": passed,
-                    "output": output[:500]
-                })
-                
-                self.log(f"   結果: {'✅' if passed else '❌'}")
-                
-            except Exception as e:
-                self.log(f"⚠️ 執行失敗: {str(e)}", "WARNING")
-                results.append({
-                    "command": command,
-                    "passed": False,
-                    "error": str(e)
-                })
-        
-        all_passed = all(r["passed"] for r in results)
-        
-        return {
-            "passed": all_passed,
-            "constitution_score": constitution_score,
-            "details": results
-        }
-    
-    def parse_qg_output(self, output, threshold):
-        """解析 Quality Gate 輸出"""
-        if "passed" in output.lower() or "100%" in output:
-            return True
-        return False
-    
-    def parse_constitution_score(self, output):
-        """解析 Constitution 分數"""
-        # 嘗試從輸出中提取分數
-        import re
-        match = re.search(r'(\d+)/100', output)
-        if match:
-            return int(match.group(1))
-        match = re.search(r'score.*?(\d+)', output, re.IGNORECASE)
-        if match:
-            return int(match.group(1))
-        return 0
-    
-    def run_enforcement(self):
-        """執行 Enforcement（BLOCK 項目檢查）"""
-        self.log("🔒 執行 Framework Enforcement...")
-        
-        try:
-            # 執行 methodology quality
-            result = subprocess.run(
-                ["methodology", "quality"],
-                cwd=METHODOLOGY_PATH,
-                capture_output=True,
-                text=True,
-                timeout=60
-            )
-            
-            output = result.stdout + result.stderr
-            
-            # 檢查 BLOCK 項目
-            blocked = "BLOCK" in output and "fail" in output.lower()
-            
-            return {
-                "passed": not blocked,
-                "output": output[:1000]
-            }
-            
-        except Exception as e:
-            self.log(f"⚠️ Enforcement 執行失敗: {str(e)}", "WARNING")
-            return {
-                "passed": True,  # 如果執行失敗，視為通過（避免卡住）
-                "error": str(e)
-            }
-    
-    def generate_stage_pass(self, qg_result, reviewer_result):
-        """產出 STAGE_PASS"""
-        stage_pass = {
-            "phase": self.phase,
-            "name": self.config["name"],
-            "timestamp": datetime.now().isoformat(),
-            "status": "PASSED",
-            "quality_gate": qg_result,
-            "constitution_score": qg_result.get("constitution_score", 0),
-            "reviewer_approval": reviewer_result.get("approved"),
-            "deliverable": self.config["deliverable"]
-        }
-        
-        output_path = Path(METHODOLOGY_PATH) / f"STAGE_PASS_P{self.phase}.md"
-        
-        details_rows = "\n".join([f"| {r['command']} | {'✅' if r['passed'] else '❌'} |" for r in qg_result['details']])
-        
-        content = f"""# STAGE_PASS - Phase {self.phase}: {self.config['name']}
+    if phase == 1:
+        task = f"""你是 Architect Agent，執行 {project_name} Phase 1
 
-## 狀態: ✅ PASSED
+═══════════════════════════════════════════════════════════════
+📋 任務：{config.get('name', 'Phase 1')} - 完整版指引
+═══════════════════════════════════════════════════════════════
 
-## 時間: {stage_pass['timestamp']}
+## 🗺️ 一覽表（5W1H）
 
-## 品質閘道結果
+|5W1H |核心答案 |
+|---------|-------------------------------------------------------------------|
+|**WHO** |Agent A（Architect）撰寫 × Agent B（Reviewer/PM）審查 |
+|**WHAT** |產出 SRS.md + SPEC_TRACKING.md + TRACEABILITY_MATRIX.md + DEVELOPMENT_LOG.md |
+|**WHEN** |專案啟動後第一個 Phase；所有其他 Phase 的前置條件 |
+|**WHERE**|`01-requirements/` 目錄；Quality Gate 工具在 `{tool_path}/quality_gate/`|
+|**WHY** |建立需求基線、ASPICE 合規、防止規格漂移 |
+|**HOW** |A 撰寫 → B 審查 → Quality Gate → 雙方 sign-off → 進入 Phase 2 |
 
-| 檢查項目 | 結果 |
-|----------|------|
-{details_rows}
+═══════════════════════════════════════════════════════════════
+## 📁 檔案位置
+═══════════════════════════════════════════════════════════════
 
-## Constitution 評分
+```
+{project_name}/
+├── 01-requirements/    ← Phase 1 主要工作區
+│   ├── SRS.md          ← 主要產出
+│   ├── SPEC_TRACKING.md
+│   └── TRACEABILITY_MATRIX.md
+│
+├── quality_gate/       ← 工具位置（不要改）
+│   ├── doc_checker.py
+│   └── constitution/
+│       └── runner.py
+│
+└── DEVELOPMENT_LOG.md ← Phase 1 段落
+```
 
-- 分數: {qg_result.get('constitution_score', 0)}/100
-- 門檻: ≥ 70/100
-- 狀態: {'✅ 通過' if qg_result.get('constitution_score', 0) >= 70 else '❌ 未通過'}
+═══════════════════════════════════════════════════════════════
+## 📦 交付物（4 個，全部要產生）
+═══════════════════════════════════════════════════════════════
 
-## 強制執行（Enforcement）
+|文件 |說明 |
+|--------------------------------|-------
+|`SRS.md` |功能需求規格（FR-001 起編號 + NFR-001 起編號）|
+|`SPEC_TRACKING.md` |規格追蹤矩陣 |
+|`TRACEABILITY_MATRIX.md` |需求追蹤矩陣（初始化）|
+|`DEVELOPMENT_LOG.md` |Phase 1 開發日誌 |
 
-- BLOCK 檢查: ✅ 無阻擋項目
+═══════════════════════════════════════════════════════════════
+## 📝 SRS.md 最低內容要求
+═══════════════════════════════════════════════════════════════
 
-## Reviewer 審查
+```markdown
+# SRS - {project_name}
 
-- 批准: {'✅ 是' if reviewer_result.get('approved') else '❌ 否'}
-- 交付物: {self.config['deliverable']}
+## 1. 需求概述
+## 2. 功能需求（FR-01 ~ FR-XX）
+## 3. 非功能需求（NFR）
+## 4. 限制條件
+## 5. 術語表
 
----
-*Generated by Phase Runner Automation (Johnny v5.56)*
+# 每條 FR 必須附上「邏輯驗證方法」（Spec Logic Mapping）
+| SRS ID | 需求描述 | 實作函數（預估） | 邏輯驗證方法 |
+|--------|----------|----------------|-------------|
+| FR-01 | ... | ... | 輸出 ≤ 輸入 |
+```
+
+### 📌 FR/NFR 編號規則
+- **功能需求**：FR-001, FR-002, FR-003...
+- **非功能需求**：NFR-001, NFR-002, NFR-003...
+- **每個需求必須有「邏輯驗證方法」**
+
+═══════════════════════════════════════════════════════════════
+## 🔍 Spec Logic Mapping（核心要求！）
+═══════════════════════════════════════════════════════════════
+
+每個需求後必須附「邏輯驗證方法」：
+
+|SRS ID|需求描述 |實作函數 |邏輯驗證方法 |
+|------|-------|--------|------------|
+|FR-01 |按標點分段 |TextProcessor.split() |輸出長度 ≤ 輸入長度 |
+|FR-05 |多段合併 |AudioMerger.merge() |單一與多檔案格式一致性 |
+|NFR-01|99% 可用性 |CircuitBreaker |Fault Tolerance 四層架構 |
+
+**⚠️ 禁止**：沒有邏輯驗證方法的需求
+
+═══════════════════════════════════════════════════════════════
+## ⚖️ A/B 協作流程（必須遵守）
+═══════════════════════════════════════════════════════════════
+
+### 時序圖
+```
+專案啟動
+ │
+ ▼
+[Agent A] methodology init
+ │
+ ▼
+[Agent A] 撰寫 SRS.md（含 Spec Logic Mapping）
+ │
+ ▼
+[Agent A → Agent B] A/B 審查請求
+ │
+ ├── ❌ REJECT → Agent A 修改 → 重新提交
+ │
+ └── ✅ APPROVE
+ │
+ ▼
+ Quality Gate 執行
+ │
+ ├── 未通過 → Agent A 修正 → 重新 Gate
+ │
+ └── 通過（Compliance > 80%）
+ │
+ ▼
+ ✅ Phase 1 完成 → 進入 Phase 2
+```
+
+### Agent B 審查清單（逐項確認）
+- [ ] 所有 FR 編號唯一、無遺漏
+- [ ] 每條 FR 有對應的邏輯驗證方法
+- [ ] 無「輸出可能大於輸入」的隱患
+- [ ] 分支邏輯（if/else）覆蓋完整
+- [ ] SPEC_TRACKING.md 已建立
+- [ ] TRACEABILITY_MATRIX.md 已初始化
+
+═══════════════════════════════════════════════════════════════
+## 🎯 Quality Gate 門檻（必須通過）
+═══════════════════════════════════════════════════════════════
+
+|檢查項目 |門檻 |命令 |
+|---------|-----|-----|
+|ASPICE 合規率 |> 80% |`python3 {tool_path}/quality_gate/doc_checker.py` |
+|Constitution SRS 分數 |正確性 100%、可維護性 > 70% |`python3 {tool_path}/quality_gate/constitution/runner.py --type srs` |
+
+═══════════════════════════════════════════════════════════════
+## 🚫 Anti-Shortcuts（禁止事項）
+═══════════════════════════════════════════════════════════════
+
+- ❌ 禁止跳過 A/B 審查
+- ❌ 禁止虛假記錄（只寫「✅ 已通過」）
+- ❌ 禁止邏輯模糊（每個需求要有驗證方法）
+- ❌ 禁止私自妥協（衝突記錄到 Conflict Log）
+
+═══════════════════════════════════════════════════════════════
+## 📊 具體任務清單
+═══════════════════════════════════════════════════════════════
+
+### Step 1: 撰寫 SRS.md
+- [ ] 功能需求 FR-001 起編號
+- [ ] 非功能需求 NFR-001 起編號
+- [ ] 每個需求有 Spec Logic Mapping 表格
+- [ ] 介面需求定義
+
+### Step 2: 建立 SPEC_TRACKING.md
+- [ ] 對照外部 PDF 規格
+- [ ] 追蹤每個需求
+
+### Step 3: 建立 TRACEABILITY_MATRIX.md
+- [ ] 需求 ID → 架構組件 → 測試對應（初始）
+
+### Step 4: 撰寫 DEVELOPMENT_LOG.md Phase 1 段落
+- [ ] 決策過程記錄
+- [ ] Quality Gate 執行結果
+
+### Step 5: Quality Gate
+- [ ] 執行 doc_checker.py
+- [ ] 執行 constitution runner.py --type srs
+- [ ] 確認通過後進入 Phase 2
+
+═══════════════════════════════════════════════════════════════
+## ✅ 交付檢查清單
+═══════════════════════════════════════════════════════════════
+
+- [ ] SRS.md 存在且包含所有 FR/NFR
+- [ ] SPEC_TRACKING.md 存在
+- [ ] TRACEABILITY_MATRIX.md 存在
+- [ ] DEVELOPMENT_LOG.md Phase 1 段落完整
+- [ ] Spec Logic Mapping 每個需求都有
+- [ ] Constitution 正確性 = 100%
+- [ ] ASPICE 合規率 > 80%
 """
-        
-        with open(output_path, "w") as f:
-            f.write(content)
-            
-        self.log(f"✅ STAGE_PASS 已產出: {output_path}")
-        return stage_pass
+    
+    elif phase == 2:
+        task = f"""你是 Architect Agent，執行 {project_name} Phase 2
+
+═══════════════════════════════════════════════════════════════
+📋 任務：{config.get('name', 'Phase 2')} - 完整版指引
+═══════════════════════════════════════════════════════════════
+
+## 🗺️ 一覽表（5W1H）
+
+|5W1H |核心答案 |
+|---------|-------------------------------------------------------------------|
+|**WHO** |Agent A（Architect）設計 × Agent B（Senior Dev / Reviewer）審查 |
+|**WHAT** |產出 SAD.md + ADR.md + 更新 TRACEABILITY_MATRIX.md |
+|**WHEN** |Phase 1 完整通過後；Phase 3 開發的前置條件 |
+|**WHERE**|`02-architecture/` 目錄；Quality Gate 工具在 `{tool_path}/quality_gate/`|
+|**WHY** |架構決策一旦進入 Phase 3 才修改，成本指數級上升；A/B 在此攔截最有效 |
+|**HOW** |A 設計 → B 架構審查 → Conflict Log → Quality Gate → 雙方 sign-off → Phase 3|
+
+═══════════════════════════════════════════════════════════════
+## 📁 檔案位置
+═══════════════════════════════════════════════════════════════
+
+```
+{project_name}/
+├── 01-requirements/    ← Phase 1 產出（只讀，不修改）
+│   ├── SRS.md
+│   └── SPEC_TRACKING.md
+│
+├── 02-architecture/    ← Phase 2 主要工作區
+│   └── SAD.md
+│   └── ADR.md
+│
+├── quality_gate/
+│   └── constitution/
+│
+└── DEVELOPMENT_LOG.md ← Phase 2 段落
+```
+
+═══════════════════════════════════════════════════════════════
+## 📦 交付物（4 個）
+═══════════════════════════════════════════════════════════════
+
+|SAD.md|系統架構文件|對應 SRS FR → 模組|
+|ADR.md|架構決策記錄|每個技術選型的「為什麼不選另一個」|
+|TRACEABILITY_MATRIX.md|更新|+ 實作模組欄位|
+|DEVELOPMENT_LOG.md|Phase 2 段落|+ 決策過程|
+
+═══════════════════════════════════════════════════════════════
+## 🏗️ SAD.md 最低內容要求
+═══════════════════════════════════════════════════════════════
+
+|章節 |內容 |
+|-----|-----|
+|架構概覽|系統邊界圖、核心模組清單|
+|模組設計|對應 SRS FR 編號、依賴模組|
+|介面定義|模組間 API 合約、資料流向|
+|錯誤處理|L1-L6 分類、Retry/Fallback/Circuit Breaker|
+|技術選型|每個決定的理由、替代方案、捨棄原因|
+
+═══════════════════════════════════════════════════════════════
+## 📋 ADR（架構決策記錄）格式
+═══════════════════════════════════════════════════════════════
+
+|決策 |選擇 |理由 |替代方案 |捨棄原因 |
+|-----|-----|-----|---------|---------|
+|文本分段|正則表達式|簡單快速|ML 模型|準確率不需 99%|
+
+═══════════════════════════════════════════════════════════════
+## 🔍 A/B 架構審查（5 維）
+═══════════════════════════════════════════════════════════════
+
+Agent B 從以下維度審查：
+
+1. **需求覆蓋完整性** - 所有 FR 有對應模組
+2. **模組設計品質** - 低耦合、高內聚
+3. **錯誤處理完整性** - L1-L6 對應
+4. **技術選型合理性** - ADR 完整
+5. **實作可行性** - 可直接指導 Phase 3
+
+═══════════════════════════════════════════════════════════════
+## ⚖️ Conflict Log（強制）
+═══════════════════════════════════════════════════════════════
+
+當架構設計與 methodology-v2 規範衝突時：
+
+|衝突點 |規格書建議 |methodology-v2 選擇 |理由 |
+|--------|------------|---------------------|------|
+
+**即使 0 條也要標明「無衝突」**
+
+═══════════════════════════════════════════════════════════════
+## 🎯 Quality Gate 門檻
+═══════════════════════════════════════════════════════════════
+
+|檢查 |門檻 |
+|-----|-----|
+|Phase 1 完成檢查|4 個交付物存在|
+|ASPICE 合規率|> 80%|
+|Constitution SAD 分數|正確性 = 100%|
+
+═══════════════════════════════════════════════════════════════
+## 🚫 Anti-Shortcuts
+═══════════════════════════════════════════════════════════════
+
+- ❌ 禁止跳過 A/B 審查
+- ❌ 禁止引入未經驗證的框架
+- ❌ 禁止私自妥協
+- ❌ 禁止虛假記錄
+"""
+    
+    return task
+
+
+def run_phase(phase_num, project_name):
+    config = load_config(phase_num)
+    methodology_path = f"{DEFAULT_METHODOLOGY_PATH}/{project_name}"
+    tool_path = f"{DEFAULT_METHODOLOGY_PATH}/methodology-v2"
+    
+    log("=" * 70)
+    log(f"🚀 Phase {phase_num}: {config['name']} - 完整版指引")
+    log(f"📁 專案: {project_name}")
+    log("=" * 70)
+    log("")
+    
+    # Step 1: Architect
+    log("📌 Step 1: 啟動 Architect Agent（完整流程）")
+    log("-" * 50)
+    
+    architect_task = generate_architect_task(phase_num, config, project_name)
+    
+    log("")
+    log("⬇️  sessions_spawn 指令：")
+    log("")
+    log('sessions_spawn(')
+    log(f'    label="{project_name}-Phase{phase_num}-Architect",')
+    log('    mode="run",')
+    log('    runtime="subagent",')
+    log(f'    task="""{architect_task[:500]}... """')
+    log(')')
+    log("")
+    
+    # Step 2: Reviewer
+    log("📌 Step 2: 啟動 Reviewer Agent")
+    log("-" * 50)
+    log("")
+    reviewer_task = "審查 Phase " + str(phase_num) + " 交付物品質" if phase_num == 1 else "審查 Phase 2 架構設計（5維審查）"
+    log('sessions_spawn(')
+    log(f'    label="{project_name}-Phase{phase_num}-Reviewer",')
+    log('    mode="run",')
+    log('    runtime="subagent",')
+    log(f'    task="{reviewer_task}"')
+    log(')')
+    log("")
+    
+    # Step 3: Quality Gate
+    log("📌 Step 3: 執行 Quality Gate")
+    log("-" * 50)
+    
+    qg_commands = config.get("quality_gates", [])
+    for i, qg in enumerate(qg_commands, 1):
+        cmd = qg['command'].replace('/workspace/methodology-v2', tool_path)
+        log(f"   {i}. {qg['name']}")
+        log(f"      {cmd}")
+        log(f"      → {qg['threshold']}")
+        log("")
+    
+    # 交付物
+    log("📌 預期交付物")
+    log("-" * 50)
+    for d in config.get("deliverables", []):
+        log(f"   ✅ {d}")
+    
+    log("")
+    log("=" * 70)
+    log(f"✅ 完整版指引生成完成 - 專案: {project_name}")
+    log("=" * 70)
 
 
 if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        print("用法: python3 phase_runner.py <phase_number>")
-        print("例如: python3 phase_runner.py 1  # Phase 1")
+    phase_num = None
+    project_name = None
+    
+    try:
+        opts, args = getopt.getopt(sys.argv[1:], "p:", ["phase=", "project="])
+    except getopt.GetoptError:
+        print("用法: python3 phase_runner.py --phase 1 --project tts-project-v581")
         sys.exit(1)
     
-    phase = int(sys.argv[1])
-    if phase not in [1, 2]:
-        print("目前支援 Phase 1-2")
+    for opt, arg in opts:
+        if opt in ("-p", "--phase"):
+            phase_num = arg
+        elif opt == "--project":
+            project_name = arg
+    
+    if not phase_num or not project_name:
+        print("錯誤: 需要 --phase 和 --project 參數")
+        print("用法: python3 phase_runner.py --phase 1 --project tts-project-v581")
         sys.exit(1)
     
-    print("="*60)
-    print("  Phase Runner - Johnny v5.56 完整版")
-    print("="*60)
+    if phase_num not in ["1", "2"]:
+        print("錯誤: Phase 必須是 1 或 2")
+        sys.exit(1)
     
-    runner = PhaseRunner(phase)
-    result = runner.start()
-    
-    print("\n" + "="*60)
-    print(f"執行結果: {result['status']}")
-    print("="*60)
+    run_phase(int(phase_num), project_name)
