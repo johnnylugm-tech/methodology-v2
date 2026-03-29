@@ -1,6 +1,6 @@
-# Phase 配置（Johnny v5.56 完整版）
-# Phase 1: 功能規格（已完成）
-# Phase 2: 架構設計（已更新）
+
+
+
 
 phases:
   1:
@@ -107,7 +107,7 @@ phases:
     max_retries: 2
     timeout: 600
 
-# 可補缺口配置（與 Johnny v5.56 一致）
+
 gap_filling:
   async_wait:
     enabled: true
@@ -122,7 +122,7 @@ gap_filling:
     enabled: false
     default_domain: "generic"
 
-# Anti-Shortcuts 全域配置
+
 anti_shortcuts_global:
   enabled: true
   rules:
