@@ -57,6 +57,18 @@ from security_defense import (
 )
 from code_metrics import MetricsTracker
 
+# Ralph Mode
+from ralph_mode import (
+    RalphCLI,
+    TaskState,
+    TaskPersistence,
+    RalphScheduler,
+    SchedulerConfig,
+    SchedulerManager,
+    PhaseStateMachine,
+    RalphProgressTracker,
+)
+
 
 class MethodologyCLI:
     """統一 CLI 入口"""
@@ -94,6 +106,10 @@ class MethodologyCLI:
         self.execution_sandbox = ExecutionSandbox(SandboxConfig(level=SandboxLevel.STRICT))
         self.output_filter = OutputFilter()
         self.hitl_security = HumanInTheLoop()
+        # Ralph Mode - 任務長時監控
+        self.ralph_cli = RalphCLI()
+        self.ralph_persistence = TaskPersistence()
+        self.ralph_scheduler_manager = SchedulerManager()
     
     def _check_command(self, command: str) -> bool:
         """檢查命令是否危險"""
@@ -213,6 +229,8 @@ class MethodologyCLI:
             return self.cmd_roadmap(args)
         elif command == "persona":
             return self.cmd_persona(args)
+        elif command == "ralph":
+            return self.cmd_ralph(args)
         else:
             pass # Removed print-debug
             return 1
@@ -2736,6 +2754,68 @@ class MethodologyCLI:
             print("請參考 GETTING_STARTED_30MIN.md")
         return 0
 
+    def cmd_ralph(self, args):
+        """Ralph Mode - 任務長時監控"""
+        # 代理到 RalphCLI
+        # 重新構建 args 以符合 RalphCLI 的格式
+        import argparse as _argparse
+        
+        # 處理 ralph 子命令
+        ralph_args = args.ralph_command
+        
+        # 提取 task_id（如果存在）
+        task_id = None
+        interval = 30
+        background = False
+        phase = None
+        target_phase = None
+        status_filter = None
+        
+        if ralph_args:
+            # start task_id [--interval N] [--background]
+            if ralph_args[0] == "start" and len(ralph_args) > 1:
+                task_id = ralph_args[1]
+                # 解析可選參數
+                for i in range(2, len(ralph_args)):
+                    if ralph_args[i] == "--interval" or ralph_args[i] == "-i":
+                        if i + 1 < len(ralph_args):
+                            interval = int(ralph_args[i + 1])
+                    elif ralph_args[i] == "--background" or ralph_args[i] == "-b":
+                        background = True
+            elif ralph_args[0] == "status" and len(ralph_args) > 1:
+                task_id = ralph_args[1]
+            elif ralph_args[0] == "stop" and len(ralph_args) > 1:
+                task_id = ralph_args[1]
+            elif ralph_args[0] == "init" and len(ralph_args) > 1:
+                task_id = ralph_args[1]
+                for i in range(2, len(ralph_args)):
+                    if ralph_args[i] == "--phase" or ralph_args[i] == "-p":
+                        if i + 1 < len(ralph_args):
+                            phase = ralph_args[i + 1]
+            elif ralph_args[0] == "advance" and len(ralph_args) > 1:
+                task_id = ralph_args[1]
+                for i in range(2, len(ralph_args)):
+                    if ralph_args[i] == "--to" or ralph_args[i] == "-t":
+                        if i + 1 < len(ralph_args):
+                            target_phase = ralph_args[i + 1]
+            elif ralph_args[0] == "list":
+                for i in range(1, len(ralph_args)):
+                    if ralph_args[i] == "--status" or ralph_args[i] == "-s":
+                        if i + 1 < len(ralph_args):
+                            status_filter = ralph_args[i + 1]
+        
+        # 構建 namespace
+        ralph_namespace = _argparse.Namespace()
+        ralph_namespace.command = ralph_args[0] if ralph_args else "list"
+        ralph_namespace.task_id = task_id
+        ralph_namespace.interval = interval
+        ralph_namespace.background = background
+        ralph_namespace.phase = phase
+        ralph_namespace.to = target_phase
+        ralph_namespace.status = status_filter
+        
+        return self.ralph_cli.run(ralph_namespace)
+
 
 # ==================== Main ====================
 
@@ -3101,6 +3181,14 @@ def main():
                               help="Persona action")
     persona_parser.add_argument("persona_type", nargs="?",
                               help="Persona type (developer, architect, qa, pm, devops, reviewer)")
+
+    # ralph (Ralph Mode - 任務長時監控)
+    ralph_parser = subparsers.add_parser("ralph", help="Ralph Mode - 任務長時監控")
+    ralph_parser.add_argument(
+        "ralph_command",
+        nargs="+",
+        help="Ralph 子命令: start, status, stop, list, init, advance"
+    )
 
     args = parser.parse_args()
     

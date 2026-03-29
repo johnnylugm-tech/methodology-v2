@@ -1,6 +1,6 @@
 # methodology-v2
 
-> Multi-Agent Collaboration Development Methodology v5.56
+> Multi-Agent Collaboration Development Methodology v5.59
 
 ---
 
@@ -17,6 +17,85 @@
 | **v5.54** | **2026-03-26** | **Traceability Matrix CLI + Dockerfile/Deployment 模板 + Framework Enforcement 自動化章節** |
 | **v5.55** | **2026-03-26** | **TRACEABILITY Matrix 完整整合 FrameworkEnforcer + SPEC vs TRACE 定義 + CLI Constitution 驗證增強** |
 | **v5.56** | **2026-03-26** | **Agent Personas 與 sessions_spawn 綁定 + CLI persona 命令** |
+| **v5.59** | **2026-03-29** | **Ralph Mode - 任務長時監控模組（狀態持久化、階段狀態機、進度追蹤）** |
+
+---
+
+## v5.59 新模組：Ralph Mode
+
+| 模組 | 功能 | Quality Gate |
+|------|------|---------------|
+| ralph_mode | 任務長時監控 | 任務狀態持久化到 JSON |
+| task_persistence | TaskState 類別 | save/load JSON |
+| scheduler | 定時輪詢 | 間隔可配置 |
+| state_machine | 階段狀態機 | 6 階段轉換 |
+| progress_tracker | 進度追蹤 | PROGRESS.md |
+
+### Ralph Mode 功能說明
+
+**核心目標**：為長時運行的批次任務提供狀態持久化、定時監控和進度追蹤。
+
+**階段流程**：
+```
+init → run_batch → extract → eval → report → done
+```
+
+**CLI 命令**：
+
+```bash
+# 初始化任務
+methodology ralph init task-001
+
+# 啟動監控
+methodology ralph start task-001 --interval 60 --background
+
+# 查看狀態
+methodology ralph status task-001
+
+# 列出所有任務
+methodology ralph list --status running
+
+# 停止監控
+methodology ralph stop task-001
+
+# 推進階段
+methodology ralph advance task-001 --to eval
+```
+
+**Python API**：
+
+```python
+from ralph_mode import (
+    TaskState,
+    TaskPersistence,
+    RalphScheduler,
+    PhaseStateMachine,
+    RalphProgressTracker,
+)
+
+# 任務持久化
+persistence = TaskPersistence()
+state = TaskState(task_id="task-001", status="running", current_phase="init")
+persistence.save_state(state)
+
+# 進度追蹤
+tracker = RalphProgressTracker("task-001")
+tracker.update_progress("run_batch", 50.0)
+
+# 狀態機
+sm = PhaseStateMachine()
+sm.start()
+sm.advance()  # 推進到下一階段
+```
+
+**獨立 CLI**：
+
+```bash
+# 也可以直接使用 ralph_mode/cli.py
+python -m ralph_mode.cli start task-001
+python -m ralph_mode.cli status task-001
+python -m ralph_mode.cli list
+```
 
 ---
 
