@@ -1,6 +1,6 @@
 # methodology-v2
 
-> Multi-Agent Collaboration Development Methodology v5.92
+> Multi-Agent Collaboration Development Methodology v5.94
 
 ---
 
@@ -25,6 +25,7 @@
 | **v5.89** | **2026-03-29** | **整合 Phase3_Plan_5W1H_AB.md 精華：代碼規範、單元測試三類、集成測試模板、同行邏輯審查對話、合規矩陣** |
 | **v5.90** | **2026-03-29** | **整合 Phase4_Plan_5W1H_AB.md 精華：TEST_PLAN/TEST_RESULTS 完整規格、兩次 A/B 審查流程、Tester≠Developer 角色分離原則、失敗案例根本原因分析** |
 | **v5.93** | **2026-03-29** | **Phase1-8 5W1H 整合審計修正（P0-P3）：Phase 1 新增獨立 5W1H 章節、Phase 1 退出條件補齊 SPEC_TRACKING 完整性檢查、Phase 4 補充 WHEN/WHERE/WHY/HOW、Phase 3 加入 phase_artifact_enforcer.py、Phase 6-7 加入 session_id 記錄要求、Phase 7 加入邏輯正確性閾值、Phase 8 統一監控時段定義** |
+| **v5.94** | **2026-03-29** | **Phase 1-8 5W1H 審計修正（P1-P2）：Phase 4 WHERE 加入 spec_logic_checker.py、Phase 4 退出條件代碼覆蓋率明確為單元測試、Phase 3 退出條件加入代碼覆蓋率 ≥ 70%、Phase 6 進入條件加入測試通過率 = 100%、Phase 7 前置條件加入驗證測試通過率 = 100%、Phase 8 新增 SUP.8 配置管理說明** |
 | **v5.92** | **2026-03-29** | **整合 Phase5+7+8_Plan_5W1H_AB.md 精華：Phase 5 兩次 A/B 審查 + BASELINE 完整規格 + MONITORING_PLAN；Phase 7 五維度風險識別 + Decision Gate + 四層緩解措施；Phase 8 CONFIG_RECORDS 8 章節 + 七區塊發布清單 + 方法論閉環確認** |
 
 ---
@@ -1343,7 +1344,7 @@ Phase 3 完成後
 | TEST_PLAN A/B 審查通過（計劃前）| APPROVE | AgentEvaluator |
 | Constitution test_plan 正確性 | = 100% | `constitution/runner.py --type test_plan` |
 | pytest 全部測試通過 | = 100% | pytest 實際輸出 |
-| 代碼覆蓋率 | ≥ 80% | pytest-cov 實際輸出 |
+| 代碼覆蓋率 | ≥ 80%（單元測試）| pytest-cov 實際輸出 |
 | SRS FR 覆蓋率 | = 100% | Agent B 確認 |
 | TEST_RESULTS A/B 審查通過（結果後）| APPROVE | AgentEvaluator |
 
@@ -1355,6 +1356,7 @@ Phase 3 完成後
 | 工具 | `pytest` |
 | 工具 | `pytest-cov` |
 | 工具 | `quality_gate/constitution/runner.py --type test_plan` |
+| 工具 | `scripts/spec_logic_checker.py`（邏輯正確性驗證，≥ 90 分）|
 
 ### Phase 4 WHY — 為什麼這樣做？
 
@@ -1670,6 +1672,7 @@ python3 scripts/circuit_breaker_check.py   # 0 次觸發
 | Constitution 總分 | ≥ 80% | Constitution Runner 實際輸出 |
 | ASPICE 合規率 | > 80% | doc_checker.py 實際輸出 |
 | 邏輯正確性分數 | ≥ 90 分 | spec_logic_checker.py 實際輸出 |
+| 測試通過率 | = 100%（所有 TC 必須通過）| pytest 實際輸出 |
 | A/B 監控：Phase 6 全程穩定 | 熔斷 0 次、錯誤率 < 1% | MONITORING_PLAN.md 連續記錄 |
 | QUALITY_REPORT.md 完整版 | 七個章節全部完成 | Agent B 審查確認 |
 | 品質問題根源分析 | 有根源 Phase 定位 | Agent B 審查確認 |
@@ -1797,6 +1800,7 @@ python3 scripts/circuit_breaker_check.py   # 0 次觸發
 | HIGH 風險數量 | ≥ 1 個 | Agent B 主觀判斷 |
 | HIGH/MEDIUM 風險緩解措施 | 四層 + Plan B + RTO | Agent B 確認 |
 | 邏輯正確性分數 | ≥ 90 分 | spec_logic_checker.py |
+| 驗證測試通過率 | = 100%（所有 TC 必須通過）| pytest 實際輸出 |
 | Decision Gate | 所有決策已確認 | `check_decisions.py` 0 個未確認 |
 | 至少 1 個 HIGH 風險演練 | 演練通過 | 演練記錄 |
 | 雙方 session_id 已記錄 | 可追溯 | DEVELOPMENT_LOG.md |
@@ -1848,6 +1852,32 @@ Phase 7 輸出服務：
 | Agent B（PM / Architect）| `pm` 或 `architect` | 確認版本配置完整可重現；發布清單無遺漏；A/B 監控最終狀態健康 | 在監控最終報告顯示異常時 APPROVE 封版 |
 
 **核心原則**：配置管理是「治理行為」，不是「技術行為」。重點是「所有配置都有記錄、可被審計、可被重現」。
+
+### Phase 8 配置管理（SUP.8）
+
+> ASPICE SUP.8 要求：所有配置項（Configuration Items）必須明確識別、版本控制、變更管理。
+
+**SUP.8 配置項識別清單**：
+
+| 配置項類別 | 具體項目 | 管理方式 |
+|------------|----------|----------|
+| 需求文件 | SRS.md、SRS.pdf 版本 | 版本標籤 |
+| 架構設計 | SAD.md、SAD.pdf 版本 | 版本標籤 |
+| 代碼 | `03-development/` 目錄、Git Commit | Git Tag |
+| 測試 | TEST_PLAN.md、TEST_RESULTS.md | 版本對應 |
+| 部署 | Docker Image、Config 檔 | Image Tag |
+| 環境 | 環境變數、第三方依賴 | pip/npm lock |
+
+**SUP.8 變更控制流程**：
+
+```
+1. 識別變更需求（Change Request）
+2. 評估影響範圍（Impact Analysis）
+3. 獲得批准（Approval）
+4. 實施變更（Implementation）
+5. 驗證變更（Verification）
+6. 更新配置記錄（Update CONFIG_RECORDS.md）
+```
 
 ### Phase 8 必要交付物
 
@@ -2497,6 +2527,7 @@ Agent B 簽名：______  Session ID：______
 | `python3 quality_gate/phase_artifact_enforcer.py` 通過 | Phase 2 完成確認 | 工具驗證 |
 | ASPICE 文檔合規率 | > 80% | quality_gate/doc_checker.py |
 | Constitution 代碼分數 | 正確性 = 100%、覆蓋率 > 80% | constitution runner（不加 --type）|
+| 代碼覆蓋率 | ≥ 70%（單元測試）| pytest-cov 實際輸出 |
 | 單元測試全部通過 | 通過率 100% | pytest |
 | 集成測試全部通過 | 通過率 100% | pytest |
 | 每個模組都有同行邏輯審查記錄 | 無遺漏 | Agent B 確認 |
