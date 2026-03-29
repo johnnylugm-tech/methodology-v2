@@ -4,6 +4,11 @@ PhaseEnforcer - Phase 自動化檢查系統
 ====================================
 在每個 Phase 結束時自動觸發檢查，確保產出符合標準。
 
+三層檢查系統：
+- L1: 結構檢查 (25%) - 使用 FolderStructureChecker
+- L2: 內容檢查 (25%) - 檢查檔案內容結構
+- L3: 代碼品質檢查 (50%) - 使用 Agent Quality Guard
+
 使用方式：
     from quality_gate.phase_enforcer import PhaseEnforcer
     
@@ -15,9 +20,10 @@ PhaseEnforcer - Phase 自動化檢查系統
 """
 
 import json
+import sys
 from dataclasses import dataclass, asdict
 from pathlib import Path
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Tuple
 
 # 匯入 folder_structure_checker
 try:
@@ -32,6 +38,19 @@ try:
     UNIFIED_GATE_AVAILABLE = True
 except ImportError:
     UNIFIED_GATE_AVAILABLE = False
+
+# 匯入 Agent Quality Guard（2026-03-29 新增 L3）
+AGENT_QUALITY_GUARD_AVAILABLE = False
+try:
+    # 嘗試從 agent-quality-guard 匯入
+    agent_guard_path = Path(__file__).parent.parent.parent / "agent-quality-guard" / "src"
+    if agent_guard_path.exists():
+        sys.path.insert(0, str(agent_guard_path))
+        from analyzer import analyze_code, InputError, ToolError, ExecutionError, SystemError
+        from scorer import score_from_code
+        AGENT_QUALITY_GUARD_AVAILABLE = True
+except ImportError:
+    AGENT_QUALITY_GUARD_AVAILABLE = False
 
 
 @dataclass
@@ -51,12 +70,32 @@ class ContentCheckResult:
 
 
 @dataclass
+class CodeQualityCheckResult:
+    """代碼品質檢查結果（L3）"""
+    score: float
+    files_scanned: int
+    issues: List[Dict]
+    passed: bool
+    details: Dict
+
+    def to_dict(self) -> Dict:
+        return {
+            "score": self.score,
+            "files_scanned": self.files_scanned,
+            "issues": self.issues,
+            "passed": self.passed,
+            "details": self.details
+        }
+
+
+@dataclass
 class PhaseEnforcementResult:
     """Phase 執行結果"""
     phase: int
     passed: bool
     structure_check: StructureCheckResult
     content_check: ContentCheckResult
+    code_quality_check: CodeQualityCheckResult  # 新增 L3
     gate_score: float
     can_proceed: bool
     blocker_issues: List[str]
@@ -68,6 +107,7 @@ class PhaseEnforcementResult:
             "passed": self.passed,
             "structure_check": asdict(self.structure_check),
             "content_check": asdict(self.content_check),
+            "code_quality_check": asdict(self.code_quality_check),
             "gate_score": self.gate_score,
             "can_proceed": self.can_proceed,
             "blocker_issues": self.blocker_issues,
@@ -90,13 +130,18 @@ class PhaseEnforcementResult:
             f"Gate Score: {self.gate_score:.2f}%",
             f"Proceed: {proceed}",
             f"",
-            f"Structure Check:",
+            f"Structure Check (L1):",
             f"  Score: {self.structure_check.score:.2f}%",
             f"  Missing: {len(self.structure_check.missing)} items",
             f"",
-            f"Content Check:",
+            f"Content Check (L2):",
             f"  Score: {self.content_check.score:.2f}%",
             f"  Missing Sections: {len(self.content_check.missing_sections)} items",
+            f"",
+            f"Code Quality Check (L3):",
+            f"  Score: {self.code_quality_check.score:.2f}%",
+            f"  Files Scanned: {self.code_quality_check.files_scanned}",
+            f"  Issues Found: {len(self.code_quality_check.issues)}",
             f"",
         ]
         
@@ -115,23 +160,32 @@ class PhaseEnforcer:
     Phase 自動化檢查系統
     
     在每個 Phase 結束時自動觸發檢查，確保產出符合標準。
-    整合 folder_structure_checker (strict_mode=True) 進行驗證。
+    整合三層檢查：
+    - L1: folder_structure_checker (結構)
+    - L2: folder_structure_checker (內容)
+    - L3: Agent Quality Guard (代碼品質)
     
     Attributes:
         project_root: 專案根目錄路徑
         strict_mode: 是否啟用嚴格模式（預設 True）
         gate_threshold: 通過閾值（預設 80）
+        include_code_quality: 是否包含代碼品質檢查（預設 True）
+        weights: 三層檢查的權重 (structure, content, code_quality)，預設 (0.25, 0.25, 0.50)
     """
     
     def __init__(
         self, 
         project_root: str, 
         strict_mode: bool = True,
-        gate_threshold: float = 80.0
+        gate_threshold: float = 80.0,
+        include_code_quality: bool = True,
+        weights: Tuple[float, float, float] = (0.25, 0.25, 0.50)
     ):
         self.project_root = Path(project_root)
         self.strict_mode = strict_mode
         self.gate_threshold = gate_threshold
+        self.include_code_quality = include_code_quality
+        self.weights = weights
         
         # 初始化 folder_structure_checker
         if FOLDER_STRUCTURE_CHECKER_AVAILABLE:
@@ -158,40 +212,65 @@ class PhaseEnforcer:
         Returns:
             PhaseEnforcementResult: 檢查結果
         """
-        # 1. 執行 folder_structure_check
+        # L1: 執行 folder_structure_check (結構)
         structure_result = self._check_structure(phase)
         
-        # 2. 執行 content_check（strict_mode）
+        # L2: 執行 content_check (內容)
         content_result = self._check_content(phase)
         
-        # 3. 計算 gate_score
-        gate_score = (structure_result.score + content_result.score) / 2
+        # L3: 執行代碼品質檢查 (可選)
+        if self.include_code_quality:
+            code_quality_result = self._check_code_quality(phase)
+        else:
+            code_quality_result = CodeQualityCheckResult(
+                score=100.0,
+                files_scanned=0,
+                issues=[],
+                passed=True,
+                details={"skipped": True}
+            )
         
-        # 4. 判斷是否通過
+        # 計算综合 gate_score
+        w_structure, w_content, w_code = self.weights
+        gate_score = (
+            structure_result.score * w_structure +
+            content_result.score * w_content +
+            code_quality_result.score * w_code
+        )
+        
+        # 判斷是否通過
         passed = gate_score >= self.gate_threshold
         
-        # 5. 判斷是否可以進入下一個 Phase
+        # 判斷是否可以進入下一個 Phase
         can_proceed = passed and len(structure_result.missing) == 0
         
-        # 6. 收集 blocker_issues
+        # 收集 blocker_issues
         blocker_issues = self._collect_blocker_issues(
             structure_result, 
-            content_result, 
+            content_result,
+            code_quality_result,
             gate_score
         )
         
-        # 7. 產生結果
+        # 產生結果
         result = PhaseEnforcementResult(
             phase=phase,
             passed=passed,
             structure_check=structure_result,
             content_check=content_result,
+            code_quality_check=code_quality_result,
             gate_score=gate_score,
             can_proceed=can_proceed,
             blocker_issues=blocker_issues,
             details={
                 "strict_mode": self.strict_mode,
                 "gate_threshold": self.gate_threshold,
+                "include_code_quality": self.include_code_quality,
+                "weights": {
+                    "structure": w_structure,
+                    "content": w_content,
+                    "code_quality": w_code
+                },
                 "project_root": str(self.project_root)
             }
         )
@@ -308,10 +387,99 @@ class PhaseEnforcer:
             passed=passed
         )
     
+    def _check_code_quality(self, phase: int) -> CodeQualityCheckResult:
+        """執行代碼品質檢查（L3）"""
+        if not AGENT_QUALITY_GUARD_AVAILABLE:
+            return CodeQualityCheckResult(
+                score=100.0,
+                files_scanned=0,
+                issues=[],
+                passed=True,
+                details={"status": "not_available", "reason": "Agent Quality Guard not found"}
+            )
+        
+        # 根據 Phase 決定要掃描的目錄
+        # Phase 1-3: 03-development/ 目錄有代碼
+        # Phase 4-8: 可能需要掃描更多目錄
+        scan_dir = self.project_root / "03-development"
+        
+        if not scan_dir.exists():
+            return CodeQualityCheckResult(
+                score=100.0,
+                files_scanned=0,
+                issues=[],
+                passed=True,
+                details={"status": "skipped", "reason": "03-development directory not found"}
+            )
+        
+        # 掃描所有 Python 檔案
+        py_files = list(scan_dir.rglob("*.py"))
+        
+        if not py_files:
+            return CodeQualityCheckResult(
+                score=100.0,
+                files_scanned=0,
+                issues=[],
+                passed=True,
+                details={"status": "skipped", "reason": "No Python files found"}
+            )
+        
+        all_issues = []
+        total_score = 0.0
+        
+        for py_file in py_files:
+            try:
+                with open(py_file, 'r', encoding='utf-8') as f:
+                    code = f.read()
+                
+                if not code.strip():
+                    continue
+                
+                # 使用 Agent Quality Guard 分析
+                result = score_from_code(code)
+                
+                # 收集 issues
+                for issue in result.get("issues", []):
+                    all_issues.append({
+                        "file": str(py_file.relative_to(self.project_root)),
+                        "line": issue.get("line"),
+                        "issue": issue.get("type"),
+                        "severity": issue.get("severity"),
+                        "message": issue.get("message")
+                    })
+                
+                total_score += result.get("score", 100)
+                
+            except Exception as e:
+                # 如果分析失敗，給予該檔案 100 分
+                total_score += 100
+        
+        # 計算平均分數
+        files_scanned = len(py_files)
+        avg_score = total_score / files_scanned if files_scanned > 0 else 100.0
+        
+        # 判斷是否通過（高嚴重性問題少於 5 個）
+        high_issues = [i for i in all_issues if i.get("severity") == "high"]
+        passed = len(high_issues) < 5
+        
+        return CodeQualityCheckResult(
+            score=avg_score,
+            files_scanned=files_scanned,
+            issues=all_issues,
+            passed=passed,
+            details={
+                "high_issues_count": len(high_issues),
+                "medium_issues_count": len([i for i in all_issues if i.get("severity") == "medium"]),
+                "low_issues_count": len([i for i in all_issues if i.get("severity") == "low"]),
+                "scan_directory": str(scan_dir.relative_to(self.project_root))
+            }
+        )
+    
     def _collect_blocker_issues(
         self, 
         structure: StructureCheckResult,
         content: ContentCheckResult,
+        code_quality: CodeQualityCheckResult,
         gate_score: float
     ) -> List[str]:
         """收集 blocker 問題"""
@@ -326,6 +494,10 @@ class PhaseEnforcer:
         if content.missing_sections:
             for ms in content.missing_sections[:5]:
                 issues.append(f"Missing section: {ms}")
+        
+        # 代碼品質問題
+        if code_quality.details.get("high_issues_count", 0) >= 5:
+            issues.append(f"Too many high severity code issues: {code_quality.details.get('high_issues_count')}")
         
         # 分數不足
         if gate_score < self.gate_threshold:

@@ -1366,3 +1366,48 @@ class UnifiedGate:
     def set_phase_enforcement(self, enabled: bool):
         """設定是否啟用 Phase Enforcement"""
         self._phase_enforcement_enabled = enabled
+
+
+# ===== 快速入口函式 =====
+
+def unified_gate(
+    project_root, 
+    phase=None, 
+    strict_mode=True, 
+    include_code_quality: bool = True,
+    weights: tuple = (0.25, 0.25, 0.50)
+) -> Dict:
+    """
+    統一品質閘道 - 快速入口函式
+    
+    三層檢查系統：
+    - L1: 結構檢查 (25%) - 使用 FolderStructureChecker
+    - L2: 內容檢查 (25%) - 檢查檔案內容結構
+    - L3: 代碼品質檢查 (50%) - 使用 Agent Quality Guard
+    
+    Args:
+        project_root: 專案根目錄路徑
+        phase: Phase 編號 (1-8)，None 表示檢查所有
+        strict_mode: 是否啟用嚴格模式
+        include_code_quality: 是否包含代碼品質檢查（L3）
+        weights: 三層檢查的權重 (structure, content, code_quality)
+        
+    Returns:
+        Dict: 檢查結果
+    """
+    from .phase_enforcer import PhaseEnforcer
+    
+    enforcer = PhaseEnforcer(
+        project_root, 
+        strict_mode=strict_mode,
+        include_code_quality=include_code_quality,
+        weights=weights
+    )
+    
+    if phase is not None:
+        result = enforcer.enforce_phase(phase)
+        return result.to_dict()
+    else:
+        # 檢查所有 Phase
+        report = enforcer.generate_report()
+        return report

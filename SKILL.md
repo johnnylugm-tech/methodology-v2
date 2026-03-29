@@ -1,6 +1,6 @@
 # methodology-v2
 
-> Multi-Agent Collaboration Development Methodology v5.83
+> Multi-Agent Collaboration Development Methodology v5.85
 
 ---
 
@@ -18,7 +18,7 @@
 | **v5.55** | **2026-03-26** | **TRACEABILITY Matrix 完整整合 FrameworkEnforcer + SPEC vs TRACE 定義 + CLI Constitution 驗證增強** |
 | **v5.56** | **2026-03-26** | **Agent Personas 與 sessions_spawn 綁定 + CLI persona 命令** |
 | **v5.59** | **2026-03-29** | **Ralph Mode - 任務長時監控模組（狀態持久化、階段狀態機、進度追蹤）** |
-| **v5.83** | **2026-03-29** | **Ralph Mode 預設啟動 - Agent 建立新專案時自動啟動 Ralph Mode 監控** |
+| **v5.85** | **2026-03-29** | **Ralph Mode 預設啟動 - Agent 建立新專案時自動啟動 Ralph Mode 監控** |
 | **v5.84** | **2026-03-29** | **PhaseEnforcer 自動化檢查系統 - Phase 1-8 自動化檢查、CLI 介面、Git Hooks** |
 
 ---
@@ -101,7 +101,7 @@ python -m ralph_mode.cli list
 
 ---
 
-## v5.83: Ralph Mode 預設啟動
+## v5.85: Ralph Mode 預設啟動
 
 | 模組 | 功能 | Quality Gate |
 |------|------|---------------|
@@ -161,7 +161,7 @@ def cmd_init(self, args):
     # ... 現有初始化邏輯 ...
     
     # ========================================
-    # Ralph Mode 自動啟動（v5.83 新增）
+    # Ralph Mode 自動啟動（v5.85 新增）
     # ========================================
     try:
         from ralph_mode import RalphScheduler, TaskPersistence
@@ -2459,3 +2459,98 @@ python -m agent_evaluator --check
 ---
 
 *附錄新增日期: 2026-03-28 - 基於 v574 專案學習*
+
+---
+
+## 附錄 Y：Quality Gate 三層檢查系統
+
+### Y.1 系統概述
+
+PhaseEnforcer 採用三層檢查系統，確保每個 Phase 的產出符合標準：
+
+| 層級 | 名稱 | 權重 | 檢查內容 |
+|------|------|------|----------|
+| L1 | 結構檢查 | 25% | 資料夾結構、檔案是否存在 |
+| L2 | 內容檢查 | 25% | 檔案內容結構、章節完整性 |
+| L3 | 代碼品質檢查 | 50% | 代碼品質問題（使用 Agent Quality Guard） |
+
+### Y.2 使用方式
+
+```python
+from quality_gate.phase_enforcer import PhaseEnforcer
+
+# 預設：三層檢查（結構 25% + 內容 25% + 代碼 50%）
+enforcer = PhaseEnforcer("/path/to/project", strict_mode=True)
+result = enforce.enforce_phase(1)
+
+# 略過代碼品質檢查（L3）
+enforcer = PhaseEnforcer(
+    "/path/to/project", 
+    strict_mode=True,
+    include_code_quality=False
+)
+
+# 自訂權重
+enforcer = PhaseEnforcer(
+    "/path/to/project",
+    weights=(0.3, 0.3, 0.4)  # 結構 30%, 內容 30%, 代碼 40%
+)
+```
+
+### Y.3 CLI 使用方式
+
+```bash
+# 預設：三層檢查
+python -m quality_gate.cli quality check-phase 1
+
+# 略過代碼品質檢查
+python -m quality_gate.cli quality check-phase 1 --no-code-check
+
+# 自訂權重
+python -m quality_gate.cli quality check-phase 1 --weights 0.3,0.3,0.4
+```
+
+### Y.4 輸出格式
+
+```json
+{
+  "phase": 1,
+  "passed": true,
+  "structure_check": {
+    "score": 100,
+    "missing": []
+  },
+  "content_check": {
+    "score": 85,
+    "missing_sections": []
+  },
+  "code_quality_check": {
+    "score": 78,
+    "files_scanned": 12,
+    "issues": [
+      { "file": "src/main.py", "line": 45, "issue": "long_function", "severity": "high" }
+    ]
+  },
+  "gate_score": 85.25,
+  "can_proceed": true,
+  "blocker_issues": []
+}
+```
+
+### Y.5 Agent Quality Guard
+
+L3 代碼品質檢查使用 Agent Quality Guard（`/workspace/agent-quality-guard`）進行分析：
+
+- **掃描目錄**：`03-development/`（Phase 1-3 代碼存放位置）
+- **檢查維度**：正確性、安全性、可維護性、性能、測試覆蓋率
+- **評分維度**：
+  - correctness (30%)
+  - security (25%)
+  - maintainability (20%)
+  - performance (15%)
+  - coverage (10%)
+- **通過標準**：高嚴重性問題少於 5 個
+
+---
+
+*附錄新增日期: 2026-03-29 - 整合 Agent Quality Guard*
