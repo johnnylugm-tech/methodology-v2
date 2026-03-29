@@ -1,0 +1,437 @@
+#!/usr/bin/env python3
+"""
+PhaseEnforcer - Phase 自動化檢查系統
+====================================
+在每個 Phase 結束時自動觸發檢查，確保產出符合標準。
+
+使用方式：
+    from quality_gate.phase_enforcer import PhaseEnforcer
+    
+    enforcer = PhaseEnforcer("/path/to/project", strict_mode=True)
+    result = enforcer.enforce_phase(1)
+    
+    if not result.can_proceed:
+        print(f"Blocked! Issues: {result.blocker_issues}")
+"""
+
+import json
+from dataclasses import dataclass, asdict
+from pathlib import Path
+from typing import List, Dict, Optional
+
+# 匯入 folder_structure_checker
+try:
+    from .folder_structure_checker import FolderStructureChecker, FolderCheckResult
+    FOLDER_STRUCTURE_CHECKER_AVAILABLE = True
+except ImportError:
+    FOLDER_STRUCTURE_CHECKER_AVAILABLE = False
+
+# 匯入 unified_gate（用於整合其他檢查器）
+try:
+    from .unified_gate import UnifiedGate, UnifiedGateResult
+    UNIFIED_GATE_AVAILABLE = True
+except ImportError:
+    UNIFIED_GATE_AVAILABLE = False
+
+
+@dataclass
+class StructureCheckResult:
+    """結構檢查結果"""
+    score: float
+    missing: List[str]
+    passed: bool
+
+
+@dataclass
+class ContentCheckResult:
+    """內容檢查結果"""
+    score: float
+    missing_sections: List[str]
+    passed: bool
+
+
+@dataclass
+class PhaseEnforcementResult:
+    """Phase 執行結果"""
+    phase: int
+    passed: bool
+    structure_check: StructureCheckResult
+    content_check: ContentCheckResult
+    gate_score: float
+    can_proceed: bool
+    blocker_issues: List[str]
+    details: Dict
+
+    def to_dict(self) -> Dict:
+        return {
+            "phase": self.phase,
+            "passed": self.passed,
+            "structure_check": asdict(self.structure_check),
+            "content_check": asdict(self.content_check),
+            "gate_score": self.gate_score,
+            "can_proceed": self.can_proceed,
+            "blocker_issues": self.blocker_issues,
+            "details": self.details
+        }
+
+    def to_json(self, indent: int = 2) -> str:
+        return json.dumps(self.to_dict(), indent=indent)
+
+    def print_summary(self) -> str:
+        """產出摘要報告"""
+        status = "✅ PASS" if self.passed else "❌ FAIL"
+        proceed = "🚀 Can Proceed" if self.can_proceed else "🚫 BLOCKED"
+        
+        lines = [
+            f"{'='*50}",
+            f"Phase {self.phase} Enforcement Result",
+            f"{'='*50}",
+            f"Status: {status}",
+            f"Gate Score: {self.gate_score:.2f}%",
+            f"Proceed: {proceed}",
+            f"",
+            f"Structure Check:",
+            f"  Score: {self.structure_check.score:.2f}%",
+            f"  Missing: {len(self.structure_check.missing)} items",
+            f"",
+            f"Content Check:",
+            f"  Score: {self.content_check.score:.2f}%",
+            f"  Missing Sections: {len(self.content_check.missing_sections)} items",
+            f"",
+        ]
+        
+        if self.blocker_issues:
+            lines.append("Blocker Issues:")
+            for issue in self.blocker_issues:
+                lines.append(f"  🚫 {issue}")
+            lines.append("")
+        
+        lines.append(f"{'='*50}")
+        return "\n".join(lines)
+
+
+class PhaseEnforcer:
+    """
+    Phase 自動化檢查系統
+    
+    在每個 Phase 結束時自動觸發檢查，確保產出符合標準。
+    整合 folder_structure_checker (strict_mode=True) 進行驗證。
+    
+    Attributes:
+        project_root: 專案根目錄路徑
+        strict_mode: 是否啟用嚴格模式（預設 True）
+        gate_threshold: 通過閾值（預設 80）
+    """
+    
+    def __init__(
+        self, 
+        project_root: str, 
+        strict_mode: bool = True,
+        gate_threshold: float = 80.0
+    ):
+        self.project_root = Path(project_root)
+        self.strict_mode = strict_mode
+        self.gate_threshold = gate_threshold
+        
+        # 初始化 folder_structure_checker
+        if FOLDER_STRUCTURE_CHECKER_AVAILABLE:
+            self.structure_checker = FolderStructureChecker(
+                str(self.project_root),
+                strict_mode=strict_mode
+            )
+        else:
+            self.structure_checker = None
+        
+        # 初始化 unified_gate（可選）
+        if UNIFIED_GATE_AVAILABLE:
+            self.unified_gate = UnifiedGate(str(self.project_root))
+        else:
+            self.unified_gate = None
+    
+    def enforce_phase(self, phase: int) -> PhaseEnforcementResult:
+        """
+        執行 Phase N 的完整檢查
+        
+        Args:
+            phase: Phase 編號 (1-8)
+            
+        Returns:
+            PhaseEnforcementResult: 檢查結果
+        """
+        # 1. 執行 folder_structure_check
+        structure_result = self._check_structure(phase)
+        
+        # 2. 執行 content_check（strict_mode）
+        content_result = self._check_content(phase)
+        
+        # 3. 計算 gate_score
+        gate_score = (structure_result.score + content_result.score) / 2
+        
+        # 4. 判斷是否通過
+        passed = gate_score >= self.gate_threshold
+        
+        # 5. 判斷是否可以進入下一個 Phase
+        can_proceed = passed and len(structure_result.missing) == 0
+        
+        # 6. 收集 blocker_issues
+        blocker_issues = self._collect_blocker_issues(
+            structure_result, 
+            content_result, 
+            gate_score
+        )
+        
+        # 7. 產生結果
+        result = PhaseEnforcementResult(
+            phase=phase,
+            passed=passed,
+            structure_check=structure_result,
+            content_check=content_result,
+            gate_score=gate_score,
+            can_proceed=can_proceed,
+            blocker_issues=blocker_issues,
+            details={
+                "strict_mode": self.strict_mode,
+                "gate_threshold": self.gate_threshold,
+                "project_root": str(self.project_root)
+            }
+        )
+        
+        return result
+    
+    def can_proceed_to_next_phase(self, current_phase: int) -> bool:
+        """
+        檢查是否可以進入下一個 Phase
+        
+        Args:
+            current_phase: 當前 Phase 編號
+            
+        Returns:
+            bool: 是否可以進入下一個 Phase
+        """
+        if current_phase >= 8:
+            return True  # 最後一個 Phase
+        
+        result = self.enforce_phase(current_phase)
+        return result.can_proceed
+    
+    def generate_report(self) -> Dict:
+        """
+        生成 Phase 執行報告
+        
+        Returns:
+            Dict: 包含所有 Phase 檢查結果的報告
+        """
+        report = {
+            "project_root": str(self.project_root),
+            "strict_mode": self.strict_mode,
+            "gate_threshold": self.gate_threshold,
+            "phases": {},
+            "summary": {
+                "total_phases": 8,
+                "passed_phases": 0,
+                "failed_phases": 0,
+                "overall_score": 0.0
+            }
+        }
+        
+        total_score = 0.0
+        passed_count = 0
+        
+        for phase in range(1, 9):
+            result = self.enforce_phase(phase)
+            report["phases"][phase] = result.to_dict()
+            total_score += result.gate_score
+            
+            if result.passed:
+                passed_count += 1
+        
+        report["summary"]["passed_phases"] = passed_count
+        report["summary"]["failed_phases"] = 8 - passed_count
+        report["summary"]["overall_score"] = total_score / 8
+        
+        return report
+    
+    def _check_structure(self, phase: int) -> StructureCheckResult:
+        """執行結構檢查"""
+        if self.structure_checker is None:
+            return StructureCheckResult(
+                score=100.0,
+                missing=[],
+                passed=True
+            )
+        
+        result = self.structure_checker.run(phase)
+        
+        # 收集缺失的目錄和檔案
+        missing = []
+        if result.missing_dirs:
+            missing.extend([f"dir: {d}" for d in result.missing_dirs])
+        if result.missing_files:
+            missing.extend([f"file: {f}" for f in result.missing_files])
+        
+        return StructureCheckResult(
+            score=result.score,
+            missing=missing,
+            passed=result.passed
+        )
+    
+    def _check_content(self, phase: int) -> ContentCheckResult:
+        """執行內容檢查（strict_mode）"""
+        if not self.strict_mode or self.structure_checker is None:
+            return ContentCheckResult(
+                score=100.0,
+                missing_sections=[],
+                passed=True
+            )
+        
+        result = self.structure_checker.run(phase)
+        
+        # 收集缺失的章節
+        missing_sections = []
+        for cc in result.content_check:
+            if not cc.get("passed", True):
+                missing_sections.extend(cc.get("missing_sections", []))
+        
+        # 計算內容分數
+        if result.content_check:
+            passed_count = sum(1 for cc in result.content_check if cc.get("passed", True))
+            total_count = len(result.content_check)
+            score = (passed_count / total_count) * 100
+        else:
+            score = 100.0
+        
+        passed = len(missing_sections) == 0
+        
+        return ContentCheckResult(
+            score=score,
+            missing_sections=missing_sections,
+            passed=passed
+        )
+    
+    def _collect_blocker_issues(
+        self, 
+        structure: StructureCheckResult,
+        content: ContentCheckResult,
+        gate_score: float
+    ) -> List[str]:
+        """收集 blocker 問題"""
+        issues = []
+        
+        # 結構問題
+        if structure.missing:
+            for m in structure.missing[:5]:  # 最多顯示 5 個
+                issues.append(f"Missing: {m}")
+        
+        # 內容問題
+        if content.missing_sections:
+            for ms in content.missing_sections[:5]:
+                issues.append(f"Missing section: {ms}")
+        
+        # 分數不足
+        if gate_score < self.gate_threshold:
+            issues.append(f"Gate score {gate_score:.2f}% < threshold {self.gate_threshold}%")
+        
+        return issues
+    
+    def enforce_with_unified_gate(self, phase: int) -> Dict:
+        """
+        執行 Phase 檢查（整合 unified_gate）
+        
+        Args:
+            phase: Phase 編號 (1-8)
+            
+        Returns:
+            Dict: 整合檢查結果
+        """
+        # 1. 執行 PhaseEnforcer 檢查
+        enforcement_result = self.enforce_phase(phase)
+        
+        # 2. 執行 unified_gate 檢查（可選）
+        unified_result = None
+        if self.unified_gate is not None:
+            try:
+                unified_result = self.unified_gate.check_all(phase=phase)
+            except Exception as e:
+                unified_result = None
+        
+        # 3. 整合結果
+        combined_result = {
+            "phase": phase,
+            "enforcement": enforcement_result.to_dict(),
+            "unified_gate": unified_result.to_dict() if unified_result else None,
+            "combined_passed": enforcement_result.passed and (
+                unified_result.passed if unified_result else True
+            ),
+            "combined_score": (
+                (enforcement_result.gate_score + unified_result.overall_score) / 2
+                if unified_result else enforcement_result.gate_score
+            )
+        }
+        
+        return combined_result
+
+
+# ===== 快速函式入口 =====
+
+def enforce_phase(project_root: str, phase: int, strict_mode: bool = True) -> PhaseEnforcementResult:
+    """
+    快速執行 Phase 檢查
+    
+    Args:
+        project_root: 專案根目錄路徑
+        phase: Phase 編號 (1-8)
+        strict_mode: 是否啟用嚴格模式
+        
+    Returns:
+        PhaseEnforcementResult: 檢查結果
+    """
+    enforcer = PhaseEnforcer(project_root, strict_mode=strict_mode)
+    return enforcer.enforce_phase(phase)
+
+
+def check_can_proceed(project_root: str, current_phase: int) -> bool:
+    """
+    快速檢查是否可以進入下一個 Phase
+    
+    Args:
+        project_root: 專案根目錄路徑
+        current_phase: 當前 Phase 編號
+        
+    Returns:
+        bool: 是否可以進入下一個 Phase
+    """
+    enforcer = PhaseEnforcer(project_root)
+    return enforcer.can_proceed_to_next_phase(current_phase)
+
+
+def generate_full_report(project_root: str) -> Dict:
+    """
+    生成完整 Phase 報告
+    
+    Args:
+        project_root: 專案根目錄路徑
+        
+    Returns:
+        Dict: 完整報告
+    """
+    enforcer = PhaseEnforcer(project_root)
+    return enforcer.generate_report()
+
+
+if __name__ == "__main__":
+    import sys
+    
+    if len(sys.argv) < 3:
+        print("Usage: python phase_enforcer.py <project_root> <phase> [--strict]")
+        sys.exit(1)
+    
+    project_root = sys.argv[1]
+    phase = int(sys.argv[2])
+    strict_mode = "--strict" in sys.argv
+    
+    result = enforce_phase(project_root, phase, strict_mode=strict_mode)
+    print(result.print_summary())
+    
+    # 如果有 blocker_issues，退出碼為 1
+    if result.blocker_issues:
+        sys.exit(1)

@@ -12,10 +12,17 @@ Unified Quality Gate
 
     print(f"Passed: {result.passed}")
     print(f"Score: {result.score}")
+
+# Phase Enforcement 整合
+    from quality_gate.phase_enforcer import PhaseEnforcer
+    
+    gate = UnifiedGate(project_path)
+    gate.set_phase_enforcement(True)
+    result = gate.check_all(phase=1, phase_enforcement=True)
 """
 
 from dataclasses import dataclass, asdict
-from typing import List, Dict
+from typing import List, Dict, Optional
 from pathlib import Path
 
 # 匯入現有檢查器
@@ -45,6 +52,13 @@ try:
     FR_ID_TRACKER_AVAILABLE = True
 except ImportError:
     FR_ID_TRACKER_AVAILABLE = False
+
+# 匯入資料夾結構檢查器（2026-03-29 新增）
+try:
+    from .folder_structure_checker import FolderStructureChecker
+    FOLDER_STRUCTURE_CHECKER_AVAILABLE = True
+except ImportError:
+    FOLDER_STRUCTURE_CHECKER_AVAILABLE = False
 
 try:
     from .threat_analyzer import ThreatAnalyzer
@@ -131,6 +145,13 @@ try:
 except ImportError:
     ROOT_CAUSE_CHECKER_AVAILABLE = False
 
+# 匯入 PhaseEnforcer（2026-03-29 新增）
+try:
+    from .phase_enforcer import PhaseEnforcer, PhaseEnforcementResult
+    PHASE_ENFORCER_AVAILABLE = True
+except ImportError:
+    PHASE_ENFORCER_AVAILABLE = False
+
 
 @dataclass
 class CheckResult:
@@ -182,8 +203,13 @@ class UnifiedGate:
         self.project_path = Path(project_path)
         self.doc_checker = DocumentChecker(str(self.project_path))
         self.phase_enforcer = PhaseArtifactEnforcer(str(self.project_path))
+        # PhaseEnforcer 初始化（2026-03-29 新增）
+        if PHASE_ENFORCER_AVAILABLE:
+            self.phase_checker = PhaseEnforcer(str(self.project_path))
+        else:
+            self.phase_checker = None
 
-    def check_all(self, phase=None) -> UnifiedGateResult:
+    def check_all(self, phase=None, strict_mode=True, phase_enforcement=False) -> UnifiedGateResult:
         """執行所有檢查
         
         Args:
@@ -243,7 +269,23 @@ class UnifiedGate:
             risk_result = self._check_risk_status()
             checks.append(risk_result)
 
-        # 10. Phase 5: Verification Constitution Check
+        # 10. Folder Structure Check (Phase 1-4) - 2026-03-29 新增
+        if phase_filter is not None:
+            # 根據 phase 執行對應的資料夾結構檢查
+            for p in [1, 2, 3, 4, 5, 6, 7, 8]:
+                if p in phase_filter:
+                    folder_result = self._check_folder_structure(p)
+                    checks.append(folder_result)
+
+        # 11. Phase Enforcement Check (2026-03-29 新增)
+        # 當 phase_enforcement=True 時，自動執行 PhaseEnforcer
+        if phase_enforcement and phase_filter is not None:
+            for p in phase_filter:
+                if p != "all":
+                    enforcement_result = self._check_phase_enforcement(p)
+                    checks.append(enforcement_result)
+
+        # 11. Phase 5: Verification Constitution Check
         if phase_filter is None or 5 in phase_filter or "5-8" in phase_filter:
             v5_result = self._check_verification_constitution()
             checks.append(v5_result)
@@ -1232,3 +1274,95 @@ class UnifiedGate:
     def check_configuration_only(self) -> CheckResult:
         """只檢查 Phase 8 Configuration Constitution"""
         return self._check_configuration_constitution()
+
+    # ========== Folder Structure Check (2026-03-29 新增) ==========
+    
+    def _check_folder_structure(self, phase: int) -> CheckResult:
+        """檢查資料夾結構與產出物"""
+        if not FOLDER_STRUCTURE_CHECKER_AVAILABLE:
+            return CheckResult(
+                name=f"Folder Structure (Phase {phase})",
+                passed=True,
+                score=100,
+                violations=[],
+                details={"status": "skipped", "reason": "folder_structure_checker not available"}
+            )
+        
+        try:
+            checker = FolderStructureChecker(str(self.project_path))
+            result = checker.run(phase)
+            
+            violations = []
+            if result.missing_dirs:
+                violations.append(f"Missing directories: {', '.join(result.missing_dirs)}")
+            if result.missing_files:
+                violations.append(f"Missing files: {', '.join(result.missing_files)}")
+            if result.content_issues:
+                violations.extend(result.content_issues)
+            
+            return CheckResult(
+                name=f"Folder Structure (Phase {phase})",
+                passed=result.passed,
+                score=result.score,
+                violations=violations,
+                details=result.details
+            )
+        except Exception as e:
+            return CheckResult(
+                name=f"Folder Structure (Phase {phase})",
+                passed=False,
+                score=0,
+                violations=[f"Error: {str(e)}"],
+                details={}
+            )
+    
+    def check_folder_structure_only(self, phase: int) -> CheckResult:
+        """只檢查指定 Phase 的資料夾結構"""
+        return self._check_folder_structure(phase)
+    
+    def _check_phase_enforcement(self, phase: int) -> CheckResult:
+        """檢查 Phase Enforcement 結果（2026-03-29 新增）"""
+        if not PHASE_ENFORCER_AVAILABLE or self.phase_checker is None:
+            return CheckResult(
+                name=f"Phase Enforcement (Phase {phase})",
+                passed=True,
+                score=100,
+                violations=[],
+                details={"status": "skipped", "reason": "phase_enforcer not available"}
+            )
+        
+        try:
+            result = self.phase_checker.enforce_phase(phase)
+            
+            violations = []
+            if result.blocker_issues:
+                violations.extend(result.blocker_issues)
+            
+            return CheckResult(
+                name=f"Phase Enforcement (Phase {phase})",
+                passed=result.passed,
+                score=result.gate_score,
+                violations=violations,
+                details={
+                    "structure_score": result.structure_check.score,
+                    "content_score": result.content_check.score,
+                    "gate_score": result.gate_score,
+                    "can_proceed": result.can_proceed
+                }
+            )
+        except Exception as e:
+            return CheckResult(
+                name=f"Phase Enforcement (Phase {phase})",
+                passed=False,
+                score=0,
+                violations=[f"Error: {str(e)}"],
+                details={}
+            )
+    
+    def check_phase_enforcement_only(self, phase: int) -> CheckResult:
+        """只檢查指定 Phase 的 Enforcement 結果"""
+        return self._check_phase_enforcement(phase)
+    
+    def set_phase_enforcement(self, enabled: bool):
+        """設定是否啟用 Phase Enforcement"""
+        self._phase_enforcement_enabled = enabled

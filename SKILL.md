@@ -19,6 +19,7 @@
 | **v5.56** | **2026-03-26** | **Agent Personas 與 sessions_spawn 綁定 + CLI persona 命令** |
 | **v5.59** | **2026-03-29** | **Ralph Mode - 任務長時監控模組（狀態持久化、階段狀態機、進度追蹤）** |
 | **v5.83** | **2026-03-29** | **Ralph Mode 預設啟動 - Agent 建立新專案時自動啟動 Ralph Mode 監控** |
+| **v5.84** | **2026-03-29** | **PhaseEnforcer 自動化檢查系統 - Phase 1-8 自動化檢查、CLI 介面、Git Hooks** |
 
 ---
 
@@ -549,6 +550,27 @@ python3 quality_gate/unified_gate.py
 
 **用途**：整合 ASPICE + Constitution + Phase Enforcer 一次執行
 
+#### 6. PhaseEnforcer（推薦，2026-03-29 新增）
+
+```bash
+# 檢查特定 Phase
+python -m quality_gate.cli quality check-phase 1
+
+# 嚴格模式檢查
+python -m quality_gate.cli quality check-phase 2 --strict
+
+# 檢查所有 Phase
+python -m quality_gate.cli quality check-all
+
+# 阻擋模式（失敗時退出）
+python -m quality_gate.cli quality check-phase 3 --block
+
+# 使用 unified gate 整合
+python -m quality_gate.cli quality check-phase 4 --unified
+```
+
+**用途**：自動化 Phase 檢查，確保每個 Phase 結束時自動執行檢查，阻止進入下一個 Phase 直到通過。
+
 ---
 
 ### 驗證要求
@@ -659,6 +681,142 @@ methodology quality
 ### Python 實作（可選）
 
 如需要，可呼叫 `quality_gate/spec_tracking_checker.py` 的 `SpecTrackingChecker`
+
+---
+
+## Phase 自動化檢查（v5.84+）
+
+> 確保每個 Phase 結束時自動執行檢查，阻止進入下一個 Phase 直到通過
+
+### PhaseEnforcer 模組
+
+| 模組 | 功能 | Quality Gate |
+|------|------|---------------|
+| phase_enforcer | Phase 自動化檢查 | gate_score >= 80 |
+| folder_structure_checker | 資料夾結構檢查 | Phase 1-8 完整支援 |
+| quality.py (CLI) | 命令列介面 | check-phase, check-all |
+
+### 整合架構
+
+```
+PhaseEnforcer
+    ├── folder_structure_checker (strict_mode=True)
+    │   ├── 結構檢查（目錄、檔案）
+    │   └── 內容檢查（章節完整性）
+    └── unified_gate（可選整合）
+        ├── Constitution 檢查
+        ├── FR-ID 追蹤
+        └── 其他 Quality Gate 工具
+```
+
+### 使用方式
+
+#### Python API
+
+```python
+from quality_gate.phase_enforcer import PhaseEnforcer, enforce_phase
+
+# 方式 1: 使用類別
+enforcer = PhaseEnforcer("/path/to/project", strict_mode=True)
+result = enforcer.enforce_phase(1)
+
+if not result.can_proceed:
+    print(f"Blocked! Issues: {result.blocker_issues}")
+
+# 方式 2: 快速函式
+result = enforce_phase("/path/to/project", phase=1)
+print(result.print_summary())
+
+# 方式 3: 檢查是否可以進入下一個 Phase
+from quality_gate.phase_enforcer import check_can_proceed
+if check_can_proceed("/path/to/project", current_phase=1):
+    print("可以進入 Phase 2")
+else:
+    print("Phase 1 尚未通過，不能進入 Phase 2")
+
+# 方式 4: 生成完整報告
+from quality_gate.phase_enforcer import generate_full_report
+report = generate_full_report("/path/to/project")
+print(f"Overall Score: {report['summary']['overall_score']:.2f}%")
+```
+
+#### CLI 命令
+
+```bash
+# 檢查 Phase 1
+python -m quality_gate.cli quality check-phase 1
+
+# 嚴格模式檢查
+python -m quality_gate.cli quality check-phase 2 --strict
+
+# 檢查所有 Phase
+python -m quality_gate.cli quality check-all
+
+# 阻擋模式（失敗時退出，適用於 CI/CD）
+python -m quality_gate.cli quality check-phase 3 --block
+
+# 使用 unified gate 整合
+python -m quality_gate.cli quality check-phase 4 --unified
+
+# 單獨執行 PhaseEnforcer
+python quality_gate/phase_enforcer.py /path/to/project 1 --strict
+```
+
+#### 輸出格式
+
+```json
+{
+  "phase": 1,
+  "passed": true,
+  "structure_check": {
+    "score": 100.0,
+    "missing": [],
+    "passed": true
+  },
+  "content_check": {
+    "score": 85.0,
+    "missing_sections": ["Overview", "Functional Requirements"],
+    "passed": false
+  },
+  "gate_score": 92.5,
+  "can_proceed": true,
+  "blocker_issues": ["Missing section: Overview", "Missing section: Functional Requirements"]
+}
+```
+
+### 每個 Phase 結束時
+
+1. **執行 `PhaseEnforcer.enforce_phase(N)`**
+2. **檢查 `gate_score >= 80`（可自訂閾值）**
+3. **通過後才能進入 Phase N+1**
+4. **記錄結果到 DEVELOPMENT_LOG.md**
+
+### 閾值配置
+
+```python
+# 自訂閾值（預設 80）
+enforcer = PhaseEnforcer(
+    "/path/to/project",
+    strict_mode=True,
+    gate_threshold=90  # 更嚴格的閾值
+)
+```
+
+### 整合 unified_gate
+
+```python
+from quality_gate.unified_gate import UnifiedGate
+
+gate = UnifiedGate("/path/to/project")
+result = gate.check_all(
+    phase=1,
+    strict_mode=True,
+    phase_enforcement=True  # 啟用 PhaseEnforcer 整合
+)
+
+print(f"Combined Score: {result.overall_score}%")
+print(f"Combined Passed: {result.passed}")
+```
 
 ---
 
