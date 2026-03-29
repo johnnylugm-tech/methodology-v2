@@ -9,6 +9,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [v5.96] - 2026-03-29
+
+### 🚀 Added
+- **PhaseEnforcer Independent Smoke Test**: `quality_gate/phase_enforcer_smoke.py`
+  - 不需要 Ralph Mode 依賴
+  - 可獨立運行測試
+  - 包含 6 個測試案例
+
+### 🧪 Testing
+- **UnifiedGate Test Coverage Matrix**: `tests/test_unified_gate_coverage.py`
+  - 驗證 25 個檢查工具的測試覆蓋
+  - 包含 Required Coverage: 100%
+
+### 📝 Development Log Checker
+- **DEVELOPMENT_LOG 驗證器**: `scripts/dev_log_checker.py`
+  - 驗證 session_id 記錄
+  - 驗證 Decision Gate 格式
+  - 驗證命令輸出存在
+
+### 🔧 Agent Quality Guard Adapter
+- **隔離外部依賴**: `quality_gate/agent_quality_guard_adapter.py`
+  - 統一接口隔離外部依賴
+  - Fallback 機制（外部不可用時使用本地檢查）
+  - 分數閾值配置（預設 ≥ 90，等級 A）
+
+---
+
 ## [v5.95] - 2026-03-29
 
 ### 🚀 Added
