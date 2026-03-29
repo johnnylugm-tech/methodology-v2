@@ -1,6 +1,6 @@
 # methodology-v2
 
-> Multi-Agent Collaboration Development Methodology v5.59
+> Multi-Agent Collaboration Development Methodology v5.83
 
 ---
 
@@ -18,6 +18,7 @@
 | **v5.55** | **2026-03-26** | **TRACEABILITY Matrix 完整整合 FrameworkEnforcer + SPEC vs TRACE 定義 + CLI Constitution 驗證增強** |
 | **v5.56** | **2026-03-26** | **Agent Personas 與 sessions_spawn 綁定 + CLI persona 命令** |
 | **v5.59** | **2026-03-29** | **Ralph Mode - 任務長時監控模組（狀態持久化、階段狀態機、進度追蹤）** |
+| **v5.83** | **2026-03-29** | **Ralph Mode 預設啟動 - Agent 建立新專案時自動啟動 Ralph Mode 監控** |
 
 ---
 
@@ -96,6 +97,106 @@ python -m ralph_mode.cli start task-001
 python -m ralph_mode.cli status task-001
 python -m ralph_mode.cli list
 ```
+
+---
+
+## v5.83: Ralph Mode 預設啟動
+
+| 模組 | 功能 | Quality Gate |
+|------|------|---------------|
+| ralph_mode | 預設啟動監控 | 自動初始化 Ralph Mode |
+| RalphScheduler | 後台定時監控 | 每 5 分鐘檢查 Phase |
+| PhaseStateMachine | 階段狀態追蹤 | init → run_batch → extract → eval → report → done |
+
+### 啟動觸發條件
+
+當 Agent 建立新專案或啟動 develop 工作流程時，自動：
+1. 執行 `python -m ralph_mode init <project_id>`
+2. 啟動 RalphScheduler 後台監控
+3. 每 5 分鐘檢查 Phase 進度
+
+### 使用範例
+
+```python
+# 使用 Ralph Mode
+from ralph_mode import RalphMode
+
+ralph = RalphMode()
+ralph.start(task_id="my-project", daemon=True)
+
+# 取得狀態
+status = ralph.get_status()
+print(f"Current phase: {status['current_phase']}")
+
+# 推進下一階段
+ralph.advance()
+```
+
+### CLI 命令
+
+```bash
+# 初始化任務（自動在新專案建立時觸發）
+methodology ralph init <task_id>
+
+# 啟動監控
+methodology ralph start
+
+# 查看進度
+methodology ralph status
+
+# 推進下一階段
+methodology ralph advance
+```
+
+### 自動整合（方案 C）
+
+在 `cli.py` 的 `cmd_init` 函數中，專案建立後自動啟動 Ralph Mode：
+
+```python
+def cmd_init(self, args):
+    """初始化專案"""
+    project_name = args.name or "my-project"
+    
+    # ... 現有初始化邏輯 ...
+    
+    # ========================================
+    # Ralph Mode 自動啟動（v5.83 新增）
+    # ========================================
+    try:
+        from ralph_mode import RalphScheduler, TaskPersistence
+        from ralph_mode.task_persistence import TaskState
+        
+        # 初始化任務狀態
+        persistence = TaskPersistence()
+        state = TaskState(
+            task_id=project_name,
+            status="running",
+            current_phase="init"
+        )
+        persistence.save_state(state)
+        
+        # 啟動 RalphScheduler 後台監控（5 分鐘輪詢）
+        scheduler = RalphScheduler(
+            task_id=project_name,
+            interval_seconds=300,  # 5 分鐘
+            daemon=True
+        )
+        scheduler.start()
+        
+        print(f"🚀 Ralph Mode started (interval: 5min)")
+    except ImportError as e:
+        print(f"⚠️ Ralph Mode not available: {e}")
+    
+    print(f"✅ Initialized: {project_name}")
+    
+    return 0
+```
+
+### 實作位置
+
+- **Hook 點**: `cli.py` → `cmd_init()` 函數
+- ** Ralph Mode 模組**: `ralph_mode/`
+- **排程配置**: `SchedulerConfig.interval_seconds = 300` (5 分鐘)
 
 ---
 

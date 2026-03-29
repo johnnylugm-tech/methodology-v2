@@ -267,6 +267,34 @@ class MethodologyCLI:
             cwd=str(project_path)
         )
         
+        # ========================================
+        # Ralph Mode 自動啟動（v5.83 新增）
+        # ========================================
+        try:
+            from ralph_mode import RalphScheduler, TaskPersistence
+            from ralph_mode.task_persistence import TaskState
+            
+            # 初始化任務狀態
+            persistence = TaskPersistence()
+            state = TaskState(
+                task_id=project_name,
+                status="running",
+                current_phase="init"
+            )
+            persistence.save_state(state)
+            
+            # 啟動 RalphScheduler 後台監控（5 分鐘輪詢）
+            scheduler = RalphScheduler(
+                task_id=project_name,
+                interval_seconds=300,  # 5 分鐘
+                daemon=True
+            )
+            scheduler.start()
+            
+            print(f"🚀 Ralph Mode started (interval: 5min)")
+        except ImportError as e:
+            print(f"⚠️ Ralph Mode not available: {e}")
+        
         print(f"✅ Initialized: {project_name}")
         print(f"🚀 Quality Watch started")
         
