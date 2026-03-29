@@ -1,6 +1,6 @@
 # methodology-v2
 
-> Multi-Agent Collaboration Development Methodology v5.91
+> Multi-Agent Collaboration Development Methodology v5.92
 
 ---
 
@@ -24,7 +24,7 @@
 | **v5.88** | **2026-03-29** | **整合 Phase2_Plan_5W1H_AB.md 精華：SAD.md 最低要求、A/B 架構審查清單、Conflict Log 格式** |
 | **v5.89** | **2026-03-29** | **整合 Phase3_Plan_5W1H_AB.md 精華：代碼規範、單元測試三類、集成測試模板、同行邏輯審查對話、合規矩陣** |
 | **v5.90** | **2026-03-29** | **整合 Phase4_Plan_5W1H_AB.md 精華：TEST_PLAN/TEST_RESULTS 完整規格、兩次 A/B 審查流程、Tester≠Developer 角色分離原則、失敗案例根本原因分析** |
-| **v5.91** | **2026-03-29** | **整合 Phase6_Plan_5W1H_AB.md 精華：QUALITY_REPORT 完整版規格（7 章節）、Constitution ≥ 80% 全面檢查、品質問題根源分析（Layer 1-3）、改進建議 P0/P1/P2 + 目標指標、A/B 監控數據分析、持續監控維持** |
+| **v5.92** | **2026-03-29** | **整合 Phase5+7+8_Plan_5W1H_AB.md 精華：Phase 5 兩次 A/B 審查 + BASELINE 完整規格 + MONITORING_PLAN；Phase 7 五維度風險識別 + Decision Gate + 四層緩解措施；Phase 8 CONFIG_RECORDS 8 章節 + 七區塊發布清單 + 方法論閉環確認** |
 
 ---
 
@@ -1329,9 +1329,144 @@ class TTSEngine:
 
 ---
 
-## Phase 5 詳細說明
+## Phase 5 詳細說明（v5.92 新增）
 
-> 基於 Phase5_Plan_5W1H_AB.md（如有），詳細定義 Phase 5 驗證與交付的 A/B 協作流程。
+> 基於 Phase5_Plan_5W1H_AB.md，詳細定義 Phase 5 驗證與交付的 A/B 協作流程。
+
+### Phase 5 WHO — A/B 角色分工
+
+| 角色 | Persona | 職責 | 禁止事項 |
+|------|---------|------|----------|
+| Agent A（DevOps / Delivery）| `devops` | 建立 BASELINE.md、執行驗收測試、啟動 A/B 持續監控、記錄 TEST_RESULTS（Phase 5）| 自行宣告基線通過；在監控數據不足時強行進入 Phase 6 |
+| Agent B（Architect / Senior QA）| `architect` 或 `reviewer` | 審查 BASELINE.md 完整性、確認 A/B 監控閾值、審查 VERIFICATION_REPORT.md | 跳過監控數據直接 APPROVE；接受基線版本中有「待修復」的已知缺陷 |
+
+**核心原則**：驗證必須獨立於開發。Agent A 不能是 Phase 3 的 Developer；基線建立必須經 Agent B 確認，不能自簽。
+
+### Phase 5 必要交付物
+
+| 交付物 | 負責方 | 驗證方 | 位置 |
+|--------|--------|--------|------|
+| `BASELINE.md`（7 章節）| Agent A | Agent B + Quality Gate | `05-verify/` |
+| `TEST_RESULTS.md`（Phase 5 驗收版）| Agent A | Agent B | `05-verify/` |
+| `VERIFICATION_REPORT.md` | Agent A | Agent B | `05-verify/` |
+| `MONITORING_PLAN.md`（A/B 監控）| Agent A | Agent B | 專案根目錄 |
+| `QUALITY_REPORT.md`（初版）| Agent A | Agent B | `05-verify/` |
+
+### Phase 5 BASELINE.md 核心規格
+
+```markdown
+# Baseline - [專案名稱] v[版本號]
+
+## 1. 基線概述（建立人/審查人/session_id）
+## 2. 功能基線（對應 SRS FR，100% ✅）
+## 3. 品質基線（Constitution≥80%、覆蓋率≥80%、邏輯≥90分）
+## 4. 效能基線（A/B 監控基準：回應時間、記憶體、錯誤率、熔斷器）
+## 5. 已知問題登錄（HIGH 嚴重性 = 0 才能建立基線）
+## 6. 變更記錄
+## 7. 驗收簽收（雙方 session_id + 日期）
+```
+
+### Phase 5 MONITORING_PLAN.md 四個閾值
+
+| 監控項目 | 閾值 | 觸發動作 |
+|----------|------|----------|
+| 邏輯正確性分數 | ≥ 90 分 | 低於閾值 → 停止部署 |
+| 回應時間 | 與基線偏差 < 10% | 超出 → 警告 + 人工確認 |
+| 熔斷器觸發 | 不觸發 | 觸發 → 立即回滾 |
+| 錯誤率 | < 1% | 超出 → 停止流量 |
+
+### Phase 5 兩次 A/B 審查流程
+
+| 審查次數 | 時機 | 審查內容 | 模板位置 |
+|----------|------|----------|----------|
+| 第一次 | 部署**前**（基線審查）| BASELINE + QUALITY_REPORT + MONITORING_PLAN | Phase5_Plan_5W1H_AB.md |
+| 第二次 | 部署**後**（驗收報告審查）| VERIFICATION_REPORT + 監控初次結果 | Phase5_Plan_5W1H_AB.md |
+
+### Phase 5 進入 Phase 6 前置條件（全部 ✅）
+
+| 條件 | 門檻 | 檢查方 |
+|------|------|--------|
+| 邏輯正確性分數 | ≥ 90 分 | spec_logic_checker.py 實際輸出 |
+| Constitution 總分 | ≥ 80% | Constitution Runner |
+| ASPICE 合規率 | > 80% | doc_checker.py |
+| BASELINE 功能驗收 | 100% ✅（無任何 ❌）| Agent B 確認 |
+| 已知問題 HIGH 嚴重性 | = 0 個 | BASELINE.md 問題登錄 |
+| 第一次 A/B 審查（基線）| APPROVE | AgentEvaluator |
+| 第二次 A/B 審查（驗收）| APPROVE | AgentEvaluator |
+
+### Phase 5 邏輯正確性複查（Phase 5 重做，非 Phase 3）
+
+| Phase | 審查方式 | 門檻 |
+|-------|----------|------|
+| Phase 3 | 定性（對話審查）| 依賴人工判斷 |
+| Phase 5 | 量化（spec_logic_checker.py）| ≥ 90 分 |
+
+重做理由：Phase 4 修復可能引入新邏輯問題；需要 `devops` 人格的新鮮視角。
+
+### Phase 5 DEVELOPMENT_LOG 記錄格式
+
+```markdown
+## Phase 5 Quality Gate 結果（YYYY-MM-DD HH:MM）
+
+### 前置確認
+執行命令：python3 quality_gate/phase_artifact_enforcer.py
+結果：Phase 4 完成 ✅
+
+### 邏輯正確性複查
+執行命令：python3 scripts/spec_logic_checker.py
+結果：
+- 邏輯正確性分數：XX/100（目標 ≥ 90）
+- 輸出 ≤ 輸入約束：✅
+- 分支一致性：✅
+- Lazy Init 完整：✅
+
+### Constitution 全面檢查
+執行命令：python3 quality_gate/constitution/runner.py
+結果：總分 XX%（目標 ≥ 80%）✅
+
+### 第一次 A/B 審查（基線審查）
+- Agent A（DevOps）：session_id ______
+- Agent B（Architect）：session_id ______
+- 審查結論：APPROVE ✅
+
+### A/B 持續監控首次結果
+- 邏輯正確性：XX/100 ✅
+- 回應時間偏差：X%（< 10%）✅
+- 熔斷器觸發：0 次 ✅
+- 錯誤率：X%（< 1%）✅
+
+### 第二次 A/B 審查（驗收報告審查）
+- 審查結論：APPROVE ✅
+
+### Phase 5 結論
+- [ ] ✅ 通過，BASELINE v1.0.0 建立，進入 Phase 6
+```
+
+> ❌ **禁止空泛記錄**：`✅ 基線建立完成`（必須有實際命令輸出）
+
+### Phase 5 監控異常 SOP
+
+| 異常 | 動作 |
+|------|------|
+| 熔斷器觸發 | 立即回滾 → 診斷根本原因 → Phase 3 修復 → 重新 Phase 4/5 |
+| 錯誤率 ≥ 1% | 停止流量 → 分析日誌 → 修復 → 重新部署 |
+| 回應時間偏差 ≥ 10% | 警告 + 人工確認 → 判斷是否可接受 |
+| 邏輯分數 < 90 | 停止部署 → 邏輯複查 → 修復 |
+
+**原則**：任何 HIGH 異常都優先回滾，不嘗試帶著異常繼續。
+
+### Phase 5 在整體架構的位置
+
+```
+Phase 1 需求 → Phase 2 設計 → Phase 3 開發 → Phase 4 測試
+                                                           │
+                                                           ▼
+Phase 8 配置 ←── Phase 7 風險 ←── Phase 6 品質 ←── Phase 5 驗收
+                                                             （建立基線）
+                                                                   ↑
+                                                            轉折點：
+                                                            從「建構」轉為「保障」
+```
 
 ---
 
@@ -1460,15 +1595,344 @@ python3 scripts/circuit_breaker_check.py   # 0 次觸發
 
 ---
 
-## Phase 7 詳細說明
+## Phase 7 詳細說明（v5.92 新增）
 
-> 基於 Phase7_Plan_5W1H_AB.md（如有），詳細定義 Phase 7 風險評估的 A/B 協作流程。
+> 基於 Phase7_Plan_5W1H_AB.md，詳細定義 Phase 7 風險評估的 A/B 協作流程。
+
+### Phase 7 WHO — A/B 角色分工
+
+| 角色 | Persona | 職責 | 禁止事項 |
+|------|---------|------|----------|
+| Agent A（Risk Analyst）| `qa` 或 `devops` | 五維度風險識別、建立 RISK_REGISTER.md、制定演練計劃、提交 Decision Gate 確認 | 以「機率低」為由跳過 HIGH 影響風險；緩解措施寫「加強注意」等無法量化的文字 |
+| Agent B（PM / Architect）| `pm` 或 `architect` | 確認風險識別無重大遺漏；緩解措施切實可行；所有 MEDIUM/HIGH 風險有決策記錄 | 接受「持續監控」作為唯一緩解措施；跳過 Decision Gate |
+
+**核心原則**：風險評估必須保持悲觀視角。Agent A 的任務是「盡可能找出更多風險」，而不是「證明系統安全」。
+
+### Phase 7 風險識別五個維度
+
+| 維度 | 來源 | 典型風險 |
+|------|------|----------|
+| 技術風險 | Phase 6 QUALITY_REPORT | Constitution 低分維度對應的技術債 |
+| 依賴風險 | SAD.md ADR | 外部 API/SDK 版本鎖定與棄用 |
+| 操作風險 | BASELINE.md 效能基線 | 超出效能基線 10% 的降級場景 |
+| 商業風險 | SRS.md NFR | 核心功能不可用的業務衝擊 |
+| 迭代風險 | Phase 6 改進建議 | 技術債累積的長期退化 |
+
+### Phase 7 必要交付物
+
+| 交付物 | 負責方 | 驗證方 | 位置 |
+|--------|--------|--------|------|
+| `RISK_ASSESSMENT.md`（風險矩陣）| Agent A | Agent B + Quality Gate | `07-risk/` |
+| `RISK_REGISTER.md`（完整版）| Agent A | Agent B | `07-risk/` |
+| `.methodology/decisions/` 風險決策記錄 | Agent A + Agent B | Decision Gate | `.methodology/decisions/` |
+| `MONITORING_PLAN.md`（Phase 7 更新）| Agent A | Agent B | 專案根目錄 |
+
+### Phase 7 四層緩解措施
+
+每個 HIGH/MEDIUM 風險必須同時具備四層：
+
+| 層次 | 定義 | 例 |
+|------|------|-----|
+| 預防（Prevent）| 降低風險發生機率 | Retry、版本鎖定、輸入驗證 |
+| 偵測（Detect）| 快速發現風險已發生 | 監控告警、熔斷器、錯誤率追蹤 |
+| 應對（Respond）| 風險發生後的自動處置 | Fallback、降級模式、自動恢復 |
+| 升級（Escalate）| 自動處置不足時的人工介入 | HITL 通知、on-call 流程 |
+
+> ❌ **無效的緩解措施**：`持續監控`（只是發現問題更快，不是防止或應對問題）
+
+### Phase 7 Decision Gate 確認流程
+
+| 步驟 | 動作 | 負責方 |
+|------|------|--------|
+| 1 | 為每個 MEDIUM/HIGH 風險建立決策記錄（`R*_decision.md`）| Agent A |
+| 2 | Agent B 逐一確認每個決策（含 session_id 與日期）| Agent B |
+| 3 | 執行 `check_decisions.py` → 0 個未確認 | 工具驗證 |
+| 4 | A/B 風險審查（Decision Gate 完成後才執行）| Agent A → Agent B |
+
+**Decision Gate 記錄格式**：
+
+```markdown
+# Decision Record - [風險 ID] - [YYYY-MM-DD]
+
+| 項目 | 內容 |
+|------|------|
+| 風險 ID | R1 |
+| 風險等級 | 🔴 HIGH |
+| 決策類型 | 接受 / 轉移 / 緩解 / 消除 |
+| 決策日期 | YYYY-MM-DD |
+
+## 殘餘風險
+- 殘餘風險等級：🟡 中
+- 可接受理由：[說明]
+
+## 確認記錄
+| 角色 | Session ID | 日期 | 確認 |
+|------|------------|------|------|
+| Risk Analyst | ______ | YYYY-MM-DD | ✅ 提交 |
+| PM / Architect | ______ | YYYY-MM-DD | ✅ 確認 |
+```
+
+### Phase 7 風險演練要求
+
+| 要求 | 標準 |
+|------|------|
+| 演練對象 | 至少 1 個 HIGH 風險 |
+| 演練頻率 | HIGH ≤ 每月一次 |
+| 演練場景 | 具體（「模擬網路中斷 30 秒」而非「測試網路」）|
+| RTO 驗證 | 演練時量測實際 RTO 是否達標 |
+| 記錄內容 | 觸發條件 → 觀察 → 結果 → RTO 達成 |
+
+**演練記錄格式**：
+
+```markdown
+## 演練記錄 - [風險 ID]（YYYY-MM-DD）
+
+### 演練場景
+[具體模擬步驟]
+
+### 實際結果
+- Retry 執行：✅/❌（間隔：____ms）
+- 熔斷器觸發：✅/❌
+- Fallback 切換：✅/❌（時間：____ms）
+- HITL 通知：✅/❌（延遲：____s）
+
+### RTO 達成
+- 聲明 RTO：< X 分鐘
+- 實際 RTO：____分____秒
+- 達成：✅/❌
+
+### 結論
+- [ ] ✅ 通過——緩解措施有效
+- [ ] ❌ 未通過（修正後重新演練）
+```
+
+### Phase 7 進入 Phase 8 前置條件（全部 ✅）
+
+| 條件 | 門檻 | 檢查方 |
+|------|------|--------|
+| 五維度風險識別完整 | 每個維度至少 1 個風險 | Agent B 確認 |
+| HIGH 風險數量 | ≥ 1 個 | Agent B 主觀判斷 |
+| HIGH/MEDIUM 風險緩解措施 | 四層 + Plan B + RTO | Agent B 確認 |
+| Decision Gate | 所有決策已確認 | `check_decisions.py` 0 個未確認 |
+| 至少 1 個 HIGH 風險演練 | 演練通過 | 演練記錄 |
+| Agent B APPROVE | AgentEvaluator 輸出 | AgentEvaluator |
+| Constitution 總分 | ≥ 80% | Constitution Runner |
+
+### Phase 7 在整體架構的位置
+
+```
+Phase 6（品質分析）→ Phase 7（風險管理）→ Phase 8（配置管理）
+    ↑                      ↑                      ↑
+「現有問題」          「未來威脅」             「版本控制」
+  回顧視角              前瞻視角               治理視角
+
+Phase 7 輸出服務：
+  → Phase 8：風險等級影響配置管理嚴格程度
+  → 下個版本 Phase 1：迭代風險轉化為新版本需求約束
+```
 
 ---
 
-## Phase 8 詳細說明
+## Phase 8 詳細說明（v5.92 新增）
 
-> 基於 Phase8_Plan_5W1H_AB.md（如有），詳細定義 Phase 8 配置管理的 A/B 協作流程。
+> 基於 Phase8_Plan_5W1H_AB.md，詳細定義 Phase 8 配置管理的 A/B 協作流程。
+
+### Phase 8 WHO — A/B 角色分工
+
+| 角色 | Persona | 職責 | 禁止事項 |
+|------|---------|------|----------|
+| Agent A（DevOps / Config Manager）| `devops` | 建立 CONFIG_RECORDS.md、執行發布清單、編製 A/B 監控最終報告、封版前確認所有 Phase 產出完整 | 使用「最新版」等模糊版本描述；在 A/B 監控異常未解除前封版 |
+| Agent B（PM / Architect）| `pm` 或 `architect` | 確認版本配置完整可重現；發布清單無遺漏；A/B 監控最終狀態健康 | 在監控最終報告顯示異常時 APPROVE 封版 |
+
+**核心原則**：配置管理是「治理行為」，不是「技術行為」。重點是「所有配置都有記錄、可被審計、可被重現」。
+
+### Phase 8 必要交付物
+
+| 交付物 | 負責方 | 驗證方 | 位置 |
+|--------|--------|--------|------|
+| `CONFIG_RECORDS.md`（完整版，8 章節）| Agent A | Agent B + Quality Gate | `08-config/` |
+| 發布清單（七個區塊）確認記錄 | Agent A + Agent B | 雙方逐項確認 | `DEVELOPMENT_LOG.md` |
+| A/B 監控最終報告 | Agent A | Agent B | `MONITORING_PLAN.md`（最終段落）|
+| 版本封存記錄（Git Tag）| Agent A | Agent B | Git |
+| `DEVELOPMENT_LOG.md`（Phase 8 + 方法論閉環）| Agent A | Agent B | 專案根目錄 |
+
+### Phase 8 CONFIG_RECORDS.md 八章節
+
+```markdown
+# Configuration Records - [專案名稱]
+
+## 1. 版本資訊（Git Commit Hash 必填）
+## 2. 執行環境配置（開發環境 + 生產環境）
+## 3. 依賴套件清單（pip freeze / npm lock 快照，無省略）
+## 4. 環境變數與配置（secret 類型只記名稱）
+## 5. 部署記錄（日期 + 版本 + 方式 + 執行人）
+## 6. 配置變更記錄（Phase 5 至今所有配置調整）
+## 7. 回滾 SOP（觸發條件 + 命令列步驟 + 後續必做）
+## 8. 配置合規性確認（對應 Phase 7 風險緩解措施）
+```
+
+### Phase 8 回滾 SOP
+
+**觸發條件**：
+
+| 條件 | 閾值 |
+|------|------|
+| 錯誤率突增 | > 5%（持續 5 分鐘）|
+| 熔斷器觸發 | 任何一次觸發 |
+| A/B 邏輯分數下降 | < 85 分（預警）/ < 80 分（立即回滾）|
+
+**回滾步驟**：
+
+```bash
+# 1. 確認回滾目標版本
+git log --oneline -5
+
+# 2. 執行回滾
+git checkout [previous_stable_tag]
+docker-compose down && docker-compose up -d
+
+# 3. 驗證回滾成功
+python3 scripts/spec_logic_checker.py  # ≥ 90 分
+python3 scripts/circuit_breaker_check.py  # 0 觸發
+
+# 4. 通知相關人員
+# 5. 記錄回滾原因到 CONFIG_RECORDS.md
+```
+
+### Phase 8 發布清單（七個區塊）
+
+Agent A 執行，Agent B 見證。**任何 ❌ 阻止封版**：
+
+```markdown
+# Release Checklist - v[版本號] - [YYYY-MM-DD]
+
+## 一、版本準備
+- [ ] 版本號已更新（`__version__`, `package.json`）
+- [ ] CHANGELOG.md 已記錄所有變更
+- [ ] README.md 已同步
+- [ ] `docs/` 文檔已同步
+
+## 二、文檔完整性（Phase 1-8 全部完成）
+- [ ] SRS.md（Phase 1）/ SAD.md（Phase 2）/ BASELINE.md（Phase 5）
+- [ ] TEST_PLAN + TEST_RESULTS（Phase 4）/ QUALITY_REPORT（Phase 6）
+- [ ] RISK_ASSESSMENT + RISK_REGISTER（Phase 7）/ CONFIG_RECORDS（Phase 8）
+- [ ] TRACEABILITY_MATRIX 四欄完整（FR→設計→代碼→測試）
+
+## 三、品質確認
+- [ ] 測試通過率 = 100%（`pytest` 最後輸出）
+- [ ] 代碼覆蓋率 ≥ 80%（`pytest-cov` 輸出）
+- [ ] Constitution 總分 ≥ 80%（`constitution/runner.py` 輸出）
+- [ ] 邏輯正確性 ≥ 90 分（`spec_logic_checker.py` 輸出）
+
+## 四、A/B 監控最終狀態（最近 7 天）
+- [ ] 邏輯分數平均 ≥ 90 分
+- [ ] 回應時間偏差 < 10%
+- [ ] 熔斷器觸發（Phase 5 至今）= 0 次
+- [ ] 錯誤率 < 1%
+
+## 五、風險管理確認
+- [ ] `check_decisions.py`：0 個未確認決策
+- [ ] 所有 HIGH 風險有演練記錄
+- [ ] 回滾 SOP 已寫入 CONFIG_RECORDS.md
+
+## 六、配置管理確認
+- [ ] 所有依賴版本精確（無「最新版」模糊描述）
+- [ ] Git Tag 已建立（`v[Major.Minor.Patch]`）
+- [ ] CHANGELOG.md 有本版本記錄
+
+## 七、封版確認
+- [ ] Agent A 確認：所有項目已逐一執行 ✅
+- [ ] Agent B 確認：所有項目已逐一審查 ✅
+- [ ] 封版決策：APPROVE 正式發布
+
+Agent A：______（session_id：______）日期：______
+Agent B：______（session_id：______）日期：______
+```
+
+### Phase 8 封版前置條件（7 天監控健康）
+
+| 條件 | 門檻 | 檢查方 |
+|------|------|--------|
+| A/B 監控最近 7 天邏輯分數 | 平均 ≥ 90 分 | MONITORING_PLAN.md |
+| A/B 監控熔斷器（Phase 5 至今）| = 0 次 | MONITORING_PLAN.md |
+| 發布清單七個區塊 | 全部 ✅ | 雙方逐項確認 |
+| CONFIG_RECORDS.md 完整 | 八章節完整 | Agent B 審查 |
+| Constitution 最終總分 | ≥ 80% | Constitution Runner |
+| Git Tag 建立 | `v[Major.Minor.Patch]` | git log --tags |
+| Agent B APPROVE | AgentEvaluator | AgentEvaluator |
+
+### Phase 8 A/B 監控最終報告
+
+```markdown
+# A/B 監控最終報告 - [專案名稱] v[版本號]
+
+## 監控期間概覽
+| 項目 | 內容 |
+|------|------|
+| 監控起始日 | Phase 5 啟動日 |
+| 監控截止日 | Phase 8 封版日 |
+| 總監控天數 | XX 天 |
+
+## 各監控指標最終統計
+| 指標 | 閾值 | 最低值 | 最高值 | 平均值 | 達標天數 | 最終狀態 |
+|------|------|--------|--------|--------|----------|----------|
+| 邏輯正確性分數 | ≥ 90 | XX | XX | XX | XX | ✅ |
+| 回應時間偏差 | < 10% | X% | X% | X% | XX | ✅ |
+| 熔斷器觸發 | 0 次 | — | — | — | XX | ✅ |
+| 錯誤率 | < 1% | X% | X% | X% | XX | ✅ |
+
+## 異常事件記錄（Phase 5 至今）
+（無異常）✅
+
+## 最終結論
+| 項目 | 結論 |
+|------|------|
+| 整體監控穩定性 | ✅ 穩定（熔斷 0 次）|
+| 可封版 | ✅ |
+```
+
+### Phase 8 方法論閉環確認
+
+```markdown
+### 方法論閉環記錄
+
+| Phase | 完成日期 | Agent A | Agent B | 最終狀態 |
+|-------|----------|---------|---------|----------|
+| Phase 1 | YYYY-MM-DD | ______ | ______ | ✅ Sign-off |
+| Phase 2 | YYYY-MM-DD | ______ | ______ | ✅ Sign-off |
+| Phase 3 | YYYY-MM-DD | ______ | ______ | ✅ Sign-off |
+| Phase 4 | YYYY-MM-DD | ______ | ______ | ✅ Sign-off |
+| Phase 5 | YYYY-MM-DD | ______ | ______ | ✅ Sign-off |
+| Phase 6 | YYYY-MM-DD | ______ | ______ | ✅ Sign-off |
+| Phase 7 | YYYY-MM-DD | ______ | ______ | ✅ Sign-off |
+| Phase 8 | YYYY-MM-DD | ______ | ______ | ✅ Sign-off |
+
+**methodology-v2 v5.92 完整閉環達成 🎉**
+```
+
+### Phase 8 在整體架構的位置
+
+```
+版本週期完整地圖：
+
+Phase 1 需求    → SRS.md + SPEC_TRACKING + TRACEABILITY（建立 FR）
+Phase 2 設計    → SAD.md + ADR（FR → 模組）
+Phase 3 實作    → 代碼 + 單元測試（模組 → 函數）
+Phase 4 測試    → TEST_PLAN + TEST_RESULTS（函數 → TC）
+                  ↓ TRACEABILITY 四欄全滿
+Phase 5 驗收    → BASELINE + MONITORING 啟動
+Phase 6 品質    → QUALITY_REPORT 完整版（回顧）
+Phase 7 風險    → RISK_REGISTER + Decision Gate（前瞻）
+Phase 8 配置    → CONFIG_RECORDS + 封版（治理）
+
+每個 Phase 都有：
+✅ A/B 雙 Agent 協作（不同 Persona）
+✅ HybridWorkflow mode=ON
+✅ AgentEvaluator 評估
+✅ Quality Gate（ASPICE + Constitution）
+✅ DEVELOPMENT_LOG 實際輸出記錄
+✅ 雙方 session_id 可追溯
+```
 
 ---
 
@@ -3712,10 +4176,10 @@ L3 代碼品質檢查使用 Agent Quality Guard（`/workspace/agent-quality-guar
 - Phase 2: [docs/Phase2_Plan_5W1H_AB.md](docs/Phase2_Plan_5W1H_AB.md) ✅
 - Phase 3: [docs/Phase3_Plan_5W1H_AB.md](docs/Phase3_Plan_5W1H_AB.md) ✅ 新增
 - Phase 4: [docs/Phase4_Plan_5W1H_AB.md](docs/Phase4_Plan_5W1H_AB.md) ✅ 新增
-- Phase 5: [docs/Phase5_Plan_5W1H_AB.md](docs/Phase5_Plan_5W1H_AB.md) ✅ (如存在)
-- Phase 6: [docs/Phase6_Plan_5W1H_AB.md](docs/Phase6_Plan_5W1H_AB.md) ✅ 新增
-- Phase 7: [docs/Phase7_Plan_5W1H_AB.md](docs/Phase7_Plan_5W1H_AB.md) ✅ (如存在)
-- Phase 8: [docs/Phase8_Plan_5W1H_AB.md](docs/Phase8_Plan_5W1H_AB.md) ✅ (如存在)
+- Phase 5: [docs/Phase5_Plan_5W1H_AB.md](docs/Phase5_Plan_5W1H_AB.md) ✅ 新增
+- Phase 6: [docs/Phase6_Plan_5W1H_AB.md](docs/Phase6_Plan_5W1H_AB.md) ✅
+- Phase 7: [docs/Phase7_Plan_5W1H_AB.md](docs/Phase7_Plan_5W1H_AB.md) ✅ 新增
+- Phase 8: [docs/Phase8_Plan_5W1H_AB.md](docs/Phase8_Plan_5W1H_AB.md) ✅ 新增
 
 ### 附錄 B：DEVELOPMENT_LOG 範例參考
 
