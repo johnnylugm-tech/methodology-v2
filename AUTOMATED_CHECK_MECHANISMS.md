@@ -1,6 +1,6 @@
 # methodology-v2 自動化檢查機制
 
-> **版本**: v2.0 (2026-03-29)
+> **版本**: v3.0 (2026-03-29)
 > **維護者**: methodology-v2 開發團隊
 > **目標讀者**: AI Agent、Developer、Reviewer
 
@@ -11,10 +11,11 @@
 | 維度 | 數值 |
 |------|------|
 | **UnifiedGate 檢查總數** | 23 個 |
+| **PhaseEnforcer 三層檢查** | L1 結構(25%) + L2 內容(25%) + L3 代碼品質(50%) |
 | **Phase 覆蓋** | Phase 1-8 全覆蓋 |
-| **自動化率** | ~66% (15/23 為完全自動化) |
-| **觸發模式** | 3 種（自動/被動/手動） |
-| **入口點** | 統一使用 `UnifiedGate.check_all()` |
+| **自動化率** | ~90% (UnifiedGate 23 個 + PhaseEnforcer 3 層) |
+| **觸發模式** | 4 種（自動/被動/手動/Git Hook） |
+| **入口點** | 統一使用 `UnifiedGate.check_all()` 或 `PhaseEnforcer.enforce_phase()` |
 
 ---
 
@@ -43,6 +44,143 @@ UnifiedGate 是所有品質檢查的統一入口，整合三種檢查類型：
 check_all(phase=None)  # 執行全部 23 個檢查
 check_all(phase=1)     # 執行 Phase 1 相關檢查
 check_all(phase="5-8") # 執行 Phase 5-8 相關檢查
+```
+
+---
+
+## 1.3 PhaseEnforcer 三層檢查系統（v5.86 新增）
+
+PhaseEnforcer 是 Phase 自動化的核心，在每個 Phase 結束時自動觸發檢查。
+
+### 1.3.1 三層檢查架構
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                 PhaseEnforcer.enforce_phase(N)              │
+├─────────────────────────────────────────────────────────────┤
+│  ┌───────────────────────────────────────────────────────┐  │
+│  │  L1: 結構檢查 (25%)                                   │  │
+│  │  FolderStructureChecker.run()                        │  │
+│  │  - 必要目錄存在                                       │  │
+│  │  - 必要檔案存在                                       │  │
+│  │  - Phase 1-8 全支援                                   │  │
+│  └───────────────────────────────────────────────────────┘  │
+│                          │                                  │
+│  ┌───────────────────────────────────────────────────────┐  │
+│  │  L2: 內容檢查 (25%) - strict_mode                    │  │
+│  │  FolderStructureChecker.check_file_content_structure()│  │
+│  │  - 章節關鍵字對照                                     │  │
+│  │  - 必要內容存在                                       │  │
+│  │  - Phase 1-8 全支援                                   │  │
+│  └───────────────────────────────────────────────────────┘  │
+│                          │                                  │
+│  ┌───────────────────────────────────────────────────────┐  │
+│  │  L3: 代碼品質檢查 (50%)                              │  │
+│  │  Agent Quality Guard                                  │  │
+│  │  - Python 檔案掃描                                    │  │
+│  │  - 嚴重性問題計數                                     │  │
+│  │  - 自動評分                                           │  │
+│  └───────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+              ┌───────────────────────────────┐
+              │  Gate Score = Σ(層分數×權重)   │
+              │  預設權重: (0.25, 0.25, 0.50)  │
+              │  閾值: 80%                     │
+              └───────────────────────────────┘
+```
+
+### 1.3.2 權重配置
+
+| 層級 | 檢查類型 | 預設權重 | 可調整 |
+|------|---------|---------|--------|
+| L1 | 結構檢查 (FolderStructureChecker) | 25% | ✅ |
+| L2 | 內容檢查 (章節關鍵字) | 25% | ✅ |
+| L3 | 代碼品質 (Agent Quality Guard) | 50% | ✅ |
+
+**自訂權重範例**：
+```python
+# 專注代碼品質（不檢查代碼）
+enforcer = PhaseEnforcer(project_root, weights=(0.40, 0.30, 0.30))
+
+# 忽略代碼檢查
+enforcer = PhaseEnforcer(project_root, include_code_quality=False)
+```
+
+### 1.3.3 與 UnifiedGate 整合
+
+```python
+from quality_gate.phase_enforcer import PhaseEnforcer
+from quality_gate.unified_gate import UnifiedGate
+
+# 初始化
+enforcer = PhaseEnforcer("/path/to/project")
+gate = UnifiedGate("/path/to/project")
+
+# 執行 PhaseEnforcer 三層檢查
+result = enforcer.enforce_phase(1)
+
+# 執行 UnifiedGate 23 項檢查
+unified_result = gate.check_all(phase=1)
+
+# 整合結果
+combined = enforcer.enforce_with_unified_gate(1)
+```
+
+### 1.3.4 PhaseEnforcer CLI 使用方式
+
+```bash
+# 基本檢查
+python -m quality_gate.cli quality check-phase 1
+
+# 嚴格模式（包含內容結構檢查）
+python -m quality_gate.cli quality check-phase 1 --strict
+
+# 阻止模式（失敗時退出）
+python -m quality_gate.cli quality check-phase 1 --block
+
+# 不檢查代碼品質
+python -m quality_gate.cli quality check-phase 1 --no-code-check
+
+# 自訂權重
+python -m quality_gate.cli quality check-phase 1 --weights 0.3 0.3 0.4
+
+# 顯示幫助
+python -m quality_gate.cli quality check-phase --help
+```
+
+### 1.3.5 與 UnifiedGate 整合架構圖
+
+```mermaid
+graph TD
+    A[Phase N 結束] --> B[PhaseEnforcer.enforce_phase(N)]
+    
+    B --> C[L1: 結構檢查<br/>FolderStructureChecker]
+    B --> D[L2: 內容檢查<br/>章節關鍵字對照]
+    B --> E[L3: 代碼品質<br/>Agent Quality Guard]
+    
+    C --> F[Gate Score 計算]
+    D --> F
+    E --> F
+    
+    F --> G{Gate Score ≥ 80%?}
+    
+    G -->|是| H[同步 UnifiedGate]
+    H --> I[執行 UnifiedGate.check_all()]
+    
+    G -->|否| J[❌ BLOCKED]
+    J --> K[顯示 Blocker Issues]
+    K --> L[Agent 修正]
+    L --> B
+    
+    I --> M{UnifiedGate Pass?}
+    M -->|是| N[✅ Phase N Complete]
+    M -->|否| O[顯示 UnifiedGate 失敗項目]
+    O --> L
+    
+    style N fill:#51cf66,color:#fff
+    style J fill:#ff6b6b,color:#fff
 ```
 
 ---
@@ -109,150 +247,246 @@ check_all(phase="5-8") # 執行 Phase 5-8 相關檢查
 
 ```mermaid
 graph TD
-    A[Phase 1 開始] --> B[Document Existence Check<br/>doc_checker.py]
-    B --> C{通過?}
-    C -->|否| E[❌ BLOCK - 停止]
-    C -->|是| D[SPEC_TRACKING.md 存在性檢查]
-    D --> F{存在?}
-    F -->|否| E
-    F -->|是| G[Constitution Check - SRS<br/>srs_constitution_checker.py]
-    G --> H{正確性=100%?}
-    H -->|否| I[修正 SRS 內容]
-    H -->|是| J{可維護性>70%?}
-    J -->|否| I
-    J -->|是| K[FR-ID Tracking<br/>fr_id_tracker.py]
-    K --> L{所有 FR-ID 追蹤?}
-    L -->|否| I
-    L -->|是| M[規格完整性檢查<br/>spec_tracking_checker.py]
-    M --> N{完整性≥90%?}
-    N -->|否| I
-    N -->|是| O[FR Verification Method<br/>fr_verification_method_checker.py]
-    O --> P{所有 FR 有驗證方法?}
-    P -->|否| I
-    P -->|是| Q[✅ Quality Gate Pass]
-    Q --> R[Phase 1 完成]
+    A[Phase 1 開始] --> B[PhaseEnforcer.enforce_phase(1)]
     
-    style E fill:#ff6b6b,color:#fff
-    style Q fill:#51cf66,color:#fff
-    style I fill:#ffd43b,color:#000
+    B --> C[L1: 結構檢查<br/>FolderStructureChecker]
+    C --> C1{目錄/檔案存在?}
+    C1 -->|否| C2[❌ BLOCK - 停止]
+    C1 -->|是| D[L2: 內容檢查<br/>章節關鍵字對照]
+    
+    D --> D1{章節完整?}
+    D1 -->|否| D2[修正內容結構]
+    D1 -->|是| E[L3: 代碼品質檢查<br/>Agent Quality Guard]
+    
+    E --> E1{Gate Score ≥ 80%?}
+    E1 -->|否| E2[❌ BLOCK - 停止]
+    E1 -->|是| F[Constitution Check - SRS<br/>srs_constitution_checker.py]
+    
+    F --> G{正確性=100%?}
+    G -->|否| H[修正 SRS 內容]
+    G -->|是| I[FR-ID Tracking<br/>fr_id_tracker.py]
+    
+    I --> J{所有 FR-ID 追蹤?}
+    J -->|否| H
+    J -->|是| K[規格完整性檢查<br/>spec_tracking_checker.py]
+    
+    K --> L{完整性≥90%?}
+    L -->|否| H
+    L -->|是| M[FR Verification Method<br/>fr_verification_method_checker.py]
+    
+    M --> N{所有 FR 有驗證方法?}
+    N -->|否| H
+    N -->|是| O[✅ PhaseEnforcer Pass]
+    O --> P[✅ Quality Gate Pass]
+    P --> Q[Phase 1 完成]
+    
+    style C2 fill:#ff6b6b,color:#fff
+    style E2 fill:#ff6b6b,color:#fff
+    style P fill:#51cf66,color:#fff
+    style H fill:#ffd43b,color:#000
+    style O fill:#51cf66,color:#fff
 ```
+
+**三層檢查加權**：
+- L1 結構檢查：25%
+- L2 內容檢查：25%
+- L3 代碼品質：50%
 
 ### 3.2 Phase 2：架構設計流程圖
 
 ```mermaid
 graph TD
-    A[Phase 2 開始] --> B[Document Existence Check<br/>doc_checker.py]
-    B --> C{通過?}
-    C -->|否| E[❌ BLOCK - 停止]
-    C -->|是| F[Phase 1 完成確認<br/>phase_artifact_enforcer.py]
+    A[Phase 2 開始] --> B[PhaseEnforcer.enforce_phase(2)]
+    
+    B --> C[L1: 結構檢查<br/>FolderStructureChecker]
+    C --> C1{目錄/檔案存在?}
+    C1 -->|否| C2[❌ BLOCK - 停止]
+    C1 -->|是| D[L2: 內容檢查<br/>章節關鍵字對照]
+    
+    D --> D1{章節完整?}
+    D1 -->|否| D2[修正內容結構]
+    D1 -->|是| E[L3: 代碼品質檢查<br/>Agent Quality Guard]
+    
+    E --> E1{Gate Score ≥ 80%?}
+    E1 -->|否| E2[❌ BLOCK - 停止]
+    E1 -->|是| F[Phase 1 產物確認<br/>phase_artifact_enforcer.py]
+    
     F --> G{Phase 1 產物存在?}
-    G -->|否| E
+    G -->|否| E2
     G -->|是| H[Constitution Check - SAD<br/>sad_constitution_checker.py]
+    
     H --> I{正確性=100%?}
     I -->|否| J[修正 SAD 內容]
     I -->|是| K[Error Handling 檢查<br/>error_handling_checker.py]
+    
     K --> L{錯誤處理覆蓋完整?}
     L -->|否| J
     L -->|是| M[FR Coverage 檢查<br/>fr_coverage_checker.py]
+    
     M --> N{FR 覆蓋率≥80%?}
     N -->|否| J
     N -->|是| O[Logic Correctness<br/>spec_logic_checker.py]
+    
     O --> P{邏輯正確?}
     P -->|否| J
-    P -->|是| Q[✅ Quality Gate Pass]
-    Q --> R[Phase 2 完成]
+    P -->|是| Q[✅ PhaseEnforcer Pass]
+    Q --> R[✅ Quality Gate Pass]
+    R --> S[Phase 2 完成]
     
-    style E fill:#ff6b6b,color:#fff
-    style Q fill:#51cf66,color:#fff
+    style C2 fill:#ff6b6b,color:#fff
+    style E2 fill:#ff6b6b,color:#fff
+    style R fill:#51cf66,color:#fff
     style J fill:#ffd43b,color:#000
+    style Q fill:#51cf66,color:#fff
 ```
+
+**三層檢查加權**：L1 結構(25%) + L2 內容(25%) + L3 代碼品質(50%)
 
 ### 3.3 Phase 3：代碼實現流程圖
 
 ```mermaid
 graph TD
-    A[Phase 3 開始] --> B[Document Existence Check<br/>doc_checker.py]
-    B --> C{通過?}
-    C -->|否| E[❌ BLOCK - 停止]
-    C -->|是| F[Phase 2 產物確認]
+    A[Phase 3 開始] --> B[PhaseEnforcer.enforce_phase(3)]
+    
+    B --> C[L1: 結構檢查<br/>FolderStructureChecker]
+    C --> C1{目錄/檔案存在?}
+    C1 -->|否| C2[❌ BLOCK - 停止]
+    C1 -->|是| D[L2: 內容檢查<br/>章節關鍵字對照]
+    
+    D --> D1{章節完整?}
+    D1 -->|否| D2[修正內容結構]
+    D1 -->|是| E[L3: 代碼品質檢查<br/>Agent Quality Guard]
+    
+    E --> E1{Gate Score ≥ 80%?}
+    E1 -->|否| E2[❌ BLOCK - 停止]
+    E1 -->|是| F[Phase 2 產物確認]
+    
     F --> G{架構檔案存在?}
-    G -->|否| E
+    G -->|否| E2
     G -->|是| H[Logic Correctness<br/>spec_logic_checker.py]
+    
     H --> I{代碼邏輯正確?}
     I -->|否| J[修正代碼邏輯]
     I -->|是| K[Module Tracking<br/>module_tracking_checker.py]
+    
     K --> L{所有模組追蹤?}
     L -->|否| J
     L -->|是| M[Compliance Matrix<br/>compliance_matrix_checker.py]
+    
     M --> N{合規矩陣完整?}
     N -->|否| J
     N -->|是| O[Negative Test<br/>negative_test_checker.py]
+    
     O --> P{負面測試覆蓋?}
     P -->|否| J
-    P -->|是| Q[✅ Quality Gate Pass]
-    Q --> R[Phase 3 完成]
+    P -->|是| Q[✅ PhaseEnforcer Pass]
+    Q --> R[✅ Quality Gate Pass]
+    R --> S[Phase 3 完成]
     
-    style E fill:#ff6b6b,color:#fff
-    style Q fill:#51cf66,color:#fff
+    style C2 fill:#ff6b6b,color:#fff
+    style E2 fill:#ff6b6b,color:#fff
+    style R fill:#51cf66,color:#fff
     style J fill:#ffd43b,color:#000
+    style Q fill:#51cf66,color:#fff
 ```
+
+**三層檢查加權**：L1 結構(25%) + L2 內容(25%) + L3 代碼品質(50%)
 
 ### 3.4 Phase 4：測試流程圖
 
 ```mermaid
 graph TD
-    A[Phase 4 開始] --> B[Document Existence Check<br/>doc_checker.py]
-    B --> C{通過?}
-    C -->|否| E[❌ BLOCK - 停止]
-    C -->|是| F[Phase 3 產物確認]
+    A[Phase 4 開始] --> B[PhaseEnforcer.enforce_phase(4)]
+    
+    B --> C[L1: 結構檢查<br/>FolderStructureChecker]
+    C --> C1{目錄/檔案存在?}
+    C1 -->|否| C2[❌ BLOCK - 停止]
+    C1 -->|是| D[L2: 內容檢查<br/>章節關鍵字對照]
+    
+    D --> D1{章節完整?}
+    D1 -->|否| D2[修正內容結構]
+    D1 -->|是| E[L3: 代碼品質檢查<br/>Agent Quality Guard]
+    
+    E --> E1{Gate Score ≥ 80%?}
+    E1 -->|否| E2[❌ BLOCK - 停止]
+    E1 -->|是| F[Phase 3 產物確認]
+    
     F --> G{代碼存在?}
-    G -->|否| E
+    G -->|否| E2
     G -->|是| H[TC Trace Check<br/>tc_trace_checker.py]
+    
     H --> I{FR-TC 覆蓋率=100%?}
     I -->|否| J[補充缺失的 TC]
     I -->|是| K[TC Derivation Check<br/>tc_derivation_checker.py]
+    
     K --> L{TC 推導完整?}
     L -->|否| J
     L -->|是| M[Pytest Result Check<br/>pytest_result_checker.py]
+    
     M --> N{Pytest 100% Pass?}
     N -->|否| J
     N -->|是| O[Root Cause Analysis<br/>root_cause_checker.py]
+    
     O --> P{根本原因分析完整?}
     P -->|否| J
-    P -->|是| Q[✅ Quality Gate Pass]
-    Q --> R[Phase 4 完成]
+    P -->|是| Q[✅ PhaseEnforcer Pass]
+    Q --> R[✅ Quality Gate Pass]
+    R --> S[Phase 4 完成]
     
-    style E fill:#ff6b6b,color:#fff
-    style Q fill:#51cf66,color:#fff
+    style C2 fill:#ff6b6b,color:#fff
+    style E2 fill:#ff6b6b,color:#fff
+    style R fill:#51cf66,color:#fff
     style J fill:#ffd43b,color:#000
+    style Q fill:#51cf66,color:#fff
 ```
+
+**三層檢查加權**：L1 結構(25%) + L2 內容(25%) + L3 代碼品質(50%)
 
 ### 3.5 Phase 5-8 統一流程圖
 
 ```mermaid
 graph TD
-    A[Phase N 開始] --> B[Document Existence Check<br/>doc_checker.py]
-    B --> C{通過?}
-    C -->|否| E[❌ BLOCK - 停止]
-    C -->|是| F[Phase (N-1) 產物確認]
+    A[Phase N 開始] --> B[PhaseEnforcer.enforce_phase(N)]
+    
+    B --> C[L1: 結構檢查<br/>FolderStructureChecker]
+    C --> C1{目錄/檔案存在?}
+    C1 -->|否| C2[❌ BLOCK - 停止]
+    C1 -->|是| D[L2: 內容檢查<br/>章節關鍵字對照]
+    
+    D --> D1{章節完整?}
+    D1 -->|否| D2[修正內容結構]
+    D1 -->|是| E[L3: 代碼品質檢查<br/>Agent Quality Guard]
+    
+    E --> E1{Gate Score ≥ 80%?}
+    E1 -->|否| E2[❌ BLOCK - 停止]
+    E1 -->|是| F[Phase (N-1) 產物確認]
+    
     F --> G{前期產物存在?}
-    G -->|否| E
+    G -->|否| E2
     G -->|是| H[Constitution Check - Phase N<br/>phase_N_constitution_checker.py]
+    
     H --> I{Constitution 分數≥門檻?}
     I -->|否| J[修正 Constitution 內容]
     I -->|是| K[Artifact 完整性檢查]
+    
     K --> L{產物完整?}
     L -->|否| J
     L -->|是| M[Pass 條件驗證]
+    
     M --> N{所有 Pass 條件滿足?}
     N -->|否| J
-    N -->|是| Q[✅ Quality Gate Pass]
-    Q --> R[Phase N 完成]
+    N -->|是| O[✅ PhaseEnforcer Pass]
+    O --> P[✅ Quality Gate Pass]
+    P --> Q[Phase N 完成]
     
-    style E fill:#ff6b6b,color:#fff
-    style Q fill:#51cf66,color:#fff
+    style C2 fill:#ff6b6b,color:#fff
+    style E2 fill:#ff6b6b,color:#fff
+    style P fill:#51cf66,color:#fff
     style J fill:#ffd43b,color:#000
+    style O fill:#51cf66,color:#fff
 ```
+
+**三層檢查加權**：L1 結構(25%) + L2 內容(25%) + L3 代碼品質(50%)
 
 ---
 
@@ -379,7 +613,35 @@ graph LR
 | Logic Correctness | 代碼邏輯正確性驗證 | `spec_logic_checker.py` |
 | 所有 Pass 條件檢查 | 確認 Phase 交付條件 | 各專門檢查器 |
 
-### 5.3 任意時刻觸發
+### 5.3 PhaseEnforcer 觸發（每個 Phase）
+
+| 檢查 | 目的 | 工具 | 權重 |
+|------|------|------|------|
+| L1: 結構檢查 | 確認目錄/檔案存在 | `folder_structure_checker.py` | 25% |
+| L2: 內容檢查 | 章節關鍵字對照 | `folder_structure_checker.py` | 25% |
+| L3: 代碼品質檢查 | Agent Quality Guard | `agent-quality-guard/` | 50% |
+
+### 5.4 Git Hook 觸發
+
+| Hook | 觸發時機 | 檢查 | 工具 |
+|------|---------|------|------|
+| `prepare-commit-msg` | Commit 前 | PhaseEnforcer 三層檢查 | `setup-git-hooks.sh` |
+| `post-merge` | 合併完成後 | Phase 狀態確認 | `setup-git-hooks.sh` |
+| `pre-push` | Push 前 | Quality Gate 通過確認 | `setup-git-hooks.sh` |
+
+**Git Hook 設定方式**：
+```bash
+# 設定當前 Phase
+git config quality.phase 1
+
+# 啟用/停用 Block
+git config quality.block_on_failure true
+
+# 手動執行
+python -m quality_gate.cli quality check-phase 1 --block
+```
+
+### 5.5 任意時刻觸發
 
 | 檢查 | 觸發方式 | 工具 |
 |------|---------|------|
@@ -735,12 +997,16 @@ for check in result.checks:
 |------|------|---------|
 | v1.0 | 2026-03-28 | 初始版本，13 個檢查 |
 | v2.0 | 2026-03-29 | 擴展至 23 個檢查，Phase 5-8 支援 |
+| v3.0 | 2026-03-29 | PhaseEnforcer 三層檢查系統（L1/L2/L3）+ Git Hooks 整合 |
 
 ---
 
 ## 12. 相關文件
 
 - [UnifiedGate 源碼](../quality_gate/unified_gate.py)
+- [PhaseEnforcer 源碼](../quality_gate/phase_enforcer.py)
+- [FolderStructureChecker 源碼](../quality_gate/folder_structure_checker.py)
+- [Git Hooks 設定](../scripts/setup-git-hooks.sh)
 - [Pass Conditions 總表](./PASS_CONDITIONS.md)
 - [Constitution 框架](./constitution/README.md)
 - [Phase Artifact 定義](./phase_artifact_enforcer.py)
