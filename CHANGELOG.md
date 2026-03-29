@@ -9,6 +9,155 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [v5.95] - 2026-03-29
+
+### 🚀 Added
+- **Core Test Suite**: 4 new test files for quality gate components
+  - `test_spec_logic_checker.py` - spec_logic_checker tests
+  - `test_unified_gate.py` - unified_gate tests
+  - `test_phase_enforcer.py` - phase_enforcer tests
+  - `test_constitution_runner.py` - constitution_runner tests
+
+### 🧪 Testing
+- Each test file includes: basic functionality, error handling, 3+ test cases
+
+### 🎯 Smoke Test
+- Ralph Mode smoke test integration in `ralph_mode/smoke_test.py`
+  - Basic health check
+  - Quick 5W1H structure validation
+
+---
+
+## [v5.94] - 2026-03-29
+
+### 5W1H 整合優化
+- Phase 1 新增獨立 5W1H 章節
+- Phase 1 退出條件補齊 SPEC_TRACKING 完整性檢查
+- Phase 4 補充 WHEN/WHERE/WHY/HOW 維度
+- Phase 3 加入 phase_artifact_enforcer.py
+- Phase 6-7 加入 session_id 記錄要求
+- Phase 7 加入邏輯正確性閾值（≥ 90）
+- Phase 8 統一監控時段（Phase 5 至今）
+
+### 工具整合
+- Phase 4 WHERE 加入 spec_logic_checker.py
+- 代碼覆蓋率閾值明確化（Phase 3 ≥ 70%, Phase 4 ≥ 80%）
+- 測試通過率閾值明確化（Phase 6-7 = 100%）
+- SUP.8 配置管理說明
+
+---
+
+## [v5.93] - 2026-03-28
+
+### 🚀 Added
+- Phase 5-8 5W1H 完整整合審計修正
+- BASELINE.md 完整規格（7 章節）
+- MONITORING_PLAN.md A/B 監控閾值定義
+- RISK_REGISTER.md 完整版（含 Decision Gate）
+- CONFIG_RECORDS.md 完整版（8 章節）
+- Phase 7 四層緩解措施（Prevent/Detect/Respond/Escalate）
+- Phase 8 發布清單（七個區塊逐項確認）
+- Phase 8 方法論閉環確認
+
+### 🔧 Changed
+- Phase 5 邏輯正確性複查（spec_logic_checker.py ≥ 90 分）
+- Phase 5 進入條件加入邏輯正確性門檻
+- Phase 6 Constitution 門檻 ≥ 80%
+- Phase 7 前置條件加入驗證測試通過率 = 100%
+- Phase 8 新增 SUP.8 配置管理說明
+
+---
+
+## [v5.92] - 2026-03-28
+
+### 🚀 Added
+- Phase5+7+8_Plan_5W1H_AB.md 整合精華
+- Phase 5 兩次 A/B 審查流程（基線審查 + 驗收報告審查）
+- Phase 7 五維度風險識別
+- Phase 7 Decision Gate 確認流程
+- Phase 7 風險演練要求
+- Phase 8 完整發布清單（七個區塊）
+- Phase 8 回滾 SOP
+- Phase 8 A/B 監控最終報告格式
+
+---
+
+## [v5.91] - 2026-03-27
+
+### 🚀 Added
+- Phase6_Plan_5W1H_AB.md 整合精華
+- Phase 1-8 5W1H 整合審計修正（P0-P3）
+- Constitution 憲章系統 Phase 6-8 全面檢查
+- 代碼覆蓋率閾值明確化
+
+---
+
+## [v5.90] - 2026-03-26
+
+### 🚀 Added
+- Phase3_Plan_5W1H_AB.md 整合精華
+- Phase4_Plan_5W1H_AB.md 整合精華
+- 代碼規範、單元測試三類、集成測試模板
+- TEST_PLAN/TEST_RESULTS 完整規格
+- 同行邏輯審查對話模板
+
+---
+
+## [v5.89] - 2026-03-26
+
+### 🚀 Added
+- Phase3 代碼實現 A/B 協作流程完整定義
+- 單元測試三類要求（正向/邊界/負面）
+- 集成測試模板
+- 同行邏輯審查對話模板
+
+---
+
+## [v5.88] - 2026-03-26
+
+### 🚀 Added
+- Phase2_Plan_5W1H_AB.md 整合精華
+- SAD.md 最低要求、A/B 架構審查清單
+- Conflict Log 格式
+- Phase 2 A/B 架構審查紀錄模板
+
+---
+
+## [v5.87] - 2026-03-26
+
+### 🚀 Added
+- Phase1_Plan_5W1H_AB.md 整合精華
+- DEVELOPMENT_LOG 格式、A/B 審查模板
+- Constitution 憲章系統 Phase 1-4 整合
+
+---
+
+## [v5.86] - 2026-03-25
+
+### 🚀 Added
+- PhaseEnforcer L3 整合 Agent Quality Guard
+- 三層檢查系統（結構 25% + 內容 25% + 代碼 50%）
+- Phase 5-8 Constitution Checkers 新增
+
+---
+
+## [v5.85] - 2026-03-25
+
+### 🚀 Added
+- Ralph Mode 預設啟動
+- Agent 建立新專案時自動啟動 Ralph Mode 監控
+- CLI cmd_init 自動觸發 RalphScheduler
+
+---
+
+## [v5.82] - 2026-03-24
+
+### 🚀 Added
+- Ralph Mode 任務長時監控模組（v5.59）
+- PhaseStateMachine 6 階段狀態機
+- TaskPersistence 狀態持久化
+- RalphScheduler 定時輪詢
+
 ## [v5.35.0] - 2026-03-23
 
 ### 🚀 Added

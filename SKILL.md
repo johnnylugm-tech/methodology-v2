@@ -1,6 +1,6 @@
 # methodology-v2
 
-> Multi-Agent Collaboration Development Methodology v5.94
+> Multi-Agent Collaboration Development Methodology v5.95
 
 ---
 
@@ -26,6 +26,7 @@
 | **v5.90** | **2026-03-29** | **整合 Phase4_Plan_5W1H_AB.md 精華：TEST_PLAN/TEST_RESULTS 完整規格、兩次 A/B 審查流程、Tester≠Developer 角色分離原則、失敗案例根本原因分析** |
 | **v5.93** | **2026-03-29** | **Phase1-8 5W1H 整合審計修正（P0-P3）：Phase 1 新增獨立 5W1H 章節、Phase 1 退出條件補齊 SPEC_TRACKING 完整性檢查、Phase 4 補充 WHEN/WHERE/WHY/HOW、Phase 3 加入 phase_artifact_enforcer.py、Phase 6-7 加入 session_id 記錄要求、Phase 7 加入邏輯正確性閾值、Phase 8 統一監控時段定義** |
 | **v5.94** | **2026-03-29** | **Phase 1-8 5W1H 審計修正（P1-P2）：Phase 4 WHERE 加入 spec_logic_checker.py、Phase 4 退出條件代碼覆蓋率明確為單元測試、Phase 3 退出條件加入代碼覆蓋率 ≥ 70%、Phase 6 進入條件加入測試通過率 = 100%、Phase 7 前置條件加入驗證測試通過率 = 100%、Phase 8 新增 SUP.8 配置管理說明** |
+| **v5.95** | **2026-03-29** | **Core Test Suite: 4 個測試檔案（spec_logic_checker, unified_gate, phase_enforcer, constitution_runner）、Ralph Mode smoke test、CHANGELOG v5.82-v5.95 更新** |
 | **v5.92** | **2026-03-29** | **整合 Phase5+7+8_Plan_5W1H_AB.md 精華：Phase 5 兩次 A/B 審查 + BASELINE 完整規格 + MONITORING_PLAN；Phase 7 五維度風險識別 + Decision Gate + 四層緩解措施；Phase 8 CONFIG_RECORDS 8 章節 + 七區塊發布清單 + 方法論閉環確認** |
 
 ---
