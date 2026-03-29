@@ -24,6 +24,7 @@
 | **v5.88** | **2026-03-29** | **整合 Phase2_Plan_5W1H_AB.md 精華：SAD.md 最低要求、A/B 架構審查清單、Conflict Log 格式** |
 | **v5.89** | **2026-03-29** | **整合 Phase3_Plan_5W1H_AB.md 精華：代碼規範、單元測試三類、集成測試模板、同行邏輯審查對話、合規矩陣** |
 | **v5.90** | **2026-03-29** | **整合 Phase4_Plan_5W1H_AB.md 精華：TEST_PLAN/TEST_RESULTS 完整規格、兩次 A/B 審查流程、Tester≠Developer 角色分離原則、失敗案例根本原因分析** |
+| **v5.93** | **2026-03-29** | **Phase1-8 5W1H 整合審計修正（P0-P3）：Phase 1 新增獨立 5W1H 章節、Phase 1 退出條件補齊 SPEC_TRACKING 完整性檢查、Phase 4 補充 WHEN/WHERE/WHY/HOW、Phase 3 加入 phase_artifact_enforcer.py、Phase 6-7 加入 session_id 記錄要求、Phase 7 加入邏輯正確性閾值、Phase 8 統一監控時段定義** |
 | **v5.92** | **2026-03-29** | **整合 Phase5+7+8_Plan_5W1H_AB.md 精華：Phase 5 兩次 A/B 審查 + BASELINE 完整規格 + MONITORING_PLAN；Phase 7 五維度風險識別 + Decision Gate + 四層緩解措施；Phase 8 CONFIG_RECORDS 8 章節 + 七區塊發布清單 + 方法論閉環確認** |
 
 ---
@@ -1329,6 +1330,70 @@ class TTSEngine:
 
 ---
 
+### Phase 4 WHEN — 何時執行？
+
+Phase 3 完成後
+
+**進入條件**：Phase 3 sign-off + 代碼 APPROVE
+
+**退出條件**：
+
+| 條件 | 門檻 | 檢查方 |
+|------|------|--------|
+| TEST_PLAN A/B 審查通過（計劃前）| APPROVE | AgentEvaluator |
+| Constitution test_plan 正確性 | = 100% | `constitution/runner.py --type test_plan` |
+| pytest 全部測試通過 | = 100% | pytest 實際輸出 |
+| 代碼覆蓋率 | ≥ 80% | pytest-cov 實際輸出 |
+| SRS FR 覆蓋率 | = 100% | Agent B 確認 |
+| TEST_RESULTS A/B 審查通過（結果後）| APPROVE | AgentEvaluator |
+
+### Phase 4 WHERE — 在哪裡執行？
+
+| 項目 | 內容 |
+|------|------|
+| 目錄 | `04-testing/`, `tests/` |
+| 工具 | `pytest` |
+| 工具 | `pytest-cov` |
+| 工具 | `quality_gate/constitution/runner.py --type test_plan` |
+
+### Phase 4 WHY — 為什麼這樣做？
+
+> Phase 3 的測試是「開發者自測」，Phase 4 是「獨立驗證」——視角不同，發現不同缺陷。
+
+| 測試類型 | 視角 | 發現的問題 |
+|----------|------|------------|
+| Phase 3（自測）| Developer 視角 | 確認偏誤：認為代碼正確 |
+| Phase 4（獨立）| 外部視角 | 發現開發者忽略的邊界條件 |
+
+### Phase 4 HOW — 如何執行？
+
+1. **Agent A（Tester）從 SRS 推導 TC**（不看代碼）
+   - 每條 FR 對應至少 1 個 TC
+   - P0 需求必須有正向 + 邊界 + 負面三類測試
+
+2. **第一次 A/B 審查（TEST_PLAN）**
+   - Agent B 審查計畫完整性
+   - 確認從 SRS 而非代碼推導
+
+3. **執行測試**
+   - pytest 實際執行
+   - pytest-cov 產生覆蓋率報告
+
+4. **第二次 A/B 審查（TEST_RESULTS）**
+   - Agent B 審查結果真實性
+   - 失敗案例根本原因分析到代碼行
+
+### Phase 4 進入 Phase 5 前置條件（全部 ✅）
+
+| 條件 | 門檻 | 檢查方 |
+|------|------|--------|
+| 測試通過率 | = 100% | pytest 實際輸出 |
+| 代碼覆蓋率 | ≥ 80% | pytest-cov 實際輸出 |
+| SRS FR 覆蓋率 | = 100% | Agent B 確認 |
+| TEST_RESULTS A/B 審查通過 | APPROVE | AgentEvaluator |
+
+---
+
 ## Phase 5 詳細說明（v5.92 新增）
 
 > 基於 Phase5_Plan_5W1H_AB.md，詳細定義 Phase 5 驗證與交付的 A/B 協作流程。
@@ -1539,6 +1604,24 @@ Phase 6 期間持續監控，記錄到 MONITORING_PLAN.md：
 - 錯誤率：< 1%
 - 熔斷器觸發：0 次
 
+### Phase 6 記錄確認
+
+| 項目 | 說明 |
+|------|------|
+| 雙方 session_id 記錄 | 每個 Phase 結束時，Agent A + Agent B 的 session_id 都必須記錄到 DEVELOPMENT_LOG.md |
+| 用途 | 可追溯、誰審查、誰負責 |
+
+### Phase 6 A/B 審查清單（Agent B 逐項確認）
+
+- [ ] Constitution 總分 ≥ 80%
+- [ ] ASPICE 合規率 > 80%
+- [ ] 邏輯正確性分數 ≥ 90 分
+- [ ] QUALITY_REPORT.md 七個章節完整
+- [ ] 品質問題根源分析到位
+- [ ] 改進建議 P0 有目標指標
+- [ ] 雙方 session_id 已記錄（可追溯）
+- [ ] Agent B APPROVE
+
 ### Phase 6 QUALITY_REPORT.md 完整版（7 章節）
 
 ```markdown
@@ -1713,10 +1796,30 @@ python3 scripts/circuit_breaker_check.py   # 0 次觸發
 | 五維度風險識別完整 | 每個維度至少 1 個風險 | Agent B 確認 |
 | HIGH 風險數量 | ≥ 1 個 | Agent B 主觀判斷 |
 | HIGH/MEDIUM 風險緩解措施 | 四層 + Plan B + RTO | Agent B 確認 |
+| 邏輯正確性分數 | ≥ 90 分 | spec_logic_checker.py |
 | Decision Gate | 所有決策已確認 | `check_decisions.py` 0 個未確認 |
 | 至少 1 個 HIGH 風險演練 | 演練通過 | 演練記錄 |
+| 雙方 session_id 已記錄 | 可追溯 | DEVELOPMENT_LOG.md |
 | Agent B APPROVE | AgentEvaluator 輸出 | AgentEvaluator |
 | Constitution 總分 | ≥ 80% | Constitution Runner |
+
+### Phase 7 記錄確認
+
+| 項目 | 說明 |
+|------|------|
+| 雙方 session_id 記錄 | 每個 Phase 結束時，Agent A + Agent B 的 session_id 都必須記錄到 DEVELOPMENT_LOG.md |
+| 用途 | 可追溯、誰審查、誰負責 |
+
+### Phase 7 A/B 審查清單（Agent B 逐項確認）
+
+- [ ] 五維度風險識別完整（每個維度至少 1 個風險）
+- [ ] HIGH 風險數量 ≥ 1 個
+- [ ] HIGH/MEDIUM 風險緩解措施：四層 + Plan B + RTO
+- [ ] 邏輯正確性分數 ≥ 90 分
+- [ ] Decision Gate：所有決策已確認（`check_decisions.py` 0 個未確認）
+- [ ] 至少 1 個 HIGH 風險演練通過
+- [ ] 雙方 session_id 已記錄（可追溯）
+- [ ] Agent B APPROVE
 
 ### Phase 7 在整體架構的位置
 
@@ -1824,7 +1927,7 @@ Agent A 執行，Agent B 見證。**任何 ❌ 阻止封版**：
 - [ ] Constitution 總分 ≥ 80%（`constitution/runner.py` 輸出）
 - [ ] 邏輯正確性 ≥ 90 分（`spec_logic_checker.py` 輸出）
 
-## 四、A/B 監控最終狀態（最近 7 天）
+## 四、A/B 監控最終狀態（Phase 5 至今）
 - [ ] 邏輯分數平均 ≥ 90 分
 - [ ] 回應時間偏差 < 10%
 - [ ] 熔斷器觸發（Phase 5 至今）= 0 次
@@ -1849,11 +1952,11 @@ Agent A：______（session_id：______）日期：______
 Agent B：______（session_id：______）日期：______
 ```
 
-### Phase 8 封版前置條件（7 天監控健康）
+### Phase 8 封版前置條件（Phase 5 至 Phase 8 全程監控健康）
 
 | 條件 | 門檻 | 檢查方 |
 |------|------|--------|
-| A/B 監控最近 7 天邏輯分數 | 平均 ≥ 90 分 | MONITORING_PLAN.md |
+| A/B 監控（Phase 5 至 Phase 8 全程）邏輯分數 | 平均 ≥ 90 分 | MONITORING_PLAN.md |
 | A/B 監控熔斷器（Phase 5 至今）| = 0 次 | MONITORING_PLAN.md |
 | 發布清單七個區塊 | 全部 ✅ | 雙方逐項確認 |
 | CONFIG_RECORDS.md 完整 | 八章節完整 | Agent B 審查 |
@@ -1932,6 +2035,119 @@ Phase 8 配置    → CONFIG_RECORDS + 封版（治理）
 ✅ Quality Gate（ASPICE + Constitution）
 ✅ DEVELOPMENT_LOG 實際輸出記錄
 ✅ 雙方 session_id 可追溯
+```
+
+---
+
+## Phase 1 詳細說明（v5.93 新增）
+
+> 基於 Phase1_Plan_5W1H_AB.md，詳細定義 Phase 1 需求規格的 A/B 協作流程。
+
+### Phase 1 WHO — A/B 角色分工
+
+| 角色 | Persona | 職責 | 禁止事項 |
+|------|---------|------|----------|
+| Agent A（Architect）| `architect` | 撰寫 SRS.md、建立 SPEC_TRACKING.md、更新 TRACEABILITY_MATRIX.md | 省略任何 FR 的邏輯驗證方法、跳過 Constitution 檢查 |
+| Agent B（Reviewer）| `reviewer` | 審查 FR 完整性、A/B 評估、給出 APPROVE/REJECT | 自寫自審、跳過 AgentEvaluator |
+
+### Phase 1 WHAT — 交付物
+
+| 交付物 | 格式 | 位置 |
+|--------|------|------|
+| SRS.md（功能需求）| Markdown，FR-01~FR-XX | `01-requirements/` |
+| SPEC_TRACKING.md（規格追蹤）| Markdown，追蹤外部規格 → 內部實作 | `01-requirements/` |
+| TRACEABILITY_MATRIX.md（初始化）| Markdown，四欄（FR→設計→代碼→測試）| `01-requirements/` |
+
+### Phase 1 WHEN — 時序門檻
+
+**進入條件**：專案啟動
+
+**退出條件**（全部必須為 ✅）：
+
+| 條件 | 門檻 | 檢查方 |
+|------|------|--------|
+| ASPICE 文檔合規率 | > 80% | `quality_gate/doc_checker.py` |
+| Constitution SRS 正確性 | = 100% | `constitution/runner.py --type srs` |
+| SPEC_TRACKING.md 存在 | 必須存在 | Framework Enforcement（BLOCK）|
+| SPEC_TRACKING.md 完整性檢查 | 通過 | `python3 cli.py spec-track check` |
+| 規格完整性 | ≥ 90% | Agent B 確認 |
+| 每條 FR 有邏輯驗證方法 | 100% | Agent B 逐條確認 |
+| Agent B APPROVE | AgentEvaluator | AgentEvaluator |
+
+### Phase 1 WHERE — 路徑工具
+
+| 項目 | 內容 |
+|------|------|
+| 目錄 | `01-requirements/` |
+| 工具 | `quality_gate/doc_checker.py` |
+| 工具 | `constitution/runner.py --type srs` |
+| 工具 | `python3 cli.py spec-track init` |
+| 工具 | `python3 cli.py spec-track check` |
+
+### Phase 1 WHY — 設計理由
+
+> 建立需求基線，防止規格漂移。
+
+**核心原則**：Phase 1 缺陷到 Phase 3 才發現，修復成本 ×10。
+
+| 問題階段 | 修復成本 | 說明 |
+|----------|----------|------|
+| Phase 1 發現 | ×1 | 規格階段修復 |
+| Phase 2 發現 | ×3 | 設計階段變更 |
+| Phase 3 發現 | ×10 | 實作後重構 |
+| Phase 4+ 發現 | ×100+ | 測試/部署後變更 |
+
+### Phase 1 HOW — SOP + A/B 審查清單
+
+**SOP（標準作業流程）**：
+1. Agent A 撰寫 SRS.md（FR-01~FR-XX）
+2. Agent A 初始化 SPEC_TRACKING.md
+3. Agent A 初始化 TRACEABILITY_MATRIX.md（四欄空表）
+4. Agent A 自檢：每條 FR 都有邏輯驗證方法
+5. Agent B A/B 審查（7 項清單）
+6. 執行 Quality Gate（ASPICE + Constitution）
+7. Agent B 給出 APPROVE/REJECT
+
+**A/B 審查清單（7 項）**：
+
+| # | 檢查項 | 說明 |
+|----|--------|------|
+| 1 | SRS.md 完整性 | 所有 SRS FR 都有對應章節 |
+| 2 | FR 邏輯驗證方法 | 每條 FR 都有量化驗證方法（非「待確認」）|
+| 3 | NFR 可測試性 | 非功能需求可量化驗證 |
+| 4 | SPEC_TRACKING 對應 | 外部規格 → 內部 FR 映射完整 |
+| 5 | Constitution 合規 | 正確性 = 100%、安全性 = 100% |
+| 6 | Traceability 可追蹤 | FR → 實作可追蹤 |
+| 7 | AgentEvaluator 分數 | ≥ 80 分 |
+
+### Phase 1 DEVELOPMENT_LOG 格式
+
+```markdown
+## Phase 1 Quality Gate 結果（YYYY-MM-DD HH:MM）
+
+### 前置確認
+執行命令：python3 quality_gate/doc_checker.py
+結果：Compliance Rate XX% ✅/❌
+
+執行命令：python3 quality_gate/constitution/runner.py --type srs
+結果：正確性 XX%（目標 100%）✅/❌
+
+執行命令：python3 cli.py spec-track check
+結果：完整性檢查 ✅/❌
+
+### FR 邏輯驗證方法確認
+- [ ] FR-01：______
+- [ ] FR-02：______
+（每條 FR 逐一確認）
+
+### A/B 審查結果
+- Agent A（Architect）：session_id ______
+- Agent B（Reviewer）：session_id ______
+- 審查結論：APPROVE ✅ / REJECT ❌
+
+### Phase 1 結論
+- [ ] ✅ 通過，進入 Phase 2
+- [ ] ❌ 未通過（原因：______）
 ```
 
 ---
@@ -2277,6 +2493,8 @@ Agent B 簽名：______  Session ID：______
 
 | 條件 | 門檻 | 檢查方 |
 |------|------|--------|
+| Phase 2 已完成 | phase_artifact_enforcer 通過 | Framework Enforcement |
+| `python3 quality_gate/phase_artifact_enforcer.py` 通過 | Phase 2 完成確認 | 工具驗證 |
 | ASPICE 文檔合規率 | > 80% | quality_gate/doc_checker.py |
 | Constitution 代碼分數 | 正確性 = 100%、覆蓋率 > 80% | constitution runner（不加 --type）|
 | 單元測試全部通過 | 通過率 100% | pytest |
