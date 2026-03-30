@@ -39,6 +39,13 @@ try:
 except ImportError:
     AB_ENFORCER_AVAILABLE = False
 
+# 匯入 Integrity Tracker（2026-03-31 新增 P1 誠信追蹤）
+try:
+    from .integrity_tracker import IntegrityTracker
+    INTEGRITY_TRACKER_AVAILABLE = True
+except ImportError:
+    INTEGRITY_TRACKER_AVAILABLE = False
+
 # 匯入 folder_structure_checker
 try:
     from .folder_structure_checker import FolderStructureChecker, FolderCheckResult
@@ -331,6 +338,28 @@ class PhaseEnforcer:
             except Exception as e:
                 # 如果 A/B Enforcer 出錯，記錄但不阻止流程
                 blocker_issues.append(f"A/B enforcement error: {str(e)}")
+        
+        # ===== 2026-03-31 新增：Integrity Tracker Hook =====
+        # 這是 P1 誠信追蹤的核心：記錄並檢查誠信分數
+        if INTEGRITY_TRACKER_AVAILABLE:
+            try:
+                tracker = IntegrityTracker(str(self.project_root))
+                
+                # 檢查是否可以進入下一個 Phase
+                can_proceed_check = tracker.can_proceed_to_next_phase()
+                if not can_proceed_check["allowed"]:
+                    blocker_issues.append(
+                        f"INTEGRITY BLOCK: {can_proceed_check['reason']}"
+                    )
+                
+                # 如果有新的違規，記錄並警告
+                if can_proceed_check["restrictions"]:
+                    for restriction in can_proceed_check["restrictions"]:
+                        blocker_issues.append(f"INTEGRITY WARNING: {restriction}")
+                        
+            except Exception as e:
+                # 如果 Integrity Tracker 出錯，記錄但不阻止流程
+                blocker_issues.append(f"Integrity tracker error: {str(e)}")
         
         # 產生結果
         result = PhaseEnforcementResult(
