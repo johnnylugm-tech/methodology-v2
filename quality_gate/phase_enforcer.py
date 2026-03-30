@@ -25,6 +25,20 @@ from dataclasses import dataclass, asdict
 from pathlib import Path
 from typing import List, Dict, Optional, Tuple
 
+# 匯入 Claims Verifier（2026-03-31 新增 P0 反作弊模組）
+try:
+    from .claims_verifier import ClaimsVerifier
+    CLAIMS_VERIFIER_AVAILABLE = True
+except ImportError:
+    CLAIMS_VERIFIER_AVAILABLE = False
+
+# 匯入 A/B Enforcer（2026-03-31 新增 P0 反作弊模組）
+try:
+    from .ab_enforcer import ABEnforcer
+    AB_ENFORCER_AVAILABLE = True
+except ImportError:
+    AB_ENFORCER_AVAILABLE = False
+
 # 匯入 folder_structure_checker
 try:
     from .folder_structure_checker import FolderStructureChecker, FolderCheckResult
@@ -244,13 +258,79 @@ class PhaseEnforcer:
         # 判斷是否可以進入下一個 Phase
         can_proceed = passed and len(structure_result.missing) == 0
         
-        # 收集 blocker_issues
+        # 收集 blocker_issues（原有三層檢查）
         blocker_issues = self._collect_blocker_issues(
             structure_result, 
             content_result,
             code_quality_result,
             gate_score
         )
+        
+        # ===== 2026-03-31 新增：Claims Verification Hook =====
+        # 這是 P0 反作弊模組的核心：驗證聲稱 vs 實際
+        if CLAIMS_VERIFIER_AVAILABLE:
+            try:
+                claims_verifier = ClaimsVerifier(str(self.project_root))
+                
+                # 1. 檢查代碼行數 claim vs actual
+                code_check = claims_verifier.verify_code_lines()
+                if code_check["claimed"] > 0:
+                    if not code_check["match"] and code_check["diff_percent"] > 5:
+                        blocker_issues.append(
+                            f"CODE LINES mismatch: claimed {code_check['claimed']}, "
+                            f"actual {code_check['actual']} ({code_check['diff_percent']:.1f}%)"
+                        )
+                
+                # 2. 檢查 Quality Gate 執行
+                qg_check = claims_verifier.verify_quality_gate_executed()
+                if not qg_check["executed"]:
+                    blocker_issues.append(
+                        f"QUALITY GATE not executed"
+                    )
+                
+                # 3. 檢查 STAGE_PASS 存在
+                stage_pass = claims_verifier.verify_stage_pass_exists(phase)
+                if not stage_pass["exists"]:
+                    blocker_issues.append(
+                        f"STAGE_PASS not found for Phase {phase}"
+                    )
+                    
+            except Exception as e:
+                # 如果 Claims Verifier 出錯，記錄但不阻止流程
+                blocker_issues.append(f"Claims verification error: {str(e)}")
+        
+        # ===== 2026-03-31 新增：A/B Enforcer Hook =====
+        # 這是 P0 反作弊模組的核心：驗證 A/B 協作
+        if AB_ENFORCER_AVAILABLE:
+            try:
+                ab_enforcer = ABEnforcer(str(self.project_path))
+                phase_str = f"phase_{phase}"
+                
+                # 3. 檢查 Developer ≠ Reviewer
+                separation = ab_enforcer.verify_developer_reviewer_separation(phase_str)
+                if not separation["separated"]:
+                    blocker_issues.append(
+                        f"A/B SEPARATION violation: Developer same as Reviewer"
+                    )
+                
+                # 4. 檢查 A/B 對話存在
+                dialogue = ab_enforcer.verify_ab_dialogue_exists(phase_str)
+                if not dialogue["has_dialogue"]:
+                    blocker_issues.append(
+                        f"A/B DIALOGUE missing: no real A/B conversation found"
+                    )
+                
+                # 5. Phase 4 特殊檢查：QA ≠ Developer
+                if phase == 4:
+                    qa_sep = ab_enforcer.verify_qa_not_developer()
+                    if not qa_sep["separated"]:
+                        blocker_issues.append(
+                            f"QA/DEVELOPER SEPARATION violation: Tester same as Developer"
+                        )
+                        
+            except Exception as e:
+                # 如果 A/B Enforcer 出錯，記錄但不阻止流程
+                blocker_issues.append(f"A/B enforcement error: {str(e)}")
         
         # 產生結果
         result = PhaseEnforcementResult(
