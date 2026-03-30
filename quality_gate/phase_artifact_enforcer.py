@@ -19,13 +19,16 @@ from pathlib import Path
 
 
 class Phase(Enum):
-    """專案階段"""
-    CONSTITUTION = "1-constitution"
-    SPECIFY = "2-specify"
-    PLAN = "3-plan"
-    IMPLEMENT = "4-implement"
-    VERIFY = "5-verify"
-    RELEASE = "6-release"
+    """專案階段（ASPICE 8 階段 + Constitution）"""
+    CONSTITUTION = "1-constitution"      # Constitution
+    SPECIFY = "2-specify"                # Phase 1: SRS
+    PLAN = "3-plan"                      # Phase 2: SAD
+    IMPLEMENT = "4-implement"            # Phase 3: Implementation
+    VERIFY = "5-verify"                  # Phase 4: Test Plan
+    SYSTEM_TEST = "6-system-test"        # Phase 5: Baseline
+    QUALITY = "7-quality"                # Phase 6: Quality Report
+    RISK = "8-risk"                      # Phase 7: Risk Assessment
+    CONFIG = "9-config"                  # Phase 8: Config Records
 
 
 @dataclass
@@ -55,36 +58,51 @@ class PhaseArtifactRegistry:
     記錄每個 Phase 的產物，並驗證下階段是否引用
     """
     
-    # Phase 產物對應表
+    # Phase 產物對應表（ASPICE 8 階段 + Constitution）
     PHASE_ARTIFACTS = {
         Phase.CONSTITUTION: {
             "required": ["CONSTITUTION.md", "constitution/"],
             "output_dir": "constitution",
         },
-        Phase.SPECIFY: {
-            "required": ["requirements.md", "SPEC.md", "02-specify/"],
-            "output_dir": "02-specify",
+        Phase.SPECIFY: {  # Phase 1
+            "required": ["SRS.md", "SPEC.md", "01-specify/"],
+            "output_dir": "01-specify",
             "depends_on": [Phase.CONSTITUTION],
         },
-        Phase.PLAN: {
-            "required": ["architecture.md", "roadmap.md", "03-plan/"],
-            "output_dir": "03-plan",
+        Phase.PLAN: {  # Phase 2
+            "required": ["SAD.md", "ARCHITECTURE.md", "02-plan/"],
+            "output_dir": "02-plan",
             "depends_on": [Phase.SPECIFY],
         },
-        Phase.IMPLEMENT: {
-            "required": ["src/", "04-implement/"],
-            "output_dir": "04-implement",
+        Phase.IMPLEMENT: {  # Phase 3
+            "required": ["src/", "03-implement/"],
+            "output_dir": "03-implement",
             "depends_on": [Phase.PLAN],
         },
-        Phase.VERIFY: {
-            "required": ["gates.md", "test-results.md", "05-verify/"],
-            "output_dir": "05-verify",
+        Phase.VERIFY: {  # Phase 4
+            "required": ["TEST_PLAN.md", "04-verify/"],
+            "output_dir": "04-verify",
             "depends_on": [Phase.IMPLEMENT],
         },
-        Phase.RELEASE: {
-            "required": ["CHANGELOG.md", "RELEASE_NOTES*.md"],
-            "output_dir": "06-release",
+        Phase.SYSTEM_TEST: {  # Phase 5
+            "required": ["TEST_RESULTS.md", "BASELINE.md", "05-system-test/"],
+            "output_dir": "05-system-test",
             "depends_on": [Phase.VERIFY],
+        },
+        Phase.QUALITY: {  # Phase 6
+            "required": ["QUALITY_REPORT.md", "06-quality/"],
+            "output_dir": "06-quality",
+            "depends_on": [Phase.SYSTEM_TEST],
+        },
+        Phase.RISK: {  # Phase 7
+            "required": ["RISK_ASSESSMENT.md", "RISK_REGISTER.md", "07-risk/"],
+            "output_dir": "07-risk",
+            "depends_on": [Phase.QUALITY],
+        },
+        Phase.CONFIG: {  # Phase 8
+            "required": ["CONFIG_RECORDS.md", "08-config/"],
+            "output_dir": "08-config",
+            "depends_on": [Phase.RISK],
         },
     }
     
