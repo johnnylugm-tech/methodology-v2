@@ -262,15 +262,16 @@ class FrameworkEnforcer:
         """
         docs_path = self.project_root / "docs"
         
+        # 確保與 Phase enum 同步（ASPICE 8 階段）
         required_by_phase = {
-            "Phase 1": ["SRS.md", "SPEC.md"],
-            "Phase 2": ["SAD.md", "ARCHITECTURE.md"],
-            "Phase 3": ["IMPLEMENTATION.md"],
-            "Phase 4": ["TEST_PLAN.md", "TEST_RESULTS.md"],
-            "Phase 5": ["BASELINE.md"],
-            "Phase 6": ["QUALITY_REPORT.md"],
-            "Phase 7": ["RISK_ASSESSMENT.md", "RISK_REGISTER.md"],
-            "Phase 8": ["CONFIG_RECORDS.md"],
+            "Phase 1 (SPECIFY)": ["SRS.md", "SPEC.md"],
+            "Phase 2 (PLAN)": ["SAD.md", "ARCHITECTURE.md"],
+            "Phase 3 (IMPLEMENT)": ["IMPLEMENTATION.md"],
+            "Phase 4 (VERIFY)": ["TEST_PLAN.md", "TEST_RESULTS.md"],
+            "Phase 5 (SYSTEM_TEST)": ["BASELINE.md"],
+            "Phase 6 (QUALITY)": ["QUALITY_REPORT.md"],
+            "Phase 7 (RISK)": ["RISK_ASSESSMENT.md", "RISK_REGISTER.md"],
+            "Phase 8 (CONFIG)": ["CONFIG_RECORDS.md"],
         }
         
         missing = []

@@ -75,7 +75,7 @@ from ralph_mode.state_machine import PhaseStateMachine
 class MethodologyCLI:
     """統一 CLI 入口"""
     
-    VERSION = "5.97.0"
+    VERSION = "5.98.0"
     
     def __init__(self):
         self.progress = ProgressDashboard()
