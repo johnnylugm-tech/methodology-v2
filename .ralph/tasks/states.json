@@ -1,0 +1,12 @@
+{
+  "test-001": {
+    "task_id": "test-001",
+    "status": "pending",
+    "current_phase": "init",
+    "progress": 0.0,
+    "last_check": "2026-03-29T17:08:42.931299",
+    "metadata": {},
+    "created_at": "2026-03-29T17:08:42.920961",
+    "updated_at": "2026-03-29T17:08:42.931293"
+  }
+}

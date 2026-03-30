@@ -51,7 +51,7 @@ from .dashboard_cost_trend import CostTrendAnalyzer, CostSnapshot, CostTrend, Co
 from .failover_manager import FailoverManager, CircuitBreaker, ModelEndpoint, FailoverEvent
 from .parallel_executor import ParallelExecutor, ParallelTask, Worker, ExecutionResult
 
-__version__ = "5.46.0"
+__version__ = "5.96.0"
 
 __all__ = [
     # Core
@@ -466,4 +466,34 @@ __all__ += [
     "TraceabilityMixin",
     "get_traceability_matrix",
     "reset_traceability_matrix",
+]
+
+# A/B Enforcer v2.0 (v5.66) - 代碼層級整合，無法饒過
+from .ab_enforcer import (
+    ABEnforcerV2,
+    ABTaskLifecycle,
+    RestrictedAgentSpawner,
+    ABQualityGate,
+    get_ab_enforcer,
+    enforce_phase_complete,
+    enforce_tool_call,
+    enforce_quality_gate,
+    PermissionDenied,
+    SwapReviewError,
+    ReviewEvidenceRequired,
+)
+
+__all__ += [
+    # A/B Enforcer v2.0
+    "ABEnforcerV2",
+    "ABTaskLifecycle",
+    "RestrictedAgentSpawner",
+    "ABQualityGate",
+    "get_ab_enforcer",
+    "enforce_phase_complete",
+    "enforce_tool_call",
+    "enforce_quality_gate",
+    "PermissionDenied",
+    "SwapReviewError",
+    "ReviewEvidenceRequired",
 ]

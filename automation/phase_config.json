@@ -1,0 +1,129 @@
+{
+  "phases": {
+    "1": {
+      "name": "功能規格",
+      "type": "srs",
+      "deliverable": "SRS.md",
+      "directory": "01-requirements",
+      
+      "quick_start": "dev",
+      "constitution_threshold": 100,
+      
+      "architect_prompt": "agent_templates/architect_prompt.md",
+      "reviewer_prompt": "agent_templates/reviewer_prompt.md",
+      
+      "quality_gates": [
+        {
+          "name": "ASPICE 文檔檢查",
+          "command": "python3 quality_gate/doc_checker.py",
+          "threshold": "Compliance Rate ≥ 80%"
+        },
+        {
+          "name": "Constitution 檢查（SRS）",
+          "command": "python3 quality_gate/constitution/runner.py --type srs",
+          "threshold": "正確性 = 100%"
+        }
+      ],
+      
+      "stage_criteria": [
+        "SRS.md 存在且完整",
+        "SPEC_TRACKING.md 存在",
+        "TRACEABILITY_MATRIX.md 存在",
+        "DEVELOPMENT_LOG.md Phase 1 段落完整",
+        "Spec Logic Mapping 完整",
+        "Constitution 正確性 = 100%"
+      ],
+      
+      "deliverables": [
+        "SRS.md",
+        "SPEC_TRACKING.md",
+        "TRACEABILITY_MATRIX.md",
+        "DEVELOPMENT_LOG.md"
+      ],
+      
+      "async_wait": true,
+      "max_retries": 2,
+      "timeout": 600
+    },
+
+    "2": {
+      "name": "架構設計",
+      "type": "sad",
+      "deliverable": "SAD.md",
+      "directory": "02-architecture",
+      
+      "quick_start": "dev",
+      "constitution_threshold": 100,
+      
+      "architect_prompt": "agent_templates/architect_prompt.md",
+      "reviewer_prompt": "agent_templates/reviewer_prompt.md",
+      
+      "quality_gates": [
+        {
+          "name": "Phase 1 完成檢查",
+          "command": "python3 quality_gate/phase_artifact_enforcer.py",
+          "threshold": "Phase 1 completed"
+        },
+        {
+          "name": "ASPICE 文檔檢查",
+          "command": "python3 quality_gate/doc_checker.py",
+          "threshold": "Compliance Rate ≥ 80%"
+        },
+        {
+          "name": "Constitution 檢查（SAD）",
+          "command": "python3 quality_gate/constitution/runner.py --type sad",
+          "threshold": "正確性 = 100%"
+        },
+        {
+          "name": "風險決策確認",
+          "command": "python3 .methodology/decisions/check_decisions.py",
+          "threshold": "無 HIGH risk 未確認"
+        },
+        {
+          "name": "Framework Enforcement",
+          "command": "methodology quality",
+          "threshold": "無 BLOCK 項目"
+        }
+      ],
+      
+      "stage_criteria": [
+        "SAD.md 存在且完整",
+        "ADR.md 存在（架構決策記錄）",
+        "TRACEABILITY_MATRIX.md 更新（含實作模組欄位）",
+        "Conflict Log 強制記錄（即使為零）",
+        "DEVELOPMENT_LOG.md Phase 2 段落完整",
+        "Constitution 正確性 = 100%"
+      ],
+      
+      "deliverables": [
+        "SAD.md",
+        "ADR.md",
+        "TRACEABILITY_MATRIX.md",
+        "DEVELOPMENT_LOG.md"
+      ],
+      
+      "reviewer_dimensions": [
+        "需求覆蓋完整性",
+        "模組設計品質",
+        "錯誤處理完整性",
+        "技術選型合理性",
+        "實作可行性"
+      ],
+      
+      "architect_checklist": [
+        "SAD 模組列表完整對應所有 SRS FR 編號（無遺漏）",
+        "模組間耦合度合理（低耦合、高內聚）",
+        "每個外部依賴都有 Lazy Init 設計",
+        "錯誤處理明確對應 L1-L6 分類",
+        "Retry / Fallback / Circuit Breaker 已設計",
+        "技術選型決策（ADR）已記錄，無幻覺框架",
+        "架構可直接指導 Phase 3 實作（無模糊地帶）",
+        "TRACEABILITY_MATRIX.md 已從 FR → 模組 更新"
+      ],
+      
+      "async_wait": true,
+      "max_retries": 2,
+      "timeout": 600
+    }
+  }
+}
