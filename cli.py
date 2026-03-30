@@ -58,16 +58,18 @@ from security_defense import (
 from code_metrics import MetricsTracker
 
 # Ralph Mode
-from ralph_mode import (
+from ralph_mode.cli import (
     RalphCLI,
     TaskState,
-    TaskPersistence,
+)
+from ralph_mode.task_persistence import TaskPersistence
+from ralph_mode.scheduler import (
     RalphScheduler,
     SchedulerConfig,
     SchedulerManager,
-    PhaseStateMachine,
-    RalphProgressTracker,
 )
+from ralph_mode.progress_tracker import RalphProgressTracker
+from ralph_mode.state_machine import PhaseStateMachine
 
 
 class MethodologyCLI:
@@ -1784,7 +1786,7 @@ class MethodologyCLI:
 
     def cmd_version(self, args):
         """顯示版本"""
-        pass # Removed print-debug
+        print(f"methodology-v2 version {self.VERSION}")
         return 0
 
     def cmd_gatekeeper(self, args):

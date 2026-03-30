@@ -25,10 +25,10 @@ try:
 except ImportError:
     _FRAMEWORK_OK = False
 
-from task_persistence import TaskState, TaskPersistence
-from scheduler import RalphScheduler, SchedulerConfig, SchedulerManager
-from state_machine import PhaseStateMachine
-from progress_tracker import RalphProgressTracker
+from .task_persistence import TaskState, TaskPersistence
+from .scheduler import RalphScheduler, SchedulerConfig, SchedulerManager
+from .state_machine import PhaseStateMachine
+from .progress_tracker import RalphProgressTracker
 
 
 class RalphCLI:
