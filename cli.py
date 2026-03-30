@@ -75,7 +75,7 @@ from ralph_mode.state_machine import PhaseStateMachine
 class MethodologyCLI:
     """統一 CLI 入口"""
     
-    VERSION = "5.98.0"
+    VERSION = "5.99.0"
     
     def __init__(self):
         self.progress = ProgressDashboard()
@@ -2206,6 +2206,37 @@ class MethodologyCLI:
             pass # Removed print-debug
             return 1
 
+    def _run_phase_enforcer_check(self):
+        """
+        PhaseEnforcer 自動化檢查（BUG-001 修復）
+        
+        不依賴 daemon，CLI 執行時直接檢查。
+        這讓 Quality Gate 可以在沒有 daemon 的環境下自動觸發。
+        """
+        from enforcement.framework_enforcer import FrameworkEnforcer
+        
+        print("\n--- PhaseEnforcer Check (Auto-Triggered) ---")
+        
+        enforcer = FrameworkEnforcer(os.getcwd())
+        result = enforcer.run(level="BLOCK")
+        
+        phase_passed = True
+        if result.violations:
+            phase_passed = False
+            for msg, fix in result.violations:
+                print(f"   🔴 {msg}")
+                if fix:
+                    print(f"      請執行: {fix}")
+        
+        if result.warnings:
+            for msg, fix in result.warnings:
+                print(f"   🟡 {msg}")
+        
+        if phase_passed:
+            print("   ✅ PhaseEnforcer 通過")
+        
+        return result.passed
+
     def cmd_quality_gate(self, args):
         """Quality Gate - 統一品質閘道檢查"""
         from quality_gate import UnifiedGate
@@ -2217,6 +2248,9 @@ class MethodologyCLI:
             print("=" * 50)
             print("Quality Gate - Unified Check")
             print("=" * 50)
+
+            # BUG-001: 自動觸發 PhaseEnforcer 檢查（不依賴 daemon）
+            phase_ok = self._run_phase_enforcer_check()
 
             gate = UnifiedGate()
             result = gate.check_all()
