@@ -390,12 +390,109 @@ class PhaseEnforcer:
     def _check_code_quality(self, phase: int) -> CodeQualityCheckResult:
         """執行代碼品質檢查（L3）"""
         if not AGENT_QUALITY_GUARD_AVAILABLE:
+            # Fallback: 本地基本代碼品質檢查（不依賴外部套件）
+            scan_dir = self.project_root / "src"
+            if not scan_dir.exists():
+                scan_dir = self.project_root / "03-development"
+            if not scan_dir.exists():
+                return CodeQualityCheckResult(
+                    score=100.0,
+                    files_scanned=0,
+                    issues=[],
+                    passed=True,
+                    details={"status": "skipped", "reason": "No source directory found"}
+                )
+            py_files = list(scan_dir.rglob("*.py"))
+            py_files = [f for f in py_files if "__pycache__" not in str(f)]
+            if not py_files:
+                return CodeQualityCheckResult(
+                    score=100.0,
+                    files_scanned=0,
+                    issues=[],
+                    passed=True,
+                    details={"status": "skipped", "reason": "No Python files found"}
+                )
+            all_issues = []
+            total_score = 0.0
+            for py_file in py_files:
+                try:
+                    content = py_file.read_text(errors="ignore")
+                    file_issues = []
+                    # 1. 檢查 docstring
+                    if '"""' not in content and "'''" not in content:
+                        file_issues.append({
+                            "type": "missing_docstring",
+                            "severity": "low",
+                            "file": str(py_file.relative_to(scan_dir)),
+                            "message": "Module missing docstring"
+                        })
+                    # 2. 檢查 type hints
+                    if "def " in content:
+                        func_defs = len([l for l in content.split('\n') if 'def ' in l])
+                        type_hints = len([l for l in content.split('\n') if ': ' in l and ('str' in l or 'int' in l or 'bool' in l or 'List' in l)])
+                        if func_defs > 0 and type_hints == 0:
+                            file_issues.append({
+                                "type": "no_type_hints",
+                                "severity": "low",
+                                "file": str(py_file.relative_to(scan_dir)),
+                                "message": "No type hints found"
+                            })
+                    # 3. 檢查錯誤處理
+                    if 'try:' in content and 'except' not in content:
+                        file_issues.append({
+                            "type": "missing_error_handling",
+                            "severity": "medium",
+                            "file": str(py_file.relative_to(scan_dir)),
+                            "message": "try block without except"
+                        })
+                    # 4. 檢查過長函數（>100行）
+                    lines = content.split('\n')
+                    in_func = False
+                    func_line_count = 0
+                    for line in lines:
+                        if 'def ' in line:
+                            in_func = True
+                            func_line_count = 0
+                        elif in_func:
+                            func_line_count += 1
+                            if func_line_count > 100:
+                                file_issues.append({
+                                    "type": "function_too_long",
+                                    "severity": "medium",
+                                    "file": str(py_file.relative_to(scan_dir)),
+                                    "message": f"Function > 100 lines ({func_line_count} lines)"
+                                })
+                                break
+                    # 5. 檢查 TODO/FIXME
+                    if 'TODO' in content or 'FIXME' in content:
+                        file_issues.append({
+                            "type": "has_todo",
+                            "severity": "info",
+                            "file": str(py_file.relative_to(scan_dir)),
+                            "message": "Contains TODO or FIXME"
+                        })
+                    # 計算檔案分數
+                    if file_issues:
+                        severity_weights = {"high": 10, "medium": 5, "low": 2, "info": 0}
+                        deductions = sum(severity_weights.get(i["severity"], 0) for i in file_issues)
+                        file_score = max(0, 100 - deductions)
+                    else:
+                        file_score = 100
+                    total_score += file_score
+                    all_issues.extend(file_issues)
+                except Exception:
+                    pass
+            avg_score = total_score / len(py_files) if py_files else 100
+            passed = avg_score >= 90
             return CodeQualityCheckResult(
-                score=100.0,
-                files_scanned=0,
-                issues=[],
-                passed=True,
-                details={"status": "not_available", "reason": "Agent Quality Guard not found"}
+                score=avg_score,
+                files_scanned=len(py_files),
+                issues=all_issues,
+                passed=passed,
+                details={
+                    "status": "local_check",
+                    "agent_guard_used": AGENT_QUALITY_GUARD_AVAILABLE
+                }
             )
         
         # 根據 Phase 決定要掃描的目錄
