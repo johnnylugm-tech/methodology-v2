@@ -5,7 +5,7 @@
 
 ---
 
-[![Version](https://img.shields.io/badge/version-v5.58.0-blue.svg)](https://github.com/johnnylugm-tech/methodology-v2)
+[![Version](https://img.shields.io/badge/version-v5.97.0-blue.svg)](https://github.com/johnnylugm-tech/methodology-v2)
 [![Python](https://img.shields.io/badge/python-3.8+-green.svg)](https://python.org)
 [![Tests](https://img.shields.io/badge/tests-32%20passed-green.svg)]()
 

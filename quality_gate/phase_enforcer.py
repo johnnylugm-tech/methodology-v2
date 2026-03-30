@@ -25,6 +25,20 @@ from dataclasses import dataclass, asdict
 from pathlib import Path
 from typing import List, Dict, Optional, Tuple
 
+# 匯入 Claims Verifier（2026-03-31 新增 P0 反作弊模組）
+try:
+    from .claims_verifier import ClaimsVerifier
+    CLAIMS_VERIFIER_AVAILABLE = True
+except ImportError:
+    CLAIMS_VERIFIER_AVAILABLE = False
+
+# 匯入 A/B Enforcer（2026-03-31 新增 P0 反作弊模組）
+try:
+    from .ab_enforcer import ABEnforcer
+    AB_ENFORCER_AVAILABLE = True
+except ImportError:
+    AB_ENFORCER_AVAILABLE = False
+
 # 匯入 folder_structure_checker
 try:
     from .folder_structure_checker import FolderStructureChecker, FolderCheckResult
@@ -244,13 +258,79 @@ class PhaseEnforcer:
         # 判斷是否可以進入下一個 Phase
         can_proceed = passed and len(structure_result.missing) == 0
         
-        # 收集 blocker_issues
+        # 收集 blocker_issues（原有三層檢查）
         blocker_issues = self._collect_blocker_issues(
             structure_result, 
             content_result,
             code_quality_result,
             gate_score
         )
+        
+        # ===== 2026-03-31 新增：Claims Verification Hook =====
+        # 這是 P0 反作弊模組的核心：驗證聲稱 vs 實際
+        if CLAIMS_VERIFIER_AVAILABLE:
+            try:
+                claims_verifier = ClaimsVerifier(str(self.project_root))
+                
+                # 1. 檢查代碼行數 claim vs actual
+                code_check = claims_verifier.verify_code_lines()
+                if code_check["claimed"] > 0:
+                    if not code_check["match"] and code_check["diff_percent"] > 5:
+                        blocker_issues.append(
+                            f"CODE LINES mismatch: claimed {code_check['claimed']}, "
+                            f"actual {code_check['actual']} ({code_check['diff_percent']:.1f}%)"
+                        )
+                
+                # 2. 檢查 Quality Gate 執行
+                qg_check = claims_verifier.verify_quality_gate_executed()
+                if not qg_check["executed"]:
+                    blocker_issues.append(
+                        f"QUALITY GATE not executed"
+                    )
+                
+                # 3. 檢查 STAGE_PASS 存在
+                stage_pass = claims_verifier.verify_stage_pass_exists(phase)
+                if not stage_pass["exists"]:
+                    blocker_issues.append(
+                        f"STAGE_PASS not found for Phase {phase}"
+                    )
+                    
+            except Exception as e:
+                # 如果 Claims Verifier 出錯，記錄但不阻止流程
+                blocker_issues.append(f"Claims verification error: {str(e)}")
+        
+        # ===== 2026-03-31 新增：A/B Enforcer Hook =====
+        # 這是 P0 反作弊模組的核心：驗證 A/B 協作
+        if AB_ENFORCER_AVAILABLE:
+            try:
+                ab_enforcer = ABEnforcer(str(self.project_path))
+                phase_str = f"phase_{phase}"
+                
+                # 3. 檢查 Developer ≠ Reviewer
+                separation = ab_enforcer.verify_developer_reviewer_separation(phase_str)
+                if not separation["separated"]:
+                    blocker_issues.append(
+                        f"A/B SEPARATION violation: Developer same as Reviewer"
+                    )
+                
+                # 4. 檢查 A/B 對話存在
+                dialogue = ab_enforcer.verify_ab_dialogue_exists(phase_str)
+                if not dialogue["has_dialogue"]:
+                    blocker_issues.append(
+                        f"A/B DIALOGUE missing: no real A/B conversation found"
+                    )
+                
+                # 5. Phase 4 特殊檢查：QA ≠ Developer
+                if phase == 4:
+                    qa_sep = ab_enforcer.verify_qa_not_developer()
+                    if not qa_sep["separated"]:
+                        blocker_issues.append(
+                            f"QA/DEVELOPER SEPARATION violation: Tester same as Developer"
+                        )
+                        
+            except Exception as e:
+                # 如果 A/B Enforcer 出錯，記錄但不阻止流程
+                blocker_issues.append(f"A/B enforcement error: {str(e)}")
         
         # 產生結果
         result = PhaseEnforcementResult(
@@ -390,12 +470,109 @@ class PhaseEnforcer:
     def _check_code_quality(self, phase: int) -> CodeQualityCheckResult:
         """執行代碼品質檢查（L3）"""
         if not AGENT_QUALITY_GUARD_AVAILABLE:
+            # Fallback: 本地基本代碼品質檢查（不依賴外部套件）
+            scan_dir = self.project_root / "src"
+            if not scan_dir.exists():
+                scan_dir = self.project_root / "03-development"
+            if not scan_dir.exists():
+                return CodeQualityCheckResult(
+                    score=100.0,
+                    files_scanned=0,
+                    issues=[],
+                    passed=True,
+                    details={"status": "skipped", "reason": "No source directory found"}
+                )
+            py_files = list(scan_dir.rglob("*.py"))
+            py_files = [f for f in py_files if "__pycache__" not in str(f)]
+            if not py_files:
+                return CodeQualityCheckResult(
+                    score=100.0,
+                    files_scanned=0,
+                    issues=[],
+                    passed=True,
+                    details={"status": "skipped", "reason": "No Python files found"}
+                )
+            all_issues = []
+            total_score = 0.0
+            for py_file in py_files:
+                try:
+                    content = py_file.read_text(errors="ignore")
+                    file_issues = []
+                    # 1. 檢查 docstring
+                    if '"""' not in content and "'''" not in content:
+                        file_issues.append({
+                            "type": "missing_docstring",
+                            "severity": "low",
+                            "file": str(py_file.relative_to(scan_dir)),
+                            "message": "Module missing docstring"
+                        })
+                    # 2. 檢查 type hints
+                    if "def " in content:
+                        func_defs = len([l for l in content.split('\n') if 'def ' in l])
+                        type_hints = len([l for l in content.split('\n') if ': ' in l and ('str' in l or 'int' in l or 'bool' in l or 'List' in l)])
+                        if func_defs > 0 and type_hints == 0:
+                            file_issues.append({
+                                "type": "no_type_hints",
+                                "severity": "low",
+                                "file": str(py_file.relative_to(scan_dir)),
+                                "message": "No type hints found"
+                            })
+                    # 3. 檢查錯誤處理
+                    if 'try:' in content and 'except' not in content:
+                        file_issues.append({
+                            "type": "missing_error_handling",
+                            "severity": "medium",
+                            "file": str(py_file.relative_to(scan_dir)),
+                            "message": "try block without except"
+                        })
+                    # 4. 檢查過長函數（>100行）
+                    lines = content.split('\n')
+                    in_func = False
+                    func_line_count = 0
+                    for line in lines:
+                        if 'def ' in line:
+                            in_func = True
+                            func_line_count = 0
+                        elif in_func:
+                            func_line_count += 1
+                            if func_line_count > 100:
+                                file_issues.append({
+                                    "type": "function_too_long",
+                                    "severity": "medium",
+                                    "file": str(py_file.relative_to(scan_dir)),
+                                    "message": f"Function > 100 lines ({func_line_count} lines)"
+                                })
+                                break
+                    # 5. 檢查 TODO/FIXME
+                    if 'TODO' in content or 'FIXME' in content:
+                        file_issues.append({
+                            "type": "has_todo",
+                            "severity": "info",
+                            "file": str(py_file.relative_to(scan_dir)),
+                            "message": "Contains TODO or FIXME"
+                        })
+                    # 計算檔案分數
+                    if file_issues:
+                        severity_weights = {"high": 10, "medium": 5, "low": 2, "info": 0}
+                        deductions = sum(severity_weights.get(i["severity"], 0) for i in file_issues)
+                        file_score = max(0, 100 - deductions)
+                    else:
+                        file_score = 100
+                    total_score += file_score
+                    all_issues.extend(file_issues)
+                except Exception:
+                    pass
+            avg_score = total_score / len(py_files) if py_files else 100
+            passed = avg_score >= 90
             return CodeQualityCheckResult(
-                score=100.0,
-                files_scanned=0,
-                issues=[],
-                passed=True,
-                details={"status": "not_available", "reason": "Agent Quality Guard not found"}
+                score=avg_score,
+                files_scanned=len(py_files),
+                issues=all_issues,
+                passed=passed,
+                details={
+                    "status": "local_check",
+                    "agent_guard_used": AGENT_QUALITY_GUARD_AVAILABLE
+                }
             )
         
         # 根據 Phase 決定要掃描的目錄
