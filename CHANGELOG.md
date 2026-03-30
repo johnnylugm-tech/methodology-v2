@@ -9,6 +9,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [v5.97] - 2026-03-30
+
+### 📝 Documentation
+- **Version Release SOP**: `docs/VERSION_SOP.md`
+  - 規範版本發布流程（測試 → CHANGELOG → 版本號 → git tag → GitHub）
+  - 版本號規則與標籤創建時機
+  - 常見問題 FAQ
+
+- **UnifiedGate Coverage Matrix (Markdown)**: `tests/COVERAGE_MATRIX.md`
+  - 13 核心檢查工具覆蓋狀態
+  - 11 擴展檢查工具（Phase 5-8）
+  - PhaseEnforcer L3 三層檢查覆蓋矩陣
+  - 測試套件總覽（110+ 測試）
+
+---
+
 ## [v5.96] - 2026-03-29
 
 ### 🚀 Added
