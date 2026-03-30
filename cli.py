@@ -73,7 +73,7 @@ from ralph_mode import (
 class MethodologyCLI:
     """統一 CLI 入口"""
     
-    VERSION = "5.56.0"
+    VERSION = "5.96.0"
     
     def __init__(self):
         self.progress = ProgressDashboard()

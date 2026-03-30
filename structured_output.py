@@ -401,7 +401,7 @@ class StructuredOutputEngine:
         schema: Any = None,
         auto_fix: bool = True,
         quality_gate=None
-    ) -> ValidationReport:
+    ) -> AOVReport:
         """
         使用 AgentOutputValidator 驗證輸出並可選自動修復
 
