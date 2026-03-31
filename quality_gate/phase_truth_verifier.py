@@ -248,16 +248,21 @@ class PhaseTruthVerifier:
         print("=" * 60)
         print()
 
-        # 執行各項檢查（根據 Phase 調整）
-        checks = [
-            ("FrameworkEnforcer BLOCK", self.check_framework_block, 0.35),
-            ("Sessions_spawn.log", self.check_session_log, 0.25),
-        ]
-
-        # Phase 3+ 才檢查 pytest 和覆蓋率
-        if self.phase >= 3:
-            checks.append(("pytest 實際通過", self.check_pytest, 0.25))
-            checks.append(("測試覆蓋率達標", self.check_coverage, 0.15))
+        # 執行各項檢查（根據 Phase 調整權重）
+        # Phase 1-2: 只有 BLOCK + session_log，權重調整
+        if self.phase < 3:
+            checks = [
+                ("FrameworkEnforcer BLOCK", self.check_framework_block, 0.60),
+                ("Sessions_spawn.log", self.check_session_log, 0.40),
+            ]
+        else:
+            # Phase 3+: 4 項檢查
+            checks = [
+                ("FrameworkEnforcer BLOCK", self.check_framework_block, 0.35),
+                ("Sessions_spawn.log", self.check_session_log, 0.25),
+                ("pytest 實際通過", self.check_pytest, 0.25),
+                ("測試覆蓋率達標", self.check_coverage, 0.15),
+            ]
 
         total_score = 0.0
         results = []
