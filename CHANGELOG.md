@@ -9,6 +9,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [v6.12] - 2026-03-31
+
+### 🚀 Added
+- **SKILL.md 融合版 (v6.12)**: `SKILL.md`
+  - 精簡版核心 (~1,000 行)，Agent 執行時真正需要的內容
+  - 基於 v6.03.0 分離架構，融合 v6.05-11 新功能
+  - 章節結構：執行協議 → 硬規則 → 閾值配置 → Phase 路由表 → Phase 定義 → 工具速查 → STAGE_PASS
+
+- **SKILL_TEMPLATES.md**: 新增模板庫
+  - T1-T8 Phase 模板（SRS, SAD, CODE, TEST, BASELINE, QUALITY, RISK, CONFIG）
+  - 單元測試三類模板（正向/邊界/負面）
+  - 邏輯審查對話模板
+  - A/B 審查通用模板
+
+- **SKILL_DOMAIN.md**: 新增領域知識庫
+  - ASPICE 基礎（過程 Groups、能力等級）
+  - 邏輯正確性原則（核心約束、缺陷模式）
+  - Constitution 憲章系統（四維度）
+  - A/B 協作機制、單元測試三類、監控告警
+  - 風險管理五維度、配置管理 SUP.8
+
+### 📝 Documentation
+- 外部化原則落實：SKILL.md 只放核心，模板和領域知識分離
+- Lazy Loading 規則明確定義
+
+---
+
+## [v6.02] - 2026-03-31
+
+### 🚀 Added
+- **Integrity Tracker + Constitution 整合**: `quality_gate/integrity_tracker.py`
+  - 誠信追蹤系統（100 分起始，每次違規扣分）
+  - 違規類型：subagent_claim, fake_qg_result, skip_phase, qa_equals_developer
+  - 信任等級：FULL_TRUST ≥ 80 / PARTIAL_TRUST 50-79 / LOW_TRUST < 50
+
+---
+
 ## [v5.98] - 2026-03-30
 
 ### 🛠️ Fixed
