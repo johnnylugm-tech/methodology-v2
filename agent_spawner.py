@@ -394,6 +394,7 @@ def spawn_with_persona(
     role: str,
     task: str,
     persona_type: str = None,
+    log_file: str = "sessions_spawn.log",
     **kwargs
 ) -> str:
     """
@@ -403,11 +404,16 @@ def spawn_with_persona(
         role: Agent 角色 (developer, reviewer, qa, etc.)
         task: 任務描述
         persona_type: 人格類型 (developer, architect, qa, pm, devops, reviewer)
+        log_file: 輸出日誌檔案路徑（防作假機制 2）
         **kwargs: 其他 sessions_spawn 參數
 
     Returns:
         session_key: 新建的 session key
     """
+    import json
+    from datetime import datetime
+    from pathlib import Path
+    
     from agent_personas import generate_persona_prompt
 
     # 1. 如果有指定 persona_type，使用它
@@ -421,9 +427,10 @@ def spawn_with_persona(
     # 3. 帶入 system_prompt 呼叫 sessions_spawn
     # 注意：這裡呼叫底層的 sessions_spawn（需由外部框架提供）
     # 如果沒有 sessions_spawn，則模擬返回一個 session key
+    session_key = None
     try:
         from openclaw import sessions_spawn
-        return sessions_spawn(
+        session_key = sessions_spawn(
             task=task,
             system_prompt=system_prompt,
             **kwargs
@@ -436,7 +443,23 @@ def spawn_with_persona(
         print(f"  role: {role}, persona: {persona_type}")
         print(f"  task: {task[:100]}..." if len(task) > 100 else f"  task: {task}")
         print(f"  system_prompt: {system_prompt[:200]}..." if len(system_prompt) > 200 else f"  system_prompt: {system_prompt}")
-        return session_key
+    
+    # ========================================
+    # v6.05: sessions_spawn 輸出留存（防作假機制 2）
+    # ========================================
+    log_entry = {
+        "timestamp": datetime.now().isoformat(),
+        "role": role,
+        "persona": persona_type,
+        "task": task[:100],  # 只記錄前100字
+        "session_id": session_key
+    }
+    
+    log_path = Path(log_file)
+    with open(log_path, "a") as f:
+        f.write(json.dumps(log_entry) + "\n")
+    
+    return session_key
 
 
 # ============================================================================

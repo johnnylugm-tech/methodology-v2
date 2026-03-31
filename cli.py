@@ -75,7 +75,7 @@ from ralph_mode.state_machine import PhaseStateMachine
 class MethodologyCLI:
     """統一 CLI 入口"""
     
-    VERSION = "6.00.0"
+    VERSION = "6.05.0"
     
     def __init__(self):
         self.progress = ProgressDashboard()
@@ -2249,8 +2249,25 @@ class MethodologyCLI:
             pass # Removed print-debug
             pass # Removed print-debug
 
-            # BUG-001: 自動觸發 PhaseEnforcer 檢查（不依賴 daemon）
-            phase_ok = self._run_phase_enforcer_check()
+            # ========================================
+            # v6.05: 強制 BLOCK 級別（防作假機制 1）
+            # ========================================
+            from enforcement.framework_enforcer import FrameworkEnforcer
+            
+            enforcer = FrameworkEnforcer(os.getcwd())
+            result = enforcer.run(level="BLOCK")
+            
+            # 失敗時阻擋
+            if not result.passed:
+                print("❌ Quality Gate BLOCK failed")
+                print("\n🔴 Violations:")
+                for msg, fix in result.violations:
+                    print(f"   {msg}")
+                    if fix:
+                        print(f"      → {fix}")
+                sys.exit(1)
+            
+            print("✅ Quality Gate BLOCK passed")
 
             gate = UnifiedGate()
             result = gate.check_all()

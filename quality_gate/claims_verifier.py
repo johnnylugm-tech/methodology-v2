@@ -17,8 +17,18 @@ Claims Verifier - 聲稱 vs 實際 測量系統
 
 import re
 import subprocess
+import json
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
+from dataclasses import dataclass
+
+
+@dataclass
+class ClaimsCheckResult:
+    """Claims 驗證結果"""
+    passed: bool
+    message: str
+    details: Dict
 
 
 class ClaimsVerifier:
@@ -367,6 +377,50 @@ class ClaimsVerifier:
             "details": {"file_size": found_path.stat().st_size if found_path.exists() else 0}
         }
     
+    def verify_sessions_spawn_log(self) -> ClaimsCheckResult:
+        """
+        驗證 sessions_spawn.log 存在且有實際記錄（防作假機制 2）
+        
+        Returns:
+            ClaimsCheckResult: {
+                passed: bool,
+                message: str,
+                details: {"total": int, "valid": int}
+            }
+        """
+        log_file = self.project_path / "sessions_spawn.log"
+        
+        if not log_file.exists():
+            return ClaimsCheckResult(
+                passed=False,
+                message="sessions_spawn.log 不存在",
+                details={}
+            )
+        
+        # 檢查日誌內容
+        try:
+            content = log_file.read_text(encoding="utf-8")
+            entries = [json.loads(line) for line in content.strip().split("\n") if line]
+        except (json.JSONDecodeError, IOError) as e:
+            return ClaimsCheckResult(
+                passed=False,
+                message=f"sessions_spawn.log 解析失敗: {e}",
+                details={}
+            )
+        
+        # 驗證每個 entry 都有必要欄位
+        required_fields = ["timestamp", "role", "task", "session_id"]
+        valid_entries = sum(
+            1 for e in entries 
+            if isinstance(e, dict) and all(f in e for f in required_fields)
+        )
+        
+        return ClaimsCheckResult(
+            passed=valid_entries == len(entries) and len(entries) > 0,
+            message=f"有效記錄: {valid_entries}/{len(entries)}",
+            details={"total": len(entries), "valid": valid_entries}
+        )
+    
     def verify_all(self, phase: int) -> Dict:
         """
         執行所有驗證檢查
@@ -383,7 +437,12 @@ class ClaimsVerifier:
             "subagent_usage": self.verify_subagent_usage(),
             "code_lines": self.verify_code_lines(),
             "quality_gate_executed": self.verify_quality_gate_executed(),
-            "stage_pass": self.verify_stage_pass_exists(phase)
+            "stage_pass": self.verify_stage_pass_exists(phase),
+            "sessions_spawn_log": {
+                "passed": self.verify_sessions_spawn_log().passed,
+                "message": self.verify_sessions_spawn_log().message,
+                "details": self.verify_sessions_spawn_log().details,
+            }
         }
 
 
