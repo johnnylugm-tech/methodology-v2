@@ -75,7 +75,7 @@ from ralph_mode.state_machine import PhaseStateMachine
 class MethodologyCLI:
     """統一 CLI 入口"""
     
-    VERSION = "6.06.0"
+    VERSION = "6.11.0"
     
     def __init__(self):
         self.progress = ProgressDashboard()
@@ -237,6 +237,8 @@ class MethodologyCLI:
             return self.cmd_stage_pass(args)
         elif command == "phase-verify":
             return self.cmd_phase_truth(args)
+        elif command == "skill-check":
+            return self.cmd_skill_check(args)
         else:
             pass # Removed print-debug
             return 1
@@ -2925,6 +2927,46 @@ class MethodologyCLI:
 
         return 0 if result["passed"] else 1
 
+    def cmd_skill_check(self, args):
+        """SKILL.md 強制讀取檢查"""
+        from quality_gate.skill_preheater import SkillPreheater
+        from quality_gate.skill_interrogator import SkillInterrogator
+        from quality_gate.citation_enforcer import CitationEnforcer
+        
+        phase = args.phase if hasattr(args, 'phase') and args.phase else 1
+        
+        if args.mode == "preheat":
+            preheater = SkillPreheater()
+            result = preheater.run_preflight(phase)
+            print(result)
+        elif args.mode == "interrogate":
+            interrogator = SkillInterrogator()
+            result = interrogator.run_interrogation(phase)
+            print(result)
+        elif args.mode == "citation":
+            enforcer = CitationEnforcer()
+            result = enforcer.run_citation_check(phase)
+            print(result)
+        else:
+            # Default: run all checks
+            print(f"\n{'='*60}")
+            print(f"SKILL.md 強制讀取檢查 - Phase {phase}")
+            print(f"{'='*60}")
+            
+            print("\n[1/3] 預熱程序...")
+            preheater = SkillPreheater()
+            preheater.run_preflight(phase)
+            
+            print("\n[2/3] 拷問程序...")
+            interrogator = SkillInterrogator()
+            interrogator.run_interrogation(phase)
+            
+            print("\n[3/3] 強制引用...")
+            enforcer = CitationEnforcer()
+            enforcer.run_citation_check(phase)
+        
+        return 0
+
 
 # ==================== Main ====================
 
@@ -3310,6 +3352,13 @@ def main():
     phase_verify_parser.add_argument("--phase", type=int, required=True, choices=range(1, 9),
                                      help="Phase number (1-8)")
     phase_verify_parser.add_argument("--project", default=".", help="Project root path")
+
+    # skill-check (SKILL.md 強制讀取檢查)
+    skill_check_parser = subparsers.add_parser("skill-check", help="SKILL.md 強制讀取檢查")
+    skill_check_parser.add_argument("--phase", type=int, default=1, choices=range(1, 9),
+                                   help="Phase number (1-8)")
+    skill_check_parser.add_argument("--mode", choices=["preheat", "interrogate", "citation"],
+                                   help="檢查模式：preheat=預熱, interrogate=拷問, citation=引用")
 
     args = parser.parse_args()
     

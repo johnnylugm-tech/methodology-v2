@@ -1,8 +1,66 @@
 # 任務初始化 Prompt Template
 
-> **版本**: v6.09.0  
+> **版本**: v6.11.0  
 > **用途**: 啟動新專案時使用  
 > **前提**: 已具備規格書 (SRS.md) 和 GitHub 倉庫
+
+---
+
+## 🛡️ SKILL.md 讀取強制機制
+
+在開始任何任務前，Agent 必須通過以下三個機制確保已認真讀過 SKILL.md：
+
+### 1. 預熱程序 (Preheating) - 每 Phase 開始前執行
+
+```bash
+python cli.py skill-check --mode preheat --phase N
+```
+
+**目的**: 強制 Agent 在執行任務前複習並回答 SKILL.md 相關問題。
+
+**必須回答的問題**:
+1. Phase N 的 WHO（角色分工）定義是什麼？
+2. Phase N 的 WHAT（交付物）清單有哪些？
+3. Phase N 的 WHEN（時序門檻）是什麼？
+4. Phase N 的 BLOCK 級別包含哪些檢查？
+5. Phase N 的 Constitution 類型是什麼？
+
+**通過標準**: 至少 3 題回答完整（每題 >20 字）
+
+### 2. 拷問法 (Interrogation) - 每 Phase 完成後執行
+
+```bash
+python cli.py skill-check --mode interrogate --phase N
+```
+
+**目的**: 隨機抽查 Agent 對 SKILL.md 的理解深度。
+
+**抽查問題範例**:
+- FrameworkEnforcer BLOCK 級別包含幾項檢查？
+- Constitution runner.py 的 command 是什麼？
+- sessions_spawn 的必要參數有哪些？
+- phase-verify 的分數門檻是多少？
+
+**通過標準**: 回答包含至少 1 個關鍵提示且長度 >10 字
+
+### 3. 強制引用 (Forced Citation) - 所有 claims 必須附上行號
+
+```bash
+python cli.py skill-check --mode citation --phase N
+```
+
+**目的**: 要求 Agent 的每個聲稱必須附上 SKILL.md 的具體行號或章節。
+
+**要求**:
+- 每個事實聲稱必須引用 SKILL.md 的具體行號
+- 格式：`[line 123]` 或 `第 123 行`
+- 或引用章節：`### Phase N 流程`
+
+### 完整執行（一次執行所有機制）
+
+```bash
+python cli.py skill-check --phase N
+```
 
 ---
 
@@ -295,5 +353,5 @@ sessions_spawn(
 
 ---
 
-*此 Prompt 基於 methodology-v2 v6.09.0*
+*此 Prompt 基於 methodology-v2 v6.11.0*
 *最後更新: 2026-03-31*
