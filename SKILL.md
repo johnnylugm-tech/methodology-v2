@@ -1,6 +1,6 @@
 # methodology-v2
 
-> Multi-Agent Collaboration Development Methodology v6.02.0
+> Multi-Agent Collaboration Development Methodology v6.03.0
 
 ---
 
@@ -33,6 +33,7 @@
 | **v5.99** | **2026-03-30** | **BUG-001 + BUG-002 修復** |
 | **v6.00** | **2026-03-31** | **版本統一** |
 | **v6.02** | **2026-03-31** | **Integrity Tracker + Constitution 整合** |
+| **v6.03** | **2026-03-31** | **Anti-Cheat Modules（Claims Verifier + A/B Enforcer）+ 測試覆蓋** |
 | **v5.92** | **2026-03-29** | **整合 Phase5+7+8_Plan_5W1H_AB.md 精華：Phase 5 兩次 A/B 審查 + BASELINE 完整規格 + MONITORING_PLAN；Phase 7 五維度風險識別 + Decision Gate + 四層緩解措施；Phase 8 CONFIG_RECORDS 8 章節 + 七區塊發布清單 + 方法論閉環確認** |
 
 ---
@@ -4421,6 +4422,44 @@ L3 代碼品質檢查使用 Agent Quality Guard（`/workspace/agent-quality-guar
 *附錄新增日期: 2026-03-29 - 整合 Agent Quality Guard*
 
 ---
+
+## Anti-Cheat Modules (v6.01+)
+
+### Claims Verifier
+驗證 sub-agent 的聲明是否屬實。
+
+| 檢查項目 | 說明 |
+|----------|------|
+| sub-agent 使用 | 確認有使用 sub-agent |
+| 代碼行數 | 驗證代碼行數合理 |
+| QG 執行 | 確認 Quality Gate 有執行 |
+
+### A/B Enforcer
+確保 A/B 測試的分離和正確性。
+
+| 檢查項目 | 說明 |
+|----------|------|
+| A/B 分離 | A 和 B 版本的代碼是否分離 |
+| 對話存在 | A/B 測試有對話記錄 |
+| QA≠Developer | QA 和 Developer 是不同角色 |
+
+## Integrity Tracker (v6.02+)
+
+追蹤專案完整性，計算信任等級。
+
+### 扣分項目
+| 行為 | 扣分 |
+|------|------|
+| fake_qg_result | -20 |
+| skip_phase | -30 |
+| revision_zero | -15 |
+
+### 信任等級
+| 等級 | 分數範圍 |
+|------|----------|
+| FULL_TRUST | ≥80 |
+| PARTIAL_TRUST | 50-79 |
+| LOW_TRUST | <50 |
 
 ## v6.02 新模組：Integrity Tracker
 
