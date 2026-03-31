@@ -255,13 +255,19 @@ class PhaseTruthVerifier:
                 ("FrameworkEnforcer BLOCK", self.check_framework_block, 0.60),
                 ("Sessions_spawn.log", self.check_session_log, 0.40),
             ]
-        else:
-            # Phase 3+: 4 項檢查
+        # Phase 3-4: 4 項檢查（含 pytest/coverage）
+        elif self.phase <= 4:
             checks = [
                 ("FrameworkEnforcer BLOCK", self.check_framework_block, 0.35),
                 ("Sessions_spawn.log", self.check_session_log, 0.25),
                 ("pytest 實際通過", self.check_pytest, 0.25),
                 ("測試覆蓋率達標", self.check_coverage, 0.15),
+            ]
+        # Phase 5-8: 只有 BLOCK + session_log（無代碼階段）
+        else:
+            checks = [
+                ("FrameworkEnforcer BLOCK", self.check_framework_block, 0.60),
+                ("Sessions_spawn.log", self.check_session_log, 0.40),
             ]
 
         total_score = 0.0
