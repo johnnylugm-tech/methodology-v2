@@ -357,6 +357,54 @@ class PhaseArtifactEnforcer:
         result.message = f"✅ Phase {phase_name} artifact check passed"
         return result
 
+    def enforce_all(self) -> dict:
+        """
+        執行所有 Phase 的產物檢查（僅檢查到最後一個存在的 Phase）
+
+        Returns:
+            dict: {
+                "passed": bool,  # 所有已存在 Phase 都通過為 True
+                "results": {
+                    phase_name: {
+                        "passed": bool,
+                        "message": str,
+                        "missing_references": list
+                    }
+                }
+            }
+        """
+        results = {}
+        all_passed = True
+
+        # Re-scan artifacts to pick up any newly created directories
+        self.registry._scan_existing_artifacts()
+
+        # Find the highest existing phase
+        existing_phases = []
+        for phase in Phase:
+            config = self.registry.PHASE_ARTIFACTS.get(phase, {})
+            output_dir = config.get("output_dir", "")
+            if output_dir and (self.registry.project_root / output_dir).exists():
+                existing_phases.append(phase)
+
+        # Only check up to the highest existing phase
+        phases_to_check = existing_phases if existing_phases else list(Phase)
+
+        for phase in phases_to_check:
+            result = self.can_proceed_to(phase.value)
+            results[phase.name.lower()] = {
+                "passed": result.passed,
+                "message": result.message,
+                "missing_references": result.missing_references
+            }
+            if not result.passed:
+                all_passed = False
+
+        return {
+            "passed": all_passed,
+            "results": results
+        }
+
 
 def main():
     """CLI 入口"""

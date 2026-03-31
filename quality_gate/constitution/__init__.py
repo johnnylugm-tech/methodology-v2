@@ -107,7 +107,7 @@ def load_constitution_documents(docs_path: str) -> Dict[str, Optional[str]]:
     return documents
 
 
-def run_constitution_check(check_type: str, docs_path: str, current_phase: int = None) -> ConstitutionCheckResult:
+def run_constitution_check(check_type: str, docs_path: str = "docs", current_phase: int = None) -> ConstitutionCheckResult:
     """執行 Constitution 檢查
     
     Args:

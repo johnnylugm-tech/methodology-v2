@@ -191,8 +191,10 @@ class TestConstitutionRunnerErrorHandling:
         """Test handling of invalid check type."""
         try:
             from quality_gate.constitution.runner import run_constitution_check
-            with pytest.raises((ValueError, Exception)):
-                run_constitution_check(check_type="invalid_type")
+            result = run_constitution_check(check_type="invalid_type")
+            # Should return a failed result, not raise an exception
+            assert result is not None
+            assert result.passed is False
         except ImportError:
             pytest.skip("constitution runner not available")
 
@@ -250,7 +252,8 @@ class TestConstitutionRunnerErrorHandling:
                 check_type="srs",
                 passed=False,
                 score=0.0,
-                violations=["Error occurred"],
+                violations=[{"type": "error", "message": "Error occurred"}],
+                details={},
                 recommendations=["Fix the error"]
             )
             assert result.passed is False
@@ -294,7 +297,7 @@ class TestConstitutionRunnerIntegration:
         """Test check with custom project path."""
         try:
             from quality_gate.constitution.runner import run_constitution_check
-            result = run_constitution_check(check_type="srs", project_path=str(self.project_path))
+            result = run_constitution_check(check_type="srs", docs_path=str(self.project_path / "docs"))
             assert result is not None
         except ImportError:
             pytest.skip("constitution runner not available")
@@ -329,6 +332,7 @@ class TestConstitutionRunnerIntegration:
                 passed=True,
                 score=95.0,
                 violations=[],
+                details={},
                 recommendations=[]
             )
             text = format_result_text(result)
@@ -346,6 +350,7 @@ class TestConstitutionRunnerIntegration:
                 passed=True,
                 score=95.0,
                 violations=[],
+                details={},
                 recommendations=[]
             )
             json_str = format_result_json(result)

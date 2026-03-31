@@ -1,0 +1,10 @@
+[bumpver]
+current_version = "6.12.0"
+version_pattern = "MAJOR.MINOR.PATCH"
+
+[bumpver:file_patterns]
+cli.py = 'VERSION = "{version}"'
+__init__.py = '__version__ = "{version}"'
+pyproject.toml = 'version = "{version}"'
+README.md = 'v{version}'
+CHANGELOG.md = '## v{version}'

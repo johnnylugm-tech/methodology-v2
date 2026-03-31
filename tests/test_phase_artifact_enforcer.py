@@ -14,7 +14,7 @@ from pathlib import Path
 import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from quality_gate.phase_artifact_enforcer import PhaseArtifactEnforcer, PhaseDependency
+from quality_gate.phase_artifact_enforcer import PhaseArtifactEnforcer
 
 
 class TestPhaseArtifactEnforcer(unittest.TestCase):
@@ -46,17 +46,19 @@ class TestPhaseArtifactEnforcer(unittest.TestCase):
     
     def test_valid_phase_chain(self):
         """完整的 Phase 鏈應該通過"""
-        # 建立 Phase 0
-        Path(self.test_dir, "00-constitution").mkdir()
-        Path(self.test_dir, "00-constitution/CONSTITUTION.md").write_text("# Constitution")
-        
-        # 建立 Phase 1
+        # 建立 Phase 0 (Constitution)
+        Path(self.test_dir, "constitution").mkdir()
+        Path(self.test_dir, "constitution/CONSTITUTION.md").write_text("# Constitution")
+
+        # 建立 Phase 1 (Specify)
         Path(self.test_dir, "01-specify").mkdir()
         Path(self.test_dir, "01-specify/requirements.md").write_text("# Reqs")
-        
+        Path(self.test_dir, "01-specify/SRS.md").write_text("# SRS")
+        Path(self.test_dir, "01-specify/SPEC.md").write_text("# SPEC")
+
         result = self.enforcer.enforce_all()
-        # 應該至少 Phase 1 通過
-        self.assertTrue(result["results"]["phase_1"]["passed"])
+        # 應該至少 specify (Phase 1) 通過
+        self.assertTrue(result["results"]["specify"]["passed"])
     
     def test_missing_intermediate_phase(self):
         """缺少中間 Phase 應該失敗"""
