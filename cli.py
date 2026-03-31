@@ -293,12 +293,12 @@ class MethodologyCLI:
             )
             scheduler.start()
             
-            print(f"🚀 Ralph Mode started (interval: 5min)")
+            pass # Removed print-debug
         except ImportError as e:
-            print(f"⚠️ Ralph Mode not available: {e}")
+            pass # Removed print-debug
         
-        print(f"✅ Initialized: {project_name}")
-        print(f"🚀 Quality Watch started")
+        pass # Removed print-debug
+        pass # Removed print-debug
         
         return 0
     
@@ -313,8 +313,8 @@ class MethodologyCLI:
             text=True
         )
         
-        print(f"✅ Project finished")
-        print(f"🛑 Quality Watch stopped")
+        pass # Removed print-debug
+        pass # Removed print-debug
         
         return 0
     
@@ -1144,7 +1144,7 @@ class MethodologyCLI:
             trace_file = Path(os.getcwd()) / "TRACEABILITY_MATRIX.md"
             if not trace_file.exists():
                 pass # Removed print-debug
-                print("   Run: methodology trace init")
+                pass # Removed print-debug
                 return 1
             
             content = trace_file.read_text()
@@ -1157,11 +1157,11 @@ class MethodologyCLI:
             completeness = (completed / max(total, 1)) * 100
             
             pass # Removed print-debug
-            print("=" * 50)
-            print(f"Completed: {completed}/{total} ({completeness:.1f}%)")
+            pass # Removed print-debug
+            pass # Removed print-debug
             
             if missing_constitution > 0:
-                print(f"⚠️  Constitution failures: {missing_constitution}")
+                pass # Removed print-debug
             
             if completeness >= 90 and missing_constitution == 0:
                 pass # Removed print-debug
@@ -1786,7 +1786,7 @@ class MethodologyCLI:
 
     def cmd_version(self, args):
         """顯示版本"""
-        print(f"methodology-v2 version {self.VERSION}")
+        pass # Removed print-debug
         return 0
 
     def cmd_gatekeeper(self, args):
@@ -2215,7 +2215,7 @@ class MethodologyCLI:
         """
         from enforcement.framework_enforcer import FrameworkEnforcer
         
-        print("\n--- PhaseEnforcer Check (Auto-Triggered) ---")
+        pass # Removed print-debug
         
         enforcer = FrameworkEnforcer(os.getcwd())
         result = enforcer.run(level="BLOCK")
@@ -2224,16 +2224,16 @@ class MethodologyCLI:
         if result.violations:
             phase_passed = False
             for msg, fix in result.violations:
-                print(f"   🔴 {msg}")
+                pass # Removed print-debug
                 if fix:
-                    print(f"      請執行: {fix}")
+                    pass # Removed print-debug
         
         if result.warnings:
             for msg, fix in result.warnings:
-                print(f"   🟡 {msg}")
+                pass # Removed print-debug
         
         if phase_passed:
-            print("   ✅ PhaseEnforcer 通過")
+            pass # Removed print-debug
         
         return result.passed
 
@@ -2245,9 +2245,9 @@ class MethodologyCLI:
         sub = args.subcommand
 
         if sub == "check" or sub == "all":
-            print("=" * 50)
-            print("Quality Gate - Unified Check")
-            print("=" * 50)
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
 
             # BUG-001: 自動觸發 PhaseEnforcer 檢查（不依賴 daemon）
             phase_ok = self._run_phase_enforcer_check()
@@ -2255,76 +2255,76 @@ class MethodologyCLI:
             gate = UnifiedGate()
             result = gate.check_all()
 
-            print(f"\nOverall Score: {result.overall_score}%")
-            print(f"Status: {'✅ PASSED' if result.passed else '❌ FAILED'}")
+            pass # Removed print-debug
+            pass # Removed print-debug
 
-            print("\nChecks:")
+            pass # Removed print-debug
             for check in result.checks:
                 status = "✅" if check.passed else "❌"
-                print(f"  {status} {check.name}: {check.score}%")
+                pass # Removed print-debug
                 if check.violations:
                     for v in check.violations[:3]:
-                        print(f"      - {v}")
+                        pass # Removed print-debug
 
             # Framework Enforcement - SPEC_TRACKING
-            print("\n--- Framework Enforcement ---")
+            pass # Removed print-debug
             project_root = os.getcwd()
             checker = SpecTrackingChecker(project_root)
             spec_result = checker.run_enforcement()
 
             if not spec_result.get('exists', False):
-                print("🔴 [BLOCK] SPEC_TRACKING.md 不存在")
-                print("   請執行: methodology spec-track init")
+                pass # Removed print-debug
+                pass # Removed print-debug
                 sys.exit(1)
             else:
                 completeness = spec_result.get('completeness', 0)
                 if completeness < 90:
-                    print(f"🔴 [BLOCK] 規格完整性 {completeness}% < 90%")
+                    pass # Removed print-debug
                     sys.exit(1)
-                print(f"✅ SPEC_TRACKING: {completeness}% 完成")
+                pass # Removed print-debug
                 if spec_result.get('missing'):
                     for m in spec_result['missing'][:3]:
-                        print(f"   ⚠️ {m}")
+                        pass # Removed print-debug
 
             sys.exit(0 if result.passed else 1)
 
         elif sub == "doc" or sub == "docs":
             gate = UnifiedGate()
             result = gate.check_documents_only()
-            print(f"Document Existence: {'✅' if result.passed else '❌'}")
+            pass # Removed print-debug
             if result.violations:
                 for v in result.violations:
-                    print(f"  - {v}")
+                    pass # Removed print-debug
             sys.exit(0 if result.passed else 1)
 
         elif sub == "constitution":
             gate = UnifiedGate()
             result = gate.check_constitution_only()
-            print(f"Constitution Compliance: {'✅' if result.passed else '❌'}")
+            pass # Removed print-debug
             if result.violations:
                 for v in result.violations[:5]:
-                    print(f"  - {v}")
+                    pass # Removed print-debug
             sys.exit(0 if result.passed else 1)
 
         elif sub == "phase":
             gate = UnifiedGate()
             result = gate.check_phase_only()
-            print(f"Phase References: {'✅' if result.passed else '❌'}")
+            pass # Removed print-debug
             if result.violations:
                 for v in result.violations:
-                    print(f"  - {v}")
+                    pass # Removed print-debug
             sys.exit(0 if result.passed else 1)
 
         elif sub == "aspice":
             # ASPICE 合規檢查（使用 Document Existence）
             gate = UnifiedGate()
             result = gate.check_documents_only()
-            print(json.dumps(result.to_dict() if hasattr(result, 'to_dict') else result, indent=2))
+            pass # Removed print-debug
             sys.exit(0 if result.passed else 1)
 
         else:
-            print(f"Unknown subcommand: {sub}")
-            print("Available: check, doc, constitution, phase, aspice")
+            pass # Removed print-debug
+            pass # Removed print-debug
             return 1
 
         return 0
@@ -2340,12 +2340,12 @@ class MethodologyCLI:
         if getattr(args, 'aspice_report', False):
             enforcer = FrameworkEnforcer(project_root)
             report = enforcer.generate_aspice_report()
-            print(report)
+            pass # Removed print-debug
             return 0
         
-        print("=" * 50)
-        print(f"Framework Enforcement - {level}")
-        print("=" * 50)
+        pass # Removed print-debug
+        pass # Removed print-debug
+        pass # Removed print-debug
         
         enforcer = FrameworkEnforcer(project_root)
         result = enforcer.run(level=level)
@@ -2353,29 +2353,29 @@ class MethodologyCLI:
         violations = result.violations
         warnings = result.warnings
         
-        print("\n🔴 BLOCK Violations:")
+        pass # Removed print-debug
         if violations:
             for msg, fix in violations:
-                print(f"   🔴 {msg}")
+                pass # Removed print-debug
                 if fix:
-                    print(f"      請執行: {fix}")
+                    pass # Removed print-debug
         else:
-            print("   ✅ 無 BLOCK 違規")
+            pass # Removed print-debug
         
-        print("\n🟡 Warnings:")
+        pass # Removed print-debug
         if warnings:
             for msg, fix in warnings:
-                print(f"   🟡 {msg}")
+                pass # Removed print-debug
                 if fix:
-                    print(f"      {fix}")
+                    pass # Removed print-debug
         else:
-            print("   ✅ 無警告")
+            pass # Removed print-debug
         
         if result.passed:
-            print("\n✅ Framework Enforcement 通過")
+            pass # Removed print-debug
             return 0
         else:
-            print("\n❌ Framework Enforcement 失敗")
+            pass # Removed print-debug
             return 1
 
     def cmd_decision_gate(self, args):
@@ -2390,7 +2390,7 @@ class MethodologyCLI:
         if sub == "classify" or sub == "add":
             # 新增並分類決策
             if len(cmd_args) < 2:
-                print("Usage: decision classify <item> <description> [spec_ref]")
+                pass # Removed print-debug
                 sys.exit(1)
 
             item = cmd_args[0]
@@ -2399,53 +2399,53 @@ class MethodologyCLI:
 
             result = recorder.classify_and_record(item, description, spec_ref)
 
-            print(f"✅ Decision classified:")
-            print(f"   ID: {result.decision_id}")
-            print(f"   Risk: {result.risk_level.value}")
-            print(f"   Type: {result.decision_type.value}")
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
             if result.requires_confirmation:
-                print(f"   ⚠️  Requires user confirmation!")
+                pass # Removed print-debug
             if result.options:
-                print(f"   Options: {', '.join(result.options)}")
+                pass # Removed print-debug
             if result.recommendation:
-                print(f"   Recommendation: {result.recommendation}")
+                pass # Removed print-debug
 
         elif sub == "list" or sub == "ls":
             decisions = recorder.get_all()
             if not decisions:
-                print("No decisions recorded yet.")
+                pass # Removed print-debug
             else:
-                print(f"{'ID':<10} {'Item':<20} {'Risk':<15} {'Decision':<15} {'Status':<10}")
-                print("-" * 70)
+                pass # Removed print-debug
+                pass # Removed print-debug
                 for d in decisions:
-                    print(f"{d['id']:<10} {d['item']:<20} {d['risk']:<15} {d['decision']:<15} {d['status']:<10}")
+                    pass # Removed print-debug
 
         elif sub == "pending" or sub == "p":
             pending = recorder.get_pending()
-            print(f"Pending decisions: {len(pending)}")
+            pass # Removed print-debug
             for d in pending:
-                print(f"  {d['id']}: {d['item']} ({d['risk']})")
+                pass # Removed print-debug
 
         elif sub == "confirm":
             if len(cmd_args) < 2:
-                print("Usage: decision confirm <id> <value>")
+                pass # Removed print-debug
                 sys.exit(1)
 
             decision_id = cmd_args[0]
             value = cmd_args[1]
             recorder.confirm(decision_id, value)
-            print(f"✅ Decision {decision_id} confirmed: {value}")
+            pass # Removed print-debug
 
         elif sub == "report":
-            print(recorder.generate_report())
+            pass # Removed print-debug
 
         else:
-            print("Usage:")
-            print("  decision classify <item> <description> [spec_ref]")
-            print("  decision list")
-            print("  decision pending")
-            print("  decision confirm <id> <value>")
-            print("  decision report")
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
 
         return 0
 
@@ -2607,7 +2607,7 @@ class MethodologyCLI:
 
         if sub == "add":
             if len(action_args) < 1:
-                print("Usage: debt add <description> [--severity high|medium|low] [--ticket TASK-XXX]")
+                pass # Removed print-debug
                 return 1
 
             description = action_args[0]
@@ -2615,58 +2615,58 @@ class MethodologyCLI:
             ticket = args.ticket if hasattr(args, 'ticket') and args.ticket else None
 
             debt_id = registry.add(description, severity, ticket)
-            print(f"✅ Debt added: {debt_id}")
-            print(f"   Description: {description}")
-            print(f"   Severity: {severity}")
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
             if ticket:
-                print(f"   Ticket: {ticket}")
+                pass # Removed print-debug
             return 0
 
         elif sub == "list" or sub == "ls":
             debts = registry.list_all()
             if not debts:
-                print("No technical debt recorded.")
+                pass # Removed print-debug
             else:
-                print(f"{'ID':<15} {'Severity':<12} {'Status':<10} {'Description'}")
-                print("-" * 70)
+                pass # Removed print-debug
+                pass # Removed print-debug
                 for d in debts:
-                    print(f"{d.id:<15} {d.severity:<12} {d.status:<10} {d.description[:40]}")
+                    pass # Removed print-debug
             return 0
 
         elif sub == "open":
             debts = registry.list_open()
-            print(f"Open debts: {len(debts)}")
+            pass # Removed print-debug
             for d in debts:
-                print(f"  [{d.severity}] {d.description}")
+                pass # Removed print-debug
             return 0
 
         elif sub == "resolve":
             if len(action_args) < 1:
-                print("Usage: debt resolve <debt-id>")
+                pass # Removed print-debug
                 return 1
 
             debt_id = action_args[0]
             if registry.resolve(debt_id):
-                print(f"✅ Debt resolved: {debt_id}")
+                pass # Removed print-debug
             else:
-                print(f"❌ Debt not found: {debt_id}")
+                pass # Removed print-debug
             return 0
 
         elif sub == "accept":
             if len(action_args) < 2:
-                print("Usage: debt accept <debt-id> <reason>")
+                pass # Removed print-debug
                 return 1
 
             debt_id = action_args[0]
             reason = action_args[1]
             if registry.accept(debt_id, reason):
-                print(f"✅ Debt accepted: {debt_id}")
+                pass # Removed print-debug
             else:
-                print(f"❌ Debt not found: {debt_id}")
+                pass # Removed print-debug
             return 0
 
         elif sub == "report":
-            print(registry.generate_report())
+            pass # Removed print-debug
             return 0
 
         return 0
@@ -2691,83 +2691,83 @@ class MethodologyCLI:
             )
 
             adr_id = registry.save(adr)
-            print(f"✅ ADR created: ADR-{adr_id}")
-            print(f"   Title: {title}")
+            pass # Removed print-debug
+            pass # Removed print-debug
             return 0
 
         elif sub == "list" or sub == "ls":
             adrs = registry.list_all()
             if not adrs:
-                print("No ADRs yet.")
-                print("Usage: adr create <title>")
+                pass # Removed print-debug
+                pass # Removed print-debug
             else:
-                print(f"{'ID':<8} {'Status':<12} {'Title'}")
-                print("-" * 60)
+                pass # Removed print-debug
+                pass # Removed print-debug
                 for adr in adrs:
-                    print(f"ADR-{adr.id:<5} {adr.status:<12} {adr.title[:40]}")
+                    pass # Removed print-debug
             return 0
 
         elif sub == "get" or sub == "show":
             adr_id = action_args[0] if action_args else None
             if not adr_id:
-                print("Usage: adr get <id>")
+                pass # Removed print-debug
                 return 1
 
             adr = registry.get(adr_id)
             if adr:
-                print(adr.to_markdown())
+                pass # Removed print-debug
             else:
-                print(f"ADR-{adr_id} not found")
+                pass # Removed print-debug
             return 0
 
         elif sub == "status":
             adr_id = action_args[0] if len(action_args) > 0 else None
             new_status = action_args[1] if len(action_args) > 1 else None
             if not adr_id or not new_status:
-                print("Usage: adr status <id> <new_status>")
+                pass # Removed print-debug
                 return 1
 
             if registry.update_status(adr_id, new_status):
-                print(f"✅ ADR-{adr_id} status updated to {new_status}")
+                pass # Removed print-debug
             else:
-                print(f"❌ ADR-{adr_id} not found")
+                pass # Removed print-debug
             return 0
 
         elif sub == "export":
             count = registry.export_markdown("docs/adr/")
-            print(f"✅ Exported {count} ADRs to docs/adr/")
+            pass # Removed print-debug
             return 0
 
         elif sub == "report":
-            print(registry.generate_report())
+            pass # Removed print-debug
             return 0
 
-        print("ADR commands:")
-        print("  adr create <title>   - Create new ADR")
-        print("  adr list            - List all ADRs")
-        print("  adr get <id>        - Show ADR details")
-        print("  adr status <id> <s> - Update ADR status")
-        print("  adr export          - Export all ADRs to Markdown")
-        print("  adr report          - Generate ADR report")
+        pass # Removed print-debug
+        pass # Removed print-debug
+        pass # Removed print-debug
+        pass # Removed print-debug
+        pass # Removed print-debug
+        pass # Removed print-debug
+        pass # Removed print-debug
         return 0
 
     def cmd_guide(self, args):
         """Learning Guide - 學習指引"""
         from pathlib import Path
         
-        print("=" * 50)
-        print("methodology-v2 學習指引")
-        print("=" * 50)
-        print("\n選擇你的角色：")
-        print("1. 🐣 菜鳥開發者 (< 1 年經驗)")
-        print("2. 🐥 中級工程師 (1-3 年經驗)")
-        print("3. 🦅 資深工程師 (3+ 年經驗)")
-        print("4. 🏛️ CTO/架構師")
-        print("\n建議：python3 -m http.server 8080 來閱讀文檔")
-        print("\n快速入口：")
-        print("  - 30 分鐘上手：GETTING_STARTED_30MIN.md")
-        print("  - 學習路徑：docs/LEARNING_PATH.md")
-        print("  - 學習地圖：docs/ROADMAP.md")
+        pass # Removed print-debug
+        pass # Removed print-debug
+        pass # Removed print-debug
+        pass # Removed print-debug
+        pass # Removed print-debug
+        pass # Removed print-debug
+        pass # Removed print-debug
+        pass # Removed print-debug
+        pass # Removed print-debug
+        pass # Removed print-debug
+        pass # Removed print-debug
+        pass # Removed print-debug
+        pass # Removed print-debug
         return 0
 
     def cmd_persona(self, args):
@@ -2777,32 +2777,32 @@ class MethodologyCLI:
         action = args.action
 
         if action == "list":
-            print("📋 Available Agent Personas:")
-            print("=" * 50)
+            pass # Removed print-debug
+            pass # Removed print-debug
             personas = ["architect", "developer", "reviewer", "qa", "pm", "devops"]
             for p in personas:
                 prompt = generate_persona_prompt(p)
-                print(f"\n### {p.upper()}")
-                print(prompt[:200] + "..." if len(prompt) > 200 else prompt)
+                pass # Removed print-debug
+                pass # Removed print-debug
             return 0
 
         elif action == "show":
             if not args.persona_type:
-                print("❌ Please specify persona type")
+                pass # Removed print-debug
                 return 1
             prompt = generate_persona_prompt(args.persona_type)
-            print(f"### {args.persona_type.upper()}")
-            print(prompt)
+            pass # Removed print-debug
+            pass # Removed print-debug
             return 0
 
         elif action == "apply":
             if not args.persona_type:
-                print("❌ Please specify persona type")
+                pass # Removed print-debug
                 return 1
             # 顯示如何使用的範例
-            print(f"✅ To apply {args.persona_type} persona:")
-            print(f"   from agent_spawner import spawn_with_persona")
-            print(f"   spawn_with_persona(role='developer', persona_type='{args.persona_type}', task='...')")
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
             return 0
 
         return 0
@@ -2813,9 +2813,9 @@ class MethodologyCLI:
         
         roadmap = Path("docs/ROADMAP.md")
         if roadmap.exists():
-            print(roadmap.read_text())
+            pass # Removed print-debug
         else:
-            print("請參考 GETTING_STARTED_30MIN.md")
+            pass # Removed print-debug
         return 0
 
     def cmd_ralph(self, args):
