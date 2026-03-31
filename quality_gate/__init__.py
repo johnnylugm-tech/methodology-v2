@@ -21,6 +21,9 @@ from .unified_gate import UnifiedGate, UnifiedGateResult, CheckResult
 from .doc_checker import DocumentChecker
 from .phase_artifact_enforcer import PhaseArtifactEnforcer
 from .constitution import run_constitution_check, ConstitutionCheckResult
+from .stage_pass_generator import IntegratedStagePassGenerator
+from .phase_config import PHASE_CONFIG, get_phase_config, get_phase_name, get_all_phases
+from .claims_verifier import ClaimsVerifier
 
 __all__ = [
     'UnifiedGate',
@@ -30,4 +33,10 @@ __all__ = [
     'PhaseArtifactEnforcer',
     'run_constitution_check',
     'ConstitutionCheckResult',
+    'IntegratedStagePassGenerator',
+    'PHASE_CONFIG',
+    'get_phase_config',
+    'get_phase_name',
+    'get_all_phases',
+    'ClaimsVerifier',
 ]

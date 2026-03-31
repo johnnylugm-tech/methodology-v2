@@ -75,7 +75,7 @@ from ralph_mode.state_machine import PhaseStateMachine
 class MethodologyCLI:
     """統一 CLI 入口"""
     
-    VERSION = "6.05.0"
+    VERSION = "6.06.0"
     
     def __init__(self):
         self.progress = ProgressDashboard()
@@ -233,6 +233,8 @@ class MethodologyCLI:
             return self.cmd_persona(args)
         elif command == "ralph":
             return self.cmd_ralph(args)
+        elif command == "stage-pass":
+            return self.cmd_stage_pass(args)
         else:
             pass # Removed print-debug
             return 1
@@ -2897,6 +2899,18 @@ class MethodologyCLI:
         
         return self.ralph_cli.run(ralph_namespace)
 
+    def cmd_stage_pass(self, args):
+        """STAGE_PASS Generator - 整合版品質認證"""
+        from quality_gate.stage_pass_generator import IntegratedStagePassGenerator
+        
+        phase = args.phase
+        project_dir = args.project
+        
+        generator = IntegratedStagePassGenerator(project_dir, phase)
+        success = generator.run()
+        
+        return 0 if success else 1
+
 
 # ==================== Main ====================
 
@@ -3270,6 +3284,12 @@ def main():
         nargs="+",
         help="Ralph 子命令: start, status, stop, list, init, advance"
     )
+
+    # stage-pass (STAGE_PASS Generator - 整合版品質認證)
+    stage_pass_parser = subparsers.add_parser("stage-pass", help="STAGE_PASS Generator - 整合版品質認證")
+    stage_pass_parser.add_argument("--phase", type=int, required=True, choices=range(1, 9),
+                                   help="Phase number (1-8)")
+    stage_pass_parser.add_argument("--project", default=".", help="Project root path")
 
     args = parser.parse_args()
     
