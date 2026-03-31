@@ -475,8 +475,9 @@ class FrameworkEnforcer:
             result.add_block_check("ASPICE_COMPLETE", aspice_passed)
 
             if not aspice_passed:
+                missing_docs = aspice.get('missing_docs') or []
                 result.add_violation(
-                    f"ASPICE 文檔缺失: {', '.join(aspice['missing_docs'][:3])}",
+                    f"ASPICE 文檔缺失: {', '.join(missing_docs[:3])}",
                     "請補齊所有 Phase 的文檔"
                 )
 
