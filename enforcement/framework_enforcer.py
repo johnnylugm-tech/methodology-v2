@@ -122,7 +122,20 @@ class FrameworkEnforcer:
             if not docs_path.exists():
                 return {"score": 0, "passed": False, "error": "docs/ not found"}
 
-            result = run_constitution_check("all", str(docs_path))
+            # 根據 Phase 選擇 Constitution 類型（預設為 srs）
+            phase_type_map = {
+                1: "srs",      # Phase 1: SRS
+                2: "srs",      # Phase 2: SAD  
+                3: "design",   # Phase 3: Implementation
+                4: "testing",  # Phase 4: Testing
+                5: "verify",   # Phase 5: Verification
+                6: "quality",  # Phase 6: Quality
+                7: "risk",     # Phase 7: Risk
+                8: "config",   # Phase 8: Config
+            }
+            const_type = phase_type_map.get(getattr(self, 'phase', 1), "srs")
+
+            result = run_constitution_check(const_type, str(docs_path))
             return {
                 "score": result.score,
                 "passed": result.passed,
