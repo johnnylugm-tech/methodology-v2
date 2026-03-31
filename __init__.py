@@ -4,7 +4,7 @@ Methodology v2 - Multi-Agent Collaboration Development Methodology
 Core classes for error classification, task lifecycle, and quality gates.
 """
 
-__version__ = "6.12.0"
+__version__ = "6.13.0"
 
 # Guard: if __package__ is None/empty, this is being imported as a top-level script
 # (e.g., by pytest collecting tests). Use lazy loading via __getattr__.
