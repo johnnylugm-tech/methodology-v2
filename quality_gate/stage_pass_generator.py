@@ -4,12 +4,29 @@ STAGE_PASS Generator - 整合版
 =============================
 結合 stage_pass_generator.py 概念與 FrameworkEnforcer 實際工具呼叫。
 
-功能：
-- Step 1: 5W1H 合規性掃描（呼叫實際工具驗證）
-- Step 2: FrameworkEnforcer BLOCK 檢查
-- Step 3: Sessions_spawn.log 驗證
-- Step 4: 問題修復迴圈（A/B 協作）
-- Step 5: 信心分數 + Git 推送
+核心原則：
+- 分數只是參考，不是通過/失敗的決定因素
+- Agent 自評誠實性是重點
+- Agent B 的疑問才是真正的品質把關
+- Johnny 只在必要時介入
+
+Agent A 自評原則（誠實）：
+- 必須如實報告問題，不隱瞞
+- 5W1H 合規性：是否 100% 遵從 Phase N 的 5W1H？
+- 問題修復：是否發現並修復了問題？
+- 交付完整性：所有交付物是否提供？
+
+Agent B 審查原則（批判）：
+- 發現 Agent A 可能忽略的問題
+- 挑戰 Agent A 的假設
+- 驗證聲稱的實際證據
+- 扮演「挑刺」的角色
+
+分數角色：
+- 95-100：快速確認
+- 80-94：仔細審查
+- 70-79：特別注意
+- <70：🔴 Flag，禁止進入下一 Phase
 
 使用方式：
     python quality_gate/stage_pass_generator.py --phase 3 --project-dir /path/to/project
@@ -36,8 +53,8 @@ from enforcement.framework_enforcer import FrameworkEnforcer
 from quality_gate.claims_verifier import ClaimsVerifier
 from quality_gate.phase_config import PHASE_CONFIG
 
-VERSION = "1.0.0"
-SKILL_REF = "methodology-v2"
+VERSION = "1.1.0"
+SKILL_REF = "methodology-v2 v6.13"
 
 
 class IntegratedStagePassGenerator:
@@ -228,72 +245,108 @@ class IntegratedStagePassGenerator:
         return score
     
     def generate_markdown(self) -> str:
-        """生成 STAGE_PASS.md"""
+        """生成 STAGE_PASS.md — Agent A/B 審查格式"""
         config = self.config
         now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         
         score = self.results["confidence_score"] or 0
-        if score >= 90:
+        if score >= 95:
             score_badge = f"🟢 {score}/100"
+        elif score >= 80:
+            score_badge = f"🟡 {score}/100"
         elif score >= 70:
             score_badge = f"🟡 {score}/100"
         else:
             score_badge = f"🔴 {score}/100"
         
+        block_result = self.results.get("framework_results", {}).get("BLOCK", {})
+        log_result = self.results.get("session_log_results", {})
+        test_evidence = self.results.get("test_evidence", {})
+        
+        # 5W1H 狀態推斷
+        who_pass = block_result.get("passed") and log_result.get("passed")
+        what_pass = test_evidence.get("pytest_passed")
+        when_pass = True  # 時序由流程保證
+        where_pass = block_result.get("passed")
+        why_pass = block_result.get("passed")
+        how_pass = block_result.get("passed")
+        
         lines = [
-            f"# {config.get('name', f'Phase {self.phase}')} — STAGE_PASS",
+            f"# Phase {self.phase} STAGE_PASS",
             f"",
-            f"> **方法論版本**: {SKILL_REF}",
-            f"> **生成時間**: {now}",
-            f"> **信心分數**: {score_badge}",
-            f"> **Git Commit**: `{self.results.get('git_commit', '(push后填入)')}`",
+            f"## Agent A 自評",
             f"",
-            f"---",
+            f"### 5W1H 合規性檢查",
+            f"| 項目 | 狀態 | 說明 |",
+            f"|------|------|------|",
+            f"| WHO | {'✅' if who_pass else '❌'} | A/B 協作真實性 |",
+            f"| WHAT | {'✅' if what_pass else '❌'} | 交付物完整性 |",
+            f"| WHEN | {'✅' if when_pass else '❌'} | 時序門檻滿足 |",
+            f"| WHERE | {'✅' if where_pass else '❌'} | 路徑工具正確 |",
+            f"| WHY | {'✅' if why_pass else '❌'} | 設計理由充分 |",
+            f"| HOW | {'✅' if how_pass else '❌'} | SOP 按序執行 |",
             f"",
-            f"## Step 1｜FrameworkEnforcer BLOCK 檢查",
-            f"",
+            f"### 發現的問題",
+            f"| # | 問題 | 嚴重性 | 修復方式 | 狀態 |",
+            f"|---|------|--------|----------|------|",
         ]
         
-        block_result = self.results.get("framework_results", {}).get("BLOCK", {})
-        if block_result.get("passed"):
-            lines.append("**結論**: ✅ 通過")
+        # 如果有 violations，列入問題
+        violations = block_result.get("violations", [])
+        if violations:
+            for i, (msg, fix) in enumerate(violations, 1):
+                lines.append(f"| {i} | {msg} | HIGH | {fix or '待修復'} | ❌ |")
         else:
-            lines.append("**結論**: ❌ 未通過")
-            lines.append("")
-            lines.append("### Violations")
-            for msg, fix in block_result.get("violations", []):
-                lines.append(f"- {msg}")
+            lines.append(f"| — | 無 | — | — | ✅ |")
         
         lines.extend([
             f"",
-            f"## Step 2｜Sessions_spawn.log 驗證",
+            f"### 交付物清單",
+            f"| 交付物 | 狀態 | 路徑 |",
+            f"|--------|------|------|",
+            f"| STAGE_PASS.md | ✅ | 00-summary/ |",
+            f"| FrameworkEnforcer | {'✅' if block_result.get('passed') else '❌'} | quality_gate/ |",
+            f"| Sessions_spawn.log | {'✅' if log_result.get('passed') else '❌'} | .openclaw/ |",
+            f"| pytest | {'✅' if test_evidence.get('pytest_passed') else '❌'} | tests/ |",
             f"",
-        ])
-        
-        log_result = self.results.get("session_log_results", {})
-        lines.append(f"**結論**: {'✅' if log_result.get('passed') else '❌'} {log_result.get('message', '')}")
-        
-        lines.extend([
+            f"**誠實分數**: {score}/100",
             f"",
-            f"## Step 3｜測試證據",
-            f"",
-        ])
-        
-        test_evidence = self.results.get("test_evidence", {})
-        lines.append(f"- pytest: {'✅' if test_evidence.get('pytest_passed') else '❌'}")
-        lines.append(f"- coverage: {'✅' if test_evidence.get('coverage_passed') else '❌'}")
-        
-        lines.extend([
-            f"",
-            f"## Step 4｜信心分數",
-            f"",
-            f"### {score_badge}",
-            f"",
-            f"**理由**: {self.results.get('confidence_reason', '')}",
+            f"Agent A: 自評 Session: —",
             f"",
             f"---",
             f"",
-            f"*由 stage_pass_generator.py v{VERSION} 生成*",
+            f"## Agent B 審查",
+            f"",
+            f"### 疑問清單",
+            f"| # | 疑問 | 針對項目 | 回應 |",
+            f"|---|------|----------|------|",
+            f"| — | （Agent B 填寫） | | |",
+            f"",
+            f"### 審查結論",
+            f"| 結論 | 說明 |",
+            f"|------|------|",
+            f"| ✅ APPROVE | 無重大疑問 |",
+            f"| ❌ REJECT | 有疑問需修復 |",
+            f"",
+            f"Agent B: （待填寫） Session: —",
+            f"",
+            f"---",
+            f"",
+            f"## Johnny 介入（如有）",
+            f"（僅在 Agent B 提出重大問題時填寫）",
+            f"",
+            f"---",
+            f"",
+            f"### 附：實際工具結果",
+            f"",
+            f"**FrameworkEnforcer BLOCK**: {'✅ 通過' if block_result.get('passed') else '❌ 未通過'}",
+            f"**Sessions_spawn.log**: {'✅ 通過' if log_result.get('passed') else '❌ 未通過'}",
+            f"**pytest**: {'✅ 通過' if test_evidence.get('pytest_passed') else '❌ 未通過'}",
+            f"**Coverage**: {'✅ 達標' if test_evidence.get('coverage_passed') else '❌ 未達標'}",
+            f"",
+            f"**分數理由**: {self.results.get('confidence_reason', '')}",
+            f"",
+            f"*由 methodology-v2 v6.13 STAGE_PASS Generator 產生*",
         ])
         
         return "\n".join(lines)

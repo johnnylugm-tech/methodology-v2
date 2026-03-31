@@ -1,6 +1,6 @@
 # methodology-v2 SKILL_TEMPLATES.md
 
-> **版本**: v6.12
+> **版本**: v6.13
 > **用途**: Phase 執行時使用的模板庫
 > **載入方式**: Lazy Load — SOP 步驟需要模板時才載入
 
@@ -552,6 +552,61 @@ class Test{ModuleName}:
 
 ---
 
+## §T18 STAGE_PASS 查核日誌模板
+
+# Phase {N} STAGE_PASS
+
+## Agent A 自評
+
+### 5W1H 合規性檢查
+| 項目 | 狀態 | 說明 |
+|------|------|------|
+| WHO | ✅/❌ | |
+| WHAT | ✅/❌ | |
+| WHEN | ✅/❌ | |
+| WHERE | ✅/❌ | |
+| WHY | ✅/❌ | |
+| HOW | ✅/❌ | |
+
+### 發現的問題
+| # | 問題 | 嚴重性 | 修復方式 | 狀態 |
+|---|------|--------|----------|------|
+
+### 交付物清單
+| 交付物 | 狀態 | 路徑 |
+|--------|------|------|
+
+**誠實分數**: {score}/100
+
+Agent A: {name} Session: {session_id}
+
+---
+
+## Agent B 審查
+
+### 疑問清單
+| # | 疑問 | 針對項目 | 回應 |
+|---|------|----------|------|
+
+### 審查結論
+| 結論 | 說明 |
+|------|------|
+| ✅ APPROVE | 無重大疑問 |
+| ❌ REJECT | 有疑問需修復 |
+
+Agent B: {name} Session: {session_id}
+
+---
+
+## Johnny 介入（如有）
+（僅在 Agent B 提出重大問題時填寫）
+
+---
+
+*由 methodology-v2 v6.13 STAGE_PASS Generator 產生*
+
+---
+
 ## A/B 審查通用模板
 
 ```markdown
@@ -580,4 +635,4 @@ class Test{ModuleName}:
 
 ---
 
-*SKILL_TEMPLATES.md v6.12 | Template Library*
+*SKILL_TEMPLATES.md v6.13 | Template Library*

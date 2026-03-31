@@ -1,4 +1,4 @@
-# methodology-v2 v6.12
+# methodology-v2 v6.13
 
 > Multi-Agent Collaboration Development Methodology — Agent Executable Specification
 > 精簡版：Agent 執行時真正需要的內容
@@ -373,50 +373,63 @@ python3 quality_gate/phase_artifact_enforcer.py --all
 
 ## 6. STAGE_PASS 查核日誌
 
-每個 Phase 結束時執行 `python cli.py stage-pass --phase N`
+每個 Phase 完成後，必須經過 Agent A/B 審查流程。
 
-```markdown
-# Phase {N} STAGE_PASS
+### 6.1 審查流程
 
-## Step 1: 5W1H 合規性掃描
+```
+Agent A 自評 → STAGE_PASS.md
+    ↓
+Agent B 審查 → 提出疑問或 APPROVE
+    ↓
+❌ Agent B 有疑問 → 回到 Agent A 修復
+    ↓
+✅ Agent B APPROVE → 進入下一 Phase
+```
 
-### WHO
-[角色分工是否正確？A/B 是否不同 Agent？]
+### 6.2 Agent A 自評（誠實）
 
-### WHAT
-[交付物清單是否完整？]
+| 檢查項目 | 說明 |
+|----------|------|
+| 5W1H 合規性 | 是否 100% 遵從 Phase N 的 5W1H？ |
+| 問題修復 | 是否發現並修復了問題？ |
+| 交付完整性 | 所有交付物是否提供？ |
 
-### WHEN
-[時序門檻是否滿足？]
+**誠實原則**：Agent A 必須如實報告問題，不隱瞞。
 
-### WHERE
-[路徑和工具是否正確？]
+### 6.3 Agent B 審查（批判）
 
-### WHY
-[設計理由是否充分？]
+Agent B 必須對以下提出疑問：
+- 發現 Agent A 可能忽略的問題
+- 挑戰 Agent A 的假設
+- 驗證聲稱的實際證據
 
-### HOW
-[SOP 是否按順序執行？]
+**批判原則**：Agent B 扮演「挑刺」的角色。
 
-## Step 2: 最終檢核
+### 6.4 分數角色
 
-| 條件 | 狀態 |
-|------|------|
-| FrameworkEnforcer BLOCK 通過 | ✅/❌ |
-| Constitution 門檻達標 | ✅/❌ |
-| Agent B APPROVE | ✅/❌ |
-| Phase Truth ≥ 70% | ✅/❌ |
+| 分數範圍 | Agent B 行動 |
+|----------|--------------|
+| 95-100 | 快速確認 |
+| 80-94 | 仔細審查 |
+| 70-79 | 特別注意 |
+| <70 | 🔴 Flag，禁止進入下一 Phase |
 
-## Step 3: 問題修復（如有）
+### 6.5 Johnny 介入條件
 
-| 問題 | 修復方式 | 修復結果 |
-|------|---------|---------|
-| [問題描述] | [修復方法] | [結果] |
+Johnny 只在以下情況介入：
+- Agent B 提出重大疑問無法解決
+- 分數 < 50
+- 發現作假跡象
 
-## Step 4: 信心分數
+### 6.6 CLI 命令
 
-信心分數：[0-100] 分
-理由：[...]
+```bash
+# 生成 STAGE_PASS
+python cli.py stage-pass --phase N
+
+# Agent B 審查
+python cli.py stage-review --phase N
 ```
 
 ---
@@ -544,5 +557,5 @@ python3 quality_gate/phase_artifact_enforcer.py --all
 
 ---
 
-*methodology-v2 v6.12 | Agent Executable Specification*
+*methodology-v2 v6.13 | Agent Executable Specification*
 *Last Updated: 2026-03-31*
