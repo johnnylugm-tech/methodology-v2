@@ -50,7 +50,7 @@ class PhaseTruthVerifier:
                     sys.path.insert(0, str(self.project_root))
 
             from enforcement.framework_enforcer import FrameworkEnforcer
-            enforcer = FrameworkEnforcer(str(self.project_root))
+            enforcer = FrameworkEnforcer(str(self.project_root), phase=self.phase)
             result = enforcer.run(level="BLOCK")
 
             passed = result.passed

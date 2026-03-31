@@ -87,8 +87,9 @@ class FrameworkEnforcer:
         {"name": "ENHANCED_CHECKLIST"},
     ]
 
-    def __init__(self, project_root: str = None):
+    def __init__(self, project_root: str = None, phase: int = 1):
         self.project_root = Path(project_root) if project_root else Path.cwd()
+        self.phase = phase  # 當前執行的 Phase
         self._spec_checker = None
 
     @property
@@ -153,7 +154,11 @@ class FrameworkEnforcer:
         }
 
     def check_enhanced_checklist(self) -> Dict:
-        """檢查 Enhanced Checklist 是否存在（支援多路徑）"""
+        """檢查 Enhanced Checklist 是否存在（支援多路徑，Phase 5+ 才需要）"""
+        # Phase 5+ 才需要 ENHANCED_CHECKLIST
+        if self.phase < 5:
+            return {"exists": True, "path": "N/A (Phase < 5)", "skipped": True}
+        
         checklist_candidates = [
             self.project_root / "CHECKLIST.md",
             self.project_root / "docs" / "CHECKLIST.md",
@@ -292,15 +297,35 @@ class FrameworkEnforcer:
 
         registry = PhaseArtifactRegistry(str(self.project_root))
 
-        # 驗證所有 Phase 間的引用
+        # 驗證所有 Phase 間的引用（只檢查到當前 Phase）
         verified = []
         missing = []
 
+        # Phase enum 到數字的映射
+        phase_map = {
+            Phase.CONSTITUTION: 0,
+            Phase.SPECIFY: 1,
+            Phase.PLAN: 2,
+            Phase.IMPLEMENT: 3,
+            Phase.VERIFY: 4,
+            Phase.SYSTEM_TEST: 5,
+            Phase.QUALITY: 6,
+            Phase.RISK: 7,
+            Phase.CONFIG: 8,
+        }
+
         for phase in Phase:
+            # 只檢查到當前 Phase 為止
+            if phase_map.get(phase, 0) > self.phase:
+                continue
+
             config = PhaseArtifactRegistry.PHASE_ARTIFACTS.get(phase, {})
             depends_on = config.get("depends_on", [])
 
             for prev_phase in depends_on:
+                # 只檢查當前 Phase 之前的依賴
+                if phase_map.get(prev_phase, 0) >= self.phase:
+                    continue
                 # 檢查是否有引用上一個 Phase 的產物
                 ref_check = registry.verify_phase_link(prev_phase, phase)
                 if ref_check.passed:
@@ -321,50 +346,55 @@ class FrameworkEnforcer:
 
     def check_aspice_completeness(self) -> Dict:
         """
-        檢查 ASPICE 8 階段文檔完整性
+        檢查 ASPICE 文檔完整性（只檢查到當前 Phase）
 
         ASPICE 要求每個 Phase 有對應文檔:
         - Phase 1: SRS.md (Software Requirements Specification)
         - Phase 2: SAD.md (Software Architecture Description)
-        - Phase 3: IMPLEMENTATION.md
-        - Phase 4: TEST_PLAN.md, TEST_RESULTS.md
-        - Phase 5: BASELINE.md
-        - Phase 6: QUALITY_REPORT.md
-        - Phase 7: RISK_ASSESSMENT.md, RISK_REGISTER.md
-        - Phase 8: CONFIG_RECORDS.md
+        ...
 
         Returns:
             Dict with keys: complete, missing_docs, phase_coverage
         """
         docs_path = self.project_root / "docs"
 
-        # 確保與 Phase enum 同步(ASPICE 8 階段)
+        # 只檢查到當前 Phase 為止（支援多命名慣例）
         required_by_phase = {
-            "Phase 1 (SPECIFY)": ["SRS.md", "SPEC.md"],
-            "Phase 2 (PLAN)": ["SAD.md", "ARCHITECTURE.md"],
-            "Phase 3 (IMPLEMENT)": ["IMPLEMENTATION.md"],
-            "Phase 4 (VERIFY)": ["TEST_PLAN.md", "TEST_RESULTS.md"],
-            "Phase 5 (SYSTEM_TEST)": ["BASELINE.md"],
-            "Phase 6 (QUALITY)": ["QUALITY_REPORT.md"],
-            "Phase 7 (RISK)": ["RISK_ASSESSMENT.md", "RISK_REGISTER.md"],
-            "Phase 8 (CONFIG)": ["CONFIG_RECORDS.md"],
+            1: {"Phase 1 (SPECIFY)": ["SRS.md", "SPEC.md", "01-requirements/SRS.md", "01-specify/SRS.md"]},
+            2: {"Phase 2 (PLAN)": ["SAD.md", "ARCHITECTURE.md", "02-architecture/SAD.md", "02-plan/SAD.md"]},
+            3: {"Phase 3 (IMPLEMENT)": ["IMPLEMENTATION.md", "03-implementation/IMPLEMENTATION.md"]},
+            4: {"Phase 4 (VERIFY)": ["TEST_PLAN.md", "TEST_RESULTS.md", "04-testing/TEST_PLAN.md"]},
+            5: {"Phase 5 (SYSTEM_TEST)": ["BASELINE.md", "05-verify/BASELINE.md"]},
+            6: {"Phase 6 (QUALITY)": ["QUALITY_REPORT.md", "06-quality/QUALITY_REPORT.md"]},
+            7: {"Phase 7 (RISK)": ["RISK_ASSESSMENT.md", "RISK_REGISTER.md", "07-risk/RISK_ASSESSMENT.md"]},
+            8: {"Phase 8 (CONFIG)": ["CONFIG_RECORDS.md", "08-config/CONFIG_RECORDS.md"]},
         }
 
         missing = []
         found = []
 
-        for phase, docs in required_by_phase.items():
-            for doc in docs:
-                doc_path = docs_path / doc
-                if doc_path.exists():
-                    found.append(f"{phase}/{doc}")
-                else:
+        # 只檢查到當前 Phase
+        for phase_num in range(1, self.phase + 1):
+            if phase_num not in required_by_phase:
+                continue
+            phase_docs = required_by_phase[phase_num]
+            for phase_name, doc_candidates in phase_docs.items():
+                # 檢查任一候選文件是否存在
+                found_one = False
+                for doc in doc_candidates:
+                    doc_path = docs_path / doc
+                    if doc_path.exists():
+                        found.append(f"{phase_name}/{doc}")
+                        found_one = True
+                        break
                     # 也檢查根目錄
                     root_path = self.project_root / doc
                     if root_path.exists():
-                        found.append(f"{phase}/{doc} (root)")
-                    else:
-                        missing.append(f"{phase}/{doc}")
+                        found.append(f"{phase_name}/{doc} (root)")
+                        found_one = True
+                        break
+                if not found_one:
+                    missing.append(f"{phase_name}/{doc_candidates[0]}")
 
         return {
             "complete": len(missing) == 0,
@@ -460,7 +490,7 @@ class FrameworkEnforcer:
 
         # BLOCK 檢查
         if level in ["BLOCK", "ALL"]:
-            # 1. SPEC_TRACKING
+            # 1. SPEC_TRACKING (所有 Phase)
             spec = self.check_spec_tracking()
             spec_passed = (
                 spec.get('exists', False) and
@@ -479,7 +509,7 @@ class FrameworkEnforcer:
                     None
                 )
 
-            # 2. Constitution Score
+            # 2. Constitution Score (所有 Phase)
             const = self.check_constitution()
             const_passed = const.get('score', 0) >= 60
             result.add_block_check("CONSTITUTION_SCORE", const_passed)
@@ -490,18 +520,21 @@ class FrameworkEnforcer:
                     "methodology constitution check"
                 )
 
-            # 3. ASPICE Phase Traceability
-            trace = self.check_phase_traceability()
-            trace_passed = trace['all_verified']
-            result.add_block_check("ASPICE_PHASE_TRACE", trace_passed)
+            # 3. ASPICE Phase Traceability (Phase 2+ 才檢查)
+            if self.phase >= 2:
+                trace = self.check_phase_traceability()
+                trace_passed = trace['all_verified']
+                result.add_block_check("ASPICE_PHASE_TRACE", trace_passed)
 
-            if not trace_passed:
-                result.add_violation(
-                    f"ASPICE Phase 追溯性未完成: {', '.join(trace['missing_links'])}",
-                    "請確保每個 Phase 引用上一個 Phase 的產物"
-                )
+                if not trace_passed:
+                    result.add_violation(
+                        f"ASPICE Phase 追溯性未完成: {', '.join(trace['missing_links'])}",
+                        "請確保每個 Phase 引用上一個 Phase 的產物"
+                    )
+            else:
+                result.add_block_check("ASPICE_PHASE_TRACE", True)
 
-            # 4. ASPICE Document Completeness
+            # 4. ASPICE Document Completeness (Phase 2+ 才檢查完整)
             aspice = self.check_aspice_completeness()
             aspice_passed = aspice['complete']
             result.add_block_check("ASPICE_COMPLETE", aspice_passed)
@@ -513,18 +546,21 @@ class FrameworkEnforcer:
                     "請補齊所有 Phase 的文檔"
                 )
 
-            # 5. COVERAGE_THRESHOLD (BUG-002: 測試覆蓋率 enforce)
-            coverage = self.check_coverage_threshold()
-            coverage_passed = coverage['passed']
-            result.add_block_check("COVERAGE_THRESHOLD", coverage_passed)
+            # 5. COVERAGE_THRESHOLD (Phase 3+ 才檢查)
+            if self.phase >= 3:
+                coverage = self.check_coverage_threshold()
+                coverage_passed = coverage['passed']
+                result.add_block_check("COVERAGE_THRESHOLD", coverage_passed)
 
-            if not coverage_passed:
-                result.add_violation(
-                    f"測試覆蓋率 {coverage['coverage']:.1f}% < {coverage['threshold']}%",
-                    "請增加測試覆蓋率"
-                )
+                if not coverage_passed:
+                    result.add_violation(
+                        f"測試覆蓋率 {coverage['coverage']:.1f}% < {coverage['threshold']}%",
+                        "請增加測試覆蓋率"
+                    )
+            else:
+                result.add_block_check("COVERAGE_THRESHOLD", True)
 
-            # 6. TRACEABILITY Matrix
+            # 6. TRACEABILITY Matrix (所有 Phase)
             trace = self.check_traceability_matrix()
             trace_passed = trace['complete']
             result.add_block_check("TRACEABILITY_COMPLETE", trace_passed)
