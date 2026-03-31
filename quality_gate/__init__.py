@@ -21,7 +21,11 @@ from .unified_gate import UnifiedGate, UnifiedGateResult, CheckResult
 from .doc_checker import DocumentChecker
 from .phase_artifact_enforcer import PhaseArtifactEnforcer
 from .constitution import run_constitution_check, ConstitutionCheckResult
-from .stage_pass_generator import IntegratedStagePassGenerator
+def __getattr__(name):
+    if name == "IntegratedStagePassGenerator":
+        from .stage_pass_generator import IntegratedStagePassGenerator
+        return IntegratedStagePassGenerator
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 from .phase_config import PHASE_CONFIG, get_phase_config, get_phase_name, get_all_phases
 from .claims_verifier import ClaimsVerifier
 from .phase_truth_verifier import PhaseTruthVerifier

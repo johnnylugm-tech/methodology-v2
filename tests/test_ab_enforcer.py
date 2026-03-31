@@ -5,9 +5,16 @@ import sys
 import os
 import tempfile
 import shutil
+from pathlib import Path
 
-# Add parent directory to path
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# Resolve paths relative to this file's location
+_TEST_DIR = Path(__file__).parent.resolve()
+_ROOT_DIR = _TEST_DIR.parent  # skills/methodology-v2
+_quality_gate_dir = _ROOT_DIR / "quality_gate"
+
+# Insert root at front so quality_gate is found directly
+if str(_ROOT_DIR) not in sys.path:
+    sys.path.insert(0, str(_ROOT_DIR))
 
 from quality_gate.ab_enforcer import ABEnforcer
 
@@ -36,13 +43,13 @@ class TestABEnforcer(unittest.TestCase):
         """測試 A/B 對話存在驗證"""
         result = self.enforcer.verify_ab_dialogue_exists("phase_1")
         self.assertIsInstance(result, dict)
-        self.assertIn("exists", result)
+        self.assertIn("has_dialogue", result)
     
     def test_qa_not_developer(self):
         """測試 QA ≠ Developer 驗證"""
         result = self.enforcer.verify_qa_not_developer()
         self.assertIsInstance(result, dict)
-        self.assertIn("qa_is_not_dev", result)
+        self.assertIn("separated", result)
 
 if __name__ == "__main__":
     unittest.main()
