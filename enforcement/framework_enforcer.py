@@ -140,11 +140,18 @@ class FrameworkEnforcer:
         }
 
     def check_enhanced_checklist(self) -> Dict:
-        """檢查 Enhanced Checklist 是否存在"""
-        checklist_file = self.project_root / "CHECKLIST.md"
+        """檢查 Enhanced Checklist 是否存在（支援多路徑）"""
+        checklist_candidates = [
+            self.project_root / "CHECKLIST.md",
+            self.project_root / "docs" / "CHECKLIST.md",
+            self.project_root / "01-requirements" / "CHECKLIST.md",
+        ]
+        for f in checklist_candidates:
+            if f.exists():
+                return {"exists": True, "path": str(f)}
         return {
-            "exists": checklist_file.exists(),
-            "path": str(checklist_file)
+            "exists": False,
+            "path": str(self.project_root / "CHECKLIST.md")
         }
 
     def check_coverage_threshold(self) -> Dict:
@@ -193,15 +200,27 @@ class FrameworkEnforcer:
 
     def check_traceability_matrix(self) -> Dict:
         """
-        檢查 TRACEABILITY_MATRIX.md 完整性
+        檢查 TRACEABILITY_MATRIX.md 完整性（支援多路徑）
 
         Returns:
             Dict with keys: exists, complete, completeness, missing_tests, missing_constitution
         """
         from pathlib import Path
 
-        trace_file = self.project_root / "TRACEABILITY_MATRIX.md"
-        if not trace_file.exists():
+        # 支援多個可能的位置
+        trace_candidates = [
+            self.project_root / "TRACEABILITY_MATRIX.md",
+            self.project_root / "01-requirements" / "TRACEABILITY_MATRIX.md",
+            self.project_root / "01-specify" / "TRACEABILITY_MATRIX.md",
+        ]
+        
+        trace_file = None
+        for f in trace_candidates:
+            if f.exists():
+                trace_file = f
+                break
+        
+        if trace_file is None or not trace_file.exists():
             return {
                 "exists": False,
                 "complete": False,

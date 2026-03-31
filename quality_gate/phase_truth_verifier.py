@@ -71,25 +71,47 @@ class PhaseTruthVerifier:
             return False, 0.0, "sessions_spawn.log 不存在"
 
         try:
-            content = log_file.read_text()
-            lines = [l for l in content.strip().split("\n") if l]
-
-            # 檢查是否有 A/B 兩個不同的 role
+            content = log_file.read_text().strip()
+            
+            # 支援兩種格式：
+            # 1. 逐行 JSON（每行一個 JSON object）
+            # 2. 單一 JSON（包含 sessions array）
             roles = set()
             sessions = set()
-            for line in lines:
-                try:
-                    entry = json.loads(line)
-                    roles.add(entry.get("role", ""))
-                    sessions.add(entry.get("session_id", ""))
-                except:
-                    pass
+            
+            # 嘗試作為整體 JSON 解析
+            try:
+                data = json.loads(content)
+                if isinstance(data, dict) and "sessions" in data:
+                    # 格式 2: {"sessions": [...]}
+                    for entry in data.get("sessions", []):
+                        roles.add(entry.get("role", ""))
+                        sessions.add(entry.get("session_id", ""))
+                elif isinstance(data, list):
+                    # 格式 1: 直接是 list
+                    for entry in data:
+                        roles.add(entry.get("role", ""))
+                        sessions.add(entry.get("session_id", ""))
+                else:
+                    # 可能是單一 entry
+                    roles.add(data.get("role", ""))
+                    sessions.add(data.get("session_id", ""))
+            except json.JSONDecodeError:
+                # 嘗試逐行解析
+                lines = [l for l in content.split("\n") if l]
+                for line in lines:
+                    try:
+                        entry = json.loads(line)
+                        roles.add(entry.get("role", ""))
+                        sessions.add(entry.get("session_id", ""))
+                    except:
+                        pass
 
             has_ab = len(roles) >= 2
             has_sessions = len(sessions) >= 2
 
             score = 100.0 if has_ab and has_sessions else 50.0 if has_sessions else 0.0
-            details = f"{len(lines)} 筆記錄, {len(roles)} 個角色, {len(sessions)} 個 session"
+            details = f"{len(sessions)} 筆記錄, {len(roles)} 個角色, {len(sessions)} 個 session"
 
             return has_ab and has_sessions, score, details
         except Exception as e:

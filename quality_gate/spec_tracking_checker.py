@@ -20,12 +20,25 @@ class SpecTrackingChecker:
     
     def __init__(self, project_root: str):
         self.project_root = Path(project_root)
-        self.spec_file = self.project_root / "SPEC_TRACKING.md"
+        # 支援多個可能的位置
+        self.spec_file_candidates = [
+            self.project_root / "SPEC_TRACKING.md",
+            self.project_root / "01-requirements" / "SPEC_TRACKING.md",
+            self.project_root / "01-specify" / "SPEC_TRACKING.md",
+            self.project_root / "requirements" / "SPEC_TRACKING.md",
+        ]
         self.template_file = Path(__file__).parent.parent / "templates" / "SPEC_TRACKING.md"
+        self.spec_file = None
+        for candidate in self.spec_file_candidates:
+            if candidate.exists():
+                self.spec_file = candidate
+                break
+        if self.spec_file is None:
+            self.spec_file = self.spec_file_candidates[0]  # 預設第一個
     
     def check_exists(self) -> bool:
         """檢查 SPEC_TRACKING.md 是否存在"""
-        return self.spec_file.exists()
+        return any(c.exists() for c in self.spec_file_candidates)
     
     def check_completeness(self) -> Dict:
         """檢查規格追蹤完整性"""
