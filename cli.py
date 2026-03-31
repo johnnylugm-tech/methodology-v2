@@ -235,6 +235,8 @@ class MethodologyCLI:
             return self.cmd_ralph(args)
         elif command == "stage-pass":
             return self.cmd_stage_pass(args)
+        elif command == "phase-verify":
+            return self.cmd_phase_truth(args)
         else:
             pass # Removed print-debug
             return 1
@@ -2911,6 +2913,18 @@ class MethodologyCLI:
         
         return 0 if success else 1
 
+    def cmd_phase_truth(self, args):
+        """Phase 真相驗證 - 驗證某個 Phase 是否真的通過了"""
+        from quality_gate.phase_truth_verifier import PhaseTruthVerifier
+
+        phase = args.phase
+        project_dir = args.project
+
+        verifier = PhaseTruthVerifier(project_dir, phase)
+        result = verifier.verify()
+
+        return 0 if result["passed"] else 1
+
 
 # ==================== Main ====================
 
@@ -3290,6 +3304,12 @@ def main():
     stage_pass_parser.add_argument("--phase", type=int, required=True, choices=range(1, 9),
                                    help="Phase number (1-8)")
     stage_pass_parser.add_argument("--project", default=".", help="Project root path")
+
+    # phase-verify (Phase 真相驗證)
+    phase_verify_parser = subparsers.add_parser("phase-verify", help="Phase 真相驗證")
+    phase_verify_parser.add_argument("--phase", type=int, required=True, choices=range(1, 9),
+                                     help="Phase number (1-8)")
+    phase_verify_parser.add_argument("--project", default=".", help="Project root path")
 
     args = parser.parse_args()
     

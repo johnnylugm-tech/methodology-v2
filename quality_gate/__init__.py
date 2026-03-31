@@ -24,6 +24,7 @@ from .constitution import run_constitution_check, ConstitutionCheckResult
 from .stage_pass_generator import IntegratedStagePassGenerator
 from .phase_config import PHASE_CONFIG, get_phase_config, get_phase_name, get_all_phases
 from .claims_verifier import ClaimsVerifier
+from .phase_truth_verifier import PhaseTruthVerifier
 
 __all__ = [
     'UnifiedGate',
@@ -39,4 +40,5 @@ __all__ = [
     'get_phase_name',
     'get_all_phases',
     'ClaimsVerifier',
+    'PhaseTruthVerifier',
 ]
