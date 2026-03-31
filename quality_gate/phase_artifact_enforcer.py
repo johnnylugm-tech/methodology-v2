@@ -59,49 +59,61 @@ class PhaseArtifactRegistry:
     """
     
     # Phase 產物對應表（ASPICE 8 階段 + Constitution）
+    # 注意：支援兩種命名慣例
+    #   - 傳統: 01-specify/, 02-plan/, etc.
+    #   - 專案: 01-requirements/, 02-architecture/, etc.
     PHASE_ARTIFACTS = {
         Phase.CONSTITUTION: {
             "required": ["CONSTITUTION.md", "constitution/"],
             "output_dir": "constitution",
+            "alt_dirs": ["constitution"],
         },
         Phase.SPECIFY: {  # Phase 1
-            "required": ["SRS.md", "SPEC.md", "01-specify/"],
-            "output_dir": "01-specify",
+            "required": ["SRS.md", "SPEC_TRACKING.md", "TRACEABILITY_MATRIX.md"],
+            "output_dir": "01-requirements",
+            "alt_dirs": ["01-specify", "01-requirements", "requirements"],
             "depends_on": [Phase.CONSTITUTION],
         },
         Phase.PLAN: {  # Phase 2
-            "required": ["SAD.md", "ARCHITECTURE.md", "02-plan/"],
-            "output_dir": "02-plan",
+            "required": ["SAD.md", "ADR.md", "ARCHITECTURE.md"],
+            "output_dir": "02-architecture",
+            "alt_dirs": ["02-plan", "02-architecture", "architecture", "plan"],
             "depends_on": [Phase.SPECIFY],
         },
         Phase.IMPLEMENT: {  # Phase 3
-            "required": ["src/", "03-implement/"],
-            "output_dir": "03-implement",
+            "required": ["src/", "tests/"],
+            "output_dir": "03-implementation",
+            "alt_dirs": ["03-implement", "03-implementation", "implementation", "src"],
             "depends_on": [Phase.PLAN],
         },
         Phase.VERIFY: {  # Phase 4
-            "required": ["TEST_PLAN.md", "04-verify/"],
-            "output_dir": "04-verify",
+            "required": ["TEST_PLAN.md", "TEST_RESULTS.md"],
+            "output_dir": "04-testing",
+            "alt_dirs": ["04-verify", "04-testing", "testing", "verify"],
             "depends_on": [Phase.IMPLEMENT],
         },
         Phase.SYSTEM_TEST: {  # Phase 5
-            "required": ["TEST_RESULTS.md", "BASELINE.md", "05-system-test/"],
-            "output_dir": "05-system-test",
+            "required": ["TEST_RESULTS.md", "BASELINE.md", "VERIFICATION_REPORT.md"],
+            "output_dir": "05-verify",
+            "alt_dirs": ["05-system-test", "05-verify", "verify"],
             "depends_on": [Phase.VERIFY],
         },
         Phase.QUALITY: {  # Phase 6
-            "required": ["QUALITY_REPORT.md", "06-quality/"],
+            "required": ["QUALITY_REPORT.md", "MONITORING_PLAN.md"],
             "output_dir": "06-quality",
+            "alt_dirs": ["06-quality", "quality"],
             "depends_on": [Phase.SYSTEM_TEST],
         },
         Phase.RISK: {  # Phase 7
-            "required": ["RISK_ASSESSMENT.md", "RISK_REGISTER.md", "07-risk/"],
+            "required": ["RISK_ASSESSMENT.md", "RISK_REGISTER.md"],
             "output_dir": "07-risk",
+            "alt_dirs": ["07-risk", "risk"],
             "depends_on": [Phase.QUALITY],
         },
         Phase.CONFIG: {  # Phase 8
-            "required": ["CONFIG_RECORDS.md", "08-config/"],
+            "required": ["CONFIG_RECORDS.md", "RELEASE_CHECKLIST.md"],
             "output_dir": "08-config",
+            "alt_dirs": ["08-config", "08-configuration", "config", "configuration"],
             "depends_on": [Phase.RISK],
         },
     }
@@ -112,13 +124,21 @@ class PhaseArtifactRegistry:
         self._scan_existing_artifacts()
     
     def _scan_existing_artifacts(self):
-        """掃描現有產物"""
+        """掃描現有產物（支援多個可能的目錄名）"""
         for phase in Phase:
             config = self.PHASE_ARTIFACTS.get(phase, {})
             output_dir = config.get("output_dir", "")
+            alt_dirs = config.get("alt_dirs", [])
             
-            if output_dir and (self.project_root / output_dir).exists():
-                files = list((self.project_root / output_dir).rglob("*"))
+            # 嘗試多個可能的目錄名
+            found_dir = None
+            for dir_name in [output_dir] + alt_dirs:
+                if dir_name and (self.project_root / dir_name).exists():
+                    found_dir = dir_name
+                    break
+            
+            if found_dir:
+                files = list((self.project_root / found_dir).rglob("*"))
                 file_paths = [str(f.relative_to(self.project_root)) for f in files if f.is_file()]
                 
                 # 計算 signature
@@ -379,12 +399,20 @@ class PhaseArtifactEnforcer:
         # Re-scan artifacts to pick up any newly created directories
         self.registry._scan_existing_artifacts()
 
-        # Find the highest existing phase
+        # Find the highest existing phase (check both primary and alt dirs)
         existing_phases = []
         for phase in Phase:
             config = self.registry.PHASE_ARTIFACTS.get(phase, {})
             output_dir = config.get("output_dir", "")
-            if output_dir and (self.registry.project_root / output_dir).exists():
+            alt_dirs = config.get("alt_dirs", [])
+            
+            found = False
+            for dir_name in [output_dir] + alt_dirs:
+                if dir_name and (self.registry.project_root / dir_name).exists():
+                    found = True
+                    break
+            
+            if found:
                 existing_phases.append(phase)
 
         # Only check up to the highest existing phase

@@ -152,26 +152,52 @@ class PhaseTruthVerifier:
     def get_manual_checklist(self) -> List[Dict]:
         """生成需要手動確認的項目"""
 
+        # Phase 目錄映射（支援多種命名慣例）
+        phase_dirs = {
+            1: ["01-requirements", "01-specify", "requirements", "specify"],
+            2: ["02-architecture", "02-plan", "architecture", "plan"],
+            3: ["03-implementation", "03-implement", "implementation", "implement", "src"],
+            4: ["04-testing", "04-verify", "testing", "verify"],
+            5: ["05-verify", "05-system-test", "verify"],
+            6: ["06-quality", "quality"],
+            7: ["07-risk", "risk"],
+            8: ["08-config", "08-configuration", "config", "configuration"],
+        }
+
         phase_artifacts = {
             1: ["SRS.md", "SPEC_TRACKING.md", "TRACEABILITY_MATRIX.md"],
-            2: ["SAD.md", "ARCHITECTURE.md"],
-            3: ["03-implementation/src/", "03-implementation/tests/"],
+            2: ["SAD.md", "ARCHITECTURE.md", "ADR.md"],
+            3: ["src/", "tests/", "COMPLIANCE_MATRIX.md"],
             4: ["TEST_PLAN.md", "TEST_RESULTS.md"],
-            5: ["BASELINE.md", "VERIFICATION_REPORT.md"],
+            5: ["BASELINE.md", "VERIFICATION_REPORT.md", "MONITORING_PLAN.md"],
             6: ["QUALITY_REPORT.md"],
             7: ["RISK_ASSESSMENT.md", "RISK_REGISTER.md"],
-            8: ["CONFIG_RECORDS.md"],
+            8: ["CONFIG_RECORDS.md", "RELEASE_CHECKLIST.md"],
         }
 
         checklist = []
 
-        # 根據 Phase 添加需要確認的項目
+        # 根據 Phase 添加需要確認的項目（檢查多個可能位置）
         if self.phase in phase_artifacts:
+            dirs_to_check = [None] + phase_dirs.get(self.phase, [])  # None = root directory
+            
             for artifact in phase_artifacts[self.phase]:
-                path = self.project_root / artifact
-                exists = path.exists()
+                exists = False
+                found_path = artifact
+                
+                for dir_prefix in dirs_to_check:
+                    if dir_prefix:
+                        path = self.project_root / dir_prefix / artifact
+                    else:
+                        path = self.project_root / artifact
+                    
+                    if path.exists():
+                        exists = True
+                        found_path = f"{dir_prefix}/{artifact}" if dir_prefix else artifact
+                        break
+                
                 checklist.append({
-                    "item": artifact,
+                    "item": found_path,
                     "status": "✅ 存在" if exists else "❌ 缺失",
                     "action": f"隨機選 1 處，確認內容不是空洞的 template"
                 })
