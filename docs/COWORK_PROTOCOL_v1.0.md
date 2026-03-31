@@ -644,5 +644,16 @@ def test_cross_model_workflow():
 
 ---
 
+## 附錄B：待納入項目（v6.14+）
+
+### GitHub Commit 時機（目前SKILL.md未明確規定）
+
+| 建議新增 | 內容 |
+|----------|------|
+| HR-12 | 每個 Step 完成後必須 commit 到 GitHub |
+| §0 執行協議 | FOR EACH step 加上 COMMIT to GitHub |
+
+---
+
 *方案版本: v1.0*
 *最後更新: 2026-03-31*
