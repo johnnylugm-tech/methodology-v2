@@ -2259,15 +2259,15 @@ class MethodologyCLI:
             
             # 失敗時阻擋
             if not result.passed:
-                print("❌ Quality Gate BLOCK failed")
-                print("\n🔴 Violations:")
+                pass # Removed print-debug
+                pass # Removed print-debug
                 for msg, fix in result.violations:
-                    print(f"   {msg}")
+                    pass # Removed print-debug
                     if fix:
-                        print(f"      → {fix}")
+                        pass # Removed print-debug
                 sys.exit(1)
             
-            print("✅ Quality Gate BLOCK passed")
+            pass # Removed print-debug
 
             gate = UnifiedGate()
             result = gate.check_all()
