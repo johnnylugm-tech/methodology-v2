@@ -304,6 +304,8 @@ class ABEnforcer:
         """
         # 處理 phase_1 -> Phase 1 等格式
         phase_pattern = phase.replace("_", " ").title()
+        # 確保 phase_str 格式正確
+        phase_str = phase if phase.startswith("phase_") else f"phase_{phase}"
         
         # 嘗試多種匹配模式
         patterns = [
