@@ -248,31 +248,22 @@ class PhaseTruthVerifier:
         print("=" * 60)
         print()
 
-        # 執行各項檢查
+        # 執行各項檢查（根據 Phase 調整）
         checks = [
-            ("FrameworkEnforcer BLOCK", self.check_framework_block),
-            ("Sessions_spawn.log", self.check_session_log),
-            ("pytest 實際通過", self.check_pytest),
-            ("測試覆蓋率達標", self.check_coverage),
+            ("FrameworkEnforcer BLOCK", self.check_framework_block, 0.35),
+            ("Sessions_spawn.log", self.check_session_log, 0.25),
         ]
+
+        # Phase 3+ 才檢查 pytest 和覆蓋率
+        if self.phase >= 3:
+            checks.append(("pytest 實際通過", self.check_pytest, 0.25))
+            checks.append(("測試覆蓋率達標", self.check_coverage, 0.15))
 
         total_score = 0.0
         results = []
 
-        for name, check_func in checks:
+        for name, check_func, weight in checks:
             passed, score, details = check_func()
-            # Use a simple key extraction for weights
-            key = name.split()[0].lower()
-            if "frameworkenforcer" in key:
-                weight = 0.35
-            elif "sessions" in key:
-                weight = 0.25
-            elif "pytest" in key:
-                weight = 0.25
-            elif "coverage" in key or "覆蓋率" in key:
-                weight = 0.15
-            else:
-                weight = 0.25
 
             weighted_score = score * weight
             total_score += weighted_score
