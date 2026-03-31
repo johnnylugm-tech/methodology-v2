@@ -1,6 +1,6 @@
 # methodology-v2
 
-> Multi-Agent Collaboration Development Methodology v5.95
+> Multi-Agent Collaboration Development Methodology v6.02.0
 
 ---
 
@@ -27,6 +27,12 @@
 | **v5.93** | **2026-03-29** | **Phase1-8 5W1H 整合審計修正（P0-P3）：Phase 1 新增獨立 5W1H 章節、Phase 1 退出條件補齊 SPEC_TRACKING 完整性檢查、Phase 4 補充 WHEN/WHERE/WHY/HOW、Phase 3 加入 phase_artifact_enforcer.py、Phase 6-7 加入 session_id 記錄要求、Phase 7 加入邏輯正確性閾值、Phase 8 統一監控時段定義** |
 | **v5.94** | **2026-03-29** | **Phase 1-8 5W1H 審計修正（P1-P2）：Phase 4 WHERE 加入 spec_logic_checker.py、Phase 4 退出條件代碼覆蓋率明確為單元測試、Phase 3 退出條件加入代碼覆蓋率 ≥ 70%、Phase 6 進入條件加入測試通過率 = 100%、Phase 7 前置條件加入驗證測試通過率 = 100%、Phase 8 新增 SUP.8 配置管理說明** |
 | **v5.95** | **2026-03-29** | **Core Test Suite: 4 個測試檔案（spec_logic_checker, unified_gate, phase_enforcer, constitution_runner）、Ralph Mode smoke test、CHANGELOG v5.82-v5.95 更新** |
+| **v5.96** | **2026-03-29** | **PhaseEnforcer 獨立 smoke test、UnifiedGate 覆蓋矩陣** |
+| **v5.97** | **2026-03-30** | **VERSION_SOP.md、COVERAGE_MATRIX.md** |
+| **v5.98** | **2026-03-30** | **Phase enum 擴展 6→9 phases、FrameworkEnforcer ASPICE mapping** |
+| **v5.99** | **2026-03-30** | **BUG-001 + BUG-002 修復** |
+| **v6.00** | **2026-03-31** | **版本統一** |
+| **v6.02** | **2026-03-31** | **Integrity Tracker + Constitution 整合** |
 | **v5.92** | **2026-03-29** | **整合 Phase5+7+8_Plan_5W1H_AB.md 精華：Phase 5 兩次 A/B 審查 + BASELINE 完整規格 + MONITORING_PLAN；Phase 7 五維度風險識別 + Decision Gate + 四層緩解措施；Phase 8 CONFIG_RECORDS 8 章節 + 七區塊發布清單 + 方法論閉環確認** |
 
 ---
@@ -4413,6 +4419,92 @@ L3 代碼品質檢查使用 Agent Quality Guard（`/workspace/agent-quality-guar
 ---
 
 *附錄新增日期: 2026-03-29 - 整合 Agent Quality Guard*
+
+---
+
+## v6.02 新模組：Integrity Tracker
+
+### 概述
+Integrity Tracker 是誠信追蹤系統，用於記錄和追蹤 Agent 的誠信行為。每次「聲稱 vs 實際」不符都會被記錄並扣分。
+
+### 扣分規則
+
+| 違規類型 | 扣分 | 說明 |
+|----------|------|------|
+| subagent_claim | -20 | 聲稱使用 Sub-agent 但未使用 |
+| code_lines_claim | -15 | 代碼行數聲稱與實際不符 > 5% |
+| qg_not_executed | -10 | 聲稱執行 Quality Gate 但未執行 |
+| qa_equals_developer | -25 | QA = Developer（角色衝突）|
+| missing_dialogue | -15 | 缺少 Developer 回應 Reviewer 的記錄 |
+| fake_qg_result | -20 | 虛假 Quality Gate 結果 |
+| skip_phase | -30 | 跳過 Phase |
+| revision_zero | -15 | 聲稱 Revision = 0 但有修改 |
+
+### 信任等級
+
+| 等級 | 分數範圍 | 說明 |
+|------|----------|------|
+| FULL_TRUST | ≥ 80 | 完整信任 |
+| PARTIAL_TRUST | 50-79 | 部分信任 |
+| LOW_TRUST | < 50 | 低信任，需要更多審查 |
+
+### 使用方式
+
+```python
+from quality_gate.integrity_tracker import IntegrityTracker
+
+# 初始化
+tracker = IntegrityTracker("/path/to/project")
+
+# 記錄違規
+tracker.record_violation({
+    "type": "qg_not_executed",
+    "details": "聲稱執行 Quality Gate 但未實際執行"
+})
+
+# 取得信任等級
+trust_level = tracker.get_trust_level()
+print(f"Trust Level: {trust_level['level']}")
+print(f"Score: {trust_level['score']}")
+
+# 取得詳細報告
+report = tracker.get_report()
+print(f"Total Violations: {report['total_violations']}")
+print(f"Score: {report['score']}")
+```
+
+### Constitution 整合
+
+Integrity Tracker 也整合進 Constitution 檢查：
+
+```python
+from constitution.integrity_constitution_checker import IntegrityConstitutionChecker
+
+# 執行 Constitution 檢查時自動檢查誠信維度
+checker = IntegrityConstitutionChecker()
+result = checker.check("/path/to/project")
+print(f"Integrity Score: {result['integrity_score']}")
+```
+
+### Phase Enforcer 整合
+
+Phase Enforcer 現在會自動觸發 Integrity Tracker：
+
+```python
+from quality_gate.phase_enforcer import PhaseEnforcer
+
+enforcer = PhaseEnforcer("/path/to/project", strict_mode=True)
+result = enforcer.enforce_phase(1)
+
+# 如果有誠信問題，會記錄到 Integrity Tracker
+print(f"Integrity Issues: {result.get('integrity_issues', [])}")
+```
+
+### 檔案位置
+
+- `quality_gate/integrity_tracker.py` - 核心模組
+- `constitution/integrity_constitution_checker.py` - Constitution 整合
+- `quality_gate/phase_enforcer.py` - Phase Enforcer Hook
 
 ---
 
