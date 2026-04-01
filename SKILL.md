@@ -49,7 +49,28 @@
 python cli.py stage-pass --phase N
 ```
 
+### 0.5 Phase Reset 標準程序（重要）
+
+當需要放棄當前 Phase 並重新開始時，**必須**嚴格執行以下步驟：
+
+```bash
+# Step 1: 確認目標狀態
+git ls-tree <target_commit> --name-only
+
+# Step 2: 清理工作目錄（非常重要！否則殘留檔案會混入新 commit）
+git clean -fdx
+
+# Step 3: Reset 到目標 commit
+git reset --hard <target_commit>
+
+# Step 4: 確認工作目錄狀態
+ls -la && git status
+```
+
+**⚠️ 警告**：省略 `git clean -fdx` 會導致新 commit 混入舊檔案。
+
 ---
+
 
 ## 1. 硬規則（違反即終止）
 

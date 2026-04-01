@@ -50,6 +50,8 @@ _parent_dir = Path(__file__).parent.parent
 sys.path.insert(0, str(_parent_dir))
 
 from enforcement.framework_enforcer import FrameworkEnforcer
+from pathlib import Path
+from datetime import datetime
 from quality_gate.claims_verifier import ClaimsVerifier
 from quality_gate.phase_config import PHASE_CONFIG
 
@@ -414,6 +416,35 @@ class IntegratedStagePassGenerator:
             print(f"⚠️ Git 操作失敗: {e.stderr}")
             return ""
     
+    def _log_to_development_log(self):
+        """將 STAGE_PASS QG 結果寫入 DEVELOPMENT_LOG（修復 WARNING 5）"""
+        try:
+            log_path = self.project_root / "DEVELOPMENT_LOG.md"
+            timestamp = datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
+            
+            # 從 results 取出分數
+            const_result = self.results.get("framework_results", {}).get("CONSTITUTION", {})
+            block_result = self.results.get("framework_results", {}).get("BLOCK", {})
+            const_score = const_result.get("score", 0)
+            const_passed = const_result.get("passed", False)
+            violations_count = len(block_result.get("violations", []))
+            
+            log_lines = [
+                f"\n## Phase {self.phase} STAGE_PASS — {timestamp}",
+                f"\n✅ **[{timestamp}] Constitution Score**: {const_score:.1f}% (threshold > 80%)",
+                f"\n✅ **[{timestamp}] FrameworkEnforcer**: {'✅' if violations_count == 0 else '❌'} {violations_count} violations",
+                f"\n✅ **[{timestamp}] Stage-Pass Confidence**: {self.results.get('confidence_score', 0)}/100",
+            ]
+            
+            log_content = "\n".join(log_lines)
+            
+            with open(log_path, "a", encoding="utf-8") as f:
+                f.write(log_content + "\n")
+            
+            print(f"\n📝 QG 結果已寫入 DEVELOPMENT_LOG")
+        except Exception as e:
+            print(f"\n[WARNING] 寫入 DEVELOPMENT_LOG 失敗: {e}")
+    
     def run(self) -> bool:
         """執行完整流程"""
         print(f"\n{'='*60}")
@@ -432,6 +463,9 @@ class IntegratedStagePassGenerator:
         
         # Step 4: Confidence
         score = self.run_step4_confidence()
+        
+        # Log to DEVELOPMENT_LOG（修復 WARNING 5）
+        self._log_to_development_log()
         
         # Generate & Push
         md = self.generate_markdown()
