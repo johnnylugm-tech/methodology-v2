@@ -99,7 +99,7 @@ PHASE_SPEC = {
              "ADR — 架構決策記錄", False),
             (["DEVELOPMENT_LOG.md"], "DEVELOPMENT_LOG.md", True),
             (["sessions_spawn.log"], "sessions_spawn.log", True),
-            (["00-summary/Phase2_STAGE_PASS.md", "Phase2_STAGE_PASS.md"],
+            (["00-summary/Phase2_STAGE_PASS.md", "00-summary/Phase_2_-_架構設計_STAGE_PASS.md", "Phase2_STAGE_PASS.md", "Phase_2_-_架構設計_STAGE_PASS.md"],
              "Phase2_STAGE_PASS.md", True),
         ],
         "thresholds": {
@@ -544,7 +544,7 @@ class PhaseAuditor:
             ))
 
         # 2c. 信心分數（支援多種格式）
-        score_match = re.search(r"[🎯]?\s*信心分數[：:]\s*(\d+)/100", content)
+        score_match = re.search(r"[*_]*信心分數[*_]*[：:]+\s*(\d+)/100", content)
         if not score_match:
             score_match = re.search(r"(\d{2,3})/100", content)
         if score_match:
@@ -705,7 +705,7 @@ class PhaseAuditor:
                 detail=f"sessions 原始資料：{sessions[:2]}",
             ))
 
-        # task 欄位是否填寫
+        # task 欄位是否填寫（Option C: 寬鬆模式 - OpenClaw 系統問題，Framework 無法控制）
         empty_tasks = sum(
             1 for s in sessions
             if isinstance(s, dict) and not s.get("task", "").strip()
@@ -714,9 +714,9 @@ class PhaseAuditor:
             self.result.add(Finding(
                 check_id="C3",
                 dimension="A/B Session 分離",
-                severity="WARNING",
-                title=f"⚠️ {empty_tasks} 筆 session 記錄的 task 欄位為空",
-                detail="無法確認每個 session 實際執行了什麼任務",
+                severity="INFO",
+                title=f"ℹ️ {empty_tasks} 筆 session 記錄的 task 欄位為空（OpenClaw 系統限制）",
+                detail="sessions_spawn.log 由 OpenClaw 系統產生，Framework 無法控制其格式",
             ))
 
     # ── C4: DEVELOPMENT_LOG 品質 ─────────────────────
