@@ -367,9 +367,20 @@ class FrameworkEnforcer:
         Returns:
             Dict with keys: complete, missing_docs, phase_coverage
         """
-        docs_path = self.project_root / "docs"
+        # 根據 Phase 決定文檔基礎目錄
+        phase_doc_roots = {
+            1: "01-requirements",
+            2: "02-architecture",
+            3: "03-implementation",
+            4: "04-testing",
+            5: "05-verify",
+            6: "06-quality",
+            7: "07-risk",
+            8: "08-config",
+        }
+        doc_root = phase_doc_roots.get(self.phase, "")
 
-        # 只檢查到當前 Phase 為止（支援多命名慣例）
+        # 只檢查到當前 Phase 為止（嚴格遵從 SKILL.md phase 目錄）
         required_by_phase = {
             1: {"Phase 1 (SPECIFY)": ["01-requirements/SRS.md", "01-requirements/SPEC_TRACKING.md", "01-requirements/TRACEABILITY_MATRIX.md"]},
             2: {"Phase 2 (PLAN)": ["02-architecture/SAD.md"]},
@@ -390,18 +401,12 @@ class FrameworkEnforcer:
                 continue
             phase_docs = required_by_phase[phase_num]
             for phase_name, doc_candidates in phase_docs.items():
-                # 檢查任一候選文件是否存在
+                # 檢查文件是否在 phase 目錄（嚴格 SKILL.md）
                 found_one = False
                 for doc in doc_candidates:
-                    doc_path = docs_path / doc
+                    doc_path = self.project_root / doc
                     if doc_path.exists():
                         found.append(f"{phase_name}/{doc}")
-                        found_one = True
-                        break
-                    # 也檢查根目錄
-                    root_path = self.project_root / doc
-                    if root_path.exists():
-                        found.append(f"{phase_name}/{doc} (root)")
                         found_one = True
                         break
                 if not found_one:
