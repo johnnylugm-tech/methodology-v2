@@ -45,7 +45,7 @@ PHASE_CONFIG = {
         },
         "required_artifacts": [
             "02-architecture/SAD.md",
-            "02-architecture/ARCHITECTURE.md",
+            "02-architecture/adr/",
             "DEVELOPMENT_LOG.md",
         ],
         "block_checks": [

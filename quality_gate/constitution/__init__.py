@@ -82,16 +82,29 @@ def load_constitution_documents(docs_path: str) -> Dict[str, Optional[str]]:
             documents["srs"] = matches[0].read_text(encoding="utf-8")
             break
     
-    # 搜尋 SAD (先搜 docs_path，若找不到再搜 parent)
-    for pattern in ["SAD*.md", "*SAD*.md", "*架構*.md", "*ARCHITECTURE*.md"]:
+    # 搜尋 SAD (先搜 02-architecture/，再搜 docs_path，若找不到再搜 parent)
+    # Phase 2 SKILL.md 規範 SAD.md 在 02-architecture/ 目錄
+    phase2_sad_paths = [
+        "02-architecture/SAD.md",
+        "02-architecture/SAD*.md",
+        "02-architecture/*ARCHITECTURE*.md",
+    ]
+    for pattern in phase2_sad_paths:
         matches = list(docs_dir.glob(pattern))
         if matches:
             documents["sad"] = matches[0].read_text(encoding="utf-8")
             break
+    # 若在 docs_path 找不到 02-architecture/SAD，搜 docs_path 本身
+    if not documents["sad"]:
+        for pattern in ["SAD*.md", "*SAD*.md", "*架構*.md", "*ARCHITECTURE*.md"]:
+            matches = list(docs_dir.glob(pattern))
+            if matches:
+                documents["sad"] = matches[0].read_text(encoding="utf-8")
+                break
     # 若在 docs/ 找不到，索性搜 parent 目錄
     if not documents["sad"]:
         parent_dir = docs_dir.parent
-        for pattern in ["SAD.md", "SAD*.md", "SoftwareArchitecture.md", "*SAD*.md", "*架構*.md", "*ARCHITECTURE*.md"]:
+        for pattern in ["SAD.md", "SAD*.md", "SoftwareArchitecture.md", "*SAD*.md", "*架構*.md", "*ARCHITECTURE*.md", "02-architecture/SAD.md"]:
             matches = list(parent_dir.glob(pattern))
             if matches:
                 documents["sad"] = matches[0].read_text(encoding="utf-8")
