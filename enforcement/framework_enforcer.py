@@ -133,19 +133,10 @@ class FrameworkEnforcer:
             phase_info = phase_info_map.get(getattr(self, 'phase', 1), {"type": "srs", "dir": "docs"})
             const_type = phase_info["type"]
             
-            # 嘗試多個可能的目錄
-            docs_candidates = [
-                self.project_root / phase_info["dir"],
-                self.project_root / "docs",
-                self.project_root / "01-requirements",
-            ]
-            docs_path = None
-            for candidate in docs_candidates:
-                if candidate.exists():
-                    docs_path = candidate
-                    break
-            if not docs_path:
-                return {"score": 0, "passed": False, "error": f"No valid docs directory found for phase {self.phase}"}
+            # 只使用 phase 對應目錄（嚴格 SKILL.md）
+            docs_path = self.project_root / phase_info["dir"]
+            if not docs_path.exists():
+                return {"score": 0, "passed": False, "error": f"Phase {self.phase} directory not found: {phase_info['dir']}"}
 
             result = run_constitution_check(const_type, str(docs_path))
             return {
