@@ -371,14 +371,14 @@ class FrameworkEnforcer:
 
         # 只檢查到當前 Phase 為止（支援多命名慣例）
         required_by_phase = {
-            1: {"Phase 1 (SPECIFY)": ["SRS.md", "SPEC.md", "01-requirements/SRS.md", "01-specify/SRS.md"]},
-            2: {"Phase 2 (PLAN)": ["SAD.md", "ARCHITECTURE.md", "02-architecture/SAD.md", "02-plan/SAD.md"]},
-            3: {"Phase 3 (IMPLEMENT)": ["IMPLEMENTATION.md", "03-implementation/IMPLEMENTATION.md"]},
-            4: {"Phase 4 (VERIFY)": ["TEST_PLAN.md", "TEST_RESULTS.md", "04-testing/TEST_PLAN.md"]},
-            5: {"Phase 5 (SYSTEM_TEST)": ["BASELINE.md", "05-verify/BASELINE.md"]},
-            6: {"Phase 6 (QUALITY)": ["QUALITY_REPORT.md", "06-quality/QUALITY_REPORT.md"]},
-            7: {"Phase 7 (RISK)": ["RISK_ASSESSMENT.md", "RISK_REGISTER.md", "07-risk/RISK_ASSESSMENT.md"]},
-            8: {"Phase 8 (CONFIG)": ["CONFIG_RECORDS.md", "08-config/CONFIG_RECORDS.md"]},
+            1: {"Phase 1 (SPECIFY)": ["01-requirements/SRS.md", "01-requirements/SPEC_TRACKING.md", "01-requirements/TRACEABILITY_MATRIX.md"]},
+            2: {"Phase 2 (PLAN)": ["02-architecture/SAD.md"]},
+            3: {"Phase 3 (IMPLEMENT)": ["03-implementation/IMPLEMENTATION.md", "03-implementation/src/", "03-implementation/tests/"]},
+            4: {"Phase 4 (VERIFY)": ["04-testing/TEST_PLAN.md", "04-testing/TEST_RESULTS.md"]},
+            5: {"Phase 5 (SYSTEM_TEST)": ["05-verify/BASELINE.md", "05-verify/VERIFICATION_REPORT.md", "05-verify/MONITORING_PLAN.md"]},
+            6: {"Phase 6 (QUALITY)": ["06-quality/QUALITY_REPORT.md", "06-quality/MONITORING_PLAN.md"]},
+            7: {"Phase 7 (RISK)": ["07-risk/RISK_ASSESSMENT.md", "07-risk/RISK_REGISTER.md"]},
+            8: {"Phase 8 (CONFIG)": ["08-config/CONFIG_RECORDS.md", "08-config/RELEASE_CHECKLIST.md"]},
         }
 
         missing = []

@@ -32,85 +32,16 @@ from dataclasses import dataclass, asdict
 
 # ===== Phase 1-8 內容結構定義 =====
 # 每個 Phase 的每個檔案需要包含的章節
+# 注意：這些檢查只適用於 SKILL.md 定義的實際交付物
 PHASE_CONTENT_STRUCTURES = {
-    1: {
-        "01-requirements/FUNCTIONAL_SPEC.md": [
-            "Overview", "Functional Requirements", "User Interactions", 
-            "Data Handling", "Edge Cases", "Acceptance Criteria"
-        ],
-        "01-requirements/EXTERNAL_SPEC.md": [
-            "引用來源", "API 規範", "資料格式", "Source", "API", "Data Format"
-        ],
-        "01-requirements/DECISION_LOG.md": [
-            "日期", "決策內容", "理由", "Date", "Decision", "Reason"
-        ]
-    },
-    2: {
-        "02-architecture/ARCHITECTURE.md": [
-            "系統架構圖", "模組職責", "資料流", "介面定義",
-            "Architecture", "Module", "Data Flow", "Interface"
-        ],
-        "02-architecture/DESIGN_PATTERNS.md": [
-            "Pattern", "適用場景", "程式碼範例", "Pattern", "Use Case", "Example"
-        ],
-        "02-architecture/API_SPEC.md": [
-            "Endpoint", "Request", "Response", "錯誤碼", "Error"
-        ]
-    },
-    3: {
-        "03-development/IMPLEMENTATION.md": [
-            "實作步驟", "技術決策", "依賴套件", "Implementation", "Technical", "Dependencies"
-        ],
-        "03-development/TEST_PLAN.md": [
-            "測試案例", "預期結果", "通過標準", "Test Case", "Expected", "Pass Criteria"
-        ]
-    },
-    4: {
-        "04-testing/UNIT_TESTS.md": [
-            "測試函數", "預期結果", "覆蓋率", "Test Function", "Expected", "Coverage"
-        ],
-        "04-testing/INTEGRATION_TESTS.md": [
-            "測試情境", "步骤", "驗證點", "Test Scenario", "Steps", "Verification"
-        ],
-        "04-testing/E2E_TESTS.md": [
-            "User Flow", "驗證標準", "Validation"
-        ]
-    },
-    5: {
-        "05-delivery/QUALITY_REPORT.md": [
-            "Summary", "Metrics", "Issues", "Recommendations"
-        ],
-        "05-delivery/BASELINE.md": [
-            "功能", "效能", "品質", "Function", "Performance", "Quality"
-        ],
-        "05-delivery/DELIVERY_MANIFEST.md": [
-            "產出物清單", "版本", "交付日期", "Artifacts", "Version", "Delivery Date"
-        ]
-    },
-    6: {
-        "06-quality/QUALITY_ASSURANCE.md": [
-            "Quality Metrics", "Review Process", "Sign-off"
-        ],
-        "06-quality/QUALITY_METRICS.md": [
-            "Coding", "Testing", "Documentation", "Security"
-        ]
-    },
-    7: {
-        "07-risk/RISK_ASSESSMENT.md": [
-            "Risk ID", "Description", "Impact", "Probability", "Mitigation"
-        ],
-        "07-risk/RISK_REGISTER.md": [
-            "Risk Status", "Assigned To", "Due Date"
-        ]
-    },
-    8: {
-        "08-configuration/CONFIG_RECORDS.md": [
-            "Version", "Change Log", "Rollback Plan"
-        ],
-        "08-configuration/BASELINE.md": [
-            "Final Baseline", "Version Tag"
-        ]
-    }
+    1: {},  # Phase 1 不需要額外內容結構檢查
+    2: {},  # Phase 2 不需要額外內容結構檢查
+    3: {},  # Phase 3 內容檢查由代碼審查完成
+    4: {},  # Phase 4 內容檢查由 pytest 完成
+    5: {},  # Phase 5 內容檢查由 Quality Gate 完成
+    6: {},  # Phase 6 內容檢查由 Quality Gate 完成
+    7: {},  # Phase 7 內容檢查由 Risk Register 完成
+    8: {}   # Phase 8 內容檢查由 Config Records 完成
 }
 
 
@@ -161,25 +92,21 @@ class FolderStructureChecker:
         1: {
             "required_dirs": [
                 "01-requirements",
-                "quality_gate",
-                ".methodology/decisions"
+                "00-summary"
             ],
             "required_files": [
                 "01-requirements/SRS.md",
                 "01-requirements/SPEC_TRACKING.md",
                 "01-requirements/TRACEABILITY_MATRIX.md",
-                "DEVELOPMENT_LOG.md"
-            ],
-            "quality_gate_files": [
-                "quality_gate/doc_checker.py",
-                "quality_gate/constitution/runner.py",
-                "quality_gate/phase_artifact_enforcer.py"
+                "DEVELOPMENT_LOG.md",
+                "00-summary/Phase1_STAGE_PASS.md"
             ],
             "checks": {
                 "SRS_exists": "01-requirements/SRS.md",
                 "SPEC_TRACKING_exists": "01-requirements/SPEC_TRACKING.md",
                 "TRACEABILITY_exists": "01-requirements/TRACEABILITY_MATRIX.md",
                 "DEV_LOG_exists": "DEVELOPMENT_LOG.md",
+                "STAGE_PASS_exists": "00-summary/Phase1_STAGE_PASS.md",
                 "SRS_has_FR": "01-requirements/SRS.md",
                 "TRACEABILITY_has_FR": "01-requirements/TRACEABILITY_MATRIX.md"
             }
@@ -188,12 +115,13 @@ class FolderStructureChecker:
             "required_dirs": [
                 "01-requirements",
                 "02-architecture",
-                "quality_gate"
+                "00-summary"
             ],
             "required_files": [
                 "02-architecture/SAD.md",
                 "TRACEABILITY_MATRIX.md",
-                "DEVELOPMENT_LOG.md"
+                "DEVELOPMENT_LOG.md",
+                "00-summary/Phase2_STAGE_PASS.md"
             ],
             "checks": {
                 "SAD_exists": "02-architecture/SAD.md",
@@ -209,7 +137,7 @@ class FolderStructureChecker:
                 "02-architecture",
                 "03-implementation/src",
                 "03-implementation/tests",
-                "quality_gate"
+                "00-summary"
             ],
             "required_files": [
                 "03-implementation/scripts/spec_logic_checker.py",

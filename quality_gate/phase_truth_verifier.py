@@ -193,14 +193,14 @@ class PhaseTruthVerifier:
         }
 
         phase_artifacts = {
-            1: ["SRS.md", "SPEC_TRACKING.md", "TRACEABILITY_MATRIX.md"],
+            1: ["01-requirements/SRS.md", "01-requirements/SPEC_TRACKING.md", "01-requirements/TRACEABILITY_MATRIX.md"],
             2: ["02-architecture/SAD.md", "02-architecture/adr/001-fastapi-proxy-layer.md", "02-architecture/adr/002-redis-caching-strategy.md", "02-architecture/adr/003-circuit-breaker-resilience.md", "02-architecture/adr/004-text-chunking-strategy.md", "02-architecture/adr/005-cli-click-framework.md", "02-architecture/adr/006-audio-converter-ffmpeg.md"],
-            3: ["src/", "tests/", "COMPLIANCE_MATRIX.md"],
-            4: ["TEST_PLAN.md", "TEST_RESULTS.md"],
-            5: ["BASELINE.md", "VERIFICATION_REPORT.md", "MONITORING_PLAN.md"],
-            6: ["QUALITY_REPORT.md"],
-            7: ["RISK_ASSESSMENT.md", "RISK_REGISTER.md"],
-            8: ["CONFIG_RECORDS.md", "RELEASE_CHECKLIST.md"],
+            3: ["03-implementation/src/", "03-implementation/tests/", "03-implementation/COMPLIANCE_MATRIX.md"],
+            4: ["04-testing/TEST_PLAN.md", "04-testing/TEST_RESULTS.md"],
+            5: ["05-verify/BASELINE.md", "05-verify/VERIFICATION_REPORT.md", "05-verify/MONITORING_PLAN.md"],
+            6: ["06-quality/QUALITY_REPORT.md", "06-quality/MONITORING_PLAN.md"],
+            7: ["07-risk/RISK_ASSESSMENT.md", "07-risk/RISK_REGISTER.md"],
+            8: ["08-config/CONFIG_RECORDS.md", "08-config/RELEASE_CHECKLIST.md"],
         }
 
         checklist = []
