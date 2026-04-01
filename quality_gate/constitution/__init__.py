@@ -82,12 +82,20 @@ def load_constitution_documents(docs_path: str) -> Dict[str, Optional[str]]:
             documents["srs"] = matches[0].read_text(encoding="utf-8")
             break
     
-    # 搜尋 SAD
+    # 搜尋 SAD (先搜 docs_path，若找不到再搜 parent)
     for pattern in ["SAD*.md", "*SAD*.md", "*架構*.md", "*ARCHITECTURE*.md"]:
         matches = list(docs_dir.glob(pattern))
         if matches:
             documents["sad"] = matches[0].read_text(encoding="utf-8")
             break
+    # 若在 docs/ 找不到，索性搜 parent 目錄
+    if not documents["sad"]:
+        parent_dir = docs_dir.parent
+        for pattern in ["SAD.md", "SAD*.md", "SoftwareArchitecture.md", "*SAD*.md", "*架構*.md", "*ARCHITECTURE*.md"]:
+            matches = list(parent_dir.glob(pattern))
+            if matches:
+                documents["sad"] = matches[0].read_text(encoding="utf-8")
+                break
     
     # 搜尋 Test Plan
     for pattern in ["TEST*.md", "*測試*.md", "*TEST_PLAN*.md"]:

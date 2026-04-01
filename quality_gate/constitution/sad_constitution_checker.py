@@ -72,11 +72,13 @@ def _check_error_handling(content: str) -> Dict[str, bool]:
     """檢查錯誤處理"""
     content_lower = content.lower()
     
-    # 錯誤等級檢查
-    error_levels_found = all(
-        f"l{i}" in content_lower or f"level {i}" in content_lower
-        for i in range(1, 5)
-    )
+    # 錯誤等級檢查 (L1/L2/L3/L4 + 中文關鍵字)
+    error_levels_found = any([
+        all(f"l{i}" in content_lower or f"level {i}" in content_lower for i in range(1, 5)),
+        all(f"l{i}" in content for i in range(1, 5)),
+        "錯誤等級" in content or "錯誤級別" in content or "錯誤分級" in content,
+        "L1" in content and "L2" in content and "L3" in content and "L4" in content,
+    ])
     
     # 熔斷機制
     circuit_breaker = any(kw in content_lower for kw in [
@@ -106,10 +108,10 @@ def _check_security_design(content: str) -> Dict[str, bool]:
     content_lower = content.lower()
     
     security_keywords = {
-        "authentication": ["authentication", "auth", "登入", "login"],
-        "authorization": ["authorization", "authorization", "權限", "permission", "rbac"],
+        "authentication": ["authentication", "auth", "登入", "login", "認證"],
+        "authorization": ["authorization", "authorization", "權限", "permission", "rbac", "授權"],
         "encryption": ["encryption", "encrypt", "加密", "ssl", "tls", "https"],
-        "security_architecture": ["security architecture", "安全架構", "零信任"],
+        "security_architecture": ["security architecture", "安全架構", "零信任", "安全設計", "security design"],
     }
     
     found = {}
