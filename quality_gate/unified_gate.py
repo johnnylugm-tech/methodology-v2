@@ -209,6 +209,42 @@ class UnifiedGate:
         else:
             self.phase_checker = None
 
+    def _log_to_development_log(self, tool_name: str, result: CheckResult, phase: int = None):
+        """將 QG 工具執行結果寫入 DEVELOPMENT_LOG
+
+        Args:
+            tool_name: 工具名稱（Constitution, ASPICE, FrameworkEnforcer, PhaseTruth）
+            result: CheckResult 物件
+            phase: Phase 編號（可選）
+        """
+        try:
+            log_path = self.project_path / "DEVELOPMENT_LOG.md"
+            timestamp = "{{timestamp}}"  # 格式化時間戳
+
+            # 根據不同工具格式化輸出（符合 auditor QG_EVIDENCE_PATTERNS）
+            if tool_name == "Constitution":
+                status_icon = "✅" if result.passed else "❌"
+                log_entry = f"\n{status_icon} **[{timestamp}] Constitution Score**: {result.score:.1f}% (threshold > 80%)\n"
+            elif tool_name == "ASPICE":
+                status_icon = "✅" if result.passed else "❌"
+                log_entry = f"\n{status_icon} **[{timestamp}] ASPICE Compliance Rate**: {result.score:.1f}%\n"
+            elif tool_name == "FrameworkEnforcer":
+                violations_count = len(result.violations)
+                status_icon = "✅" if violations_count == 0 else "❌"
+                log_entry = f"\n{status_icon} **[{timestamp}] FrameworkEnforcer**: {status_icon} {violations_count} violations\n"
+            elif tool_name == "PhaseTruth":
+                status_icon = "✅" if result.passed else "❌"
+                log_entry = f"\n{status_icon} **[{timestamp}] Phase Truth Score**: {result.score:.1f}%\n"
+            else:
+                log_entry = f"\n[{timestamp}] {tool_name}: {result.score:.1f}%\n"
+
+            # 寫入 DEVELOPMENT_LOG
+            with open(log_path, "a", encoding="utf-8") as f:
+                f.write(log_entry)
+
+        except Exception as e:
+            print(f"[WARNING] Failed to log to DEVELOPMENT_LOG: {e}")
+
     def check_all(self, phase=None, strict_mode=True, phase_enforcement=False) -> UnifiedGateResult:
         """執行所有檢查
         
@@ -394,7 +430,7 @@ class UnifiedGate:
         return None
 
     def _check_documents(self) -> CheckResult:
-        """檢查文檔存在性"""
+        """檢查文檔存在性（ASPICE Compliance Rate）"""
         result = self.doc_checker.check_all()
 
         violations = []
@@ -414,13 +450,18 @@ class UnifiedGate:
         except (ValueError, AttributeError):
             score = 100.0 if passed else 0.0
 
-        return CheckResult(
+        check_result = CheckResult(
             name="Document Existence",
             passed=passed,
             score=score,
             violations=violations,
             details={"results": result}
         )
+
+        # 記錄到 DEVELOPMENT_LOG（#5 修復 - ASPICE Compliance Rate）
+        self._log_to_development_log("ASPICE", check_result)
+
+        return check_result
 
     def _check_constitution(self) -> CheckResult:
         """檢查 Constitution 合規"""
@@ -441,14 +482,18 @@ class UnifiedGate:
             for v in result.violations:
                 violations.append(f"{v.get('rule', 'unknown')}: {v.get('message', '')}")
 
-            # ConstitutionCheckResult 沒有 to_dict，用 asdict
-            return CheckResult(
+            check_result = CheckResult(
                 name="Constitution Compliance",
                 passed=result.passed,
                 score=result.score,
                 violations=violations,
                 details={"result": asdict(result)}
             )
+
+            # 記錄到 DEVELOPMENT_LOG（#5 修復）
+            self._log_to_development_log("Constitution", check_result)
+
+            return check_result
         except Exception as e:
             return CheckResult(
                 name="Constitution Compliance",
@@ -459,7 +504,7 @@ class UnifiedGate:
             )
 
     def _check_phase_references(self) -> CheckResult:
-        """檢查 Phase 產物引用"""
+        """檢查 Phase 產物引用（Phase Truth Score）"""
         violations = []
         all_passed = True
 
@@ -471,13 +516,18 @@ class UnifiedGate:
                 for missing in result.missing_references:
                     violations.append(f"Phase {phase.value} missing: {missing}")
 
-        return CheckResult(
+        check_result = CheckResult(
             name="Phase References",
             passed=all_passed,
             score=100 if all_passed else 0,
             violations=violations,
             details={}
         )
+
+        # 記錄到 DEVELOPMENT_LOG（#5 修復 - Phase Truth）
+        self._log_to_development_log("PhaseTruth", check_result)
+
+        return check_result
 
     def _count_critical(self, checks: List[CheckResult]) -> int:
         """計算 critical violations"""
