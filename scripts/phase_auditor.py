@@ -464,11 +464,21 @@ class PhaseAuditor:
             f"Phase{self.phase}_STAGE_PASS.md",
         ]
         # 嘗試在樹中找到符合的路徑
+        # 匹配：
+        #   - Phase2_STAGE_PASS.md (Phase + number + underscore)
+        #   - Phase_2_-_架構設計_STAGE_PASS.md (Phase + underscore + number + underscore + text)
+        phase_patterns = [
+            f"Phase{self.phase}_",      # Phase2_
+            f"Phase_{self.phase}_",      # Phase_2_ (Chinese format)
+            f"Phase_{self.phase}-",      # Phase_2- (variant)
+        ]
         tree_paths = [
             item["path"] for item in self.gh.get_tree()
-            if f"Phase{self.phase}" in item["path"]
+            if any(pat in item["path"] for pat in phase_patterns)
             and "STAGE_PASS" in item["path"]
         ]
+        # 優先選擇中文格式（路徑較長）
+        tree_paths = sorted(tree_paths, key=lambda p: -len(p))
         if not tree_paths:
             self.result.add(Finding(
                 check_id="C2",
