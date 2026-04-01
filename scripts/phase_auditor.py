@@ -1219,13 +1219,15 @@ class PhaseAuditor:
         sp_content = self.gh.get_file_content(sp_paths[0]) or ""
         dev_content = self._content(["DEVELOPMENT_LOG.md"]) or ""
 
-        # 從 STAGE_PASS 抓 Constitution 聲稱值
+        # 從 STAGE_PASS 抓 Constitution 聲稱值（區分「信心分數」和「Constitution 分數」）
         const_claimed = None
         for pat in [
-            r"Constitution.*?([\d.]+)%",
-            r"([\d.]+)%\s*(?:≥|>=|>)\s*80",
+            # 優先匹配 "Constitution Score: ✅ 85.7%" 或 "Constitution Score: 85.7%"
+            r"Constitution\s+Score.*?([\d.]+)%",
+            # 備用：只有 "Constitution" 開頭的行（但排除「信心分數」）
+            r"(?:^|\n)Constitution[^信心].*?([\d.]+)%",
         ]:
-            m = re.search(pat, sp_content, re.IGNORECASE)
+            m = re.search(pat, sp_content, re.IGNORECASE | re.MULTILINE)
             if m:
                 try:
                     const_claimed = float(m.group(1))
@@ -1236,10 +1238,10 @@ class PhaseAuditor:
         # 從 DEVELOPMENT_LOG 抓 Constitution 值
         const_log = None
         for pat in [
-            r"Constitution.*?([\d.]+)%",
-            r"Constitution Score.*?([\d.]+)",
+            r"Constitution\s+Score.*?([\d.]+)%",
+            r"(?:^|\n)Constitution[^信心].*?([\d.]+)%",
         ]:
-            m = re.search(pat, dev_content, re.IGNORECASE)
+            m = re.search(pat, dev_content, re.IGNORECASE | re.MULTILINE)
             if m:
                 try:
                     const_log = float(m.group(1))
