@@ -102,6 +102,14 @@ class IntegratedStagePassGenerator:
             "block_checks": result.block_checks,
         }
         
+        # 呼叫 Constitution 檢查（取得分數）
+        print("\n📋 呼叫 Constitution 檢查...")
+        const_result = self.enforcer.check_constitution()
+        const_score = const_result.get("score", 0)
+        const_passed = const_result.get("passed", False)
+        self.results["framework_results"]["CONSTITUTION"] = const_result
+        print(f"Constitution Score: {const_score:.1f}% {'✅' if const_passed else '❌'}")
+        
         if result.passed:
             print("✅ FrameworkEnforcer BLOCK 通過")
         else:
@@ -271,8 +279,17 @@ class IntegratedStagePassGenerator:
         why_pass = block_result.get("passed")
         how_pass = block_result.get("passed")
         
+        # 從 framework_enforcer 取得 Constitution 分數
+        const_result = self.results.get("framework_results", {}).get("CONSTITUTION", {})
+        const_score = const_result.get("score", 0)
+        const_passed = const_result.get("passed", False)
+        
         lines = [
             f"# Phase {self.phase} STAGE_PASS",
+            f"",
+            f"## 階段目標達成",
+            f"",
+            f"{config.get('name', f'Phase {self.phase}')} — {config.get('skill_section', '')}",
             f"",
             f"## Agent A 自評",
             f"",
@@ -309,7 +326,7 @@ class IntegratedStagePassGenerator:
             f"| Sessions_spawn.log | {'✅' if log_result.get('passed') else '❌'} | .openclaw/ |",
             f"| pytest | {'✅' if test_evidence.get('pytest_passed') else '❌'} | tests/ |",
             f"",
-            f"**誠實分數**: {score}/100",
+            f"**信心分數**: {score}/100",
             f"",
             f"Agent A: 自評 Session: —",
             f"",
@@ -339,12 +356,23 @@ class IntegratedStagePassGenerator:
             f"",
             f"### 附：實際工具結果",
             f"",
+            f"**Constitution Score**: {'✅' if const_passed else '❌'} {const_score:.1f}% {'(threshold > 80%)' if const_score >= 80 else '(threshold > 80%)'}",
             f"**FrameworkEnforcer BLOCK**: {'✅ 通過' if block_result.get('passed') else '❌ 未通過'}",
             f"**Sessions_spawn.log**: {'✅ 通過' if log_result.get('passed') else '❌ 未通過'}",
             f"**pytest**: {'✅ 通過' if test_evidence.get('pytest_passed') else '❌ 未通過'}",
             f"**Coverage**: {'✅ 達標' if test_evidence.get('coverage_passed') else '❌ 未達標'}",
             f"",
             f"**分數理由**: {self.results.get('confidence_reason', '')}",
+            f"",
+            f"---",
+            f"",
+            f"## SIGN-OFF",
+            f"",
+            f"| 角色 | 姓名 | 簽署 | 日期 |",
+            f"|------|------|------|------|",
+            f"| Agent A (Architect) | （待填寫） | （待填寫） | （待填寫） |",
+            f"| Agent B (Reviewer) | （待填寫） | （待填寫） | （待填寫） |",
+            f"| Johnny (客戶) | （待填寫） | （待填寫） | （待填寫） |",
             f"",
             f"*由 methodology-v2 v6.13 STAGE_PASS Generator 產生*",
         ])
