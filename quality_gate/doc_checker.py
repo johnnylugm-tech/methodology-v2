@@ -125,6 +125,12 @@ class DocumentChecker:
         for ext in ['.md', '.txt']:
             docs.extend(self.base_path.glob(f"*{ext}"))
         
+        # 檢查 02-architecture/ 目錄 (Phase 2 SAD + ADR)
+        arch_dir = self.base_path / "02-architecture"
+        if arch_dir.exists():
+            for ext in ['.md', '.txt']:
+                docs.extend(arch_dir.rglob(f"*{ext}"))
+        
         return docs
     
     def check_phase(self, requirement: DocumentRequirement) -> CheckResult:
