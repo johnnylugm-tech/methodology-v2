@@ -2263,6 +2263,19 @@ class MethodologyCLI:
             enforcer = FrameworkEnforcer(os.getcwd())
             result = enforcer.run(level="BLOCK")
             
+            # #5 修復：記錄 FrameworkEnforcer 結果到 DEVELOPMENT_LOG
+            try:
+                log_path = os.path.join(os.getcwd(), "DEVELOPMENT_LOG.md")
+                import datetime
+                timestamp = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+                status_icon = "✅" if result.passed else "❌"
+                violations_count = len(result.violations)
+                log_entry = f"\n{status_icon} **[{timestamp}] FrameworkEnforcer BLOCK**: {status_icon} {violations_count} violations\n"
+                with open(log_path, "a", encoding="utf-8") as f:
+                    f.write(log_entry)
+            except Exception as e:
+                pass  # 不阻塞主要流程
+            
             # 失敗時阻擋
             if not result.passed:
                 pass # Removed print-debug
@@ -2370,6 +2383,19 @@ class MethodologyCLI:
         
         enforcer = FrameworkEnforcer(project_root)
         result = enforcer.run(level=level)
+        
+        # #5 修復：記錄 FrameworkEnforcer 結果到 DEVELOPMENT_LOG
+        try:
+            log_path = os.path.join(project_root, "DEVELOPMENT_LOG.md")
+            import datetime
+            timestamp = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+            status_icon = "✅" if result.passed else "❌"
+            violations_count = len(result.violations)
+            log_entry = f"\n{status_icon} **[{timestamp}] FrameworkEnforcer {level}**: {status_icon} {violations_count} violations\n"
+            with open(log_path, "a", encoding="utf-8") as f:
+                f.write(log_entry)
+        except Exception as e:
+            pass  # 不阻塞主要流程
         
         violations = result.violations
         warnings = result.warnings
