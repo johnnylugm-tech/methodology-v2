@@ -99,8 +99,8 @@ PHASE_SPEC = {
              "ADR — 架構決策記錄", False),
             (["DEVELOPMENT_LOG.md"], "DEVELOPMENT_LOG.md", True),
             (["sessions_spawn.log"], "sessions_spawn.log", True),
-            (["00-summary/Phase2_STAGE_PASS.md", "00-summary/Phase_2_-_架構設計_STAGE_PASS.md", "Phase2_STAGE_PASS.md", "Phase_2_-_架構設計_STAGE_PASS.md"],
-             "Phase2_STAGE_PASS.md", True),
+            (["00-summary/Phase_2_-_架構設計_STAGE_PASS.md", "00-summary/Phase2_STAGE_PASS.md"],
+             "Phase_2_-_架構設計_STAGE_PASS.md", True),
         ],
         "thresholds": {
             "TH-01": ("ASPICE 合規率", ">80%"),
