@@ -119,22 +119,33 @@ class FrameworkEnforcer:
         try:
             from quality_gate.constitution.runner import run_constitution_check
 
-            docs_path = self.project_root / "docs"
-            if not docs_path.exists():
-                return {"score": 0, "passed": False, "error": "docs/ not found"}
-
-            # 根據 Phase 選擇 Constitution 類型（預設為 srs）
-            phase_type_map = {
-                1: "srs",      # Phase 1: SRS
-                2: "srs",      # Phase 2: SAD  
-                3: "design",   # Phase 3: Implementation
-                4: "testing",  # Phase 4: Testing
-                5: "verify",   # Phase 5: Verification
-                6: "quality",  # Phase 6: Quality
-                7: "risk",     # Phase 7: Risk
-                8: "config",   # Phase 8: Config
+            # 根據 Phase 選擇 Constitution 類型和目錄
+            phase_info_map = {
+                1: {"type": "srs", "dir": "01-requirements"},
+                2: {"type": "sad", "dir": "02-architecture"},
+                3: {"type": "design", "dir": "03-implementation"},
+                4: {"type": "testing", "dir": "04-testing"},
+                5: {"type": "verify", "dir": "05-verify"},
+                6: {"type": "quality", "dir": "06-quality"},
+                7: {"type": "risk", "dir": "07-risk"},
+                8: {"type": "config", "dir": "08-config"},
             }
-            const_type = phase_type_map.get(getattr(self, 'phase', 1), "srs")
+            phase_info = phase_info_map.get(getattr(self, 'phase', 1), {"type": "srs", "dir": "docs"})
+            const_type = phase_info["type"]
+            
+            # 嘗試多個可能的目錄
+            docs_candidates = [
+                self.project_root / phase_info["dir"],
+                self.project_root / "docs",
+                self.project_root / "01-requirements",
+            ]
+            docs_path = None
+            for candidate in docs_candidates:
+                if candidate.exists():
+                    docs_path = candidate
+                    break
+            if not docs_path:
+                return {"score": 0, "passed": False, "error": f"No valid docs directory found for phase {self.phase}"}
 
             result = run_constitution_check(const_type, str(docs_path))
             return {

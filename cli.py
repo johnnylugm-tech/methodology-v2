@@ -2363,12 +2363,10 @@ class MethodologyCLI:
         if getattr(args, 'aspice_report', False):
             enforcer = FrameworkEnforcer(project_root)
             report = enforcer.generate_aspice_report()
-            pass # Removed print-debug
+            print("ASPICE Report generated.")
             return 0
         
-        pass # Removed print-debug
-        pass # Removed print-debug
-        pass # Removed print-debug
+        print(f"Running FrameworkEnforcer [{level}] on {project_root}...")
         
         enforcer = FrameworkEnforcer(project_root)
         result = enforcer.run(level=level)
@@ -2376,29 +2374,29 @@ class MethodologyCLI:
         violations = result.violations
         warnings = result.warnings
         
-        pass # Removed print-debug
         if violations:
+            print(f"\n🔴 BLOCK VIOLATIONS ({len(violations)}):")
             for msg, fix in violations:
-                pass # Removed print-debug
+                print(f"  - {msg}")
                 if fix:
-                    pass # Removed print-debug
+                    print(f"    → Fix: {fix}")
         else:
-            pass # Removed print-debug
+            print("\n✅ No BLOCK violations")
         
-        pass # Removed print-debug
         if warnings:
+            print(f"\n⚠️  WARNINGS ({len(warnings)}):")
             for msg, fix in warnings:
-                pass # Removed print-debug
+                print(f"  - {msg}")
                 if fix:
-                    pass # Removed print-debug
+                    print(f"    → Fix: {fix}")
         else:
-            pass # Removed print-debug
+            print("\n✅ No warnings")
         
         if result.passed:
-            pass # Removed print-debug
+            print(f"\n🚀 Enforcement PASSED [{level}]")
             return 0
         else:
-            pass # Removed print-debug
+            print(f"\n❌ Enforcement FAILED [{level}]")
             return 1
 
     def cmd_decision_gate(self, args):

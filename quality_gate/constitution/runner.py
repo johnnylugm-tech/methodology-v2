@@ -138,13 +138,36 @@ def main():
     if not base_path.is_absolute():
         base_path = Path.cwd() / base_path
     
-    # 嘗試找到 docs 目錄
+    # 嘗試找到 phase 目錄（根據 check type）
+    # Phase 1 (SRS): 01-requirements 或 docs
+    # Phase 2 (SAD): 02-architecture 或 docs
+    # Phase 3+ (implementation): 根目錄
+    check_type_to_dir = {
+        "srs": ["01-requirements", "docs"],
+        "sad": ["02-architecture", "docs"],
+        "test_plan": ["04-testing", "docs"],
+    }
+    
+    # 預設：docs/ (向後兼容)
     docs_path = base_path / "docs"
+    
+    if args.type in check_type_to_dir and not docs_path.exists():
+        for alt_dir in check_type_to_dir[args.type]:
+            candidate = base_path / alt_dir
+            if candidate.exists():
+                docs_path = candidate
+                break
+    
     if not docs_path.exists():
         # 嘗試在父目錄找
-        docs_path = base_path.parent / "docs"
+        for alt_dir in ["docs"] + list(check_type_to_dir.values()):
+            for d in alt_dir:
+                candidate = base_path.parent / d
+                if candidate.exists():
+                    docs_path = candidate
+                    break
         if not docs_path.exists():
-            print(f"Error: docs/ directory not found in {base_path}")
+            print(f"Error: documentation directory not found for check type {args.type} in {base_path}")
             sys.exit(1)
     
     if args.verbose:
@@ -152,8 +175,6 @@ def main():
         print(f"Check type: {args.type}")
     
     # 執行檢查
-    # Phase 3 (implementation) 需要專案根目錄，不是 docs 目錄
-    # 其他檢查需要 docs 目錄
     result = run_constitution_check(args.type, str(docs_path), args.current_phase)
     
     # 輸出結果

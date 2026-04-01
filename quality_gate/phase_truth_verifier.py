@@ -18,9 +18,16 @@ Phase Truth Verifier
 import os
 import subprocess
 import json
+import sys
 import re
 from pathlib import Path
 from typing import Dict, List, Tuple
+
+# Ensure methodology-v2 root is in sys.path for enforcement import
+_script_dir = Path(__file__).resolve().parent  # quality_gate/
+_methodology_root = _script_dir.parent  # methodology-v2/
+if str(_methodology_root) not in sys.path:
+    sys.path.insert(0, str(_methodology_root))
 
 
 class PhaseTruthVerifier:
@@ -45,7 +52,6 @@ class PhaseTruthVerifier:
             # Add enforcement to path if needed
             enforcement_path = self.project_root / "enforcement"
             if enforcement_path.exists():
-                import sys
                 if str(enforcement_path) not in sys.path:
                     sys.path.insert(0, str(self.project_root))
 
@@ -177,7 +183,7 @@ class PhaseTruthVerifier:
         # Phase 目錄映射（支援多種命名慣例）
         phase_dirs = {
             1: ["01-requirements", "01-specify", "requirements", "specify"],
-            2: ["02-architecture", "02-plan", "architecture", "plan"],
+            2: ["02-architecture", "02-plan", "architecture", "plan", "docs"],
             3: ["03-implementation", "03-implement", "implementation", "implement", "src"],
             4: ["04-testing", "04-verify", "testing", "verify"],
             5: ["05-verify", "05-system-test", "verify"],
@@ -188,7 +194,7 @@ class PhaseTruthVerifier:
 
         phase_artifacts = {
             1: ["SRS.md", "SPEC_TRACKING.md", "TRACEABILITY_MATRIX.md"],
-            2: ["SAD.md", "ARCHITECTURE.md", "ADR.md"],
+            2: ["02-architecture/SAD.md", "02-architecture/adr/001-fastapi-proxy-layer.md", "02-architecture/adr/002-redis-caching-strategy.md", "02-architecture/adr/003-circuit-breaker-resilience.md", "02-architecture/adr/004-text-chunking-strategy.md", "02-architecture/adr/005-cli-click-framework.md", "02-architecture/adr/006-audio-converter-ffmpeg.md"],
             3: ["src/", "tests/", "COMPLIANCE_MATRIX.md"],
             4: ["TEST_PLAN.md", "TEST_RESULTS.md"],
             5: ["BASELINE.md", "VERIFICATION_REPORT.md", "MONITORING_PLAN.md"],

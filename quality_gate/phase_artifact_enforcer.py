@@ -182,14 +182,29 @@ class PhaseArtifactRegistry:
         
         prev_output_dir = prev_config.get("output_dir", "")
         curr_output_dir = curr_config.get("output_dir", "")
+        prev_alt_dirs = prev_config.get("alt_dirs", [])
+        curr_alt_dirs = curr_config.get("alt_dirs", [])
+        
+        # Find existing prev_phase directory (check output_dir + alt_dirs)
+        prev_path = None
+        for dir_name in [prev_output_dir] + prev_alt_dirs:
+            if dir_name and (self.project_root / dir_name).exists():
+                prev_path = self.project_root / dir_name
+                break
+        
+        # Find existing curr_phase directory (check output_dir + alt_dirs)
+        curr_path = None
+        for dir_name in [curr_output_dir] + curr_alt_dirs:
+            if dir_name and (self.project_root / dir_name).exists():
+                curr_path = self.project_root / dir_name
+                break
         
         # 檢查 prev_phase 的產物是否存在
-        prev_path = self.project_root / prev_output_dir
-        if not prev_path.exists():
+        if prev_path is None or not prev_path.exists():
             return ArtifactCheckResult(
                 phase=current_phase,
                 passed=False,
-                message=f"Previous phase artifact directory not found: {prev_output_dir}"
+                message=f"Previous phase artifact directory not found: {prev_output_dir} (tried alt_dirs: {prev_alt_dirs})"
             )
         
         # 收集 prev_phase 的所有檔案
@@ -198,9 +213,8 @@ class PhaseArtifactRegistry:
             prev_files = [str(f.relative_to(self.project_root)) for f in prev_path.rglob("*") if f.is_file()]
         
         # 收集 current_phase 的所有檔案內容
-        curr_path = self.project_root / curr_output_dir
         curr_content = ""
-        if curr_path.exists():
+        if curr_path and curr_path.exists():
             for f in curr_path.rglob("*"):
                 if f.is_file():
                     try:
