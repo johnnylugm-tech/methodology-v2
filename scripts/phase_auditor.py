@@ -1218,11 +1218,17 @@ class PhaseAuditor:
     def check_c7_claims_crosscheck(self):
         """C7: 聲稱分數 vs 文件實際內容的交叉驗證"""
         # 從 STAGE_PASS 提取聲稱的 Constitution 分數
-        sp_paths = [
-            item["path"] for item in self.gh.get_tree()
-            if f"Phase{self.phase}" in item["path"]
-            and "STAGE_PASS" in item["path"]
+        # 優先選擇中文格式（路徑較長）
+        phase_patterns = [
+            f"Phase{self.phase}_",
+            f"Phase_{self.phase}_",
+            f"Phase_{self.phase}-",
         ]
+        sp_paths = sorted([
+            item["path"] for item in self.gh.get_tree()
+            if any(pat in item["path"] for pat in phase_patterns)
+            and "STAGE_PASS" in item["path"]
+        ], key=lambda p: -len(p))
         if not sp_paths:
             return
 
