@@ -168,6 +168,12 @@ ls -la && git status
 4. Agent B A/B 審查（5W1H 清單逐項確認）
 5. Quality Gate: doc_checker + constitution + spec-track
 6. 生成 Phase1_STAGE_PASS.md
+
+6. 更新狀態追蹤
+```bash
+python cli.py update-step --step 1 --module "SRS" --action "Phase 1 APPROVE"
+python cli.py end-phase --phase 1
+```
 ```
 
 **EXIT**: TH-01 > 80%, TH-03 = 100%, TH-14 ≥ 90%, Agent B APPROVE
@@ -190,6 +196,12 @@ ls -la && git status
 3. Agent B 架構審查（5 維度）
 4. Quality Gate: doc_checker + constitution + spec-track
 5. 生成 Phase2_STAGE_PASS.md
+
+6. 更新狀態追蹤
+```bash
+python cli.py update-step --step 2 --module "SAD" --action "Phase 2 APPROVE"
+python cli.py end-phase --phase 2
+```
 ```
 
 **EXIT**: TH-01 > 80%, TH-03 = 100%, TH-05 > 70%, Agent B APPROVE
@@ -216,6 +228,12 @@ FOR EACH 模組:
   6. Quality Gate: pytest + coverage + constitution
 7. 生成合規矩陣
 8. 生成 Phase3_STAGE_PASS.md
+
+9. 更新狀態追蹤
+```bash
+python cli.py update-step --step 3 --module "代碼實作" --action "Phase 3 APPROVE"
+python cli.py end-phase --phase 3
+```
 ```
 
 **EXIT**: TH-06 > 80%, TH-08 ≥ 80/90, TH-10 = 100%, TH-11 ≥ 70%, Agent B APPROVE
@@ -260,6 +278,12 @@ class ModuleName:
 4. Agent B 第二次審查（pytest 輸出真實性）
 5. Quality Gate: pytest + constitution + spec_logic
 6. 生成 Phase4_STAGE_PASS.md
+
+7. 更新狀態追蹤
+```bash
+python cli.py update-step --step 4 --module "測試" --action "Phase 4 APPROVE"
+python cli.py end-phase --phase 4
+```
 ```
 
 **EXIT**: TH-01 > 80%, TH-03 = 100%, TH-06 > 80%, TH-10 = 100%, TH-12 ≥ 80%
@@ -283,6 +307,12 @@ class ModuleName:
 4. Agent B 驗收報告審查
 5. Quality Gate: logic checker ≥ 90 + constitution ≥ 80
 6. 生成 Phase5_STAGE_PASS.md
+
+7. 更新狀態追蹤
+```bash
+python cli.py update-step --step 5 --module "驗證交付" --action "Phase 5 APPROVE"
+python cli.py end-phase --phase 5
+```
 ```
 
 **EXIT**: TH-02 ≥ 80%, TH-07 ≥ 90, Agent B APPROVE
@@ -305,6 +335,12 @@ class ModuleName:
 3. Agent B 品質確認
 4. Quality Gate: constitution ≥ 80 + 邏輯正確性
 5. 生成 Phase6_STAGE_PASS.md
+
+6. 更新狀態追蹤
+```bash
+python cli.py update-step --step 6 --module "品質保證" --action "Phase 6 APPROVE"
+python cli.py end-phase --phase 6
+```
 ```
 
 **EXIT**: TH-02 ≥ 80%, TH-07 ≥ 90, Agent B APPROVE
@@ -328,6 +364,12 @@ class ModuleName:
 4. Agent B 風險演練（如有 HIGH 風險）
 5. Quality Gate: 邏輯正確性 ≥ 90
 6. 生成 Phase7_STAGE_PASS.md
+
+7. 更新狀態追蹤
+```bash
+python cli.py update-step --step 7 --module "風險管理" --action "Phase 7 APPROVE"
+python cli.py end-phase --phase 7
+```
 ```
 
 **EXIT**: TH-07 ≥ 90, Decision Gate 100% 確認, Agent B APPROVE
@@ -352,6 +394,12 @@ class ModuleName:
 5. Agent B 封版審查
 6. Quality Gate: 配置合規性確認
 7. 生成 Phase8_STAGE_PASS.md
+
+8. 更新狀態追蹤
+```bash
+python cli.py update-step --step 8 --module "配置管理" --action "Phase 8 APPROVE"
+python cli.py end-phase --phase 8
+```
 ```
 
 **EXIT**: CONFIG_RECORDS.md 完整, pip freeze 存在, Git Tag 建立, Agent B APPROVE

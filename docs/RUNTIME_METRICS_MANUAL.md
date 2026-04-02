@@ -6,472 +6,523 @@
 
 ---
 
-## 目錄
-
-1. [系統概覽](#1-系統概覽)
-2. [安裝設定](#2-安裝設定)
-3. [使用方式](#3-使用方式)
-4. [煞車系統（安全閥）](#4-煞車系統安全閥)
-5. [預警規則](#5-預警規則)
-6. [預警範例](#6-預警範例)
-7. [故障排除](#7-故障排除)
-
----
-
 ## 1. 系統概覽
 
-### 1.1 系統定位
+### 1.1 state.json 的角色
+
+`.methodology/state.json` 是整個 methodology-v2 的**單一真相來源**（Single Source of Truth）。它記錄：
+
+- `current_phase`: 目前正在執行的 Phase (1-8)
+- `phase_state`: Phase 執行階段的運行時狀態
+- `current_step` / `current_module` / `next_action`: 目前工作進度
+- `history`: Phase 執行歷史（BLOCK、AB_ROUND、PHASE_START 等事件）
+
+```json
+{
+  "current_phase": 3,
+  "current_step": 3,
+  "current_module": "代碼實作",
+  "next_action": "Phase 3 APPROVE",
+  "phase_state": {
+    "status": "RUNNING",
+    "started_at": "2026-04-02T10:00:00Z",
+    "blocks": 0,
+    "ab_rounds": 1,
+    "integrity_score": 100,
+    "warnings": 0
+  },
+  "phase_history": [
+    {"phase": 1, "status": "COMPLETED", "duration_min": 45},
+    {"phase": 2, "status": "COMPLETED", "duration_min": 60}
+  ],
+  "domain": "generic",
+  "project_root": "/path/to/project",
+  "started_at": "2026-04-01"
+}
+```
+
+### 1.2 鉤子觸發時機
+
+鉤子在 Phase SOP 執行過程中**自動觸發**，分為三類：
+
+| 鉤子類型 | 觸發時機 | 影響 |
+|---------|---------|------|
+| `update-step` | 每個 Step 開始/完成時 | 更新 `current_step`、`current_module`、`next_action` |
+| `end-phase` | Phase 完成，進入下一 Phase 前 | 呼叫 PHASE_END 重置 `phase_state`，遞增 `current_phase` |
+| `update-project-status` | 需要更新 PROJECT_STATUS.md 時 | 更新「下一步動作」表格 |
+
+### 1.3 工具鏟地圖
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│  methodology-v2 (方法論框架)                             │
-│  • 定義 Phase 流程 (1-8)                               │
-│  • 定義 Quality Gate 規則                              │
-│  • 定義 HR-01~HR-14 硬規則                             │
-│  • 提供 UnifiedGate Python API                         │
-│  • ⬆️ 為監控系統提供「觀測點」鉤子                     │
-└─────────────────────────────────────────────────────────┘
-                    │
-                    │ UnifiedGate 執行時自動觸發
-                    ▼
-┌─────────────────────────────────────────────────────────┐
-│  Runtime Metrics 監控系統 (獨立的環境監控工具)             │
-│  • .methodology/state.json (狀態檔)                    │
-│  • state_monitor.py (Cron Job)                        │
-│  • Telegram 預警通知                                   │
-│  • ⬆️ 觀測 methodology-v2 的執行狀態                  │
-└─────────────────────────────────────────────────────────┘
+Phase 執行流程
+│
+├── Phase N 開始
+│   └── update-step --step N --module "MODULE" --action "開始執行"
+│
+├── 每個交付物完成
+│   └── update-step --step N --module "MODULE" --action "交付物名稱完成"
+│
+├── Quality Gate 通過
+│   └── update-step --step N --module "MODULE" --action "Phase N APPROVE"
+│
+└── Phase N 結束
+    └── end-phase --phase N
+        │
+        ├── PHASE_END hook 觸發
+        ├── phase_state 重置
+        └── current_phase → N+1
 ```
-
-### 1.2 系統組成
-
-| 檔案 | 說明 | 位置 |
-|------|------|------|
-| `state.json` | Phase 執行狀態 | `.methodology/state.json` |
-| `unified_gate.py` | 寫入鉤子（自動） | `quality_gate/unified_gate.py` |
-| `state_monitor.py` | Cron Job 腳本 | `.methodology/state_monitor.py` |
-
-### 1.3 追蹤指標
-
-| 指標 | 說明 | 觸發時機 |
-|------|------|----------|
-| `blocks` | BLOCK 次數 | FrameworkEnforcer 返回 BLOCK |
-| `ab_rounds` | A/B 來回次數 | A↔B 對話一次 |
-| `elapsed_minutes` | 已耗費時間 | 自動計算 |
-| `last_gate_score` | 最後分數 | Quality Gate 完成 |
-| `integrity_score` | Integrity 分數 | 計算邏輯正確性 |
 
 ---
 
-## 2. 安裝設定
+## 2. 專案初始化
 
-### 2.1 前置需求
+每個新專案需要以下初始化步驟：
 
-- Python 3.10+
-- methodology-v2 v6.15.0+
-- OpenClaw（用於 Telegram 通知）
+### 2.1 建立目錄結構
+
+```bash
+mkdir -p .methodology
+mkdir -p .methodology/tasks
+mkdir -p .methodology/sprints
+```
 
 ### 2.2 初始化 state.json
 
-第一次在專案執行 Quality Gate 時，state.json 會自動建立：
+state.json 的標準模板：
 
-```bash
-cd /path/to/project
-python3 -c "
-import sys
-sys.path.insert(0, '/path/to/methodology-v2')
-from quality_gate import UnifiedGate
-gate = UnifiedGate('.')
-gate._ensure_state()  # 初始化 state.json
-"
+```json
+{
+  "current_phase": 1,
+  "current_step": 1,
+  "current_module": "SRS",
+  "next_action": "開始撰寫 SRS.md",
+  "phase_state": {
+    "status": "RUNNING",
+    "started_at": "2026-04-02T10:00:00Z",
+    "blocks": 0,
+    "ab_rounds": 0,
+    "integrity_score": 100,
+    "warnings": 0,
+    "last_gate_score": null
+  },
+  "phase_history": [],
+  "domain": "generic",
+  "project_root": "/absolute/path/to/project",
+  "started_at": "2026-04-02",
+  "trend_alerts": []
+}
 ```
 
-或直接執行 Quality Gate：
+### 2.3 快速初始化命令
 
 ```bash
-python3 -c "
-import sys
-sys.path.insert(0, '/path/to/methodology-v2')
-from quality_gate import UnifiedGate
-gate = UnifiedGate('.')
-result = gate.check_all(phase=1)
-"
-```
-
-### 2.3 設定 Crontab（自動化）
-
-```bash
-# 編輯 crontab
-crontab -e
-
-# 加入以下行（每 5 分鐘執行一次）
-*/5 * * * * cd /path/to/project && python3 /path/to/methodology-v2/scripts/state_monitor.py --check-trends >> /tmp/state_monitor.log 2>&1
-```
-
-### 2.4 驗證 Crontab 設定
-
-```bash
-# 查看 crontab 列表
-crontab -l
-
-# 測試執行
-python3 /path/to/methodology-v2/scripts/state_monitor.py --check-trends --project-path /path/to/project
+# 在專案根目錄執行
+python /path/to/methodology-v2/cli.py init "專案名稱"
 ```
 
 ---
 
-## 3. 使用方式
+## 3. Phase 執行時的鉤子呼叫
 
-### 3.1 CLI 命令
+### 3.1 Phase 1-8 具體指令速查
 
-#### 查看 Phase 執行狀態
+| Phase | Step 開始 | Step 完成（每次交付物） | Phase 結束 |
+|-------|-----------|----------------------|------------|
+| 1 | `--step 1 --module SRS --action "開始撰寫"` | `--step 1 --module SRS --action "SRS.md 完成"` | `--step 1 --module SRS --action "Phase 1 APPROVE"` + `end-phase --phase 1` |
+| 2 | `--step 2 --module SAD --action "開始設計"` | `--step 2 --module SAD --action "SAD.md 完成"` | `--step 2 --module SAD --action "Phase 2 APPROVE"` + `end-phase --phase 2` |
+| 3 | `--step 3 --module 代碼實作 --action "開始實作"` | 每模組完成時呼叫 | `--step 3 --module 代碼實作 --action "Phase 3 APPROVE"` + `end-phase --phase 3` |
+| 4 | `--step 4 --module 測試 --action "開始測試"` | 每測試項完成時呼叫 | `--step 4 --module 測試 --action "Phase 4 APPROVE"` + `end-phase --phase 4` |
+| 5 | `--step 5 --module 驗證交付 --action "開始交付"` | 每交付物完成時呼叫 | `--step 5 --module 驗證交付 --action "Phase 5 APPROVE"` + `end-phase --phase 5` |
+| 6 | `--step 6 --module 品質保證 --action "開始品質確認"` | 每檢查項完成時呼叫 | `--step 6 --module 品質保證 --action "Phase 6 APPROVE"` + `end-phase --phase 6` |
+| 7 | `--step 7 --module 風險管理 --action "開始風險識別"` | 每風險關閉時呼叫 | `--step 7 --module 風險管理 --action "Phase 7 APPROVE"` + `end-phase --phase 7` |
+| 8 | `--step 8 --module 配置管理 --action "開始配置管理"` | 每配置項完成時呼叫 | `--step 8 --module 配置管理 --action "Phase 8 APPROVE"` + `end-phase --phase 8` |
 
+### 3.2 SKILL.md Phase SOP 中的鉤子位置
+
+每個 Phase 的 SOP 末尾（STAGE_PASS 生成之後，EXIT 之前）都包含鉤子指令。例如 Phase 1：
+
+```markdown
+6. 生成 Phase1_STAGE_PASS.md
+
+6. 更新狀態追蹤
 ```bash
-python3 cli.py phase-status --phase 2
+python cli.py update-step --step 1 --module "SRS" --action "Phase 1 APPROVE"
+python cli.py end-phase --phase 1
+```
 ```
 
-**輸出範例：**
+---
 
+## 4. CLI 工具參考
+
+### 4.1 model-recommend
+
+根據 Phase 推薦最適合的 AI 模型。
+
+**功能**：根據 Phase 推薦模型  
+**用法**：
+```bash
+python cli.py model-recommend --phase N --repo /path/to/project
+```
+
+**輸出格式**：
 ```
 ╔══════════════════════════════════════════════════════════════╗
-║  Phase 2 Runtime Status                                  ║
+║  Phase N → Model 推薦                                     ║
 ╠══════════════════════════════════════════════════════════════╣
-║  Current Phase:     2                                      ║
-║  Started At:        2026-04-02T08:00:00+00:00             ║
-║  Elapsed:           45 min                                 ║
+║  Model:        anthropic/claude-sonnet-4-20250514           ║
+║  Provider:     anthropic                                    ║
+║  Est. Cost:    $0.0035                                      ║
 ╠══════════════════════════════════════════════════════════════╣
-║  Metrics                                                        ║
-║  ├── BLOCK Count:      3                                   ║
-║  ├── A/B Rounds:      2                                   ║
-║  ├── Warnings:        1                                   ║
-║  └── Last Gate Score: 87                                  ║
-╠══════════════════════════════════════════════════════════════╣
-║  Alerts (1)                                                  ║
-║  🚨 BLOCK_COUNT_HIGH: 3 (threshold: 5)                    ║
+║  Reasoning: 適合 Phase N 的複雜度與速度平衡                 ║
 ╚══════════════════════════════════════════════════════════════╝
 ```
 
-#### 查看 A/B 來回歷史
-
+**範例**：
 ```bash
-python3 cli.py ab-history --phase 2
-```
-
-**輸出範例：**
-
-```
-╔══════════════════════════════════════════════════════════════╗
-║  Phase 2 A/B History                                       ║
-╠══════════════════════════════════════════════════════════════╣
-║  1. 🚀 [2026-04-02T08:00] PHASE_START   Phase started      ║
-║  2. 🔴 [2026-04-02T08:15] BLOCK         violations: 2       ║
-║  3. ↔️  [2026-04-02T08:20] AB_ROUND     A/B exchange      ║
-║  4. 🔴 [2026-04-02T08:30] BLOCK         violations: 1       ║
-╚══════════════════════════════════════════════════════════════╝
-```
-
-#### 檢查 Phase 時長
-
-```bash
-python3 cli.py time-check --phase 2 --threshold 120
-```
-
-**輸出範例：**
-
-```
-╔══════════════════════════════════════════════════════════════╗
-║  Phase 2 Time Check                                         ║
-╠══════════════════════════════════════════════════════════════╣
-║  Threshold: 120 minutes                                      ║
-║  Elapsed:   45 minutes                                      ║
-║                                                                        ║
-║  ✅ OK                                                            ║
-╚══════════════════════════════════════════════════════════════════╝
-```
-
-#### 跨專案失敗熱圖（框架）
-
-```bash
-python3 cli.py audit-heatmap
-```
-
-### 3.2 state_monitor.py 命令
-
-#### 手動執行趨勢檢查
-
-```bash
-python3 state_monitor.py --check-trends --project-path /path/to/project
-```
-
-#### 查看幫助
-
-```bash
-python3 state_monitor.py --help
-```
-
-### 1.4 Phase 狀態機
-
-```
-┌────────────┐  HR-12/13觸發  ┌────────────┐
-│  RUNNING   │ ────────────▶ │   PAUSE    │
-└────────────┘               └────────────┘
-     ▲                            │
-     │                            │ Johnny 裁決
-     │                            ▼
-     │                      ┌────────────┐
-     └───────────────────── │  RESUMING  │
-                            └────────────┘
-
-┌────────────┐  HR-14觸發   ┌────────────┐
-│   任意狀態   │ ───────────▶ │   FREEZE   │
-└────────────┘              └────────────┘
-                                  │
-                                  │ 全面稽核通過
-                                  ▼
-                            ┌────────────┐
-                            │   THAWED   │
-                            └────────────┘
+python cli.py model-recommend --phase 3 --repo .
+# 輸出 Phase 3 代碼實作推薦模型
 ```
 
 ---
 
-## 4. 煞車系統（安全閥）
+### 4.2 update-step
 
-### 4.1 HR-12/13/14 規則定義
+更新 `current_step`、`current_module`、`next_action` 三個欄位。
 
-HR-01~HR-11 定義了「違反哪些規則會終止」，但沒有定義「誰來執行終止」。 HR-12/13/14 是實質的煞車機制。
-
-| ID | 規則 | 閾值 | 違反後果 | 執行者 |
-|----|------|------|----------|--------|
-| **HR-12** | A/B 審查輪次上限 | > 5 輪/Phase | 強制 PAUSE，通知 Johnny | state_monitor.py |
-| **HR-13** | Phase 執行時間上限 | > 3× 預估 | 強制 checkpoint，輸出 BLOCKER 清單，PAUSE | state_monitor.py |
-| **HR-14** | Integrity 分數底線 | < 40 | FREEZE 專案，全面審計後才能繼續 | state_monitor.py |
-
-### 4.2 Johnny 介入條件（§6.5 擴充版）
-
-| 觸發條件 | 自動行為 | Johnny 動作 |
-|---------|---------|------------|
-| Agent B 有重大疑問無法解決 | 暫停執行 | 人工裁決 |
-| 分數 < 50 | 禁止進入下一 Phase | 審查 Agent A 工作 |
-| 作假跡象（L6 錯誤） | 終止 + 記錄 | 調查 session log |
-| A/B 輪次 > 5（HR-12） | 自動 PAUSE | 判斷是否重新分工或 RESET |
-| Phase 時間 > 3× 預估（HR-13） | 自動 PAUSE | 評估是否簡化範圍 |
-| Integrity < 40（HR-14） | FREEZE 專案 | 全面稽核 |
-| BLOCK 數 > 5 且同一維度 | 觸發 Phase Reset | 評估 SRS/SAD 品質 |
-
-### 4.3 煞車觸發後的流程
-
-```
-HR-12/13/14 觸發
-       ↓
-state_monitor.py 檢測到
-       ↓
-寫入 state.json history[]（不可刪除）
-       ↓
-發送 Telegram 預警給 Johnny
-       ↓
-Johnny 登入 OpenClaw 人工裁決
-       ↓
-執行 phase-resume / phase-reset / phase-thaw
+**功能**：更新目前工作進度狀態  
+**用法**：
+```bash
+python cli.py update-step --step X --module "MODULE_NAME" --action "ACTION_DESCRIPTION" --repo /path/to/project
 ```
 
-### 4.4 Phase Reset vs FREEZE
+**參數說明**：
 
-| 動作 | 觸發條件 | 影響範圍 | Johnny 動作 |
-|------|----------|----------|-------------|
-| **Phase Reset** | BLOCK > 5 同一維度 | 單一 Phase | 評估 SRS/SAD 品質後重跑 |
-| **FREEZE** | Integrity < 40 | 全專案 | 全面稽核後才能繼續 |
+| 參數 | 必填 | 說明 |
+|------|------|------|
+| `--step` | ✅ | Step 編號 (1-8，對應 Phase) |
+| `--module` | ✅ | 模組名稱（英文或中文） |
+| `--action` | ✅ | 當前動作描述 |
+| `--repo` | ❌ | 專案路徑，預設 `.` |
 
----
+**範例**：
+```bash
+# 開始 Phase 1
+python cli.py update-step --step 1 --module "SRS" --action "開始撰寫 SRS.md"
 
-## 5. 預警規則
+# 完成 SRS.md 交付物
+python cli.py update-step --step 1 --module "SRS" --action "SRS.md 完成"
 
-### 4.1 預警阈值
+# Phase 1 結束
+python cli.py update-step --step 1 --module "SRS" --action "Phase 1 APPROVE"
 
-| 指標 | 阈值 | 預警類型 |
-|------|------|----------|
-| BLOCK 次數 | ≥ 5 | `BLOCK_COUNT_HIGH` |
-| A/B 來回 | ≥ 5 | `AB_ROUND_HIGH` |
-| Phase 執行時間 | ≥ 120 分鐘 | `PHASE_TIMEOUT` |
-
-### 4.2 觸發邏輯
-
-```
-每次 Quality Gate 執行
-       ↓
-更新 state.json
-       ↓
-Crontab 每 5 分鐘執行
-       ↓
-檢查阈值
-       ↓
-有觸發 → 發送 Telegram 預警
+# 開始 Phase 2
+python cli.py update-step --step 2 --module "SAD" --action "開始 SAD.md 設計"
 ```
 
-### 4.3 修改預警阈值
-
-編輯 `state_monitor.py` 頂部的阈值設定：
-
-```python
-THRESHOLDS = {
-    "blocks": 5,           # BLOCK 次數警戒線
-    "ab_rounds": 5,        # A/B 來回警戒線
-    "elapsed_minutes": 120,  # Phase 執行時間警戒線（分鐘）
+**對 state.json 的影響**：
+```json
+{
+  "current_step": 1,
+  "current_module": "SRS",
+  "next_action": "Phase 1 APPROVE"
 }
 ```
 
 ---
 
-## 5. 預警範例
+### 4.3 end-phase
 
-### 5.1 BLOCK 過多
+觸發 PHASE_END hook，重置 `phase_state`，並遞增 `current_phase`。
 
-```
-🚨  [Phase 2 Runtime Alert]
-
-🚨 BLOCK_COUNT_HIGH
-   BLOCK 次數過高: 6 (警戒線: 5)
-   建議：檢查 FrameworkEnforcer 輸出
-
-📊  當前狀態:
-   - BLOCK: 6 次
-   - A/B 來回: 3 輪
-   - 已耗時: 45 分鐘
-   - 最後分數: 72%
-
-💡  建議: 檢查 FrameworkEnforcer 輸出或考慮分割 Phase
+**功能**：Phase 結束，進入下一 Phase  
+**用法**：
+```bash
+python cli.py end-phase --phase N --repo /path/to/project
 ```
 
-### 5.2 A/B 來回過多
+**參數說明**：
 
+| 參數 | 必填 | 說明 |
+|------|------|------|
+| `--phase` | ✅ | Phase 編號 (1-8) |
+| `--repo` | ❌ | 專案路徑，預設 `.` |
+
+**PHASE_END Hook 執行的操作**：
+1. 記錄 Phase 完成時間到 `phase_history`
+2. 重置 `phase_state`（blocks、ab_rounds、warnings 歸零）
+3. 遞增 `current_phase` 至 N+1
+4. 重置 `phase_state.status` 為 `RUNNING`
+5. 更新 `started_at` 為當前時間
+
+**範例**：
+```bash
+# Phase 1 完成，進入 Phase 2
+python cli.py end-phase --phase 1 --repo .
+
+# Phase 3 完成，進入 Phase 4
+python cli.py end-phase --phase 3 --repo .
 ```
-🚨  [Phase 2 Runtime Alert]
 
-⚠️  A/B 來回過多: 6 (警戒線: 5)
-   建議：檢查 Agent B 是否有 blocking 問題
-
-📊  當前狀態:
-   - BLOCK: 2 次
-   - A/B 來回: 6 輪
-   - 已耗時: 80 分鐘
-   - 最後分數: 85%
-
-💡  建議: 考慮簡化範圍或分割 Phase
+**執行後 state.json 變化**：
+```json
+{
+  "current_phase": 2,
+  "phase_state": {
+    "status": "RUNNING",
+    "started_at": "2026-04-02T11:00:00Z",
+    "blocks": 0,
+    "ab_rounds": 0,
+    "integrity_score": 100,
+    "warnings": 0
+  },
+  "phase_history": [
+    {"phase": 1, "status": "COMPLETED", "duration_min": 45}
+  ]
+}
 ```
 
-### 5.3 Phase 執行過久
+---
 
+### 4.4 update-project-status
+
+更新 `PROJECT_STATUS.md` 中的「下一步動作」區塊。
+
+**功能**：更新 PROJECT_STATUS.md 的「下一步動作」  
+**用法**：
+```bash
+python cli.py update-project-status --step X --module Y --action "ACTION" --repo /path
 ```
-🚨  [Phase 2 Runtime Alert]
 
-⏱️  Phase 執行過久: 125 分鐘 (警戒線: 120)
-   建議：考慮簡化範圍或分割 Phase
+**參數說明**：
 
-📊  當前狀態:
-   - BLOCK: 1 次
-   - A/B 來回: 4 輪
-   - 已耗時: 125 分鐘
-   - 最後分數: 90%
+| 參數 | 必填 | 說明 |
+|------|------|------|
+| `--step` | ✅ | Step 名稱（如 `4.1`） |
+| `--module` | ✅ | 模組名稱 |
+| `--action` | ✅ | 動作描述 |
+| `--status` | ❌ | 狀態（`pending`/`in-progress`/`completed`），預設 `in-progress` |
+| `--repo` | ❌ | 專案路徑，預設 `.` |
 
-💡  建議: 考慮分割 Phase 或簡化驗收標準
+**範例**：
+```bash
+# 更新下一步動作
+python cli.py update-project-status --step 4.1 --module "SynthEngine" --action "完成 TC 追蹤"
+
+# 標記為已完成
+python cli.py update-project-status --step 3.2 --module "代碼實作" --action "Module A 完成" --status completed
+```
+
+---
+
+## 5. 快速參考
+
+### 5.1 初始化新專案
+
+```bash
+# 建立目錄結構
+mkdir -p .methodology
+
+# 初始化專案
+python /path/to/methodology-v2/cli.py init "my-project"
+
+# 確認 state.json 已建立
+cat .methodology/state.json
+```
+
+### 5.2 查看目前狀態
+
+```bash
+# 查看 Phase 執行狀態
+python cli.py phase-status --phase 1
+
+# 模型推薦
+python cli.py model-recommend --repo .
+
+# 查看 A/B 歷史
+python cli.py ab-history --phase 1
+```
+
+### 5.3 Phase 執行鉤子序列（完整範例）
+
+```bash
+# ===== Phase 1 執行序列 =====
+
+# 1. 開始 Phase 1
+python cli.py update-step --step 1 --module "SRS" --action "開始撰寫 SRS.md"
+
+# 2. 完成 SRS.md
+python cli.py update-step --step 1 --module "SRS" --action "SRS.md 完成"
+
+# 3. 完成 SPEC_TRACKING.md
+python cli.py update-step --step 1 --module "SRS" --action "SPEC_TRACKING.md 完成"
+
+# 4. 完成 TRACEABILITY_MATRIX.md
+python cli.py update-step --step 1 --module "SRS" --action "TRACEABILITY_MATRIX.md 完成"
+
+# 5. Agent B 審查完成
+python cli.py update-step --step 1 --module "SRS" --action "Agent B 審查 APPROVE"
+
+# 6. Phase 1 結束 → Phase 2 開始
+python cli.py update-step --step 1 --module "SRS" --action "Phase 1 APPROVE"
+python cli.py end-phase --phase 1
+
+# ===== Phase 2 執行序列 =====
+
+python cli.py update-step --step 2 --module "SAD" --action "開始 SAD.md 設計"
+# ... 中間步驟 ...
+python cli.py update-step --step 2 --module "SAD" --action "Phase 2 APPROVE"
+python cli.py end-phase --phase 2
+
+# ===== Phase 3 執行序列 =====
+
+python cli.py update-step --step 3 --module "代碼實作" --action "開始代碼實作"
+# ... 每模組完成時 ...
+python cli.py update-step --step 3 --module "代碼實作" --action "Phase 3 APPROVE"
+python cli.py end-phase --phase 3
+```
+
+### 5.4 單行命令速查
+
+```bash
+# 開始新 Step
+python cli.py update-step --step 1 --module "SRS" --action "開始撰寫"
+
+# Step 完成
+python cli.py update-step --step 1 --module "SRS" --action "完成草稿"
+
+# Phase 完成
+python cli.py end-phase --phase 1
+
+# 查看狀態
+python cli.py phase-status --phase 1
+
+# 模型推薦
+python cli.py model-recommend --repo .
 ```
 
 ---
 
 ## 6. 故障排除
 
-### 6.1 state.json 不存在
+### 6.1 state.json 找不到
 
-**問題**：執行 `phase-status` 時顯示 "state.json not found"
-
-**原因**：Quality Gate 還沒執行過
-
-**解決**：
-```bash
-cd /path/to/project
-python3 -c "
-import sys
-sys.path.insert(0, '/path/to/methodology-v2')
-from quality_gate import UnifiedGate
-gate = UnifiedGate('.')
-result = gate.check_all(phase=1)
-"
+**症狀**：
+```
+❌ state.json not found. Phase N may not have started yet.
 ```
 
-### 6.2 Crontab 沒執行
+**原因**：`.methodology/state.json` 不存在或路徑錯誤
 
-**問題**：預警沒有發送到 Telegram
-
-**檢查步驟**：
-
+**解決方式**：
 ```bash
-# 1. 確認 crontab 設定正確
-crontab -l
+# 檢查目錄是否存在
+ls -la .methodology/
 
-# 2. 手動執行測試
-python3 /path/to/methodology-v2/scripts/state_monitor.py --check-trends --project-path /path/to/project
+# 如果不存在，建立並初始化
+mkdir -p .methodology
+python cli.py init "專案名"
 
-# 3. 查看日誌
-cat /tmp/state_monitor.log
+# 或手動建立 state.json
+echo '{"current_phase": 1, ...}' > .methodology/state.json
 ```
 
-### 6.3 Telegram 通知失敗
+### 6.2 鉤子沒反應
 
-**問題**：state_monitor.py 顯示 "Telegram notification failed"
+**症狀**：`update-step` 或 `end-phase` 執行後 state.json 沒有更新
 
-**解決**：
+**原因**：可能在錯誤的目錄執行
 
-1. 確認 OpenClaw 已啟動
-2. 確認 Telegram Bot 已設定
-3. 使用 `--dry-run` 模式測試
-
+**解決方式**：
 ```bash
-python3 state_monitor.py --check-trends --dry-run
+# 確認當前目錄是專案根目錄
+pwd
+cd /path/to/your/project
+
+# 使用絕對路徑
+python /path/to/methodology-v2/cli.py update-step --step 1 --module "SRS" --action "test" --repo /path/to/your/project
+
+# 確認 state.json 權限
+ls -la .methodology/state.json
+chmod 644 .methodology/state.json
 ```
 
-### 6.4 預警一直重複發送
+### 6.3 Phase 狀態異常（RUNNING/PAUSE/FREEZE）
 
-**問題**：同一個預警被發送多次
+**症狀**：`phase_state.status` 不是 `RUNNING`
 
-**原因**：預警觸發後沒有「已消除」機制
+**解決方式**：
 
-**解決**：目前設計是「達標後只發送一次」，如果問題消除後又達標，會再次發送。
+```bash
+# 查看當前狀態
+python cli.py phase-status --phase 3
+
+# 如果是 PAUSE（暫停），恢復執行
+python cli.py phase-resume --phase 3
+
+# 如果是 FREEZE（凍結，需要審計後才能恢復）
+# 先確認 HR-14 條件已修復
+python cli.py phase-unfreeze --phase 3  # 需要管理員權限
+```
+
+### 6.4 PHASE_END hook 未觸發
+
+**症狀**：`current_phase` 沒有遞增
+
+**原因**：`end-phase` 命令執行失敗或被阻擋
+
+**解決方式**：
+```bash
+# 直接編輯 state.json（最後手段）
+# 確保 current_phase 正確
+# 確保 phase_history 包含當前 Phase 記錄
+
+# 然後手動重置 phase_state
+```
+
+### 6.5 Invalid phase number
+
+**症狀**：`error: argument --phase: invalid int value`
+
+**原因**：Phase 編號必須是 1-8 的整數
+
+**解決方式**：
+```bash
+# 確認 phase 參數是數字
+python cli.py end-phase --phase 1 --repo .
+
+# 不要用變數拼接（容易出錯）
+PHASE_NUM=1
+python cli.py end-phase --phase $PHASE_NUM --repo .  # 可能失敗
+
+# 正確做法
+python cli.py end-phase --phase 1 --repo .
+```
 
 ---
 
-## 附錄
+## 7. 附錄：state.json 欄位說明
 
-### A. state.json 結構
-
-```json
-{
-  "version": "1.0",
-  "project": "tts-kokoro-v613",
-  "current_phase": 2,
-  "phase_state": {
-    "started_at": "2026-04-02T08:00:00Z",
-    "elapsed_minutes": 45,
-    "ab_rounds": 2,
-    "blocks": 3,
-    "warnings": 1,
-    "last_gate_score": 87,
-    "last_check_at": "2026-04-02T08:45:00Z"
-  },
-  "trend_alerts": ["BLOCK_COUNT_HIGH"],
-  "history": [
-    {"timestamp": "2026-04-02T08:00:00Z", "event": "PHASE_START", "phase": 2},
-    {"timestamp": "2026-04-02T08:15:00Z", "event": "BLOCK", "phase": 2, "violations": 2},
-    {"timestamp": "2026-04-02T08:45:00Z", "event": "GATE_CHECK", "phase": 2, "score": 87}
-  ]
-}
-```
-
-### B. 版本歷史
-
-| 版本 | 日期 | 變更 |
+| 欄位 | 類型 | 說明 |
 |------|------|------|
-| v6.15.0 | 2026-04-02 | 初始版本 |
+| `current_phase` | int | 目前 Phase (1-8) |
+| `current_step` | int | 目前 Step 編號 |
+| `current_module` | string | 目前模組名稱 |
+| `next_action` | string | 下一步動作描述 |
+| `phase_state.status` | string | RUNNING / PAUSE / FREEZE / COMPLETED |
+| `phase_state.started_at` | ISO8601 | Phase 開始時間 |
+| `phase_state.blocks` | int | BLOCK 次數 |
+| `phase_state.ab_rounds` | int | A/B 來回次數 |
+| `phase_state.integrity_score` | int | 誠信分數 (0-100) |
+| `phase_state.warnings` | int | 警告次數 |
+| `phase_state.last_gate_score` | float | 最後 Quality Gate 分數 |
+| `phase_history` | array | Phase 完成歷史 |
+| `domain` | string | 專案領域 |
+| `project_root` | string | 專案根目錄 |
+| `started_at` | ISO8601 | 專案開始時間 |
+| `trend_alerts` | array | 趨勢警報 |
 
 ---
 
-*最後更新：2026-04-02*
+*最後更新：2026-04-02 | methodology-v2 v6.15.1*
