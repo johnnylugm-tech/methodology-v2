@@ -30,6 +30,7 @@ from pm_mode import PMMode
 from agent_evaluator import AgentEvaluator, HumanEvaluator, TestCase, EvaluationSuite
 from structured_output import StructuredOutputEngine
 from data_quality import DataQualityChecker
+from smart_router import route_by_phase
 from enterprise_hub import EnterpriseHub
 from langgraph_migrator import LangGraphMigrationTool
 from crewai_bridge import FrameworkBridge, bridge_quick_convert
@@ -255,6 +256,10 @@ class MethodologyCLI:
             return self.cmd_phase_truth(args)
         elif command == "skill-check":
             return self.cmd_skill_check(args)
+        elif command == "model-recommend":
+            return self.cmd_model_recommend(args)
+        elif command == "update-project-status":
+            return self.cmd_update_project_status(args)
         else:
             pass # Removed print-debug
             return 1
@@ -3253,6 +3258,127 @@ class MethodologyCLI:
         
         return 0
 
+    def cmd_model_recommend(self, args):
+        """Phase → Model 推薦
+
+        讀取 .methodology/state.json 取得 current_phase，
+        呼叫 smart_router.route_by_phase() 輸出模型推薦。
+        """
+        from pathlib import Path
+
+        repo_path = args.repo or "."
+        state_path = Path(repo_path) / ".methodology" / "state.json"
+
+        # 讀取 state.json 取得 current_phase
+        phase = args.phase
+        if phase is None:
+            if state_path.exists():
+                try:
+                    state = json.loads(state_path.read_text())
+                    phase = state.get("current_phase")
+                except (json.JSONDecodeError, IOError) as e:
+                    print(f"❌ Failed to read state.json: {e}")
+                    return 1
+            else:
+                print(f"❌ state.json not found at {state_path}")
+                return 1
+
+        if phase is None:
+            print("❌ current_phase is None in state.json")
+            return 1
+
+        # 呼叫 route_by_phase
+        result = route_by_phase(phase, str(state_path))
+
+        print(f"""
+╔══════════════════════════════════════════════════════════════╗
+║  Phase {phase} → Model 推薦                                     ║
+╠══════════════════════════════════════════════════════════════╣""")
+        print(f"║  Model:        {result.model:<45}║")
+        print(f"║  Provider:     {result.provider:<45}║")
+        print(f"║  Est. Cost:    ${result.estimated_cost:.4f}                                     ║")
+        print(f"╠══════════════════════════════════════════════════════════════╣")
+        print(f"║  Reasoning: {result.reasoning:<43}║")
+        print(f"╚══════════════════════════════════════════════════════════════╝")
+
+        # 讀取額外 context（如果有的話）
+        if state_path.exists():
+            try:
+                state = json.loads(state_path.read_text())
+                current_step = state.get("current_step")
+                current_module = state.get("current_module")
+                if current_step or current_module:
+                    print(f"\n📊 State Context: Step {current_step}, Module {current_module}")
+            except:
+                pass
+
+        return 0
+
+    def cmd_update_project_status(self, args):
+        """更新 PROJECT_STATUS.md 的「下一步動作」區塊
+
+        用法：
+            python cli.py update-project-status --step 4.1 --module SynthEngine --action "完成 TC 追蹤"
+        """
+        from pathlib import Path
+
+        repo_path = Path(args.repo or ".")
+        status_file = repo_path / "PROJECT_STATUS.md"
+
+        step = args.step
+        module = args.module
+        action = args.action
+        status_value = args.status or "in-progress"
+
+        if not status_file.exists():
+            pass # Removed print-debug
+            return 1
+
+        try:
+            content = status_file.read_text(encoding="utf-8")
+        except IOError as e:
+            pass # Removed print-debug
+            return 1
+
+        # 解析並更新「下一步動作」表格
+        # 格式：| Step | Module | Action | Status |
+        lines = content.split('\n')
+        updated = False
+        in_next_actions_section = False
+
+        for i, line in enumerate(lines):
+            # 檢測是否進入「下一步動作」區塊
+            if "下一步動作" in line or "Next Actions" in line:
+                in_next_actions_section = True
+                continue
+
+            # 如果遇到另一個區塊標題，結束
+            if in_next_actions_section and line.startswith("#"):
+                in_next_actions_section = False
+
+            # 在下一步動作區塊中，找到對應 step/module 的行並更新狀態
+            if in_next_actions_section and "|" in line and step in line and module in line:
+                # 解析狀態列並更新
+                parts = [p.strip() for p in line.split("|")]
+                if len(parts) >= 4:
+                    # 找到 Status 列（倒數第二列）
+                    parts[-2] = status_value
+                    lines[i] = "|" + "|".join(f" {p} " for p in parts) + "|"
+                    updated = True
+                    break
+
+        if updated:
+            try:
+                status_file.write_text("\n".join(lines), encoding="utf-8")
+                pass # Removed print-debug
+                return 0
+            except IOError as e:
+                pass # Removed print-debug
+                return 1
+        else:
+            pass # Removed print-debug
+            return 1
+
 
 # ==================== Main ====================
 
@@ -3678,6 +3804,19 @@ def main():
                                    help="Phase number (1-8)")
     skill_check_parser.add_argument("--mode", choices=["preheat", "interrogate", "citation"],
                                    help="檢查模式：preheat=預熱, interrogate=拷問, citation=引用")
+
+    # model-recommend (Phase → Model 推薦)
+    model_recommend_parser = subparsers.add_parser("model-recommend", help="Phase → Model 推薦")
+    model_recommend_parser.add_argument("--phase", type=int, help="Phase number (1-8), 如果不指定則從 state.json 讀取")
+    model_recommend_parser.add_argument("--repo", default=".", help="Repo 路徑 (預設: .)")
+
+    # update-project-status (更新 PROJECT_STATUS.md)
+    update_status_parser = subparsers.add_parser("update-project-status", help="更新 PROJECT_STATUS.md")
+    update_status_parser.add_argument("--step", required=True, help="Step 名稱 (如 4.1)")
+    update_status_parser.add_argument("--module", required=True, help="模組名稱 (如 SynthEngine)")
+    update_status_parser.add_argument("--action", required=True, help="動作描述")
+    update_status_parser.add_argument("--status", default="in-progress", help="狀態 (pending/in-progress/completed)")
+    update_status_parser.add_argument("--repo", default=".", help="Repo 路徑 (預設: .)")
 
     args = parser.parse_args()
     

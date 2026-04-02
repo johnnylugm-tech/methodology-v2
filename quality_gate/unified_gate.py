@@ -1616,6 +1616,37 @@ class UnifiedGate:
         """設定是否啟用 Phase Enforcement"""
         self._phase_enforcement_enabled = enabled
 
+    def end_phase(self, phase: int = None):
+        """結束一個 Phase
+
+        呼叫時機：Phase 完成時（手動或自動）
+        會觸發 PHASE_END 事件寫入 state.json
+        """
+        if phase is None:
+            state = self._read_state()
+            phase = state.get("current_phase")
+
+        if phase:
+            self._update_state(event="PHASE_END", phase=phase)
+
+    def update_step(self, step: str, module: str = None, next_action: dict = None):
+        """更新當前 Step
+
+        呼叫時機：開始新 Step 時
+        會觸發 STEP_START 事件寫入 state.json
+
+        Args:
+            step: Step 名稱（如 "4.1", "4.2"）
+            module: 模組名稱（如 "CircuitBreaker"）
+            next_action: 下一步動作 dict（如 {"who": "...", "what": "..."}）
+        """
+        self._update_state(
+            event="STEP_START",
+            step=step,
+            module=module,
+            next_action=next_action
+        )
+
 
 # ===== 快速入口函式 =====
 
