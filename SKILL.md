@@ -93,6 +93,30 @@ ls -la && git status
 
 ---
 
+## A/B 協作機制
+
+**原則**：主代理啟動 sub-agent 必須用 `sessions_spawn` + 明確人格，HybridWorkflow(mode=ON) 強制審查。
+
+**人格定義**：
+
+| 角色 | 職責 | 禁用 |
+|------|------|------|
+| Developer | 產出代碼 | 自己審自己的產出 |
+| Reviewer | 審查把關 | 不可兼任 Developer |
+
+**A/B 流程**：
+```
+Developer Sub-agent 產出 → Reviewer Sub-agent 審查 → [Reject? 回修重審 / Approve? 下一 Phase]
+```
+
+**⚠️ 禁止行爲**：
+- 自寫自審（HR-01）
+- HybridWorkflow=OFF（HR-04）
+- 同一 Agent 人格兼任雙角色
+- sessions_spawn.log 缺失（HR-10）
+
+**詳見**：`docs/HYBRID_WORKFLOW_GUIDE.md`
+
 ## 2. 閾值配置
 
 ### 2.1 Quality Gate
