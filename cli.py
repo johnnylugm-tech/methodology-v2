@@ -141,6 +141,14 @@ class MethodologyCLI:
             return self.cmd_report(args)
         elif command == "status":
             return self.cmd_status(args)
+        elif command == "phase-status":
+            return self.cmd_phase_status(args)
+        elif command == "ab-history":
+            return self.cmd_ab_history(args)
+        elif command == "audit-heatmap":
+            return self.cmd_audit_heatmap(args)
+        elif command == "time-check":
+            return self.cmd_time_check(args)
         elif command == "resources":
             return self.cmd_resources(args)
         elif command == "bus":
@@ -498,6 +506,156 @@ class MethodologyCLI:
         pass # Removed print-debug
         
         return 0
+    
+    def cmd_phase_status(self, args):
+        """顯示 Phase 執行狀態"""
+        from pathlib import Path
+        phase = args.phase
+        state_path = Path(".methodology/state.json")
+        
+        if not state_path.exists():
+            print(f"❌ state.json not found. Phase {phase} may not have started yet.")
+            return 1
+        
+        state = json.loads(state_path.read_text())
+        ps = state.get("phase_state", {})
+        
+        # 計算已耗費時間
+        started = ps.get("started_at", None)
+        elapsed = "N/A"
+        if started:
+            from datetime import datetime, timezone
+            start_time = datetime.fromisoformat(started)
+            elapsed_min = (datetime.now(timezone.utc) - start_time).seconds // 60
+            elapsed = f"{elapsed_min} min"
+        
+        print(f"""
+╔══════════════════════════════════════════════════════════════╗
+║  Phase {phase} Runtime Status                                  ║
+╠══════════════════════════════════════════════════════════════╣
+║  Current Phase:     {state.get('current_phase', 'N/A'):<35}║
+║  Started At:        {started or 'N/A':<35}║
+║  Elapsed:           {elapsed:<35}║
+╠══════════════════════════════════════════════════════════════╣
+║  Metrics                                                        ║
+║  ├── BLOCK Count:      {ps.get('blocks', 0):<30}║
+║  ├── A/B Rounds:      {ps.get('ab_rounds', 0):<30}║
+║  ├── Warnings:        {ps.get('warnings', 0):<30}║
+║  └── Last Gate Score: {ps.get('last_gate_score', 'N/A'):<30}║
+╠══════════════════════════════════════════════════════════════╣
+║  Alerts ({len(state.get('trend_alerts', []))})                                                  ║
+""")
+        
+        alerts = state.get("trend_alerts", [])
+        if alerts:
+            for alert in alerts:
+                print(f"  🚨 {alert.get('type')}: {alert.get('current')} (threshold: {alert.get('threshold')})")
+        else:
+            print("  ✅ No active alerts")
+        
+        print("╚══════════════════════════════════════════════════════════════╝")
+        return 0
+    
+    def cmd_ab_history(self, args):
+        """顯示 A/B 來回歷史"""
+        from pathlib import Path
+        phase = args.phase
+        state_path = Path(".methodology/state.json")
+        
+        if not state_path.exists():
+            print(f"❌ state.json not found.")
+            return 1
+        
+        state = json.loads(state_path.read_text())
+        history = state.get("history", [])
+        
+        # 過濾出指定 Phase 的 BLOCK 和 AB_ROUND 事件
+        phase_events = [
+            e for e in history
+            if e.get("phase") == phase and e.get("event") in ["BLOCK", "AB_ROUND", "PHASE_START"]
+        ]
+        
+        print(f"""
+╔══════════════════════════════════════════════════════════════╗
+║  Phase {phase} A/B History                                       ║
+╠══════════════════════════════════════════════════════════════╣""")
+        
+        if not phase_events:
+            print("║  No A/B events recorded for this phase.")
+        else:
+            for i, event in enumerate(phase_events, 1):
+                event_type = event.get("event", "UNKNOWN")
+                timestamp = event.get("timestamp", "N/A")[:19]
+                if event_type == "BLOCK":
+                    icon = "🔴"
+                    detail = f"violations: {event.get('violations', 0)}"
+                elif event_type == "AB_ROUND":
+                    icon = "↔️"
+                    detail = "A/B exchange"
+                elif event_type == "PHASE_START":
+                    icon = "🚀"
+                    detail = "Phase started"
+                else:
+                    icon = "⚪"
+                    detail = ""
+                
+                print(f"║  {i:2}. {icon} [{timestamp}] {event_type:<12} {detail:<20}")
+        
+        print("╚══════════════════════════════════════════════════════════════╝")
+        return 0
+    
+    def cmd_audit_heatmap(self, args):
+        """顯示跨專案失敗熱圖"""
+        # TODO: 需要跨專案數據，目前只是框架
+        print("""
+╔══════════════════════════════════════════════════════════════╗
+║  Cross-Project Failure Heatmap                                   ║
+╠══════════════════════════════════════════════════════════════╣
+║  Note: 需要設定專案路徑才能顯示熱圖                               ║
+║                                                                        ║
+║  使用方式:                                                          ║
+║    python cli.py audit-heatmap --projects /path/to/project1,/path2 ║
+╚══════════════════════════════════════════════════════════════════╝
+""")
+        return 0
+    
+    def cmd_time_check(self, args):
+        """檢查 Phase 時長"""
+        from pathlib import Path
+        phase = args.phase
+        threshold = args.threshold
+        state_path = Path(".methodology/state.json")
+        
+        if not state_path.exists():
+            print(f"❌ state.json not found.")
+            return 1
+        
+        state = json.loads(state_path.read_text())
+        ps = state.get("phase_state", {})
+        started = ps.get("started_at")
+        
+        if not started:
+            print(f"❌ Phase {phase} start time not recorded.")
+            return 1
+        
+        from datetime import datetime, timezone
+        start_time = datetime.fromisoformat(started)
+        elapsed_min = (datetime.now(timezone.utc) - start_time).seconds // 60
+        
+        status = "✅" if elapsed_min <= threshold else "🚨"
+        
+        print(f"""
+╔══════════════════════════════════════════════════════════════╗
+║  Phase {phase} Time Check                                         ║
+╠══════════════════════════════════════════════════════════════╣
+║  Threshold: {threshold} minutes                                         ║
+║  Elapsed:   {elapsed_min} minutes                                         ║
+║                                                                        ║
+║  {status} {"OK" if elapsed_min <= threshold else "EXCEEDED!"}                                                            ║
+╚══════════════════════════════════════════════════════════════════╝
+""")
+        
+        return 0 if elapsed_min <= threshold else 1
     
     def cmd_resources(self, args):
         """資源管理"""
@@ -3041,6 +3199,22 @@ def main():
     
     # status
     subparsers.add_parser("status", help="Show status")
+    
+    # phase-status: Phase execution status
+    phase_status_parser = subparsers.add_parser("phase-status", help="Show Phase execution status")
+    phase_status_parser.add_argument("--phase", type=int, required=True, help="Phase number (1-8)")
+    
+    # ab-history: A/B round history
+    ab_history_parser = subparsers.add_parser("ab-history", help="Show A/B round history")
+    ab_history_parser.add_argument("--phase", type=int, required=True, help="Phase number (1-8)")
+    
+    # audit-heatmap: Cross-project failure heatmap
+    subparsers.add_parser("audit-heatmap", help="Show cross-project failure heatmap")
+    
+    # time-check: Phase duration check
+    time_check_parser = subparsers.add_parser("time-check", help="Check Phase duration")
+    time_check_parser.add_argument("--phase", type=int, required=True, help="Phase number (1-8)")
+    time_check_parser.add_argument("--threshold", type=int, default=120, help="Threshold in minutes (default: 120)")
     
     # bus
     bus_parser = subparsers.add_parser("bus", help="Message Bus")
