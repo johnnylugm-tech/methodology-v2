@@ -113,6 +113,8 @@ ls -la && git status
 | TH-12 | 單元測試覆蓋率 | ≥ 80% | 4-8 | `pytest --cov` |
 | TH-13 | SRS FR 覆蓋率 | = 100% | 4-8 | Agent B 確認 |
 | TH-14 | 規格完整性 | ≥ 90% | 1 | Agent B 確認 |
+| TH-16 | 代碼 ↔ SAD 映射率 | = 100% | 3 | `python cli.py trace-check --from phase2 --to phase3` |
+| TH-17 | FR ↔ 測試 映射率 | ≥ 90% | 4 | `python cli.py trace-check --from phase1 --to phase3-tests` |
 
 ### 2.2 Phase Truth
 
@@ -236,7 +238,7 @@ python cli.py end-phase --phase 3
 ```
 ```
 
-**EXIT**: TH-06 > 80%, TH-08 ≥ 80/90, TH-10 = 100%, TH-11 ≥ 70%, Agent B APPROVE
+**EXIT**: TH-06 > 80%, TH-08 ≥ 80/90, TH-10 = 100%, TH-11 ≥ 70%, TH-16 = 100%, Agent B APPROVE
 
 **代碼規範**:
 ```python
@@ -258,6 +260,22 @@ class ModuleName:
             self._engine = ExternalSDK()
         return self._engine
 ```
+
+### 代碼 Annotation 格式（重要）
+
+所有代碼檔案必須在模組/類別的 docstring 中包含以下 annotation：
+
+**Annotation 格式：**
+| Annotation | 位置 | 說明 | 範例 |
+|------------|------|------|------|
+| `@FR` | 類別/函式 docstring | 對應的需求 ID | `@FR: FR-01` |
+| `@SAD` | 類別 docstring | 對應的 SAD 模組 | `@SAD: Module 1 - TextProc` |
+| `@NFR` | 類別/函式 docstring | 對應的非功能需求 | `@NFR: NFR-02` |
+
+**原則：**
+- 每個主要類別必須有 `@FR`（對應其實現的功能需求）
+- 每個 public 函式必須有 `@FR`（對應其實現的功能需求）
+- 可多個 FR：用 `@FR: FR-01, FR-02`
 
 ---
 
@@ -286,7 +304,27 @@ python cli.py end-phase --phase 4
 ```
 ```
 
-**EXIT**: TH-01 > 80%, TH-03 = 100%, TH-06 > 80%, TH-10 = 100%, TH-12 ≥ 80%
+**EXIT**: TH-01 > 80%, TH-03 = 100%, TH-06 > 80%, TH-10 = 100%, TH-12 ≥ 80%, TH-17 ≥ 90%
+
+### 測試 Annotation 格式（重要）
+
+所有測試檔案必須在測試函式的 docstring 中包含以下 annotation：
+
+**Annotation 格式：**
+| Annotation | 位置 | 說明 | 範例 |
+|------------|------|------|------|
+| `@covers` | 測試函式 docstring | 對應的功能需求 | `@covers: FR-01` |
+| `@type` | 測試函式 docstring | 測試類型 | `@type: positive` / `negative` / `boundary` |
+
+**測試類型：**
+- `positive`：正向測試（正常輸入）
+- `negative`：負向測試（錯誤輸入）
+- `boundary`：邊界測試（邊界值）
+
+**原則：**
+- 每個 FR 至少有一個 positive 測試
+- 每個 FR 至少有一個 negative 測試
+- 關鍵 FR 必須有 boundary 測試
 
 ---
 
@@ -605,12 +643,12 @@ python cli.py stage-review --phase N
 ### Phase 3 進入/退出條件速查
 
 **進入條件**: Phase 2 APPROVE, SAD.md APPROVE
-**退出條件**: TH-06 > 80%, TH-08 ≥ 90, TH-10 = 100%, TH-11 ≥ 70%, Agent B APPROVE
+**退出條件**: TH-06 > 80%, TH-08 ≥ 90, TH-10 = 100%, TH-11 ≥ 70%, TH-16 = 100%, Agent B APPROVE
 
 ### Phase 4 進入/退出條件速查
 
 **進入條件**: Phase 3 APPROVE
-**退出條件**: TH-01 > 80%, TH-03 = 100%, TH-06 > 80%, TH-10 = 100%, TH-12 ≥ 80%
+**退出條件**: TH-01 > 80%, TH-03 = 100%, TH-06 > 80%, TH-10 = 100%, TH-12 ≥ 80%, TH-17 ≥ 90%
 
 ### Phase 5 進入/退出條件速查
 
