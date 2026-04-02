@@ -407,34 +407,104 @@ class SmartRouter:
 
 
 # ============================================================================
+# Phase-based Routing
+# ============================================================================
+
+def route_by_phase(phase: int, state_path: str = None, task_hint: str = None) -> RoutingResult:
+    """
+    根據 Phase 自動選擇最適合的模型
+    
+    Args:
+        phase: 當前 Phase (1-8)
+        state_path: 可選，state.json 路徑，會自動讀取 current_step/current_module
+        task_hint: 可選，任務提示（如 "coding", "review"）
+    
+    Returns:
+        RoutingResult: 模型選擇結果
+    """
+    # Phase → Model 映射表
+    PHASE_MODEL_MAP = {
+        1: {"model": "gemini-1.5-pro", "provider": "google", "reasoning": "長上下文、便宜"},
+        2: {"model": "claude-opus-4-5", "provider": "anthropic", "reasoning": "深度推理"},
+        3: {"model": "claude-sonnet-4", "provider": "anthropic", "reasoning": "代碼能力強、性價比高"},
+        4: {"model": "gpt-4o", "provider": "openai", "reasoning": "多模態平衡"},
+        5: {"model": "claude-sonnet-4", "provider": "anthropic", "reasoning": "性價比高"},
+        6: {"model": "claude-opus-4-5", "provider": "anthropic", "reasoning": "深度分析"},
+        7: {"model": "o3-mini", "provider": "openai", "reasoning": "推理+便宜"},
+        8: {"model": "gpt-3.5-turbo", "provider": "openai", "reasoning": "簡單任務"},
+    }
+    
+    # 如果有 task_hint，降級到更便宜的模型
+    if task_hint in ("simple", "config", "docs"):
+        return RoutingResult(
+            model="gpt-3.5-turbo",
+            provider="openai",
+            estimated_cost=0.001,
+            reasoning=f"Phase {phase} but task_hint={task_hint}, using budget model",
+            task_type=TaskType.GENERAL
+        )
+    
+    choice = PHASE_MODEL_MAP.get(phase, PHASE_MODEL_MAP[3])
+    
+    # 如果有 state_path，讀取 current_step/current_module
+    step_info = ""
+    if state_path:
+        import json
+        from pathlib import Path
+        sp = Path(state_path)
+        if sp.exists():
+            try:
+                state = json.loads(sp.read_text())
+                step = state.get("current_step", "?")
+                module = state.get("current_module", "?")
+                step_info = f" (state: {module} @ Step {step})"
+            except:
+                pass
+    
+    return RoutingResult(
+        model=choice["model"],
+        provider=choice["provider"],
+        estimated_cost=0.01,
+        reasoning=f"Phase {phase}{step_info}: {choice['reasoning']}",
+        task_type=TaskType.CODING
+    )
+
+
+# ============================================================================
+# CLI
+# ============================================================================
+
+def main():
+    import argparse
+    parser = argparse.ArgumentParser(description="Smart Router CLI")
+    parser.add_argument("--phase", type=int, help="Phase number (1-8)")
+    parser.add_argument("--state-path", type=str, help="Path to state.json")
+    parser.add_argument("--task", type=str, help="Task description (for regular routing)")
+    args = parser.parse_args()
+    
+    if args.phase is not None:
+        result = route_by_phase(args.phase, args.state_path)
+        print(f"Model: {result.model}")
+        print(f"Provider: {result.provider}")
+        print(f"Estimated Cost: ${result.estimated_cost:.4f}")
+        print(f"Reasoning: {result.reasoning}")
+    elif args.task:
+        router = SmartRouter()
+        result = router.route(args.task)
+        print(f"Model: {result.model}")
+        print(f"Provider: {result.provider}")
+        print(f"Estimated Cost: ${result.estimated_cost:.4f}")
+        print(f"Reasoning: {result.reasoning}")
+    else:
+        parser.print_help()
+
+
+# ============================================================================
 # Main
 # ============================================================================
 
 if __name__ == "__main__":
-    router = SmartRouter(budget="medium")
-    
-    # 測試路由
-    tasks = [
-        "幫我寫一個 Python 函數來排序數組",
-        "幫我審查這段代碼",
-        "寫一篇關於 AI 的文章",
-        "分析這個數據",
-    ]
-    
-    print("=== Smart Router Demo ===\n")
-    
-    for task in tasks:
-        result = router.route(task)
-        print(f"Task: {task}")
-        print(f"  → Model: {result.model} ({result.provider})")
-        print(f"  → Est. Cost: ${result.estimated_cost:.4f}")
-        print(f"  → Reason: {result.reasoning}")
-        print()
-    
-    print("=== Available Models ===")
-    for m in router.list_models():
-        status = "✅" if m["available"] else "❌"
-        print(f"{status} {m['name']} ({m['provider']}) - ${m['cost_per_1k_input']:.4f}/1k in")
+    main()
 
     # ==================== Cost Optimizer 整合 ====================
     
