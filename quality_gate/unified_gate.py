@@ -259,6 +259,9 @@ class UnifiedGate:
                 "version": "1.0",
                 "project": self.project_path.name,
                 "current_phase": None,
+                "current_step": None,   # "4.1", "4.2", etc.
+                "current_module": None,  # "CircuitBreaker", "SynthEngine"
+                "next_action": None,     # {"who": "...", "what": "...", "deadline": None}
                 "phase_state": {
                     "started_at": None,
                     "elapsed_minutes": 0,
@@ -334,6 +337,18 @@ class UnifiedGate:
             if not kwargs.get("passed", True):
                 ps["warnings"] = ps.get("warnings", 0) + 1
         
+        elif event == "STEP_START":
+            # Step 開始，更新 step/module/next_action
+            step = kwargs.get("step")
+            module = kwargs.get("module")
+            next_action = kwargs.get("next_action")
+            if step is not None:
+                state["current_step"] = step
+            if module is not None:
+                state["current_module"] = module
+            if next_action is not None:
+                state["next_action"] = next_action
+
         elif event == "PHASE_END":
             # Phase 結束，歸零 phase_state
             ps["started_at"] = None
