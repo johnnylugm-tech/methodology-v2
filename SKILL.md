@@ -71,6 +71,27 @@ ls -la && git status
 
 ---
 
+## 框架五大支柱
+
+> methodology-v2 的核心價值，所有功能設計都圍繞這五點展開。
+
+| 支柱 | 說明 | 關鍵機制 |
+|------|------|--------|
+| 🏛️ A/B 協作 | 雙角色分離，不可自寫自審 | HR-01, HR-04, HR-10 |
+| 🎭 Agent 人格 | 每次 sessions_spawn 必須明確人格 | §A/B 協作機制 |
+| 📜 Constitution | 產出品質憲法，正確性/安全性/可維護性 | TH-02~06, TH-08~09 |
+| 🔍 ASPICE 合規 | 文件結構與內容標準化 | TH-01 |
+| 🔗 可追溯性 | FR→SAD→代碼→測試 全鏈路追蹤 | TH-16, TH-17 |
+
+**Quality Gate** 是所有支柱的匯聚點：每一次 Phase EXIT 都必須通過。
+
+**詳見**：
+- A/B 協作：`docs/HYBRID_WORKFLOW_GUIDE.md`
+- Constitution：`docs/CONSTITUTION_GUIDE.md`
+- ASPICE：`docs/ASPICE_MAPPING.md`
+- 可追溯性：`docs/ANNOTATION_GUIDE.md`
+
+---
 
 ## 1. 硬規則（違反即終止）
 
