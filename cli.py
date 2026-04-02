@@ -264,6 +264,10 @@ class MethodologyCLI:
             return self.cmd_model_recommend(args)
         elif command == "update-project-status":
             return self.cmd_update_project_status(args)
+        elif command == "update-step":
+            return self.cmd_update_step(args)
+        elif command == "end-phase":
+            return self.cmd_end_phase(args)
         else:
             pass # Removed print-debug
             return 1
@@ -3499,6 +3503,43 @@ class MethodologyCLI:
 
         return 0
 
+    def cmd_update_step(self, args):
+        """更新 Phase/Step/Module 追蹤
+
+        用法：
+            python cli.py update-step --step 3.1 --module LexiconMapper --action "開始實作"
+        """
+        from quality_gate.unified_gate import UnifiedGate
+        from pathlib import Path
+
+        repo_path = Path(args.repo or Path.cwd())
+        action = args.action or None
+
+        ug = UnifiedGate(project_path=repo_path)
+        ug.update_step(
+            step=args.step,
+            module=args.module,
+            next_action=action
+        )
+        print(f"✅ Updated: Step={args.step}, Module={args.module}, Action={action}")
+        return 0
+
+    def cmd_end_phase(self, args):
+        """結束當前 Phase
+
+        用法：
+            python cli.py end-phase --phase 3
+        """
+        from quality_gate.unified_gate import UnifiedGate
+        from pathlib import Path
+
+        repo_path = Path(args.repo or Path.cwd())
+        phase = getattr(args, 'phase', None)
+        ug = UnifiedGate(project_path=repo_path)
+        ug.end_phase(phase=int(phase) if phase else None)
+        print(f"✅ Phase ended")
+        return 0
+
     def cmd_update_project_status(self, args):
         """更新 PROJECT_STATUS.md 的「下一步動作」區塊
 
@@ -4010,6 +4051,18 @@ def main():
     update_status_parser.add_argument("--action", required=True, help="動作描述")
     update_status_parser.add_argument("--status", default="in-progress", help="狀態 (pending/in-progress/completed)")
     update_status_parser.add_argument("--repo", default=".", help="Repo 路徑 (預設: .)")
+
+    # update-step (更新 Phase/Step/Module 追蹤)
+    update_step_parser = subparsers.add_parser("update-step", help="更新 Phase/Step/Module 追蹤")
+    update_step_parser.add_argument("--step", required=True, help="Step 名稱 (如 3.1)")
+    update_step_parser.add_argument("--module", required=True, help="模組名稱 (如 LexiconMapper)")
+    update_step_parser.add_argument("--action", help="下一步動作描述")
+    update_step_parser.add_argument("--repo", default=".", help="Repo 路徑 (預設: .)")
+
+    # end-phase (結束當前 Phase)
+    end_phase_parser = subparsers.add_parser("end-phase", help="結束當前 Phase")
+    end_phase_parser.add_argument("--phase", type=int, help="Phase 編號 (1-8)")
+    end_phase_parser.add_argument("--repo", default=".", help="Repo 路徑 (預設: .)")
 
     args = parser.parse_args()
     
