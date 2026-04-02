@@ -24,6 +24,8 @@ Unified Quality Gate
 from dataclasses import dataclass, asdict
 from typing import List, Dict, Optional
 from pathlib import Path
+from datetime import datetime, timezone
+import json
 
 # 匯入現有檢查器
 from .doc_checker import DocumentChecker
@@ -245,6 +247,132 @@ class UnifiedGate:
         except Exception as e:
             print(f"[WARNING] Failed to log to DEVELOPMENT_LOG: {e}")
 
+    # ── Runtime Metrics State ──────────────────────────────────────────
+    def _ensure_state(self):
+        """確保 .methodology/state.json 存在"""
+        state_dir = self.project_path / ".methodology"
+        state_dir.mkdir(exist_ok=True)
+        state_path = state_dir / "state.json"
+        
+        if not state_path.exists():
+            initial_state = {
+                "version": "1.0",
+                "project": self.project_path.name,
+                "current_phase": None,
+                "phase_state": {
+                    "started_at": None,
+                    "elapsed_minutes": 0,
+                    "ab_rounds": 0,
+                    "blocks": 0,
+                    "warnings": 0,
+                    "last_gate_score": None,
+                    "last_check_at": None
+                },
+                "trend_alerts": [],
+                "history": []
+            }
+            state_path.write_text(json.dumps(initial_state, indent=2))
+
+    def _read_state(self) -> dict:
+        """讀取 state.json"""
+        state_path = self.project_path / ".methodology" / "state.json"
+        if state_path.exists():
+            return json.loads(state_path.read_text())
+        return self._create_initial_state()
+
+    def _write_state(self, state: dict):
+        """寫入 state.json"""
+        state_path = self.project_path / ".methodology" / "state.json"
+        state_path.write_text(json.dumps(state, indent=2))
+
+    def _is_new_phase(self, phase: int) -> bool:
+        """檢查是否是新 Phase 開始"""
+        state = self._read_state()
+        return state.get("current_phase") != phase
+
+    def _update_state(self, event: str, **kwargs):
+        """
+        寫入 state.json - 唯一的寫入點
+        
+        Events:
+            - PHASE_START: Phase 開始
+            - BLOCK: FrameworkEnforcer 返回 BLOCK
+            - AB_ROUND: A↔B 來回一次
+            - GATE_CHECK: Quality Gate 完成
+            - PHASE_END: Phase 完成
+        """
+        state = self._read_state()
+        ps = state.get("phase_state", {})
+        
+        # 更新 last_check_at
+        ps["last_check_at"] = datetime.now(timezone.utc).isoformat()
+        
+        if event == "PHASE_START":
+            phase = kwargs.get("phase")
+            state["current_phase"] = phase
+            ps["started_at"] = datetime.now(timezone.utc).isoformat()
+            ps["blocks"] = 0
+            ps["ab_rounds"] = 0
+            ps["warnings"] = 0
+            ps["last_gate_score"] = None
+        
+        elif event == "BLOCK":
+            ps["blocks"] = ps.get("blocks", 0) + 1
+            violations = kwargs.get("violations", 1)
+            self._check_and_append_alert(state, "BLOCK_COUNT_HIGH", ps["blocks"])
+        
+        elif event == "AB_ROUND":
+            ps["ab_rounds"] = ps.get("ab_rounds", 0) + 1
+            self._check_and_append_alert(state, "AB_ROUND_HIGH", ps["ab_rounds"])
+        
+        elif event == "GATE_CHECK":
+            score = kwargs.get("score")
+            if score is not None:
+                ps["last_gate_score"] = score
+            if not kwargs.get("passed", True):
+                ps["warnings"] = ps.get("warnings", 0) + 1
+        
+        elif event == "PHASE_END":
+            # Phase 結束，歸零 phase_state
+            ps["started_at"] = None
+            ps["blocks"] = 0
+            ps["ab_rounds"] = 0
+            ps["warnings"] = 0
+        
+        state["phase_state"] = ps
+        
+        # Append to history（永不刪除）
+        history_entry = {
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "event": event,
+            **kwargs
+        }
+        state["history"] = state.get("history", [])
+        state["history"].append(history_entry)
+        
+        # 保持 history 只留最近 100 筆
+        state["history"] = state["history"][-100:]
+        
+        self._write_state(state)
+
+    def _check_and_append_alert(self, state: dict, alert_type: str, current_value: int):
+        """檢查預警阈值，達標時追加 alert"""
+        thresholds = {
+            "BLOCK_COUNT_HIGH": 5,
+            "AB_ROUND_HIGH": 5,
+        }
+        threshold = thresholds.get(alert_type)
+        if threshold and current_value >= threshold:
+            # 檢查是否已經觸發過
+            existing = [a for a in state.get("trend_alerts", []) if a.get("type") == alert_type and a.get("triggered_at")]
+            if not existing:
+                state.setdefault("trend_alerts", []).append({
+                    "type": alert_type,
+                    "current": current_value,
+                    "threshold": threshold,
+                    "triggered_at": datetime.now(timezone.utc).isoformat()
+                })
+
     def check_all(self, phase=None, strict_mode=True, phase_enforcement=False) -> UnifiedGateResult:
         """執行所有檢查
         
@@ -257,8 +385,18 @@ class UnifiedGate:
         """
         checks = []
         
+        # 確保 state.json 存在（Runtime Metrics）
+        self._ensure_state()
+        
         # 解析 phase 參數
         phase_filter = self._parse_phase_filter(phase)
+        
+        # 追蹤 Phase 開始（如果是新 Phase）
+        if phase_filter and len(phase_filter) == 1:
+            phase_num = list(phase_filter)[0]
+            if isinstance(phase_num, int) and self._is_new_phase(phase_num):
+                self._update_state(event="PHASE_START", phase=phase_num)
+
         
         # 1. Document Existence Check (Phase 1-4)
         if phase_filter is None or 1 in phase_filter or "all" in phase_filter:
@@ -396,6 +534,14 @@ class UnifiedGate:
         # 計算總分
         total_score = sum(c.score for c in checks) / len(checks) if checks else 0
         all_passed = all(c.passed for c in checks)
+        
+        # 追蹤 GATE_CHECK 到 state.json（Runtime Metrics）
+        self._update_state(
+            event="GATE_CHECK",
+            phase=list(phase_filter)[0] if phase_filter and len(phase_filter) == 1 else None,
+            score=round(total_score, 2),
+            passed=all_passed
+        )
 
         return UnifiedGateResult(
             passed=all_passed,
@@ -1387,6 +1533,14 @@ class UnifiedGate:
             violations = []
             if result.blocker_issues:
                 violations.extend(result.blocker_issues)
+            
+            # 🚨 BLOCK 發生時寫入 state.json（Runtime Metrics）
+            if not result.passed and violations:
+                self._update_state(
+                    event="BLOCK",
+                    phase=phase,
+                    violations=len(violations)
+                )
             
             return CheckResult(
                 name=f"Phase Enforcement (Phase {phase})",
