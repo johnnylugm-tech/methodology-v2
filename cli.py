@@ -143,6 +143,12 @@ class MethodologyCLI:
             return self.cmd_status(args)
         elif command == "phase-status":
             return self.cmd_phase_status(args)
+        elif command == "phase-pause":
+            return self.cmd_phase_pause(args)
+        elif command == "phase-resume":
+            return self.cmd_phase_resume(args)
+        elif command == "phase-freeze":
+            return self.cmd_phase_freeze(args)
         elif command == "ab-history":
             return self.cmd_ab_history(args)
         elif command == "audit-heatmap":
@@ -529,17 +535,27 @@ class MethodologyCLI:
             elapsed_min = (datetime.now(timezone.utc) - start_time).seconds // 60
             elapsed = f"{elapsed_min} min"
         
+        # 狀態顯示（RUNNING / PAUSE / FREEZE / COMPLETED）
+        phase_status = ps.get("status", "RUNNING")
+        status_icon = {"RUNNING": "🟢", "PAUSE": "⏸️", "FREEZE": "🔒", "COMPLETED": "✅"}.get(phase_status, "⚪")
+        
+        # Integrity 分數
+        integrity = ps.get("integrity_score", 100)
+        integrity_icon = "🔒" if integrity < 40 else ("⚠️" if integrity < 60 else "✅")
+        
         print(f"""
 ╔══════════════════════════════════════════════════════════════╗
 ║  Phase {phase} Runtime Status                                  ║
 ╠══════════════════════════════════════════════════════════════╣
 ║  Current Phase:     {state.get('current_phase', 'N/A'):<35}║
+║  Status:           {status_icon} {phase_status:<32}║
 ║  Started At:        {started or 'N/A':<35}║
 ║  Elapsed:           {elapsed:<35}║
 ╠══════════════════════════════════════════════════════════════╣
 ║  Metrics                                                        ║
 ║  ├── BLOCK Count:      {ps.get('blocks', 0):<30}║
 ║  ├── A/B Rounds:      {ps.get('ab_rounds', 0):<30}║
+║  ├── Integrity Score: {integrity_icon} {integrity:<29}║
 ║  ├── Warnings:        {ps.get('warnings', 0):<30}║
 ║  └── Last Gate Score: {ps.get('last_gate_score', 'N/A'):<30}║
 ╠══════════════════════════════════════════════════════════════╣
@@ -554,6 +570,79 @@ class MethodologyCLI:
             print("  ✅ No active alerts")
         
         print("╚══════════════════════════════════════════════════════════════╝")
+        return 0
+    
+    def cmd_phase_pause(self, args):
+        """暫停 Phase 執行"""
+        from pathlib import Path
+        phase = args.phase
+        state_path = Path(".methodology/state.json")
+        
+        if not state_path.exists():
+            print(f"❌ state.json not found.")
+            return 1
+        
+        state = json.loads(state_path.read_text())
+        ps = state.get("phase_state", {})
+        
+        # 如果已經是 FREEZE，拒絕 PAUSE
+        if ps.get("status") == "FREEZE":
+            print("❌ Cannot PAUSE a FREEZEd project. Use 'phase-resume' after unfreezing.")
+            return 1
+        
+        ps["status"] = "PAUSE"
+        state["phase_state"] = ps
+        state_path.write_text(json.dumps(state, indent=2))
+        
+        print(f"⏸️  Phase {phase} PAUSED")
+        print("    Use 'phase-resume' to continue execution.")
+        return 0
+    
+    def cmd_phase_resume(self, args):
+        """恢復 Phase 執行"""
+        from pathlib import Path
+        phase = args.phase
+        state_path = Path(".methodology/state.json")
+        
+        if not state_path.exists():
+            print(f"❌ state.json not found.")
+            return 1
+        
+        state = json.loads(state_path.read_text())
+        ps = state.get("phase_state", {})
+        
+        # 如果是 FREEZE，必須先 UNFREEZE
+        if ps.get("status") == "FREEZE":
+            print("❌ Cannot RESUME a FREEZEd project. Use 'phase-unfreeze' first.")
+            return 1
+        
+        ps["status"] = "RUNNING"
+        state["phase_state"] = ps
+        state_path.write_text(json.dumps(state, indent=2))
+        
+        print(f"▶️  Phase {phase} RESUMED")
+        return 0
+    
+    def cmd_phase_freeze(self, args):
+        """凍結專案（HR-14觸發時使用）"""
+        from pathlib import Path
+        state_path = Path(".methodology/state.json")
+        
+        if not state_path.exists():
+            print(f"❌ state.json not found.")
+            return 1
+        
+        state = json.loads(state_path.read_text())
+        ps = state.get("phase_state", {})
+        
+        ps["status"] = "FREEZE"
+        state["phase_state"] = ps
+        state_path.write_text(json.dumps(state, indent=2))
+        
+        print(f"🔒 Project FREEZED")
+        print("    HR-14 triggered: Integrity < 40")
+        print("    Full audit required before resuming.")
+        print("    After audit, use 'phase-unfreeze' to unlock.")
         return 0
     
     def cmd_ab_history(self, args):
@@ -3203,6 +3292,17 @@ def main():
     # phase-status: Phase execution status
     phase_status_parser = subparsers.add_parser("phase-status", help="Show Phase execution status")
     phase_status_parser.add_argument("--phase", type=int, required=True, help="Phase number (1-8)")
+    
+    # phase-pause: Pause Phase execution
+    phase_pause_parser = subparsers.add_parser("phase-pause", help="Pause Phase execution")
+    phase_pause_parser.add_argument("--phase", type=int, required=True, help="Phase number (1-8)")
+    
+    # phase-resume: Resume Phase execution
+    phase_resume_parser = subparsers.add_parser("phase-resume", help="Resume Phase execution")
+    phase_resume_parser.add_argument("--phase", type=int, required=True, help="Phase number (1-8)")
+    
+    # phase-freeze: Freeze project (HR-14)
+    subparsers.add_parser("phase-freeze", help="Freeze project (HR-14: Integrity < 40)")
     
     # ab-history: A/B round history
     ab_history_parser = subparsers.add_parser("ab-history", help="Show A/B round history")

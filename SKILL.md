@@ -87,6 +87,9 @@ ls -la && git status
 | HR-09 | Claims Verifier 驗證必須通過 | 終止，Integrity -20 |
 | HR-10 | sessions_spawn.log 必須存在且有 A/B 記錄 | 終止，Integrity -15 |
 | HR-11 | Phase Truth 分數 < 70% 禁止進入下一 Phase | 終止 |
+| HR-12 | A/B 審查同一 Phase 超過 5 輪 | 強制 PAUSE，通知 Johnny，等待人工裁決 |
+| HR-13 | Phase 執行時長超過預估時間的 3 倍 | 強制 checkpoint，輸出 BLOCKER 清單，PAUSE 等待裁決 |
+| HR-14 | Integrity 分數降至 < 40 | FREEZE 專案，全面審計後才能繼續 |
 
 ---
 
@@ -436,12 +439,17 @@ Agent B 必須對以下提出疑問：
 | 70-79 | 特別注意 |
 | <70 | 🔴 Flag，禁止進入下一 Phase |
 
-### 6.5 Johnny 介入條件
+### 6.5 Johnny 介入條件（擴充版）
 
-Johnny 只在以下情況介入：
-- Agent B 提出重大疑問無法解決
-- 分數 < 50
-- 發現作假跡象
+| 觸發條件 | 自動行為 | Johnny 動作 |
+|---------|---------|------------|
+| Agent B 有重大疑問無法解決 | 暫停執行 | 人工裁決 |
+| 分數 < 50 | 禁止進入下一 Phase | 審查 Agent A 工作 |
+| 作假跡象（L6 錯誤） | 終止 + 記錄 | 調查 session log |
+| A/B 輪次 > 5（HR-12） | 自動 PAUSE | 判斷是否重新分工或 RESET |
+| Phase 時間 > 3× 預估（HR-13） | 自動 PAUSE | 評估是否簡化範圍 |
+| Integrity < 40（HR-14） | FREEZE 專案 | 全面稽核 |
+| BLOCK 數 > 5 且同一維度 | 觸發 Phase Reset | 評估 SRS/SAD 品質 |
 
 ### 6.6 CLI 命令
 

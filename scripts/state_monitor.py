@@ -21,9 +21,10 @@ from datetime import datetime, timezone
 
 # 預警阈值設定
 THRESHOLDS = {
-    "blocks": 5,           # BLOCK 次數警戒線
-    "ab_rounds": 5,        # A/B 來回警戒線
-    "elapsed_minutes": 120,  # Phase 執行時間警戒線（分鐘）
+    "blocks": 5,              # BLOCK 次數警戒線
+    "ab_rounds": 5,           # A/B 來回警戒線（HR-12）
+    "elapsed_minutes": 120,   # Phase 執行時間警戒線（預設值，會動態計算）
+    "integrity_min": 40,      # Integrity 分數底線（HR-14）
 }
 
 DEFAULT_STATE_PATH = ".methodology/state.json"
@@ -85,12 +86,26 @@ def check_trends(project_path: str) -> int:
             "message": f"⚠️  A/B 來回過多: {ab_rounds} (警戒線: {THRESHOLDS['ab_rounds']})"
         })
     
-    if elapsed_minutes >= THRESHOLDS["elapsed_minutes"]:
+    # HR-13: Phase 執行時間上限（3× 預估時間）
+    estimated_minutes = ps.get("estimated_minutes", THRESHOLDS["elapsed_minutes"] // 3)
+    timeout_threshold = estimated_minutes * 3
+    if elapsed_minutes >= timeout_threshold:
         alerts.append({
             "type": "PHASE_TIMEOUT",
             "current": elapsed_minutes,
-            "threshold": THRESHOLDS["elapsed_minutes"],
-            "message": f"⏱️  Phase 執行過久: {elapsed_minutes} 分鐘 (警戒線: {THRESHOLDS['elapsed_minutes']})"
+            "threshold": timeout_threshold,
+            "estimated": estimated_minutes,
+            "message": f"⏱️  Phase 執行過久: {elapsed_minutes} 分鐘 (預估: {estimated_minutes}, 警戒線: {timeout_threshold})"
+        })
+    
+    # HR-14: Integrity 分數底線
+    integrity_score = ps.get("integrity_score", 100)
+    if integrity_score < THRESHOLDS["integrity_min"]:
+        alerts.append({
+            "type": "INTEGRITY_LOW",
+            "current": integrity_score,
+            "threshold": THRESHOLDS["integrity_min"],
+            "message": f"🔒  Integrity 分數過低: {integrity_score} (底線: {THRESHOLDS['integrity_min']})"
         })
     
     # 寫回 state.json
