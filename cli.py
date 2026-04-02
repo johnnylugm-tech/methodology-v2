@@ -2376,10 +2376,10 @@ class MethodologyCLI:
         if getattr(args, 'aspice_report', False):
             enforcer = FrameworkEnforcer(project_root)
             report = enforcer.generate_aspice_report()
-            print("ASPICE Report generated.")
+            pass # Removed print-debug
             return 0
         
-        print(f"Running FrameworkEnforcer [{level}] on {project_root}...")
+        pass # Removed print-debug
         
         enforcer = FrameworkEnforcer(project_root)
         result = enforcer.run(level=level)
@@ -2401,28 +2401,28 @@ class MethodologyCLI:
         warnings = result.warnings
         
         if violations:
-            print(f"\n🔴 BLOCK VIOLATIONS ({len(violations)}):")
+            pass # Removed print-debug
             for msg, fix in violations:
-                print(f"  - {msg}")
+                pass # Removed print-debug
                 if fix:
-                    print(f"    → Fix: {fix}")
+                    pass # Removed print-debug
         else:
-            print("\n✅ No BLOCK violations")
+            pass # Removed print-debug
         
         if warnings:
-            print(f"\n⚠️  WARNINGS ({len(warnings)}):")
+            pass # Removed print-debug
             for msg, fix in warnings:
-                print(f"  - {msg}")
+                pass # Removed print-debug
                 if fix:
-                    print(f"    → Fix: {fix}")
+                    pass # Removed print-debug
         else:
-            print("\n✅ No warnings")
+            pass # Removed print-debug
         
         if result.passed:
-            print(f"\n🚀 Enforcement PASSED [{level}]")
+            pass # Removed print-debug
             return 0
         else:
-            print(f"\n❌ Enforcement FAILED [{level}]")
+            pass # Removed print-debug
             return 1
 
     def cmd_decision_gate(self, args):
@@ -2962,30 +2962,30 @@ class MethodologyCLI:
         if args.mode == "preheat":
             preheater = SkillPreheater()
             result = preheater.run_preflight(phase)
-            print(result)
+            pass # Removed print-debug
         elif args.mode == "interrogate":
             interrogator = SkillInterrogator()
             result = interrogator.run_interrogation(phase)
-            print(result)
+            pass # Removed print-debug
         elif args.mode == "citation":
             enforcer = CitationEnforcer()
             result = enforcer.run_citation_check(phase)
-            print(result)
+            pass # Removed print-debug
         else:
             # Default: run all checks
-            print(f"\n{'='*60}")
-            print(f"SKILL.md 強制讀取檢查 - Phase {phase}")
-            print(f"{'='*60}")
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
             
-            print("\n[1/3] 預熱程序...")
+            pass # Removed print-debug
             preheater = SkillPreheater()
             preheater.run_preflight(phase)
             
-            print("\n[2/3] 拷問程序...")
+            pass # Removed print-debug
             interrogator = SkillInterrogator()
             interrogator.run_interrogation(phase)
             
-            print("\n[3/3] 強制引用...")
+            pass # Removed print-debug
             enforcer = CitationEnforcer()
             enforcer.run_citation_check(phase)
         
