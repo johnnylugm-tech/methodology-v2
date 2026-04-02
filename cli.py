@@ -151,6 +151,8 @@ class MethodologyCLI:
             return self.cmd_phase_freeze(args)
         elif command == "ab-history":
             return self.cmd_ab_history(args)
+        elif command == "ab-record":
+            return self.cmd_ab_record(args)
         elif command == "audit-heatmap":
             return self.cmd_audit_heatmap(args)
         elif command == "time-check":
@@ -691,6 +693,19 @@ class MethodologyCLI:
                 print(f"║  {i:2}. {icon} [{timestamp}] {event_type:<12} {detail:<20}")
         
         print("╚══════════════════════════════════════════════════════════════╝")
+        return 0
+    
+    def cmd_ab_record(self, args):
+        """記錄一次 A/B 來回"""
+        from quality_gate import UnifiedGate
+        phase = args.phase
+        notes = args.notes or ""
+        
+        gate = UnifiedGate(args.project if hasattr(args, 'project') else ".")
+        gate._update_state(event="AB_ROUND", phase=phase, notes=notes)
+        print(f"✅ Recorded AB_ROUND for Phase {phase}")
+        if notes:
+            print(f"   Notes: {notes}")
         return 0
     
     def cmd_audit_heatmap(self, args):
@@ -3307,6 +3322,12 @@ def main():
     # ab-history: A/B round history
     ab_history_parser = subparsers.add_parser("ab-history", help="Show A/B round history")
     ab_history_parser.add_argument("--phase", type=int, required=True, help="Phase number (1-8)")
+    
+    # ab-record: 記錄一次 A/B 來回
+    ab_record_parser = subparsers.add_parser("ab-record", help="Record an A/B round")
+    ab_record_parser.add_argument("--phase", type=int, required=True, help="Phase number")
+    ab_record_parser.add_argument("--notes", type=str, default="", help="Notes (optional)")
+    ab_record_parser.add_argument("--project", type=str, default=".", help="Project path")
     
     # audit-heatmap: Cross-project failure heatmap
     subparsers.add_parser("audit-heatmap", help="Show cross-project failure heatmap")

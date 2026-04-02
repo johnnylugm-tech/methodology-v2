@@ -315,6 +315,8 @@ class UnifiedGate:
             ps["ab_rounds"] = 0
             ps["warnings"] = 0
             ps["last_gate_score"] = None
+            # 預設 estimated_minutes（可被 cli.py 或外部覆寫）
+            ps["estimated_minutes"] = kwargs.get("estimated_minutes", 60)
         
         elif event == "BLOCK":
             ps["blocks"] = ps.get("blocks", 0) + 1
@@ -354,6 +356,31 @@ class UnifiedGate:
         state["history"] = state["history"][-100:]
         
         self._write_state(state)
+
+    def _calculate_integrity_score(self, checks: List[CheckResult]) -> int:
+        """計算 Integrity Score（邏輯正確性）
+        
+        基於 Logic Correctness Check 和 Constitution Check 的分數
+        """
+        if not checks:
+            return 100
+        
+        # 找到 Logic 和 Constitution 分數
+        logic_score = None
+        constitution_score = None
+        
+        for c in checks:
+            if "Logic" in c.name:
+                logic_score = c.score
+            if "Constitution" in c.name:
+                constitution_score = c.score
+        
+        # 計算平均
+        scores = [s for s in [logic_score, constitution_score] if s is not None]
+        if not scores:
+            return 100
+        
+        return int(sum(scores) / len(scores))
 
     def _check_and_append_alert(self, state: dict, alert_type: str, current_value: int):
         """檢查預警阈值，達標時追加 alert"""
@@ -536,11 +563,14 @@ class UnifiedGate:
         all_passed = all(c.passed for c in checks)
         
         # 追蹤 GATE_CHECK 到 state.json（Runtime Metrics）
+        # 計算 Integrity Score（邏輯正確性）
+        integrity_score = self._calculate_integrity_score(checks)
         self._update_state(
             event="GATE_CHECK",
             phase=list(phase_filter)[0] if phase_filter and len(phase_filter) == 1 else None,
             score=round(total_score, 2),
-            passed=all_passed
+            passed=all_passed,
+            integrity_score=integrity_score
         )
 
         return UnifiedGateResult(
