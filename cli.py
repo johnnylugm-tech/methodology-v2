@@ -16,6 +16,8 @@ import os
 import argparse
 import json
 from datetime import datetime
+import re
+from pathlib import Path
 
 # Add current directory to path for imports
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -200,6 +202,8 @@ class MethodologyCLI:
             return self.cmd_debug(args)
         elif command == "trace":
             return self.cmd_trace(args)
+        elif command == "trace-check":
+            return self.cmd_trace_check(args)
         elif command == "approval":
             return self.cmd_approval(args)
         elif command == "risk":
@@ -1488,7 +1492,188 @@ class MethodologyCLI:
                 return 1
         
         return 0
-    
+
+    # ─────────────────────────────────────────────────────────────────────
+    # trace-check: 溯源追蹤檢查（SAD→代碼 / FR→測試）
+    # ─────────────────────────────────────────────────────────────────────
+
+    def cmd_trace_check(self, args):
+        """溯源追蹤檢查
+
+        模式 1: --from phase2 --to phase3  (SAD → 代碼溯源)
+                解析 SAD.md → 取得 FR-XX ↔ 模組名稱 映射
+                解析代碼 @FR annotation → 取得 FR-XX ↔ 代碼檔案 映射
+                輸出覆蓋率矩陣
+
+        模式 2: --from phase1 --to phase3-tests  (FR → 測試溯源)
+                解析 SRS.md/TRACEABILITY_MATRIX.md → 取得 FR-ID 清單
+                解析測試檔案 @covers: annotation → 取得 FR-ID ↔ 測試 映射
+                輸出 FR-ID → 測試覆蓋率
+        """
+        repo_path = Path(args.repo or Path.cwd())
+        from_phase = args.from_phase
+        to_phase = args.to_phase
+
+        if to_phase == "phase3":
+            # ── Mode 1: SAD → 代碼溯源 ──────────────────────────────────
+            return self._trace_check_sad_to_code(repo_path)
+        elif to_phase == "phase3-tests":
+            # ── Mode 2: FR → 測試溯源 ───────────────────────────────────
+            return self._trace_check_fr_to_tests(repo_path)
+        else:
+            print(f"❌ Unknown --to target: {to_phase}")
+            print("   Valid targets: phase3, phase3-tests")
+            return 1
+
+    def _trace_check_sad_to_code(self, repo_path: Path) -> int:
+        """SAD → 代碼溯源檢查"""
+        # ── Step 1: Parse SAD.md to get FR-XX → Module mapping ─────────
+        sad_files = list(repo_path.glob("**/SAD.md"))
+        if not sad_files:
+            print("⚠️  SAD.md not found — cannot determine FR → Module mapping")
+            sad_files = list(repo_path.glob("**/SAD*.md"))
+        if not sad_files:
+            print("❌ SAD.md not found in repo")
+            return 1
+
+        sad_path = sad_files[0]
+        sad_content = sad_path.read_text(encoding="utf-8")
+
+        # Extract FR → module path from SAD.md
+        # Look for lines that contain FR-XX and a backtick path (most reliable)
+        fr_module_map: Dict[str, str] = {}  # FR-ID → module_path
+        for line in sad_content.split('\n'):
+            if 'FR-' not in line:
+                continue
+            # Extract all FR references on this line
+            for m in re.finditer(r'FR-(\d+)', line):
+                fr_id = f"FR-{int(m.group(1)):02d}"
+                if fr_id in fr_module_map:
+                    continue  # already mapped
+                # Try to find a backtick path on this same line
+                path_m = re.search(r'`([^`]+\.py)`', line)
+                if path_m:
+                    fr_module_map[fr_id] = path_m.group(1).strip()
+
+        # ── Step 2: Scan code for @FR annotations ─────────────────────
+        code_files = list(repo_path.glob("**/*.py"))
+        code_files = [f for f in code_files if '__pycache__' not in str(f) and 'test_' not in f.name]
+
+        fr_code_map: Dict[str, str] = {}  # FR-ID → file_path
+        for py_file in code_files:
+            try:
+                content = py_file.read_text(encoding="utf-8")
+            except Exception:
+                continue
+            # Match @FR: FR-01 or @FR:FR-01 in docstrings/comments
+            for m in re.finditer(r'@FR:\s*FR-(\d+)', content):
+                fr_id = f"FR-{int(m.group(1)):02d}"
+                rel_path = str(py_file.relative_to(repo_path))
+                fr_code_map[fr_id] = rel_path
+
+        # ── Step 3: Build and print report ─────────────────────────────
+        all_frs = sorted(fr_module_map.keys(), key=lambda x: int(x.split('-')[1]))
+        matched = [(fr, fr_module_map[fr], fr_code_map.get(fr, "(missing)"))
+                   for fr in all_frs]
+        covered = sum(1 for fr, _, code in matched if code != "(missing)")
+        total = len(all_frs)
+        pct = (covered / total * 100) if total > 0 else 0
+
+        print(f"""
+## TRACEABILITY CHECK REPORT
+
+### Mode: SAD → 代碼溯源
+**覆蓋率: {pct:.1f}% ({covered}/{total})**
+
+| FR-ID | SAD 模組 | 代碼檔案 | 狀態 |
+|-------|---------|---------|------|""")
+
+        for fr, module, code in matched:
+            status = "✅" if code != "(missing)" else "❌"
+            # Truncate module path for display
+            module_short = module.split('/')[-1] if module else "-"
+            print(f"| {fr} | {module_short} | {code} | {status} |")
+
+        print()
+        if covered < total:
+            missing = [fr for fr, _, code in matched if code == "(missing)"]
+            print(f"⚠️  未溯源到代碼的 FR: {', '.join(missing)}")
+            return 1
+        return 0
+
+    def _trace_check_fr_to_tests(self, repo_path: Path) -> int:
+        """FR → 測試溯源檢查"""
+        # ── Step 1: Parse TRACEABILITY_MATRIX.md or SRS.md for FR list ─
+        trace_files = [
+            repo_path / "TRACEABILITY_MATRIX.md",
+            repo_path / "SRS.md",
+        ] + list(repo_path.glob("**/TRACEABILITY_MATRIX.md")) \
+              + list(repo_path.glob("**/SRS.md"))
+
+        fr_list: List[str] = []
+        for tf in trace_files:
+            if not tf.exists():
+                continue
+            try:
+                content = tf.read_text(encoding="utf-8")
+            except Exception:
+                continue
+            for m in re.finditer(r'FR-(\d+)', content):
+                fr_id = f"FR-{int(m.group(1)):02d}"
+                if fr_id not in fr_list:
+                    fr_list.append(fr_id)
+            if fr_list:
+                break  # stop at first file that has FRs
+
+        if not fr_list:
+            print("❌ No FR IDs found in TRACEABILITY_MATRIX.md or SRS.md")
+            return 1
+
+        # ── Step 2: Scan test files for @covers: annotation ───────────
+        test_files = list(repo_path.glob("**/test_*.py")) \
+                    + list(repo_path.glob("**/*_test.py"))
+
+        fr_test_map: Dict[str, List[str]] = {fr: [] for fr in fr_list}
+        for tf in test_files:
+            try:
+                content = tf.read_text(encoding="utf-8")
+            except Exception:
+                continue
+            rel_path = str(tf.relative_to(repo_path))
+            for m in re.finditer(r'@covers:\s*FR-(\d+)', content):
+                fr_id = f"FR-{int(m.group(1)):02d}"
+                if fr_id in fr_test_map:
+                    fr_test_map[fr_id].append(f"{rel_path}")
+
+        # ── Step 3: Build and print report ─────────────────────────────
+        covered = sum(1 for fr, tests in fr_test_map.items() if tests)
+        total = len(fr_list)
+        pct = (covered / total * 100) if total > 0 else 0
+
+        print(f"""
+## TRACEABILITY CHECK REPORT
+
+### Mode: FR → 測試溯源
+**覆蓋率: {pct:.1f}% ({covered}/{total})**
+
+| FR-ID | 測試函式 | 狀態 |
+|-------|---------|------|""")
+
+        for fr in sorted(fr_list, key=lambda x: int(x.split('-')[1])):
+            tests = fr_test_map[fr]
+            if tests:
+                test_str = ", ".join(tests)
+                print(f"| {fr} | {test_str} | ✅ |")
+            else:
+                print(f"| {fr} | (missing) | ❌ |")
+
+        print()
+        if covered < total:
+            missing = [fr for fr, tests in fr_test_map.items() if not tests]
+            print(f"⚠️  未有測試的 FR: {', '.join(missing)}")
+            return 1
+        return 0
+
     def cmd_approval(self, args):
         """人類審批管理"""
         action = args.action
@@ -3597,7 +3782,15 @@ def main():
     trace_parser.add_argument("--file", "-f", help="File path for impact analysis")
     trace_parser.add_argument("--id", help="Requirement ID (for update)")
     trace_parser.add_argument("--status", help="Status: pending|in-progress|completed (for update)")
-    
+
+    # trace-check
+    trace_check_parser = subparsers.add_parser("trace-check", help="溯源追蹤檢查 (SAD→代碼 / FR→測試)")
+    trace_check_parser.add_argument("--from", dest="from_phase", required=True,
+                                   help="Source phase (phase1, phase2)")
+    trace_check_parser.add_argument("--to", dest="to_phase", required=True,
+                                   help="Target: phase3 (SAD→代碼) or phase3-tests (FR→測試)")
+    trace_check_parser.add_argument("--repo", default=".", help="Repo path (default: .)")
+
     # approval
     approval_parser = subparsers.add_parser("approval", help="Human Approval Management")
     approval_parser.add_argument("action", choices=["list", "create", "approve", "reject", "show", "report", "stats"],
