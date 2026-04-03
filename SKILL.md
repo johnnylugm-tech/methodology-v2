@@ -1,12 +1,12 @@
 # methodology-v2 v6.25
-> Agent Executable Spec. Phase detail → Lazy Load `SKILL_TEMPLATES.md §T{N}.0`
+> Agent Executable Spec. Phase detail → Lazy Load `docs/P{N}_SOP.md`
 
 ## 0. 執行協議
 ```
 1. READ .methodology/state.json → current_phase
 2. LOAD 本文件 Phase {N} 章節
 3. CHECK 進入條件 → blocker → STOP
-4. EXECUTE SOP → LAZY LOAD SKILL_TEMPLATES.md §T{N}.0
+4. EXECUTE SOP → LAZY LOAD docs/P{N}_SOP.md
 5.   RECORD output | SPAWN A/B agent
 6. CHECK 退出條件 → fail → FIX + RETRY
 7. UPDATE state.json phase=N+1 → GOTO 1
@@ -64,10 +64,10 @@ Phase Reset → **docs/CLI_REFERENCE.md**
 | 6 | 品質保證 | qa/architect | QUALITY_REPORT | TH-02,07; APPROVE |
 | 7 | 風險管理 | qa/devops/architect | RISK_REGISTER | TH-07; Decision Gate 100%; APPROVE |
 | 8 | 配置管理 | devops/architect | CONFIG_RECORDS, Git Tag | pip freeze 存在; APPROVE |
-Phase N 詳細 SOP → **LAZY LOAD `SKILL_TEMPLATES.md §T{N}.0`** · Verify_Agent → Phase 3+，Agent B<80 或自評差異>20 → **docs/VERIFIER_GUIDE.md**
+Phase N 詳細 SOP → **LAZY LOAD `docs/P{N}_SOP.md`** · Verify_Agent → Phase 3+，Agent B<80 或自評差異>20 → **docs/VERIFIER_GUIDE.md**
 
 ## 5. 外部文檔
-`SKILL_TEMPLATES.md` · `SKILL_DOMAIN.md` · `docs/HYBRID_WORKFLOW_GUIDE.md` · `docs/CLI_REFERENCE.md` · `docs/ANNOTATION_GUIDE.md` · `docs/VERIFIER_GUIDE.md` · `docs/RUNTIME_METRICS_MANUAL.md` · `docs/CONSTITUTION_GUIDE.md` · `docs/COWORK_PROTOCOL_v1.0.md` · `docs/TASK_INITIALIZATION_PROMPT.md`
+`SKILL_DOMAIN.md` · `docs/P{N}_SOP.md`（Phase SOP）· `templates/`（交付物模板） · `docs/HYBRID_WORKFLOW_GUIDE.md` · `docs/CLI_REFERENCE.md` · `docs/ANNOTATION_GUIDE.md` · `docs/VERIFIER_GUIDE.md` · `docs/RUNTIME_METRICS_MANUAL.md` · `docs/CONSTITUTION_GUIDE.md` · `docs/COWORK_PROTOCOL_v1.0.md` · `docs/TASK_INITIALIZATION_PROMPT.md`
 
 ---
 *methodology-v2 v6.25 | Agent Executable Specification | Last Updated: 2026-04-03*
