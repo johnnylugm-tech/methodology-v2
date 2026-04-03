@@ -3471,9 +3471,11 @@ class MethodologyCLI:
         """Phase → Model 推薦
 
         讀取 .methodology/state.json 取得 current_phase，
-        呼叫 smart_router.route_by_phase() 輸出模型推薦。
+        使用 Multi-Provider ModelRouter 輸出模型推薦。
         """
         from pathlib import Path
+        from smart_router import route_by_phase
+        from provider_abstraction import ModelRouter
 
         repo_path = args.repo or "."
         state_path = Path(repo_path) / ".methodology" / "state.json"
@@ -3496,8 +3498,22 @@ class MethodologyCLI:
             print("❌ current_phase is None in state.json")
             return 1
 
-        # 呼叫 route_by_phase
-        result = route_by_phase(phase, str(state_path))
+        # 使用 Multi-Provider ModelRouter
+        task_hint = getattr(args, 'task_hint', None)
+        state_path_str = str(state_path) if state_path.exists() else None
+
+        if getattr(args, 'provider', False):
+            # JSON 輸出模式
+            info = ModelRouter().route_with_info(
+                phase=phase,
+                task_hint=task_hint,
+                state_path=state_path_str
+            )
+            print(json.dumps(info, indent=2))
+            return 0
+
+        # 預設 human-readable 輸出
+        result = route_by_phase(phase, state_path_str, task_hint)
 
         print(f"""
 ╔══════════════════════════════════════════════════════════════╗
@@ -4337,6 +4353,8 @@ def main():
     model_recommend_parser = subparsers.add_parser("model-recommend", help="Phase → Model 推薦")
     model_recommend_parser.add_argument("--phase", type=int, help="Phase number (1-8), 如果不指定則從 state.json 讀取")
     model_recommend_parser.add_argument("--repo", default=".", help="Repo 路徑 (預設: .)")
+    model_recommend_parser.add_argument("--provider", action="store_true", help="顯示 Provider 詳細資訊 (JSON)")
+    model_recommend_parser.add_argument("--task-hint", help="Task hint (simple/coding/review)")
 
     # context-compress (Context Compression - 三層壓縮)
     context_compress_parser = subparsers.add_parser("context-compress", help="Context Compression - 三層壓縮")

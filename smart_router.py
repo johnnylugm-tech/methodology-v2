@@ -11,6 +11,9 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
 
+# Multi-Provider Abstraction Layer
+from provider_abstraction import ModelRouter, ProviderType
+
 
 class TaskType(Enum):
     """任務類型"""
@@ -422,50 +425,15 @@ def route_by_phase(phase: int, state_path: str = None, task_hint: str = None) ->
     Returns:
         RoutingResult: 模型選擇結果
     """
-    # Phase → Model 映射表
-    PHASE_MODEL_MAP = {
-        1: {"model": "gemini-1.5-pro", "provider": "google", "reasoning": "長上下文、便宜"},
-        2: {"model": "claude-opus-4-5", "provider": "anthropic", "reasoning": "深度推理"},
-        3: {"model": "claude-sonnet-4", "provider": "anthropic", "reasoning": "代碼能力強、性價比高"},
-        4: {"model": "gpt-4o", "provider": "openai", "reasoning": "多模態平衡"},
-        5: {"model": "claude-sonnet-4", "provider": "anthropic", "reasoning": "性價比高"},
-        6: {"model": "claude-opus-4-5", "provider": "anthropic", "reasoning": "深度分析"},
-        7: {"model": "o3-mini", "provider": "openai", "reasoning": "推理+便宜"},
-        8: {"model": "gpt-3.5-turbo", "provider": "openai", "reasoning": "簡單任務"},
-    }
-    
-    # 如果有 task_hint，降級到更便宜的模型
-    if task_hint in ("simple", "config", "docs"):
-        return RoutingResult(
-            model="gpt-3.5-turbo",
-            provider="openai",
-            estimated_cost=0.001,
-            reasoning=f"Phase {phase} but task_hint={task_hint}, using budget model",
-            task_type=TaskType.GENERAL
-        )
-    
-    choice = PHASE_MODEL_MAP.get(phase, PHASE_MODEL_MAP[3])
-    
-    # 如果有 state_path，讀取 current_step/current_module
-    step_info = ""
-    if state_path:
-        import json
-        from pathlib import Path
-        sp = Path(state_path)
-        if sp.exists():
-            try:
-                state = json.loads(sp.read_text())
-                step = state.get("current_step", "?")
-                module = state.get("current_module", "?")
-                step_info = f" (state: {module} @ Step {step})"
-            except:
-                pass
+    # 使用 Multi-Provider Abstraction Layer
+    router = ModelRouter()
+    info = router.route_with_info(phase, task_hint, state_path)
     
     return RoutingResult(
-        model=choice["model"],
-        provider=choice["provider"],
+        model=info["model"],
+        provider=info["provider"],
         estimated_cost=0.01,
-        reasoning=f"Phase {phase}{step_info}: {choice['reasoning']}",
+        reasoning=f"Phase {phase} ({info.get('step', '?')}/{info.get('module', '?')}): {info['reasoning']}",
         task_type=TaskType.CODING
     )
 
