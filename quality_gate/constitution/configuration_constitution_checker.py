@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
 """
-CONFIGURATION Constitution Checker
-=================================
+CONFIGURATION MANAGEMENT Constitution Checker
+=============================================
 檢查配置管理文檔是否符合 Constitution 原則
 
 Phase 8: 配置管理
 
 原則檢查:
-1. 正確性 100% - 配置記錄完整、版本清楚
-2. 安全性 100% - 配置變更受控
-3. 可維護性 > 70% - 配置可追溯
+1. 正確性 100% - 配置記錄完整、版本正確
+2. 安全性 100% - 配置變更可追溯
+3. 可維護性 > 70% - 配置文檔清晰
 
 Usage:
     from configuration_constitution_checker import check_configuration_constitution
@@ -27,57 +27,75 @@ from . import (
 
 @dataclass
 class ConfigurationChecklist:
-    """Configuration 檢查清單"""
+    """Configuration Management 檢查清單"""
     config_records_exists: bool = False
-    version_info: bool = False
-    change_history: bool = False
+    baseline_exists: bool = False
+    git_tag_exists: bool = False
+    release_notes_exists: bool = False
+
 
 def check_configuration_constitution(path: str) -> ConstitutionCheckResult:
-    """執行 Configuration Constitution 檢查"""
+    """執行 Configuration Management Constitution 檢查"""
     path_obj = Path(path)
-    
+
     violations = []
     recommendations = []
     checklist = ConfigurationChecklist()
-    
-    # 檢查配置記錄
+
+    # 檢查配置記錄表
     config_records = list(path_obj.glob("CONFIG_RECORDS*"))
     checklist.config_records_exists = len(config_records) > 0
-    
-    if checklist.config_records_exists:
-        try:
-            content = config_records[0].read_text(errors="ignore")
-            checklist.version_info = any(v in content for v in ["version", "Version", "v1", "v2"])
-            checklist.change_history = any(c in content for c in ["change", "Change", "history", "History"])
-        except Exception:
-            pass
-    
-    # 評分
-    checks = [
-        checklist.config_records_exists,
-        checklist.version_info,
-        checklist.change_history,
-    ]
-    score = (sum(checks) / len(checks)) * 100 if checks else 0
-    
     if not checklist.config_records_exists:
-        violations.append({
-            "type": "missing_config_records",
-            "message": "缺少 CONFIG_RECORDS.md",
-            "severity": "HIGH"
-        })
-    
-    passed = score >= CONSTITUTION_THRESHOLDS["maintainability"]
-    
+        violations.append("CONFIG_RECORDS.md 不存在")
+
+    # 檢查基準線文件
+    baselines = list(path_obj.glob("BASELINE*"))
+    checklist.baseline_exists = len(baselines) > 0
+    if not checklist.baseline_exists:
+        violations.append("BASELINE.md 不存在")
+
+    # 檢查 Git Tag 記錄
+    git_tags = list(path_obj.glob(".git_tag_record")) + list(path_obj.glob("GIT_TAG*"))
+    checklist.git_tag_exists = len(git_tags) > 0
+
+    # 檢查發布說明
+    release_notes = list(path_obj.glob("RELEASE_NOTES*")) + list(path_obj.glob("CHANGELOG*"))
+    checklist.release_notes_exists = len(release_notes) > 0
+
+    # 計算分數
+    total_checks = 5
+    passed_checks = sum([
+        checklist.config_records_exists,
+        checklist.baseline_exists,
+        checklist.git_tag_exists,
+        checklist.release_notes_exists,
+    ])
+    score = passed_checks / total_checks * 100
+
+    # 給出建議
+    if not checklist.git_tag_exists:
+        recommendations.append("建議記錄 Git Tag 歷史用於追溯")
+
+    if not checklist.release_notes_exists:
+        recommendations.append("建議包含 CHANGELOG.md 或 RELEASE_NOTES.md")
+
+    if score < 100:
+        violations.append(f"配置完整性 {score:.0f}% < 100%")
+
     return ConstitutionCheckResult(
-        check_type="configuration",
-        passed=passed,
-        score=score,
+        phase="Phase 8",
+        checklist=checklist.__dict__,
         violations=violations,
-        details={
-            "has_records": checklist.config_records_exists,
-            "has_version": checklist.version_info,
-            "has_history": checklist.change_history,
-        },
-        recommendations=recommendations
+        recommendations=recommendations,
+        score=score
     )
+
+
+if __name__ == "__main__":
+    import sys
+    if len(sys.argv) > 1:
+        result = check_configuration_constitution(sys.argv[1])
+        print(f"Phase 8 Configuration Constitution Check")
+        print(f"Score: {result.score:.0f}%")
+        print(f"Violations: {result.violations}")
+        print(f"Recommendations: {result.recommendations}")

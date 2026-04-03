@@ -1,4 +1,4 @@
-# methodology-v2 v6.17
+# methodology-v2 v6.21
 
 > Multi-Agent Collaboration Development Methodology — Agent Executable Specification
 > 精簡版：Agent 執行時真正需要的內容
@@ -599,12 +599,20 @@ python cli.py stage-review --phase N
 | docs/PHASE_PROMPTS.md | Phase Prompt Templates |
 | docs/CLI_REFERENCE.md | CLI 命令速查 |
 | docs/TASK_INITIALIZATION_PROMPT.md | 任務初始化 Prompt |
-| SKILL_TEMPLATES.md | 模板庫 |
+| docs/MAIN_AGENT_PLAYBOOK.md | 主代理最佳實踐（Sub-agent 管理）|
+| docs/FSM_STATE_MACHINE.md | FSM 狀態機定義 |
+| docs/VERIFIER_GUIDE.md | Verify_Agent 流程指南 |
+| docs/ANNOTATION_GUIDE.md | 註解規範（@FR / @covers）|
+| docs/PROVIDER_CONFIG_GUIDE.md | Provider 配置與 Phase→Model 映射 |
+| docs/RUNTIME_METRICS_MANUAL.md | 資源限制與效能指標 |
+| docs/CONSTITUTION_GUIDE.md | Constitution 品質憲法 |
+| docs/GIT_VERSIONING_CONVENTION.md | Git 版本管理規範 |
+| SKILL_TEMPLATES.md | CoT / Few-shot / 模板庫 |
 | SKILL_DOMAIN.md | 領域知識 |
 
 **Phase 進入/退出條件**：詳見 §4 Phase 定義各章節 EXIT 條件
 
 ---
 
-*methodology-v2 v6.17 | Agent Executable Specification*
+*methodology-v2 v6.21 | Agent Executable Specification*
 *Last Updated: 2026-04-03*
