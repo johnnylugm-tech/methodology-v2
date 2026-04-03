@@ -278,6 +278,8 @@ class MethodologyCLI:
             return self.cmd_task_result(args)
         elif command == "verify-artifact":
             return self.cmd_verify_artifact(args)
+        elif command == "retry-test":
+            return self.cmd_retry_test(args)
         else:
             pass # Removed print-debug
             return 1
@@ -3642,6 +3644,40 @@ class MethodologyCLI:
 
         return 0
 
+    def cmd_retry_test(self, args):
+        """測試重試機制"""
+        import time
+        from quality_gate.fault_tolerance import RetryHandler, DynamicPromptAdjuster
+
+        attempt_count = [0]
+
+        def unreliable_task():
+            attempt_count[0] += 1
+            if attempt_count[0] < 3:
+                raise Exception(f"Simulated failure #{attempt_count[0]}")
+            return f"Success on attempt {attempt_count[0]}"
+
+        handler = RetryHandler(max_retries=3, base_delay=1.0)
+
+        print("Testing RetryHandler with dynamic prompt adjustment...")
+        print(f"Constraint for retry 1: {DynamicPromptAdjuster.get_constraint(1)}")
+        print(f"Constraint for retry 2: {DynamicPromptAdjuster.get_constraint(2)}")
+        print(f"Constraint for retry 3: {DynamicPromptAdjuster.get_constraint(3)}")
+        print()
+
+        def on_retry(count, error):
+            constraint = DynamicPromptAdjuster.get_constraint(count)
+            print(f"  Retry {count}: {error}")
+            print(f"  Constraint injected: {constraint}")
+
+        try:
+            result = handler.execute(unreliable_task, on_retry=on_retry)
+            print(f"Result: {result}")
+        except Exception as e:
+            print(f"Failed after retries: {e}")
+
+        return 0
+
     def cmd_context_compress(self, args):
         """Context Compression - 三層壓縮"""
         import context_compressor
@@ -4220,6 +4256,9 @@ def main():
     verify_artifact_parser = subparsers.add_parser("verify-artifact", help="Verify_Agent - 獨立驗證產物正確性")
     verify_artifact_parser.add_argument("--phase", type=int, default=3, help="Phase 編號 (預設: 3)")
     verify_artifact_parser.add_argument("--repo", default=".", help="Repo 路徑 (預設: .)")
+
+    # retry-test
+    subparsers.add_parser("retry-test", help="Test RetryHandler with dynamic prompt adjustment")
 
     args = parser.parse_args()
     
