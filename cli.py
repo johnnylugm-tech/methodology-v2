@@ -3550,6 +3550,65 @@ class MethodologyCLI:
         print(f"✅ Phase ended")
         return 0
 
+    def cmd_update_artifact(self, args):
+        """更新產物版本到 state.json
+
+        用法：
+            python cli.py update-artifact --name SRS.md --version v1.0.0 --path SRS.md --summary "完成需求規格"
+        """
+        from quality_gate.unified_gate import UnifiedGate
+        from pathlib import Path
+
+        repo_path = Path(args.repo or Path.cwd())
+        ug = UnifiedGate(project_path=repo_path)
+        ug.update_artifact(
+            name=args.name,
+            version=args.version,
+            path=args.path,
+            summary=args.summary or ""
+        )
+        print(f"✅ Artifact updated: {args.name}@{args.version}")
+        return 0
+
+    def cmd_add_task(self, args):
+        """新增任務到 task graph
+
+        用法：
+            python cli.py add-task --task-id task-001 --title "完成登入功能" --dependencies ""
+        """
+        from quality_gate.unified_gate import UnifiedGate
+        from pathlib import Path
+
+        repo_path = Path(args.repo or Path.cwd())
+        ug = UnifiedGate(project_path=repo_path)
+        ug.add_task(
+            task_id=args.task_id,
+            title=args.title,
+            dependencies=args.dependencies.split(",") if args.dependencies else []
+        )
+        print(f"✅ Task added: {args.task_id}")
+        return 0
+
+    def cmd_task_result(self, args):
+        """更新任務結果
+
+        用法：
+            python cli.py task-result --task-id task-001 --result "完成" --summary "登入功能已實作" --status completed
+        """
+        from quality_gate.unified_gate import UnifiedGate
+        from pathlib import Path
+
+        repo_path = Path(args.repo or Path.cwd())
+        ug = UnifiedGate(project_path=repo_path)
+        ug.update_task_result(
+            task_id=args.task_id,
+            result=args.result,
+            summary=args.summary,
+            status=args.status or "completed"
+        )
+        print(f"✅ Task result updated: {args.task_id}")
+        return 0
+
     def cmd_verify_artifact(self, args):
         """Verify_Agent - 獨立驗證產物正確性"""
         from quality_gate.unified_gate import UnifiedGate
@@ -4133,6 +4192,29 @@ def main():
     end_phase_parser = subparsers.add_parser("end-phase", help="結束當前 Phase")
     end_phase_parser.add_argument("--phase", type=int, help="Phase 編號 (1-8)")
     end_phase_parser.add_argument("--repo", default=".", help="Repo 路徑 (預設: .)")
+
+    # update-artifact (更新產物版本)
+    update_artifact_parser = subparsers.add_parser("update-artifact", help="更新產物版本到 state.json")
+    update_artifact_parser.add_argument("--name", required=True, help="產物名稱（如 SRS.md, SAD.md）")
+    update_artifact_parser.add_argument("--version", required=True, help="版本（如 v1.0.0）")
+    update_artifact_parser.add_argument("--path", required=True, help="產物路徑")
+    update_artifact_parser.add_argument("--summary", help="50字內摘要")
+    update_artifact_parser.add_argument("--repo", default=".", help="Repo 路徑 (預設: .)")
+
+    # add-task (新增任務到 task graph)
+    add_task_parser = subparsers.add_parser("add-task", help="新增任務到 task graph")
+    add_task_parser.add_argument("--task-id", required=True, help="任務 ID")
+    add_task_parser.add_argument("--title", required=True, help="任務標題")
+    add_task_parser.add_argument("--dependencies", help="依賴任務 ID（逗號分隔）")
+    add_task_parser.add_argument("--repo", default=".", help="Repo 路徑 (預設: .)")
+
+    # task-result (更新任務結果)
+    task_result_parser = subparsers.add_parser("task-result", help="更新任務結果")
+    task_result_parser.add_argument("--task-id", required=True, help="任務 ID")
+    task_result_parser.add_argument("--result", required=True, help="任務結果")
+    task_result_parser.add_argument("--summary", required=True, help="任務摘要")
+    task_result_parser.add_argument("--status", default="completed", help="任務狀態（pending/in-progress/completed）")
+    task_result_parser.add_argument("--repo", default=".", help="Repo 路徑 (預設: .)")
 
     # verify-artifact (Verify_Agent - 獨立驗證產物)
     verify_artifact_parser = subparsers.add_parser("verify-artifact", help="Verify_Agent - 獨立驗證產物正確性")
