@@ -280,6 +280,14 @@ class MethodologyCLI:
             return self.cmd_verify_artifact(args)
         elif command == "retry-test":
             return self.cmd_retry_test(args)
+        elif command == "fsm-status":
+            return self.cmd_fsm_status(args)
+        elif command == "fsm-transition":
+            return self.cmd_fsm_transition(args)
+        elif command == "fsm-resume":
+            return self.cmd_fsm_resume(args)
+        elif command == "fsm-unfreeze":
+            return self.cmd_fsm_unfreeze(args)
         else:
             pass # Removed print-debug
             return 1
@@ -3678,6 +3686,133 @@ class MethodologyCLI:
 
         return 0
 
+    # ============================================================================
+    # FSM State Machine Commands
+    # ============================================================================
+
+    def cmd_fsm_status(self, args):
+        """FSM 狀態查詢"""
+        from quality_gate.unified_gate import FSMStateMachine
+        from pathlib import Path
+
+        repo_path = Path(args.repo or Path.cwd())
+        fsm = FSMStateMachine(project_path=repo_path)
+        state = fsm.ug._read_state()
+
+        current = state.get('status', 'INIT')
+        state_history = state.get('state_history', [])
+
+        print(f"""
+╔══════════════════════════════════════════════════════════════╗
+║  FSM State Machine Status                                     ║
+╠══════════════════════════════════════════════════════════════╣
+║  Current State: {current:<47}║""")
+
+        if state_history:
+            print("╠══════════════════════════════════════════════════════════════╣")
+            print("║  State History (last 5):                                     ║")
+            for entry in state_history[-5:]:
+                ts = entry.get('timestamp', '')[:19]
+                print(f"║    {entry['from']} → {entry['to']:<10} ({ts})                        ║")
+                if entry.get('reason'):
+                    reason = entry['reason'][:40]
+                    print(f"║      Reason: {reason:<42}║")
+        else:
+            print("╠══════════════════════════════════════════════════════════════╣")
+            print("║  No state transitions recorded yet.                          ║")
+
+        print("╚══════════════════════════════════════════════════════════════╝")
+        return 0
+
+    def cmd_fsm_transition(self, args):
+        """FSM 手動狀態切換"""
+        from quality_gate.unified_gate import FSMStateMachine, ProjectState
+        from pathlib import Path
+
+        repo_path = Path(args.repo or Path.cwd())
+        fsm = FSMStateMachine(project_path=repo_path)
+        state = fsm.ug._read_state()
+
+        target = getattr(args, 'to', None)
+        if not target:
+            print("❌ --to <state> is required")
+            print("    Valid states: INIT, RUNNING, VERIFYING, WRITING, PAUSED, FREEZE, COMPLETED")
+            return 1
+
+        try:
+            to_state = ProjectState[target.upper()]
+        except KeyError:
+            print(f"❌ Invalid state: {target}")
+            print("    Valid states: INIT, RUNNING, VERIFYING, WRITING, PAUSED, FREEZE, COMPLETED")
+            return 1
+
+        current = state.get('status', 'INIT')
+        try:
+            from_state = ProjectState(current)
+        except ValueError:
+            from_state = ProjectState.INIT
+
+        reason = args.reason or "Manual transition"
+        success = fsm.transition(from_state, to_state, reason)
+
+        if success:
+            print(f"✅ Transition: {from_state.value} → {to_state.value}")
+            print(f"   Reason: {reason}")
+        else:
+            print(f"❌ Transition failed: {from_state.value} → {to_state.value}")
+            print(f"   Current state is {current}, not {from_state.value}")
+            print(f"   Or transition is not allowed by FSM rules")
+            return 1
+
+        return 0
+
+    def cmd_fsm_resume(self, args):
+        """FSM 解除煞車（PAUSED → RUNNING）"""
+        from quality_gate.unified_gate import FSMStateMachine, ProjectState
+        from pathlib import Path
+
+        repo_path = Path(args.repo or Path.cwd())
+        fsm = FSMStateMachine(project_path=repo_path)
+
+        current = fsm.get_state()
+        if current != ProjectState.PAUSED:
+            print(f"⚠️  Current state is {current.value}, not PAUSED")
+            print("    Use 'fsm-transition --to RUNNING' to manually transition")
+            return 1
+
+        success = fsm.resume()
+        if success:
+            print("✅ Brake released: PAUSED → RUNNING")
+        else:
+            print("❌ Failed to release brake")
+            return 1
+
+        return 0
+
+    def cmd_fsm_unfreeze(self, args):
+        """FSM 解除凍住（FREEZE → INIT）"""
+        from quality_gate.unified_gate import FSMStateMachine, ProjectState
+        from pathlib import Path
+
+        repo_path = Path(args.repo or Path.cwd())
+        fsm = FSMStateMachine(project_path=repo_path)
+
+        current = fsm.get_state()
+        if current != ProjectState.FREEZE:
+            print(f"⚠️  Current state is {current.value}, not FREEZE")
+            print("    Use 'fsm-transition --to INIT' to manually transition")
+            return 1
+
+        success = fsm.unfreeze()
+        if success:
+            print("✅ Unfreezed: FREEZE → INIT")
+            print("   Project has been audited and is ready to restart")
+        else:
+            print("❌ Failed to unfreeze")
+            return 1
+
+        return 0
+
     def cmd_context_compress(self, args):
         """Context Compression - 三層壓縮"""
         import context_compressor
@@ -4259,6 +4394,25 @@ def main():
 
     # retry-test
     subparsers.add_parser("retry-test", help="Test RetryHandler with dynamic prompt adjustment")
+
+    # fsm-status (FSM 狀態查詢)
+    fsm_status_parser = subparsers.add_parser("fsm-status", help="FSM 狀態查詢")
+    fsm_status_parser.add_argument("--repo", default=".", help="Repo 路徑 (預設: .)")
+
+    # fsm-transition (FSM 手動狀態切換)
+    fsm_transition_parser = subparsers.add_parser("fsm-transition", help="FSM 手動狀態切換")
+    fsm_transition_parser.add_argument("--to", required=True,
+                                       help="目標狀態 (INIT/RUNNING/VERIFYING/WRITING/PAUSED/FREEZE/COMPLETED)")
+    fsm_transition_parser.add_argument("--reason", help="切換原因")
+    fsm_transition_parser.add_argument("--repo", default=".", help="Repo 路徑 (預設: .)")
+
+    # fsm-resume (FSM 解除煞車)
+    fsm_resume_parser = subparsers.add_parser("fsm-resume", help="FSM 解除煞車 (PAUSED → RUNNING)")
+    fsm_resume_parser.add_argument("--repo", default=".", help="Repo 路徑 (預設: .)")
+
+    # fsm-unfreeze (FSM 解除凍住)
+    fsm_unfreeze_parser = subparsers.add_parser("fsm-unfreeze", help="FSM 解除凍住 (FREEZE → INIT)")
+    fsm_unfreeze_parser.add_argument("--repo", default=".", help="Repo 路徑 (預設: .)")
 
     args = parser.parse_args()
     

@@ -22,10 +22,11 @@ Unified Quality Gate
 """
 
 from dataclasses import dataclass, asdict
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Any
 from pathlib import Path
 from datetime import datetime, timezone
 import json
+from enum import Enum
 
 # 匯入現有檢查器
 from .doc_checker import DocumentChecker
@@ -278,7 +279,8 @@ class UnifiedGate:
                 "dependencies": {},  # {task_id: [dependent_task_ids]}
                 "next_action": None,
                 "blockers": [],
-                "history": []
+                "history": [],
+                "state_history": []
             }
             state_path.write_text(json.dumps(initial_state, indent=2))
 
@@ -287,7 +289,8 @@ class UnifiedGate:
         state_path = self.project_path / ".methodology" / "state.json"
         if state_path.exists():
             return json.loads(state_path.read_text())
-        return self._create_initial_state()
+        self._ensure_state()
+        return json.loads(state_path.read_text())
 
     def _write_state(self, state: dict):
         """寫入 state.json"""
@@ -1729,6 +1732,153 @@ class UnifiedGate:
             module=module,
             next_action=next_action
         )
+
+
+# =============================================================================
+# FSM State Machine
+# =============================================================================
+
+class ProjectState(Enum):
+    """FSM 狀態定義"""
+    INIT = "INIT"
+    RUNNING = "RUNNING"
+    VERIFYING = "VERIFYING"
+    WRITING = "WRITING"
+    PAUSED = "PAUSED"
+    FREEZE = "FREEZE"
+    COMPLETED = "COMPLETED"
+
+
+class FSMStateMachine:
+    """
+    FSM 狀態機管理器
+
+    整合 HR-12/13/14 煞車系統到完整的狀態機。
+
+    狀態切換規則：
+    - INIT → RUNNING（Phase 開始）
+    - RUNNING → VERIFYING（A/B 審查開始）
+    - VERIFYING → WRITING（審查不通過，回修）
+    - VERIFYING → RUNNING（審查通過）
+    - RUNNING → PAUSED（HR-12/13 觸發）
+    - PAUSED → RUNNING（修復後解除）
+    - RUNNING → FREEZE（HR-14 或嚴重問題）
+    - PAUSED → FREEZE（問題升級）
+    - 任意 → INIT（Phase Reset）
+    """
+
+    VALID_TRANSITIONS = {
+        ProjectState.INIT: [ProjectState.RUNNING],
+        ProjectState.RUNNING: [ProjectState.VERIFYING, ProjectState.PAUSED, ProjectState.COMPLETED, ProjectState.FREEZE],
+        ProjectState.VERIFYING: [ProjectState.WRITING, ProjectState.RUNNING],
+        ProjectState.WRITING: [ProjectState.VERIFYING, ProjectState.PAUSED],
+        ProjectState.PAUSED: [ProjectState.RUNNING, ProjectState.FREEZE],
+        ProjectState.FREEZE: [ProjectState.INIT],
+        ProjectState.COMPLETED: [ProjectState.INIT],
+    }
+
+    def __init__(self, project_path):
+        self.ug = UnifiedGate(project_path=project_path)
+
+    def transition(self, from_state: ProjectState, to_state: ProjectState, reason: str = "") -> bool:
+        """
+        執行狀態切換
+
+        Args:
+            from_state: 來源狀態
+            to_state: 目標狀態
+            reason: 切換原因
+
+        Returns:
+            bool: 是否切換成功
+        """
+        state = self.ug._read_state()
+        current = state.get("status", "INIT")
+
+        if current != from_state.value:
+            return False  # 狀態不匹配
+
+        if to_state not in self.VALID_TRANSITIONS.get(from_state, []):
+            return False  # 不允許的切換
+
+        state["status"] = to_state.value
+        state.setdefault("state_history", [])
+        state["state_history"].append({
+            "from": from_state.value,
+            "to": to_state.value,
+            "reason": reason,
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        })
+
+        self.ug._write_state(state)
+        return True
+
+    def get_state(self) -> ProjectState:
+        """取得當前狀態"""
+        state = self.ug._read_state()
+        status = state.get("status", "INIT")
+        try:
+            return ProjectState(status)
+        except ValueError:
+            return ProjectState.INIT
+
+    def trigger_brake(self, brake_type: str, reason: str):
+        """
+        觸發煞車（HR-12/13/14）
+
+        Args:
+            brake_type: 煞車類型（HR-12, HR-13, HR-14）
+            reason: 觸發原因
+
+        HR-12: A/B 審查 > 5 輪 → PAUSED
+        HR-13: Phase 時間 > 3× 預估 → PAUSED
+        HR-14: Integrity < 40 → FREEZE
+        """
+        current = self.ug._read_state().get("status", "INIT")
+
+        if brake_type in ("HR-12", "HR-13"):
+            # A/B 過多或時間過長 → PAUSED
+            self.transition(ProjectState.RUNNING, ProjectState.PAUSED, f"{brake_type}: {reason}")
+        elif brake_type == "HR-14":
+            # Integrity 過低 → FREEZE
+            self.transition(ProjectState.RUNNING, ProjectState.FREEZE, f"HR-14: {reason}")
+
+    def resume(self):
+        """解除煞車，恢復執行"""
+        return self.transition(ProjectState.PAUSED, ProjectState.RUNNING, "Manual resume")
+
+    def unfreeze(self):
+        """解除凍住，回到 INIT（需審計後重置）"""
+        return self.transition(ProjectState.FREEZE, ProjectState.INIT, "Manual unfreeze after audit")
+
+    def start_phase(self):
+        """開始新 Phase（INIT → RUNNING）"""
+        self.transition(ProjectState.INIT, ProjectState.RUNNING, "Phase started")
+
+    def start_verification(self):
+        """開始 A/B 審查（RUNNING → VERIFYING）"""
+        self.transition(ProjectState.RUNNING, ProjectState.VERIFYING, "Verification started")
+
+    def verification_pass(self):
+        """審查通過（VERIFYING → RUNNING）"""
+        self.transition(ProjectState.VERIFYING, ProjectState.RUNNING, "Verification passed")
+
+    def verification_fail(self):
+        """審查不通過（VERIFYING → WRITING）"""
+        self.transition(ProjectState.VERIFYING, ProjectState.WRITING, "Verification failed, rewriting")
+
+    def complete_phase(self):
+        """Phase 完成（RUNNING → COMPLETED）"""
+        self.transition(ProjectState.RUNNING, ProjectState.COMPLETED, "Phase completed")
+
+    def reset_phase(self):
+        """重置 Phase（任意 → INIT）"""
+        state = self.ug._read_state()
+        try:
+            current = ProjectState(state.get("status", "INIT"))
+        except ValueError:
+            current = ProjectState.INIT
+        self.transition(current, ProjectState.INIT, "Phase reset")
 
 
 # ===== 快速入口函式 =====
