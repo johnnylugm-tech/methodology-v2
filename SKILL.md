@@ -159,24 +159,21 @@ sessions_spawn(
 
 ### 產出格式規範（重要）
 
-所有 Agent 回傳必須使用結構化格式：
+所有 Agent 回傳必須包含：
+- `status`: success | error | unable_to_proceed
+- `result`: 實際產出
+- `confidence`: 1-10
+- `citations`: 引用來源陣列
+- `summary`: 50字內摘要（長任務必填）
 
-```
-{
-  "status": "success" | "error" | "unable_to_proceed",
-  "result": "...（實際產出）...",
-  "confidence": 1-10,
-  "citations": ["引用來源的 URL 或檔案路徑"],
-  "summary": "50字內摘要（長任務必填）"
-}
-```
-
-**負面約束（必須包含）**：
+**負面約束**：
 - `status: "error"` → 附帶錯誤訊息
-- `status: "unable_to_proceed"` → 說明無法達成的原因，**嚴禁編造**
-- 程式碼產出：嚴禁使用省略號（如 `...`），必須輸出完整內容
+- `status: "unable_to_proceed"` → 說明原因，**嚴禁編造**
+- 程式碼產出：嚴禁使用省略號 `...`
 
 **驗證**：格式不符 → 任務失敗，Integrity -10
+
+詳見 `docs/ANNOTATION_GUIDE.md`
 
 ## 2. 閾值配置
 
@@ -255,12 +252,7 @@ sessions_spawn(
 4. Agent B A/B 審查（5W1H 清單逐項確認）
 5. Quality Gate: doc_checker + constitution + spec-track
 6. 生成 Phase1_STAGE_PASS.md
-
-6. 更新狀態追蹤
-```bash
-python cli.py update-step --step 1 --module "SRS" --action "Phase 1 APPROVE"
-python cli.py end-phase --phase 1
-```
+7. 更新狀態追蹤：python cli.py update-step / end-phase
 ```
 
 **EXIT**: TH-01 > 80%, TH-03 = 100%, TH-14 ≥ 90%, Agent B APPROVE
@@ -284,11 +276,7 @@ python cli.py end-phase --phase 1
 4. Quality Gate: doc_checker + constitution + spec-track
 5. 生成 Phase2_STAGE_PASS.md
 
-6. 更新狀態追蹤
-```bash
-python cli.py update-step --step 2 --module "SAD" --action "Phase 2 APPROVE"
-python cli.py end-phase --phase 2
-```
+6. 更新狀態追蹤：python cli.py update-step / end-phase
 ```
 
 **EXIT**: TH-01 > 80%, TH-03 = 100%, TH-05 > 70%, Agent B APPROVE
@@ -313,60 +301,18 @@ FOR EACH 模組:
   4. Agent B 同行邏輯審查（填寫 Architect 確認部分）
   5. Agent B 確認測試完整性
   6. Quality Gate: pytest + coverage + constitution
-  // Phase 3 新增
-7. 第三審計代理審查（如滿足觸發條件）
-   python cli.py verify-artifact --phase 3 --repo .
-8. 根據 Verify_Agent 結果決定：
-   - APPROVED → 進入 Phase 4
-   - REJECTED → 回歸 Agent A 修復
-9. 生成合規矩陣
-10. 生成 Phase3_STAGE_PASS.md
-
-11. 更新狀態追蹤
-```bash
-python cli.py update-step --step 3 --module "代碼實作" --action "Phase 3 APPROVE"
-python cli.py end-phase --phase 3
-```
+  7. Verify_Agent（如滿足觸發條件）
+  8. 生成合規矩陣 + Phase3_STAGE_PASS.md
+  9. 更新狀態追蹤：python cli.py update-step / end-phase
 ```
 
 **EXIT**: TH-06 > 80%, TH-08 ≥ 80/90, TH-10 = 100%, TH-11 ≥ 70%, TH-16 = 100%, Agent B APPROVE
 
-**代碼規範**:
-```python
-class ModuleName:
-    """
-    對應 methodology-v2 規範：
-    - SKILL.md - Core Modules
-    - SKILL.md - Error Handling (L1-L6)
-    - SAD.md FR-XX
+**代碼規範**：詳見 `docs/ANNOTATION_GUIDE.md`
 
-    邏輯約束：
-    - [具體邏輯約束]
-    """
-    def __init__(self):
-        self._engine = None  # Lazy Init
+### 代碼 Annotation 格式
 
-    def _get_engine(self):
-        if self._engine is None:
-            self._engine = ExternalSDK()
-        return self._engine
-```
-
-### 代碼 Annotation 格式（重要）
-
-所有代碼檔案必須在模組/類別的 docstring 中包含以下 annotation：
-
-**Annotation 格式：**
-| Annotation | 位置 | 說明 | 範例 |
-|------------|------|------|------|
-| `@FR` | 類別/函式 docstring | 對應的需求 ID | `@FR: FR-01` |
-| `@SAD` | 類別 docstring | 對應的 SAD 模組 | `@SAD: Module 1 - TextProc` |
-| `@NFR` | 類別/函式 docstring | 對應的非功能需求 | `@NFR: NFR-02` |
-
-**原則：**
-- 每個主要類別必須有 `@FR`（對應其實現的功能需求）
-- 每個 public 函式必須有 `@FR`（對應其實現的功能需求）
-- 可多個 FR：用 `@FR: FR-01, FR-02`
+`@FR`、`@SAD`、`@NFR` annotation 規範。詳見 `docs/ANNOTATION_GUIDE.md`
 
 ---
 
@@ -386,42 +332,16 @@ class ModuleName:
 3. Agent A 執行測試、記錄 TEST_RESULTS.md
 4. Agent B 第二次審查（pytest 輸出真實性）
 5. Quality Gate: pytest + constitution + spec_logic
-// Phase 4 新增（如滿足觸發條件）
-6. 第三審計代理審查
-   python cli.py verify-artifact --phase 4 --repo .
-7. 根據 Verify_Agent 結果決定：
-   - APPROVED → 進入 Phase 5
-   - REJECTED → 回歸 Agent A 修復
-8. 生成 Phase4_STAGE_PASS.md
-
-9. 更新狀態追蹤
-```bash
-python cli.py update-step --step 4 --module "測試" --action "Phase 4 APPROVE"
-python cli.py end-phase --phase 4
-```
+6. Verify_Agent（如滿足觸發條件）
+7. 生成 Phase4_STAGE_PASS.md
+8. 更新狀態追蹤：python cli.py update-step / end-phase
 ```
 
 **EXIT**: TH-01 > 80%, TH-03 = 100%, TH-06 > 80%, TH-10 = 100%, TH-12 ≥ 80%, TH-17 ≥ 90%
 
-### 測試 Annotation 格式（重要）
+### 測試 Annotation 格式
 
-所有測試檔案必須在測試函式的 docstring 中包含以下 annotation：
-
-**Annotation 格式：**
-| Annotation | 位置 | 說明 | 範例 |
-|------------|------|------|------|
-| `@covers` | 測試函式 docstring | 對應的功能需求 | `@covers: FR-01` |
-| `@type` | 測試函式 docstring | 測試類型 | `@type: positive` / `negative` / `boundary` |
-
-**測試類型：**
-- `positive`：正向測試（正常輸入）
-- `negative`：負向測試（錯誤輸入）
-- `boundary`：邊界測試（邊界值）
-
-**原則：**
-- 每個 FR 至少有一個 positive 測試
-- 每個 FR 至少有一個 negative 測試
-- 關鍵 FR 必須有 boundary 測試
+`@covers`、`@type` annotation 規範。詳見 `docs/ANNOTATION_GUIDE.md`
 
 ---
 
@@ -442,12 +362,7 @@ python cli.py end-phase --phase 4
 4. Agent B 驗收報告審查
 5. Quality Gate: logic checker ≥ 90 + constitution ≥ 80
 6. 生成 Phase5_STAGE_PASS.md
-
-7. 更新狀態追蹤
-```bash
-python cli.py update-step --step 5 --module "驗證交付" --action "Phase 5 APPROVE"
-python cli.py end-phase --phase 5
-```
+7. 更新狀態追蹤：python cli.py update-step / end-phase
 ```
 
 **EXIT**: TH-02 ≥ 80%, TH-07 ≥ 90, Agent B APPROVE
@@ -470,12 +385,7 @@ python cli.py end-phase --phase 5
 3. Agent B 品質確認
 4. Quality Gate: constitution ≥ 80 + 邏輯正確性
 5. 生成 Phase6_STAGE_PASS.md
-
-6. 更新狀態追蹤
-```bash
-python cli.py update-step --step 6 --module "品質保證" --action "Phase 6 APPROVE"
-python cli.py end-phase --phase 6
-```
+6. 更新狀態追蹤：python cli.py update-step / end-phase
 ```
 
 **EXIT**: TH-02 ≥ 80%, TH-07 ≥ 90, Agent B APPROVE
@@ -499,12 +409,7 @@ python cli.py end-phase --phase 6
 4. Agent B 風險演練（如有 HIGH 風險）
 5. Quality Gate: 邏輯正確性 ≥ 90
 6. 生成 Phase7_STAGE_PASS.md
-
-7. 更新狀態追蹤
-```bash
-python cli.py update-step --step 7 --module "風險管理" --action "Phase 7 APPROVE"
-python cli.py end-phase --phase 7
-```
+7. 更新狀態追蹤：python cli.py update-step / end-phase
 ```
 
 **EXIT**: TH-07 ≥ 90, Decision Gate 100% 確認, Agent B APPROVE
@@ -529,12 +434,7 @@ python cli.py end-phase --phase 7
 5. Agent B 封版審查
 6. Quality Gate: 配置合規性確認
 7. 生成 Phase8_STAGE_PASS.md
-
-8. 更新狀態追蹤
-```bash
-python cli.py update-step --step 8 --module "配置管理" --action "Phase 8 APPROVE"
-python cli.py end-phase --phase 8
-```
+8. 更新狀態追蹤：python cli.py update-step / end-phase
 ```
 
 **EXIT**: CONFIG_RECORDS.md 完整, pip freeze 存在, Git Tag 建立, Agent B APPROVE
@@ -543,38 +443,7 @@ python cli.py end-phase --phase 8
 
 ## 5. 工具速查
 
-### 5.1 核心工具
-
-| 功能 | 命令 |
-|------|------|
-| ASPICE 檢查 | `python3 quality_gate/doc_checker.py` |
-| Constitution | `python3 quality_gate/constitution/runner.py --type {type}` |
-| Phase Truth | `python cli.py phase-verify --phase N` |
-| Stage Pass | `python cli.py stage-pass --phase N` |
-| Spec Tracking | `python3 cli.py spec-track {init/check/report}` |
-
-### 5.2 Anti-Cheat 工具
-
-| 功能 | 命令 |
-|------|------|
-| Claims Verifier | `python3 quality_gate/claims_verifier.py` |
-| A/B Enforcer | `python3 quality_gate/ab_enforcer.py` |
-| Integrity Tracker | `python3 quality_gate/integrity_tracker.py` |
-
-### 5.3 Skill Check
-
-| 模式 | 命令 |
-|------|------|
-| 預熱 | `python cli.py skill-check --mode preheat --phase N` |
-| 拷問 | `python cli.py skill-check --mode interrogate --phase N` |
-| 引用 | `python cli.py skill-check --mode citation --phase N` |
-
-### 5.4 Phase Artifact Enforcer
-
-```bash
-python3 quality_gate/phase_artifact_enforcer.py --phase N
-python3 quality_gate/phase_artifact_enforcer.py --all
-```
+**詳見** `docs/CLI_REFERENCE.md`（完整命令列表）
 
 ---
 
@@ -598,55 +467,11 @@ Agent B 審查 → 提出疑問或 APPROVE
 
 ## Verify_Agent 流程
 
-### 什麼是 Verify_Agent
+在 A/B 審查之後、主代理接受結果前，執行獨立的驗證 Agent。
 
-在 A/B 審查之後、主代理接受結果前，執行一個獨立的驗證 Agent。
+**觸發條件**：Phase 3+ 代碼交付、Agent B 分數 < 80、Agent A 自評分差異 > 20
 
-### 觸發條件
-
-| 條件 | 動作 |
-|------|------|
-| Phase 3+ 代碼交付 | 自動觸發 |
-| Agent B 分數 < 80 | 自動觸發 |
-| Agent A 自評分數差異 > 20 | 自動觸發 |
-
-### Verify_Agent Prompt
-
-```
-你是 Verify_Agent，負責驗證產物的正確性。
-
-任務：{task_description}
-產物：{artifact_content}
-聲稱的正確性：{Agent_A_claims}
-
-驗證步驟：
-1. 列出產物中的每個事實聲稱
-2. 對每個聲稱，找出對應的驗證依據（代碼/文件/測試）
-3. 評估聲稱是否被充分證實
-
-輸出格式：
-{
-  "verified_claims": [...],
-  "unverified_claims": [...],
-  "confidence": 1-10,
-  "verdict": "APPROVED" | "REJECTED"
-}
-```
-
-### 第三審計代理（Phase 3+ SOP 新增）
-
-在 Phase 3/4 的 SOP 中，Quality Gate 之後新增：
-
-```
-// Phase 3 新增
-7. 第三審計代理審查（如滿足觸發條件）
-   python cli.py verify-artifact --phase 3 --repo .
-8. 根據 Verify_Agent 結果決定：
-   - APPROVED → 進入 Phase 4
-   - REJECTED → 回歸 Agent A 修復
-```
-
----
+**Prompt + 詳細流程**：詳見 `docs/VERIFIER_GUIDE.md`
 
 ### 6.2 Agent A 自評（誠實）
 
@@ -668,15 +493,10 @@ Agent B 審查 → 提出疑問或 APPROVE
 ### STAGE_PASS 產出格式
 
 每個 Phase 交付時，Agent A 必須填寫：
+- 5W1H 合規性、問題修復、交付完整性
+- 摘要（50字內）、confidence（1-10）、citations（如有）
 
-| 欄位 | 說明 |
-|------|------|
-| 5W1H 合規性 | 是否 100% 遵從 Phase N 的 5W1H？ |
-| 問題修復 | 是否發現並修復了問題？ |
-| 交付完整性 | 所有交付物是否提供？ |
-| **摘要** | **50字內簡述本 Phase 完成內容** |
-| confidence | 1-10 自評分 |
-| citations | 事實性聲稱的引用（如有） |
+詳見 `docs/HYBRID_WORKFLOW_GUIDE.md`
 
 ### 6.3 Agent B 審查（批判）
 
@@ -722,41 +542,9 @@ python cli.py stage-review --phase N
 
 ## 7. 開發日誌格式
 
-```markdown
-# DEVELOPMENT_LOG.md
+每個 Phase 必須記錄：session_id、Agent A/B 工作紀錄、Quality Gate 命令輸出、問題與修復、sign-off。
 
-## Phase {N} - {日期}
-
-### session_id
-{session_id}
-
-### Agent A 工作紀錄
-[工作內容]
-
-### Agent B 審查紀錄
-[審查內容]
-
-### Quality Gate 結果
-
-執行命令：
-```
-{paste actual command}
-```
-
-結果：
-```
-{paste actual output}
-```
-
-### 問題與修復
-| 問題 | 解決方式 |
-|------|---------|
-| [問題] | [解決] |
-
-### sign-off
-- Agent A: {name} ({session_id})
-- Agent B: {name} ({session_id})
-```
+詳見 `docs/COWORK_PROTOCOL_v1.0.md`
 
 ---
 
@@ -792,26 +580,14 @@ python cli.py stage-review --phase N
 |------|------|---------|
 | 工具呼叫 Timeout | 60s | 終止，狀態設為 TIMEOUT |
 | Step 最大執行時間 | 30min | 觸發 HR-13 煞車 |
-| Phase最大執行時間 | 預估時間 × 3 | 觸發 HR-13 煞車 |
+| Phase 最大執行時間 | 預估 × 3 | 觸發 HR-13 煞車 |
 | A/B 審查輪次 | 5 輪 | 觸發 HR-12 PAUSE |
 
-**TIMEOUT 處理流程**：
-1. 終止當前操作
-2. 記錄 `state.json` → `{status: "TIMEOUT", step: "X"}`
-3. 根據錯誤類型（L1-L4）執行對應處理
-4. 如可重試 → 指數退避（10s, 20s, 40s...）
+**Timeout 處理**：終止 → 記錄 state.json → L1-L4 對應處理 → 指數退避重試
 
-### 重試機制（動態 Prompt 調整）
+**重試機制**：動態 Prompt 收緊（100字→50字→5行→OK/ERROR），退避 10s/20s/40s/80s
 
-| 重試次數 | 約束 | 退避延遲 |
-|---------|------|---------|
-| 0 | 無 | - |
-| 1 | 請更加簡潔，不超過 100 字 | 10s |
-| 2 | 必須在 50 字內回答 | 20s |
-| 3 | 輸出不超過 5 行 | 40s |
-| 4+ | 只回覆 OK 或 ERROR | 80s |
-
-**觸發時機**：Timeout、L4 錯誤、L5 驗證失敗
+詳見 `docs/RUNTIME_METRICS_MANUAL.md`
 
 ---
 
@@ -826,49 +602,7 @@ python cli.py stage-review --phase N
 | SKILL_TEMPLATES.md | 模板庫 |
 | SKILL_DOMAIN.md | 領域知識 |
 
----
-
-## 10. 附錄：Phase 詳細定義
-
-### Phase 1 進入/退出條件速查
-
-**進入條件**: 專案初始化完成
-**退出條件**: TH-01 > 80%, TH-03 = 100%, TH-14 ≥ 90%, Agent B APPROVE
-
-### Phase 2 進入/退出條件速查
-
-**進入條件**: Phase 1 APPROVE
-**退出條件**: TH-01 > 80%, TH-03 = 100%, TH-05 > 70%, Agent B APPROVE
-
-### Phase 3 進入/退出條件速查
-
-**進入條件**: Phase 2 APPROVE, SAD.md APPROVE
-**退出條件**: TH-06 > 80%, TH-08 ≥ 90, TH-10 = 100%, TH-11 ≥ 70%, TH-16 = 100%, Agent B APPROVE
-
-### Phase 4 進入/退出條件速查
-
-**進入條件**: Phase 3 APPROVE
-**退出條件**: TH-01 > 80%, TH-03 = 100%, TH-06 > 80%, TH-10 = 100%, TH-12 ≥ 80%, TH-17 ≥ 90%
-
-### Phase 5 進入/退出條件速查
-
-**進入條件**: Phase 4 APPROVE, 測試通過率 = 100%
-**退出條件**: TH-02 ≥ 80%, TH-07 ≥ 90, Agent B APPROVE
-
-### Phase 6 進入/退出條件速查
-
-**進入條件**: Phase 5 APPROVE
-**退出條件**: TH-02 ≥ 80%, TH-07 ≥ 90, Agent B APPROVE
-
-### Phase 7 進入/退出條件速查
-
-**進入條件**: Phase 6 APPROVE, 測試通過率 = 100%
-**退出條件**: TH-07 ≥ 90, Decision Gate 100% 確認, Agent B APPROVE
-
-### Phase 8 進入/退出條件速查
-
-**進入條件**: Phase 7 APPROVE
-**退出條件**: CONFIG_RECORDS.md 完整, pip freeze 存在, Git Tag 建立, Agent B APPROVE
+**Phase 進入/退出條件**：詳見 §4 Phase 定義各章節 EXIT 條件
 
 ---
 
