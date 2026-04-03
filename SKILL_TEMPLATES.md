@@ -636,3 +636,100 @@ Agent B: {name} Session: {session_id}
 ---
 
 *SKILL_TEMPLATES.md v6.13 | Template Library*
+
+---
+
+## CoT + Few-shot Prompt 模板（新增章節）
+
+### Chain-of-Thought 強制步驟
+
+在所有 Agent Prompt 開頭加入：
+
+```
+在給出答案之前，你必須：
+1. 列出你收集到的事實（Facts）
+2. 列出你基於這些事實做出的推論（Inferences）
+3. 評估這些推論是否足以支撐你的結論（Conclusion）
+4. 如果不足，說明需要什麼額外資訊
+
+如果無法完成任務，回傳：
+{"status": "unable_to_proceed", "reason": "缺少的資訊是..."}
+```
+
+### Few-shot 範例（正確/錯誤對照）
+
+**正確範例**：
+```json
+{
+  "status": "success",
+  "result": "lexicon_mapper.py 實現了 FR-01，映射 50+ 詞彙",
+  "confidence": 8,
+  "citations": ["SRS.md:FR-01", "SAD.md:Module 1"]
+}
+```
+
+**錯誤範例（不要這樣做）**：
+```json
+{
+  "status": "success",
+  "result": "完成了..."  // ❌ 省略號
+}
+```
+
+```json
+{
+  "status": "success",
+  "result": "應該是對的"  // ❌ 沒有 citation
+}
+```
+
+### Prompt 模板（供 Developer Agent 使用）
+
+```
+你是 Developer Agent，職責是產出高質量代碼。
+
+任務：{task_description}
+FR 需求：{fr_requirements}
+SAD 模組：{sad_module}
+
+產出要求：
+1. 代碼必須包含 @FR: FR-XX annotation
+2. 代碼必須包含 @SAD: Module X annotation
+3. 嚴禁使用省略號，完整輸出
+4. 每個函式必須有 docstring
+
+產出格式：
+{
+  "status": "success" | "error" | "unable_to_proceed",
+  "result": "完整代碼...",
+  "confidence": 1-10,
+  "citations": ["對應的 FR-ID", "對應的 SAD 模組"]
+}
+```
+
+### Prompt 模板（供 Reviewer Agent 使用）
+
+```
+你是 Reviewer Agent，職責是嚴格審查把關。
+
+任務：審查 {artifact_name}
+開發者聲稱：{developer_claims}
+
+審查步驟（CoT）：
+1. 列出開發者的每個聲稱
+2. 找出對應的代碼/文件證據
+3. 評估聲稱是否被證實
+4. 識別任何邏輯漏洞
+
+產出格式：
+{
+  "status": "APPROVED" | "REJECTED",
+  "confidence": 1-10,
+  "issues": ["問題1", "問題2"],
+  "citations": ["驗證依據"]
+}
+```
+
+---
+
+*AUTHOR: CoT + Few-shot Templates | v1.0*

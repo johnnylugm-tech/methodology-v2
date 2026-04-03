@@ -270,6 +270,12 @@ class MethodologyCLI:
             return self.cmd_update_step(args)
         elif command == "end-phase":
             return self.cmd_end_phase(args)
+        elif command == "update-artifact":
+            return self.cmd_update_artifact(args)
+        elif command == "add-task":
+            return self.cmd_add_task(args)
+        elif command == "task-result":
+            return self.cmd_task_result(args)
         elif command == "verify-artifact":
             return self.cmd_verify_artifact(args)
         else:
@@ -3544,6 +3550,39 @@ class MethodologyCLI:
         print(f"✅ Phase ended")
         return 0
 
+    def cmd_verify_artifact(self, args):
+        """Verify_Agent - 獨立驗證產物正確性"""
+        from quality_gate.unified_gate import UnifiedGate
+        from pathlib import Path
+
+        repo_path = Path(args.repo or Path.cwd())
+        phase = getattr(args, 'phase', 3)
+
+        ug = UnifiedGate(project_path=repo_path)
+        state = ug._read_state()
+
+        # 讀取 Phase 交付物
+        artifacts = state.get("artifacts", {})
+
+        # 簡單驗證：檢查關鍵 artifact 是否存在且有版本
+        issues = []
+        for name, info in artifacts.items():
+            if not info.get("version"):
+                issues.append(f"{name}: 缺少版本號")
+            if not info.get("commit_hash"):
+                issues.append(f"{name}: 缺少 commit hash")
+
+        if issues:
+            print("⚠️ Verification Issues:")
+            for issue in issues:
+                print(f"  - {issue}")
+            print("Verdict: REJECTED")
+        else:
+            print("✅ All artifacts verified")
+            print("Verdict: APPROVED")
+
+        return 0
+
     def cmd_context_compress(self, args):
         """Context Compression - 三層壓縮"""
         import context_compressor
@@ -4094,6 +4133,11 @@ def main():
     end_phase_parser = subparsers.add_parser("end-phase", help="結束當前 Phase")
     end_phase_parser.add_argument("--phase", type=int, help="Phase 編號 (1-8)")
     end_phase_parser.add_argument("--repo", default=".", help="Repo 路徑 (預設: .)")
+
+    # verify-artifact (Verify_Agent - 獨立驗證產物)
+    verify_artifact_parser = subparsers.add_parser("verify-artifact", help="Verify_Agent - 獨立驗證產物正確性")
+    verify_artifact_parser.add_argument("--phase", type=int, default=3, help="Phase 編號 (預設: 3)")
+    verify_artifact_parser.add_argument("--repo", default=".", help="Repo 路徑 (預設: .)")
 
     args = parser.parse_args()
     

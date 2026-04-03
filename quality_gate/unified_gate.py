@@ -256,22 +256,28 @@ class UnifiedGate:
         
         if not state_path.exists():
             initial_state = {
-                "version": "1.0",
-                "project": self.project_path.name,
-                "current_phase": None,
-                "current_step": None,   # "4.1", "4.2", etc.
-                "current_module": None,  # "CircuitBreaker", "SynthEngine"
-                "next_action": None,     # {"who": "...", "what": "...", "deadline": None}
+                "current_phase": 1,
+                "current_step": None,
+                "current_module": None,
+                "status": "INIT",
+                "last_commit": None,
+                "last_updated": datetime.now(timezone.utc).isoformat(),
                 "phase_state": {
                     "started_at": None,
-                    "elapsed_minutes": 0,
-                    "ab_rounds": 0,
                     "blocks": 0,
+                    "ab_rounds": 0,
                     "warnings": 0,
                     "last_gate_score": None,
-                    "last_check_at": None
+                    "estimated_minutes": 60,
                 },
-                "trend_alerts": [],
+                # 新增：產物追蹤
+                "artifacts": {},  # {artifact_name: {version, commit_hash, path, summary, updated_at}}
+                # 新增：任務圖
+                "tasks": [],  # [{id, title, status, dependencies, result, summary}]
+                # 新增：依賴圖
+                "dependencies": {},  # {task_id: [dependent_task_ids]}
+                "next_action": None,
+                "blockers": [],
                 "history": []
             }
             state_path.write_text(json.dumps(initial_state, indent=2))
@@ -287,6 +293,83 @@ class UnifiedGate:
         """寫入 state.json"""
         state_path = self.project_path / ".methodology" / "state.json"
         state_path.write_text(json.dumps(state, indent=2))
+
+    def update_artifact(self, name: str, version: str, path: str, summary: str = ""):
+        """
+        更新產物版本
+        
+        Args:
+            name: 產物名稱（如 "SRS.md", "SAD.md"）
+            version: 版本（如 "v1.0.0"）
+            path: 產物路徑
+            summary: 50字內摘要
+        """
+        state = self._read_state()
+        artifacts = state.get("artifacts", {})
+        
+        artifacts[name] = {
+            "version": version,
+            "commit_hash": self._get_current_commit(),
+            "path": path,
+            "summary": summary,
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }
+        
+        state["artifacts"] = artifacts
+        self._write_state(state)
+
+    def add_task(self, task_id: str, title: str, dependencies: List[str] = None):
+        """新增任務到 task graph"""
+        state = self._read_state()
+        tasks = state.get("tasks", [])
+        
+        # 避免重複
+        if any(t["id"] == task_id for t in tasks):
+            return
+        
+        tasks.append({
+            "id": task_id,
+            "title": title,
+            "status": "pending",
+            "dependencies": dependencies or [],
+            "result": None,
+            "summary": None
+        })
+        
+        # 更新 dependencies
+        deps = state.get("dependencies", {})
+        deps[task_id] = dependencies or []
+        
+        state["tasks"] = tasks
+        state["dependencies"] = deps
+        self._write_state(state)
+
+    def update_task_result(self, task_id: str, result: Any, summary: str, status: str = "completed"):
+        """更新任務結果"""
+        state = self._read_state()
+        tasks = state.get("tasks", [])
+        
+        for task in tasks:
+            if task["id"] == task_id:
+                task["result"] = result
+                task["summary"] = summary
+                task["status"] = status
+                break
+        
+        state["tasks"] = tasks
+        self._write_state(state)
+
+    def _get_current_commit(self) -> str:
+        """取得當前 git commit hash"""
+        try:
+            import subprocess
+            result = subprocess.run(
+                ["git", "rev-parse", "--short", "HEAD"],
+                capture_output=True, text=True, cwd=self.project_path
+            )
+            return result.stdout.strip()
+        except:
+            return None
 
     def _is_new_phase(self, phase: int) -> bool:
         """檢查是否是新 Phase 開始"""
