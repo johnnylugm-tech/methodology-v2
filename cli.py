@@ -262,12 +262,16 @@ class MethodologyCLI:
             return self.cmd_skill_check(args)
         elif command == "model-recommend":
             return self.cmd_model_recommend(args)
+        elif command == "context-compress":
+            return self.cmd_context_compress(args)
         elif command == "update-project-status":
             return self.cmd_update_project_status(args)
         elif command == "update-step":
             return self.cmd_update_step(args)
         elif command == "end-phase":
             return self.cmd_end_phase(args)
+        elif command == "verify-artifact":
+            return self.cmd_verify_artifact(args)
         else:
             pass # Removed print-debug
             return 1
@@ -3540,6 +3544,27 @@ class MethodologyCLI:
         print(f"✅ Phase ended")
         return 0
 
+    def cmd_context_compress(self, args):
+        """Context Compression - 三層壓縮"""
+        import context_compressor
+        import json
+        from pathlib import Path
+        
+        repo_path = Path(args.repo or Path.cwd())
+        msg_file = repo_path / ".methodology" / "session_messages.json"
+        
+        if not msg_file.exists():
+            print("No session_messages.json found")
+            return 1
+        
+        messages = json.loads(msg_file.read_text())
+        level = getattr(args, 'level', 'auto')
+        
+        compressed = context_compressor.compress(messages, level)
+        msg_file.write_text(json.dumps(compressed, indent=2))
+        print(f"Compressed {len(messages)} → {len(compressed)} messages")
+        return 0
+
     def cmd_update_project_status(self, args):
         """更新 PROJECT_STATUS.md 的「下一步動作」區塊
 
@@ -4043,6 +4068,12 @@ def main():
     model_recommend_parser = subparsers.add_parser("model-recommend", help="Phase → Model 推薦")
     model_recommend_parser.add_argument("--phase", type=int, help="Phase number (1-8), 如果不指定則從 state.json 讀取")
     model_recommend_parser.add_argument("--repo", default=".", help="Repo 路徑 (預設: .)")
+
+    # context-compress (Context Compression - 三層壓縮)
+    context_compress_parser = subparsers.add_parser("context-compress", help="Context Compression - 三層壓縮")
+    context_compress_parser.add_argument("--level", default="auto", choices=["L1", "L2", "L3", "auto"],
+                                        help="Compression level (default: auto)")
+    context_compress_parser.add_argument("--repo", default=".", help="Repo 路徑 (預設: .)")
 
     # update-project-status (更新 PROJECT_STATUS.md)
     update_status_parser = subparsers.add_parser("update-project-status", help="更新 PROJECT_STATUS.md")
