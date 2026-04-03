@@ -1,4 +1,4 @@
-# methodology-v2 v6.21
+# methodology-v2 v6.22
 
 > Multi-Agent Collaboration Development Methodology — Agent Executable Specification
 > 精簡版：Agent 執行時真正需要的內容
@@ -614,5 +614,5 @@ python cli.py stage-review --phase N
 
 ---
 
-*methodology-v2 v6.21 | Agent Executable Specification*
+*methodology-v2 v6.22 | Agent Executable Specification*
 *Last Updated: 2026-04-03*
