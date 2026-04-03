@@ -59,6 +59,7 @@ from security_defense import (
     ApprovalLevel,
 )
 from code_metrics import MetricsTracker
+from checkpoint_manager import SessionManager
 
 # Ralph Mode
 from ralph_mode.cli import (
@@ -73,12 +74,13 @@ from ralph_mode.scheduler import (
 )
 from ralph_mode.progress_tracker import RalphProgressTracker
 from ralph_mode.state_machine import PhaseStateMachine
+from tool_registry import ToolRegistry, TOOL_HANDLERS
 
 
 class MethodologyCLI:
     """統一 CLI 入口"""
     
-    VERSION = "6.13.0"
+    VERSION = "6.22.0"
     
     def __init__(self):
         self.progress = ProgressDashboard()
@@ -115,6 +117,7 @@ class MethodologyCLI:
         self.ralph_cli = RalphCLI()
         self.ralph_persistence = TaskPersistence()
         self.ralph_scheduler_manager = SchedulerManager()
+        self.session_manager = SessionManager()
     
     def _check_command(self, command: str) -> bool:
         """檢查命令是否危險"""
@@ -288,6 +291,16 @@ class MethodologyCLI:
             return self.cmd_fsm_resume(args)
         elif command == "fsm-unfreeze":
             return self.cmd_fsm_unfreeze(args)
+        elif command == "session-save":
+            return self.cmd_session_save(args)
+        elif command == "session-load":
+            return self.cmd_session_load(args)
+        elif command == "session-list":
+            return self.cmd_session_list(args)
+        elif command == "session-delete":
+            return self.cmd_session_delete(args)
+        elif command == "tool-registry":
+            return self.cmd_tool_registry(args)
         else:
             pass # Removed print-debug
             return 1
@@ -3829,6 +3842,111 @@ class MethodologyCLI:
 
         return 0
 
+    # ============================================================================
+    # Session Commands
+    # ============================================================================
+
+    def cmd_session_save(self, args):
+        """儲存完整 session state"""
+        session_id = args.id
+        state_file = args.state or ".methodology/session_state.json"
+
+        # 讀取 session state
+        state_path = Path(state_file)
+        if not state_path.exists():
+            print(f"❌ State file not found: {state_file}")
+            print("   Hint: Use --state to specify a different state file")
+            return 1
+
+        try:
+            state = json.loads(state_path.read_text())
+        except json.JSONDecodeError as e:
+            print(f"❌ Failed to parse state file: {e}")
+            return 1
+
+        # 驗證必填欄位
+        required = ["messages", "context", "artifacts", "metadata"]
+        missing = [k for k in required if k not in state]
+        if missing:
+            print(f"⚠️  State missing fields: {', '.join(missing)}")
+            print("   These fields are recommended but not required")
+
+        # 儲存
+        path = self.session_manager.save(session_id, state)
+        print(f"✅ Session saved: {session_id}")
+        print(f"   Path: {path}")
+        return 0
+
+    def cmd_session_load(self, args):
+        """還原完整 session state"""
+        session_id = args.id
+        output_file = args.output or ".methodology/session_state_loaded.json"
+
+        # 檢查是否存在
+        if not self.session_manager.exists(session_id):
+            print(f"❌ Session not found: {session_id}")
+            print("   Hint: Use 'session-list' to see available sessions")
+            return 1
+
+        try:
+            state = self.session_manager.load(session_id)
+            info = self.session_manager.get_info(session_id)
+
+            # 寫出到檔案
+            Path(output_file).write_text(json.dumps(state, indent=2, ensure_ascii=False))
+
+            print(f"✅ Session loaded: {session_id}")
+            print(f"   Saved at: {info['saved_at']}")
+            print(f"   Size: {info['size']} bytes")
+            print(f"   Output: {output_file}")
+            return 0
+        except Exception as e:
+            print(f"❌ Failed to load session: {e}")
+            return 1
+
+    def cmd_session_list(self, args):
+        """列出所有 saved sessions"""
+        sessions = self.session_manager.list()
+
+        if not sessions:
+            print("No saved sessions found.")
+            print("   Hint: Use 'session-save --id <session_id>' to save a session")
+            return 0
+
+        print(f"\n╔══════════════════════════════════════════════════════════════════════╗")
+        print(f"║  Saved Sessions ({len(sessions)})                                                ║")
+        print(f"╠══════════════════════════════════════════════════════════════════════╣")
+        print(f"║  {'Session ID':<30} {'Saved At':<28} {'Size':>10}  ║")
+        print(f"╠══════════════════════════════════════════════════════════════════════╣")
+
+        for s in sessions:
+            saved_at = s.get('saved_at', 'unknown')
+            if saved_at != 'unknown':
+                saved_at = saved_at[:19]  # Truncate to YYYY-MM-DDTHH:MM:SS
+            size_kb = s['size'] / 1024
+            print(f"║  {s['id']:<30} {saved_at:<28} {size_kb:>8.1f} KB  ║")
+
+        print(f"╚══════════════════════════════════════════════════════════════════════╝")
+        print(f"\nUsage:")
+        print(f"  python cli.py session-load --id <session_id>   # Load a session")
+        print(f"  python cli.py session-delete --id <session_id>  # Delete a session")
+        return 0
+
+    def cmd_session_delete(self, args):
+        """刪除指定 session"""
+        session_id = args.id
+
+        if not self.session_manager.exists(session_id):
+            print(f"❌ Session not found: {session_id}")
+            return 1
+
+        if self.session_manager.delete(session_id):
+            print(f"✅ Session deleted: {session_id}")
+            return 0
+        else:
+            print(f"❌ Failed to delete session: {session_id}")
+            return 1
+
     def cmd_context_compress(self, args):
         """Context Compression - 三層壓縮"""
         import context_compressor
@@ -3912,6 +4030,117 @@ class MethodologyCLI:
                 pass # Removed print-debug
                 return 1
         else:
+            pass # Removed print-debug
+            return 1
+
+
+    def cmd_tool_registry(self, args):
+        """Tool Registry CLI - Clawd-Code TOOL_HANDLERS 風格工具管理
+
+        用法：
+            python cli.py tool-registry --list                      # 列出所有工具
+            python cli.py tool-registry --register Read --handler read_file   # 註冊工具
+            python cli.py tool-registry --unregister Read           # 取消註冊
+            python cli.py tool-registry --get Read                  # 查詢工具處理器
+            python cli.py tool-registry --dispatch Read --path /tmp/test.txt  # 分發調用
+        """
+        action = args.action
+
+        if action == "list" or args.list:
+            tools = ToolRegistry.list_tools()
+            pass # Removed print-debug
+            pass # Removed print-debug
+            for tool in tools:
+                handler = ToolRegistry.get_handler(tool)
+                kind = "handler" if handler else "factory"
+                pass # Removed print-debug
+            pass # Removed print-debug
+            return 0
+
+        elif action == "register" or (args.register and args.handler):
+            tool_name = args.register or args.tool_name
+            handler_path = args.handler or args.handler_path
+
+            if not tool_name or not handler_path:
+                pass # Removed print-debug
+                return 1
+
+            # 嘗試從模組載入 handler
+            try:
+                import importlib
+                if '.' in handler_path:
+                    module_path, func_name = handler_path.rsplit('.', 1)
+                    module = importlib.import_module(module_path)
+                    handler = getattr(module, func_name)
+                else:
+                    # 假設是內建或已導入的函式名
+                    handler = eval(handler_path, globals())
+            except Exception as e:
+                pass # Removed print-debug
+                return 1
+
+            ToolRegistry.register(tool_name, handler)
+            pass # Removed print-debug
+            pass # Removed print-debug
+            return 0
+
+        elif action == "unregister" or args.unregister:
+            tool_name = args.unregister or args.tool_name
+            if not tool_name:
+                pass # Removed print-debug
+                return 1
+
+            removed = ToolRegistry.unregister(tool_name)
+            if removed:
+                pass # Removed print-debug
+            else:
+                pass # Removed print-debug
+            return 0
+
+        elif action == "get" or args.get:
+            tool_name = args.get or args.tool_name
+            if not tool_name:
+                pass # Removed print-debug
+                return 1
+
+            handler = ToolRegistry.get_handler(tool_name)
+            if handler:
+                pass # Removed print-debug
+            else:
+                pass # Removed print-debug
+                pass # Removed print-debug
+            return 0
+
+        elif action == "dispatch" or args.dispatch:
+            tool_name = args.dispatch or args.tool_name
+            if not tool_name:
+                pass # Removed print-debug
+                return 1
+
+            # 從 --kwargs 解析參數
+            kwargs = {}
+            if args.kwargs:
+                for kv in args.kwargs:
+                    if '=' in kv:
+                        k, v = kv.split('=', 1)
+                        kwargs[k] = v
+
+            try:
+                result = ToolRegistry.dispatch(tool_name, **kwargs)
+                pass # Removed print-debug
+            except KeyError as e:
+                pass # Removed print-debug
+                return 1
+            except Exception as e:
+                pass # Removed print-debug
+                return 1
+            return 0
+
+        else:
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
             pass # Removed print-debug
             return 1
 
@@ -4431,6 +4660,38 @@ def main():
     # fsm-unfreeze (FSM 解除凍住)
     fsm_unfreeze_parser = subparsers.add_parser("fsm-unfreeze", help="FSM 解除凍住 (FREEZE → INIT)")
     fsm_unfreeze_parser.add_argument("--repo", default=".", help="Repo 路徑 (預設: .)")
+
+    # session-save (儲存完整 session state)
+    session_save_parser = subparsers.add_parser("session-save", help="儲存完整 session state")
+    session_save_parser.add_argument("--id", required=True, help="Session ID")
+    session_save_parser.add_argument("--state", help="State file path (default: .methodology/session_state.json)")
+
+    # session-load (還原完整 session state)
+    session_load_parser = subparsers.add_parser("session-load", help="還原完整 session state")
+    session_load_parser.add_argument("--id", required=True, help="Session ID")
+    session_load_parser.add_argument("--output", help="Output file (default: .methodology/session_state_loaded.json)")
+
+    # session-list (列出所有 saved sessions)
+    subparsers.add_parser("session-list", help="列出所有 saved sessions")
+
+    # session-delete (刪除指定 session)
+    session_delete_parser = subparsers.add_parser("session-delete", help="刪除指定 session")
+    session_delete_parser.add_argument("--id", required=True, help="Session ID")
+
+    # tool-registry (Tool Registry - Clawd-Code TOOL_HANDLERS 風格)
+    tr_parser = subparsers.add_parser("tool-registry", help="Tool Registry - Clawd-Code TOOL_HANDLERS 工具管理")
+    tr_parser.add_argument("--action", "-a", dest="action",
+                          choices=["list", "register", "unregister", "get", "dispatch"],
+                          help="操作: list/register/unregister/get/dispatch")
+    tr_parser.add_argument("--list", action="store_true", help="列出所有已註冊工具")
+    tr_parser.add_argument("--register", metavar="TOOL_NAME", help="註冊工具名稱")
+    tr_parser.add_argument("--handler", metavar="HANDLER_PATH", help="處理器路徑（如 module.func）")
+    tr_parser.add_argument("--handler-path", metavar="HANDLER_PATH", dest="handler_path", help="處理器路徑（alias for --handler）")
+    tr_parser.add_argument("--unregister", metavar="TOOL_NAME", help="取消註冊工具名稱")
+    tr_parser.add_argument("--get", metavar="TOOL_NAME", help="查詢工具處理器")
+    tr_parser.add_argument("--dispatch", metavar="TOOL_NAME", help="分發調用到工具")
+    tr_parser.add_argument("--tool-name", dest="tool_name", metavar="TOOL_NAME", help="工具名稱")
+    tr_parser.add_argument("--kwargs", nargs="*", metavar="KEY=VALUE", help="dispatch 參數（如 path=/tmp/test.txt）")
 
     args = parser.parse_args()
     

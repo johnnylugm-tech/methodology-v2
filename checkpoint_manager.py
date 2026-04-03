@@ -18,6 +18,7 @@ from datetime import datetime
 import json
 import uuid
 import os
+from pathlib import Path
 
 class CheckpointStatus(Enum):
     """快照狀態"""
@@ -270,3 +271,128 @@ class CheckpointManager:
             return checkpoint.checkpoint_id
         except Exception:
             return None
+
+
+class SessionManager:
+    """
+    Session save/load 管理器
+    
+    功能：
+    - 儲存完整 session state（messages, context, artifacts, metadata）
+    - 還原完整 session state
+    - 列出所有 saved sessions
+    - 刪除指定 session
+    """
+    
+    SESSIONS_DIR = Path(".methodology/sessions")
+    
+    def __init__(self):
+        self.SESSIONS_DIR.mkdir(parents=True, exist_ok=True)
+    
+    def save(self, session_id: str, state: dict) -> str:
+        """
+        儲存完整 session state
+        
+        Args:
+            session_id: Session ID
+            state: 完整 session 狀態（包含 messages, context, artifacts, metadata）
+        
+        Returns:
+            儲存檔案路徑
+        """
+        path = self.SESSIONS_DIR / f"{session_id}.json"
+        
+        # 附加 metadata
+        session_data = {
+            "session_id": session_id,
+            "saved_at": datetime.now().isoformat(),
+            **state
+        }
+        
+        path.write_text(json.dumps(session_data, indent=2, ensure_ascii=False))
+        return str(path)
+    
+    def load(self, session_id: str) -> dict:
+        """
+        還原完整 session state
+        
+        Args:
+            session_id: Session ID
+        
+        Returns:
+            完整 session 狀態字典
+        """
+        path = self.SESSIONS_DIR / f"{session_id}.json"
+        return json.loads(path.read_text())
+    
+    def list(self) -> list[dict]:
+        """
+        列出所有 saved sessions
+        
+        Returns:
+            Session 列表（包含 id, path, size, saved_at）
+        """
+        sessions = []
+        for p in self.SESSIONS_DIR.glob("*.json"):
+            try:
+                data = json.loads(p.read_text())
+                sessions.append({
+                    "id": p.stem,
+                    "path": str(p),
+                    "size": p.stat().st_size,
+                    "saved_at": data.get("saved_at", "unknown")
+                })
+            except Exception:
+                sessions.append({
+                    "id": p.stem,
+                    "path": str(p),
+                    "size": p.stat().st_size,
+                    "saved_at": "unknown"
+                })
+        return sorted(sessions, key=lambda x: x["id"])
+    
+    def delete(self, session_id: str) -> bool:
+        """
+        刪除指定 session
+        
+        Args:
+            session_id: Session ID
+        
+        Returns:
+            是否成功刪除
+        """
+        path = self.SESSIONS_DIR / f"{session_id}.json"
+        if path.exists():
+            path.unlink()
+            return True
+        return False
+    
+    def exists(self, session_id: str) -> bool:
+        """檢查 session 是否存在"""
+        path = self.SESSIONS_DIR / f"{session_id}.json"
+        return path.exists()
+    
+    def get_info(self, session_id: str) -> Optional[dict]:
+        """取得 session 資訊"""
+        path = self.SESSIONS_DIR / f"{session_id}.json"
+        if not path.exists():
+            return None
+        try:
+            data = json.loads(path.read_text())
+            return {
+                "id": session_id,
+                "path": str(path),
+                "size": path.stat().st_size,
+                "saved_at": data.get("saved_at", "unknown"),
+                "has_messages": "messages" in data,
+                "has_context": "context" in data,
+                "has_artifacts": "artifacts" in data,
+                "has_metadata": "metadata" in data,
+            }
+        except Exception:
+            return {
+                "id": session_id,
+                "path": str(path),
+                "size": path.stat().st_size,
+                "saved_at": "unknown"
+            }
