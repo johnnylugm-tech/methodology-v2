@@ -18,6 +18,11 @@ from typing import Any, Callable, Dict, List, Optional
 from abc import ABC, abstractmethod
 
 
+# ── TOOL_HANDLERS map (Clawd-Code 風格) ──────────────────────────────────
+# 支援直接函式處理器，無需包裝成 BaseTool 類
+TOOL_HANDLERS: Dict[str, Callable[..., Any]] = {}
+
+
 class BaseTool(ABC):
     """工具基類"""
     
@@ -46,13 +51,111 @@ class ToolRegistry:
         - browser: 瀏覽器自動化
     """
     
-    # 內建工具註冊表
+    # 內建工具註冊表（類工廠模式）
     _tools: Dict[str, type] = {}
-    
+
+    # TOOL_HANDLERS map（函式處理器模式）
+    _handlers: Dict[str, Callable[..., Any]] = {}
+
     @classmethod
-    def register(cls, name: str, tool_class: type):
-        """註冊自定義工具"""
-        cls._tools[name] = tool_class
+    def register(cls, name: str, tool_or_handler: Any) -> None:
+        """Register a tool (backward compatible).
+
+        Usage (class factory):
+            ToolRegistry.register("my_tool", MyToolClass)
+
+        Usage (function handler, Clawd-Code style):
+            ToolRegistry.register("Read", read_file_handler)
+        """
+        if callable(tool_or_handler) and hasattr(tool_or_handler, 'run'):
+            cls._tools[name] = tool_or_handler
+        else:
+            cls._handlers[name] = tool_or_handler
+
+    # ── Clawd-Code 風格方法 ────────────────────────────────────────────────
+
+    @classmethod
+    def dispatch(cls, tool_name: str, **kwargs) -> Any:
+        """Dispatch a call to a registered handler (Clawd-Code TOOL_HANDLERS style).
+
+        Usage:
+            result = ToolRegistry.dispatch("Read", path="/tmp/test.txt")
+
+        Priority:
+            1. _handlers (function handler) - kwargs passed directly
+            2. _tools (BaseTool class factory) - introspects __init__ vs run params
+
+        Raises:
+            KeyError: tool not registered
+            TypeError: tool execution failed
+        """
+        if tool_name in cls._handlers:
+            return cls._handlers[tool_name](**kwargs)
+        if tool_name in cls._tools:
+            import inspect
+            tool_cls = cls._tools[tool_name]
+            sig = inspect.signature(tool_cls.__init__)
+            init_params = [
+                p for p in sig.parameters.keys()
+                if p not in ('self', 'args', 'kwargs')
+            ]
+            # Split kwargs: init_params go to __init__, rest go to run()
+            init_kwargs = {k: v for k, v in kwargs.items() if k in init_params}
+            run_kwargs = {k: v for k, v in kwargs.items() if k not in init_params}
+            tool_instance = tool_cls(**init_kwargs)
+            return tool_instance.run(**run_kwargs)
+        raise KeyError(
+            f"Tool '{tool_name}' not found in registry. "
+            f"Available: {cls.list_tools()}"
+        )
+
+    @classmethod
+    def get_handler(cls, tool_name: str) -> Optional[Callable[..., Any]]:
+        """Query a registered handler by name (Clawd-Code style).
+
+        Returns:
+            Handler function, or None if not registered.
+
+        Usage:
+            handler = ToolRegistry.get_handler("Read")
+            if handler:
+                result = handler(path="/tmp/test.txt")
+        """
+        return cls._handlers.get(tool_name)
+
+    @classmethod
+    def unregister(cls, tool_name: str) -> bool:
+        """Unregister a tool (Clawd-Code style).
+
+        Removes from both _handlers and _tools.
+
+        Returns:
+            True if removed, False if not found.
+
+        Usage:
+            ToolRegistry.unregister("Read")
+        """
+        removed = False
+        if tool_name in cls._handlers:
+            del cls._handlers[tool_name]
+            removed = True
+        if tool_name in cls._tools:
+            del cls._tools[tool_name]
+            removed = True
+        return removed
+
+    @classmethod
+    def list_tools(cls) -> List[str]:
+        """List all registered tools (Clawd-Code style).
+
+        Returns:
+            All tool names (handlers + factories).
+
+        Usage:
+            tools = ToolRegistry.list_tools()
+        """
+        all_tools = set(cls._handlers.keys()) | set(cls._tools.keys())
+        return sorted(all_tools)
     
     @classmethod
     def slack(cls, channel: str, **kwargs) -> BaseTool:
@@ -96,8 +199,8 @@ class ToolRegistry:
     
     @classmethod
     def list_available(cls) -> List[str]:
-        """列出所有可用工具"""
-        return list(cls._tools.keys())
+        """Backward-compatible alias for list_tools()."""
+        return cls.list_tools()
 
 
 # ============================================================================
