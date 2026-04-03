@@ -1,4 +1,4 @@
-# methodology-v2 v6.13
+# methodology-v2 v6.17
 
 > Multi-Agent Collaboration Development Methodology — Agent Executable Specification
 > 精簡版：Agent 執行時真正需要的內容
@@ -665,6 +665,19 @@ Agent B 審查 → 提出疑問或 APPROVE
 
 **誠實原則**：Agent A 必須如實報告問題，不隱瞞。
 
+### STAGE_PASS 產出格式
+
+每個 Phase 交付時，Agent A 必須填寫：
+
+| 欄位 | 說明 |
+|------|------|
+| 5W1H 合規性 | 是否 100% 遵從 Phase N 的 5W1H？ |
+| 問題修復 | 是否發現並修復了問題？ |
+| 交付完整性 | 所有交付物是否提供？ |
+| **摘要** | **50字內簡述本 Phase 完成內容** |
+| confidence | 1-10 自評分 |
+| citations | 事實性聲稱的引用（如有） |
+
 ### 6.3 Agent B 審查（批判）
 
 Agent B 必須對以下提出疑問：
@@ -847,5 +860,5 @@ python cli.py stage-review --phase N
 
 ---
 
-*methodology-v2 v6.13 | Agent Executable Specification*
-*Last Updated: 2026-03-31*
+*methodology-v2 v6.17 | Agent Executable Specification*
+*Last Updated: 2026-04-03*
