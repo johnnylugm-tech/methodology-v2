@@ -1,0 +1,392 @@
+#!/usr/bin/env python3
+"""
+SubagentIsolator — Subagent 隔離管理模組
+
+功能：
+- 標準化 sessions_spawn 呼叫
+- Fresh messages[] 隔離
+- 結果合併協議
+- Session 生命週期管理
+
+用法：
+    from subagent_isolator import SubagentIsolator, AgentRole
+    
+    si = SubagentIsolator()
+    result = si.spawn(
+        role=AgentRole.DEVELOPER,
+        task="Implement FR-01",
+        context={"fr": "FR-01", "srs": "..."}
+    )
+    si.merge(result)
+"""
+
+import json
+import uuid
+from dataclasses import dataclass, field
+from typing import List, Dict, Optional, Any, Callable
+from enum import Enum
+from datetime import datetime
+import sys
+import os
+
+# 嘗試导入 sessions_spawn
+try:
+    from openclaw import sessions_spawn
+    HAS_SPAWN = True
+except ImportError:
+    HAS_SPAWN = False
+
+
+class AgentRole(Enum):
+    """Agent 角色"""
+    DEVELOPER = "developer"
+    REVIEWER = "reviewer"
+    TESTER = "tester"
+    VERIFIER = "verifier"
+    ARCHITECT = "architect"
+
+
+@dataclass
+class AgentPersona:
+    """Agent 人格定義"""
+    role: AgentRole
+    goal: str
+    backstory: str
+    constraints: List[str] = field(default_factory=list)
+    
+    def to_system_prompt(self) -> str:
+        return f"""你是 {self.role.value} Agent。
+
+目標：{self.goal}
+
+背景：{self.backstory}
+
+約束：
+{chr(10).join(f"- {c}" for c in self.constraints)}
+
+產出格式：
+{{
+    "status": "success" | "error" | "unable_to_proceed",
+    "result": "...",
+    "confidence": 1-10,
+    "citations": [...],
+    "summary": "50字內摘要"
+}}
+"""
+
+
+# 預設 Persona 模板
+DEFAULT_PERSONAS = {
+    AgentRole.DEVELOPER: AgentPersona(
+        role=AgentRole.DEVELOPER,
+        goal="產出高質量代碼",
+        backstory="10年資深工程師，注重正確性和可維護性",
+        constraints=[
+            "必須包含 @FR: FR-XX annotation",
+            "嚴禁使用省略號",
+            "每個函式必須有 docstring"
+        ]
+    ),
+    AgentRole.REVIEWER: AgentPersona(
+        role=AgentRole.REVIEWER,
+        goal="嚴格審查把關，不放過任何問題",
+        backstory="資深技術評審，只驗證不寫代碼",
+        constraints=[
+            "必須驗證每一個聲稱",
+            "輸出具體問題列表",
+            "無法確定的必須標註 UNVERIFIED"
+        ]
+    ),
+    AgentRole.TESTER: AgentPersona(
+        role=AgentRole.TESTER,
+        goal="執行測試驗證，正確性優先",
+        backstory="測試專家，不放過任何 bug",
+        constraints=[
+            "每個 FR 至少一個 positive 和一個 negative 測試",
+            "必須包含 @covers: FR-XX",
+            "邊界條件是關鍵"
+        ]
+    ),
+    AgentRole.VERIFIER: AgentPersona(
+        role=AgentRole.VERIFIER,
+        goal="驗證產物正確性，獨立於開發者",
+        backstory="獨立審計，只看事實和證據",
+        constraints=[
+            "每個聲稱必須有對應證據",
+            "無法驗證的必須說 UNVERIFIED",
+            "不帶預設立場"
+        ]
+    ),
+}
+
+
+@dataclass
+class SubagentResult:
+    """Subagent 執行結果"""
+    session_key: str
+    role: AgentRole
+    status: str  # success/error/timeout
+    result: Any
+    confidence: int
+    citations: List[str] = field(default_factory=list)
+    summary: str = ""
+    error: Optional[str] = None
+    duration_seconds: float = 0
+
+
+class SubagentIsolator:
+    """
+    Subagent 隔離管理器
+    
+    解決：
+    - 上下文污染（每次 spawn 用獨立 messages[]）
+    - 結果合併不統一
+    - Session 生命週期混亂
+    """
+    
+    def __init__(self, project_path: str = "."):
+        self.project_path = project_path
+        self.active_sessions = {}  # session_key -> metadata
+        self.results = {}  # session_key -> SubagentResult
+        self._persona_cache = {}
+    
+    def get_persona(self, role: AgentRole, custom: AgentPersona = None) -> str:
+        """取得 Agent persona"""
+        if custom:
+            return custom.to_system_prompt()
+        
+        if role not in self._persona_cache:
+            persona = DEFAULT_PERSONAS.get(role)
+            if persona:
+                self._persona_cache[role] = persona.to_system_prompt()
+        
+        return self._persona_cache.get(role, "")
+    
+    def spawn(
+        self,
+        role: AgentRole,
+        task: str,
+        context: Dict[str, Any] = None,
+        custom_persona: AgentPersona = None,
+        timeout: int = 300,
+        model: str = None
+    ) -> SubagentResult:
+        """
+        啟動 Subagent（隔離環境）
+        
+        Args:
+            role: Agent 角色
+            task: 任務描述
+            context: 任務上下文（不繼承父 Agent messages）
+            custom_persona: 自定義人格
+            timeout: 超時秒數
+            model: 指定模型
+            
+        Returns:
+            SubagentResult: 執行結果
+        """
+        session_key = f"sub_{role.value}_{uuid.uuid4().hex[:8]}"
+        start_time = datetime.now()
+        
+        # 建立 fresh messages[]（隔離關鍵）
+        system_prompt = self.get_persona(role, custom_persona)
+        
+        # 構建 task prompt
+        task_prompt = f"任務：{task}\n\n"
+        if context:
+            task_prompt += f"上下文：{json.dumps(context, ensure_ascii=False)}\n\n"
+        task_prompt += "產出必須包含 status/result/confidence/citations/summary"
+        
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": task_prompt}
+        ]
+        
+        # 記錄 session
+        self.active_sessions[session_key] = {
+            "role": role.value,
+            "task": task,
+            "started_at": start_time.isoformat(),
+            "timeout": timeout
+        }
+        
+        if HAS_SPAWN:
+            try:
+                # 實際呼叫 sessions_spawn
+                response = sessions_spawn(
+                    task=json.dumps({"messages": messages}),
+                    session_key=session_key,
+                    timeout=timeout
+                )
+                
+                status = "success"
+                result = response.get("result", "")
+                confidence = response.get("confidence", 5)
+                citations = response.get("citations", [])
+                error = None
+                
+            except Exception as e:
+                status = "error"
+                result = None
+                confidence = 0
+                citations = []
+                error = str(e)
+        else:
+            # Mock 模式（用於測試）
+            status = "success"
+            result = f"[Mock] {role.value}: {task[:50]}..."
+            confidence = 7
+            citations = []
+            error = None
+        
+        duration = (datetime.now() - start_time).total_seconds()
+        
+        sub_result = SubagentResult(
+            session_key=session_key,
+            role=role,
+            status=status,
+            result=result,
+            confidence=confidence,
+            citations=citations,
+            summary=self._generate_summary(result, 50),
+            error=error,
+            duration_seconds=duration
+        )
+        
+        self.results[session_key] = sub_result
+        return sub_result
+    
+    def _generate_summary(self, content: Any, max_len: int = 50) -> str:
+        """產生摘要"""
+        if not content:
+            return ""
+        content_str = str(content)
+        if len(content_str) <= max_len:
+            return content_str
+        return content_str[:max_len-3] + "..."
+    
+    def merge(self, result: SubagentResult) -> Dict:
+        """
+        合併 Subagent 結果到主流程
+        
+        只提取 result 和 summary，捨棄其餘雜訊
+        
+        Returns:
+            Dict: 清理後的結果
+        """
+        return {
+            "role": result.role.value,
+            "status": result.status,
+            "result": result.result,
+            "confidence": result.confidence,
+            "summary": result.summary,
+            "citations": result.citations[:5]  # 最多 5 個引用
+        }
+    
+    def merge_all(self) -> List[Dict]:
+        """合併所有 Subagent 結果"""
+        return [
+            self.merge(r)
+            for r in self.results.values()
+        ]
+    
+    def get_active_sessions(self) -> List[Dict]:
+        """取得活躍 session"""
+        return list(self.active_sessions.values())
+    
+    def get_result(self, session_key: str) -> Optional[SubagentResult]:
+        """取得特定 session 的結果"""
+        return self.results.get(session_key)
+    
+    def terminate(self, session_key: str) -> bool:
+        """終止 session"""
+        if session_key in self.active_sessions:
+            del self.active_sessions[session_key]
+            return True
+        return False
+    
+    def clear(self):
+        """清理所有 session 和結果"""
+        self.active_sessions.clear()
+        self.results.clear()
+    
+    def get_integrity_score(self) -> float:
+        """
+        計算隔離完整性分數
+        
+        基於：
+        - Citation 存在率
+        - Confidence 合理度
+        - Error 率
+        """
+        if not self.results:
+            return 1.0
+        
+        scores = []
+        
+        for r in self.results.values():
+            if r.status == "error":
+                scores.append(0.3)
+            else:
+                citation_score = min(len(r.citations) / 2, 1.0)  # 至少 2 個 citation
+                confidence_score = r.confidence / 10.0
+                scores.append((citation_score + confidence_score) / 2)
+        
+        return sum(scores) / len(scores)
+
+
+# CLI 介面
+def main():
+    import argparse
+    
+    parser = argparse.ArgumentParser(description="SubagentIsolator CLI")
+    subparsers = parser.add_subparsers(dest="command")
+    
+    # spawn
+    spawn_parser = subparsers.add_parser("spawn", help="Spawn subagent")
+    spawn_parser.add_argument("--role", required=True, choices=["developer", "reviewer", "tester", "verifier"])
+    spawn_parser.add_argument("--task", required=True, help="Task description")
+    spawn_parser.add_argument("--timeout", type=int, default=300)
+    
+    # list
+    list_parser = subparsers.add_parser("list", help="List sessions")
+    
+    # result
+    result_parser = subparsers.add_parser("result", help="Get result")
+    result_parser.add_argument("--session", required=True)
+    
+    args = parser.parse_args()
+    
+    si = SubagentIsolator()
+    
+    if args.command == "spawn":
+        role = AgentRole[args.role.upper()]
+        result = si.spawn(role=role, task=args.task, timeout=args.timeout)
+        print(f"Session: {result.session_key}")
+        print(f"Status: {result.status}")
+        print(f"Confidence: {result.confidence}")
+        print(f"Summary: {result.summary}")
+    
+    elif args.command == "list":
+        sessions = si.get_active_sessions()
+        print(f"Active sessions: {len(sessions)}")
+        for s in sessions:
+            print(f"  [{s['role']}] {s['task'][:50]}...")
+    
+    elif args.command == "result":
+        result = si.get_result(args.session)
+        if result:
+            print(json.dumps({
+                "session_key": result.session_key,
+                "role": result.role.value,
+                "status": result.status,
+                "confidence": result.confidence,
+                "summary": result.summary,
+                "error": result.error
+            }, indent=2))
+        else:
+            print(f"Session not found: {args.session}")
+
+
+if __name__ == "__main__":
+    main()
