@@ -1,12 +1,35 @@
 # methodology-v2 SKILL_TEMPLATES.md
 
-> **版本**: v6.13
+> **版本**: v6.22
 > **用途**: Phase 執行時使用的模板庫
 > **載入方式**: Lazy Load — SOP 步驟需要模板時才載入
 
 ---
 
 ## T1: Phase 1 模板
+
+### T1.0 SOP 執行步驟
+
+**ROLE**:
+- Agent A: `architect` — 撰寫 SRS.md, SPEC_TRACKING.md, TRACEABILITY_MATRIX.md
+- Agent B: `reviewer` — 審查 FR 完整性、A/B 評估
+- 禁止：自寫自審
+
+**ENTRY**: 專案初始化完成
+
+```
+1. Agent A 撰寫 SRS.md（含邏輯驗證方法）
+2. Agent A 初始化 SPEC_TRACKING.md
+3. Agent A 初始化 TRACEABILITY_MATRIX.md
+4. Agent B A/B 審查（5W1H 清單逐項確認）
+5. Quality Gate: doc_checker + constitution + spec-track
+6. 生成 Phase1_STAGE_PASS.md
+7. python cli.py update-step / end-phase
+```
+
+**EXIT**: TH-01 > 80%, TH-03 = 100%, TH-14 ≥ 90%, Agent B APPROVE
+
+---
 
 ### T1.1 SRS.md 模板
 
@@ -87,6 +110,28 @@
 ---
 
 ## T2: Phase 2 模板
+
+### T2.0 SOP 執行步驟
+
+**ROLE**:
+- Agent A: `architect` — 撰寫 SAD.md, ADR
+- Agent B: `reviewer` — 架構審查、Conflict Log
+- 禁止：引入規格書外框架
+
+**ENTRY**: Phase 1 APPROVE
+
+```
+1. Agent A 撰寫 SAD.md（含模組邊界圖）
+2. Agent A 建立 ADR（如有技術選型）
+3. Agent B 架構審查（5 維度）
+4. Quality Gate: doc_checker + constitution + spec-track
+5. 生成 Phase2_STAGE_PASS.md
+6. python cli.py update-step / end-phase
+```
+
+**EXIT**: TH-01 > 80%, TH-03 = 100%, TH-05 > 70%, Agent B APPROVE
+
+---
 
 ### T2.1 SAD.md 模板
 
@@ -176,6 +221,34 @@
 ---
 
 ## T3: Phase 3 模板
+
+### T3.0 SOP 執行步驟
+
+**ROLE**:
+- Agent A: `developer` — 代碼實作、單元測試
+- Agent B: `reviewer` — 同行邏輯審查
+- 禁止：自寫自審、引入第三方框架
+
+**ENTRY**: Phase 2 APPROVE
+
+```
+FOR EACH 模組:
+  1. Agent A 實作模組（含規範標注）
+  2. Agent A 撰寫單元測試（正向/邊界/負面三類）
+  3. Agent A 填寫邏輯審查對話 Developer 部分
+  4. Agent B 同行邏輯審查（填寫 Architect 確認部分）
+  5. Agent B 確認測試完整性
+  6. Quality Gate: pytest + coverage + constitution
+  7. Verify_Agent（Agent B < 80 或自評差異 > 20 時觸發）
+  8. 生成合規矩陣 + Phase3_STAGE_PASS.md
+  9. python cli.py update-step / end-phase
+```
+
+**EXIT**: TH-06 > 80%, TH-08 ≥ 80/90, TH-10 = 100%, TH-11 ≥ 70%, TH-16 = 100%, Agent B APPROVE
+
+**代碼規範**：`@FR`、`@SAD`、`@NFR` annotation → 詳見 `docs/ANNOTATION_GUIDE.md`
+
+---
 
 ### T3.1 代碼模組模板
 
@@ -311,6 +384,32 @@ class Test{ModuleName}:
 
 ## T4: Phase 4 模板
 
+### T4.0 SOP 執行步驟
+
+**ROLE**:
+- Agent A: `qa` — 撰寫 TEST_PLAN.md, TEST_RESULTS.md
+- Agent B: `reviewer` — 兩次審查
+- 禁止：Tester = Developer
+
+**ENTRY**: Phase 3 APPROVE
+
+```
+1. Agent A 撰寫 TEST_PLAN.md
+2. Agent B 第一次審查（測試策略）
+3. Agent A 執行測試、記錄 TEST_RESULTS.md
+4. Agent B 第二次審查（pytest 輸出真實性）
+5. Quality Gate: pytest + constitution + spec_logic
+6. Verify_Agent（Agent B < 80 或自評差異 > 20 時觸發）
+7. 生成 Phase4_STAGE_PASS.md
+8. python cli.py update-step / end-phase
+```
+
+**EXIT**: TH-01 > 80%, TH-03 = 100%, TH-06 > 80%, TH-10 = 100%, TH-12 ≥ 80%, TH-17 ≥ 90%
+
+**測試 Annotation**：`@covers`、`@type` → 詳見 `docs/ANNOTATION_GUIDE.md`
+
+---
+
 ### T4.1 TEST_PLAN.md 模板
 
 ```markdown
@@ -374,6 +473,29 @@ class Test{ModuleName}:
 ---
 
 ## T5: Phase 5 模板
+
+### T5.0 SOP 執行步驟
+
+**ROLE**:
+- Agent A: `devops` — 建立 BASELINE.md, MONITORING_PLAN.md
+- Agent B: `architect` — 兩次審查
+- 禁止：BASELINE 功能對照不完整
+
+**ENTRY**: Phase 4 APPROVE, 測試通過率 = 100%
+
+```
+1. Agent A 建立 BASELINE.md（功能/品質/效能基線）
+2. Agent B 基線審查
+3. Agent A 建立 MONITORING_PLAN.md（四個監控維度）
+4. Agent B 驗收報告審查
+5. Quality Gate: logic checker ≥ 90 + constitution ≥ 80
+6. 生成 Phase5_STAGE_PASS.md
+7. python cli.py update-step / end-phase
+```
+
+**EXIT**: TH-02 ≥ 80%, TH-07 ≥ 90, Agent B APPROVE
+
+---
 
 ### T5.1 BASELINE.md 模板
 
@@ -439,7 +561,29 @@ class Test{ModuleName}:
 
 ## T6: Phase 6 模板
 
-### QUALITY_REPORT.md 模板
+### T6.0 SOP 執行步驟
+
+**ROLE**:
+- Agent A: `qa` — 撰寫 QUALITY_REPORT.md
+- Agent B: `architect` 或 `pm` — 品質確認
+- 禁止：session_id 缺失
+
+**ENTRY**: Phase 5 APPROVE
+
+```
+1. Agent A 收集 Phase 6 監控數據
+2. Agent A 撰寫 QUALITY_REPORT.md（完整版）
+3. Agent B 品質確認
+4. Quality Gate: constitution ≥ 80 + 邏輯正確性
+5. 生成 Phase6_STAGE_PASS.md
+6. python cli.py update-step / end-phase
+```
+
+**EXIT**: TH-02 ≥ 80%, TH-07 ≥ 90, Agent B APPROVE
+
+---
+
+### T6.1 QUALITY_REPORT.md 模板
 
 ```markdown
 # QUALITY_REPORT.md - {專案名稱}
@@ -479,7 +623,30 @@ class Test{ModuleName}:
 
 ## T7: Phase 7 模板
 
-### RISK_REGISTER.md 模板
+### T7.0 SOP 執行步驟
+
+**ROLE**:
+- Agent A: `qa` 或 `devops` — 撰寫 RISK_REGISTER.md
+- Agent B: `pm` 或 `architect` — 風險確認、演練
+- 禁止：Decision Gate 未確認
+
+**ENTRY**: Phase 6 APPROVE
+
+```
+1. Agent A 五維度風險識別
+2. Agent A 建立 RISK_REGISTER.md
+3. Agent B Decision Gate 確認（MEDIUM/HIGH）
+4. Agent B 風險演練（如有 HIGH 風險）
+5. Quality Gate: 邏輯正確性 ≥ 90
+6. 生成 Phase7_STAGE_PASS.md
+7. python cli.py update-step / end-phase
+```
+
+**EXIT**: TH-07 ≥ 90, Decision Gate 100% 確認, Agent B APPROVE
+
+---
+
+### T7.1 RISK_REGISTER.md 模板
 
 ```markdown
 # RISK_REGISTER.md - {專案名稱}
@@ -501,7 +668,31 @@ class Test{ModuleName}:
 
 ## T8: Phase 8 模板
 
-### CONFIG_RECORDS.md 模板
+### T8.0 SOP 執行步驟
+
+**ROLE**:
+- Agent A: `devops` — 撰寫 CONFIG_RECORDS.md, Git Tag
+- Agent B: `pm` 或 `architect` — 配置確認、封版審查
+- 禁止：配置不完整、pip freeze 缺失
+
+**ENTRY**: Phase 7 APPROVE
+
+```
+1. Agent A 撰寫 CONFIG_RECORDS.md（8 章節）
+2. Agent A 執行 pip freeze / npm lock
+3. Agent A 建立 Git Tag
+4. Agent B 配置確認（七區塊逐項確認）
+5. Agent B 封版審查
+6. Quality Gate: 配置合規性確認
+7. 生成 Phase8_STAGE_PASS.md
+8. python cli.py update-step / end-phase
+```
+
+**EXIT**: CONFIG_RECORDS.md 完整, pip freeze 存在, Git Tag 建立, Agent B APPROVE
+
+---
+
+### T8.1 CONFIG_RECORDS.md 模板
 
 ```markdown
 # CONFIG_RECORDS.md - {專案名稱}
@@ -577,6 +768,8 @@ class Test{ModuleName}:
 |--------|------|------|
 
 **誠實分數**: {score}/100
+**confidence**: {1-10}
+**summary**: {50字內摘要}
 
 Agent A: {name} Session: {session_id}
 
@@ -603,7 +796,7 @@ Agent B: {name} Session: {session_id}
 
 ---
 
-*由 methodology-v2 v6.13 STAGE_PASS Generator 產生*
+*由 methodology-v2 v6.22 STAGE_PASS Generator 產生*
 
 ---
 
@@ -635,11 +828,11 @@ Agent B: {name} Session: {session_id}
 
 ---
 
-*SKILL_TEMPLATES.md v6.13 | Template Library*
+*SKILL_TEMPLATES.md v6.22 | Template Library*
 
 ---
 
-## CoT + Few-shot Prompt 模板（新增章節）
+## CoT + Few-shot Prompt 模板
 
 ### Chain-of-Thought 強制步驟
 
@@ -672,14 +865,7 @@ Agent B: {name} Session: {session_id}
 ```json
 {
   "status": "success",
-  "result": "完成了..."  // ❌ 省略號
-}
-```
-
-```json
-{
-  "status": "success",
-  "result": "應該是對的"  // ❌ 沒有 citation
+  "result": "完成了..."
 }
 ```
 
