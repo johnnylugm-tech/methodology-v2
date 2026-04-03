@@ -1,4 +1,4 @@
-# methodology-v2 v6.23
+# methodology-v2 v6.24
 > Agent Executable Specification — Need-to-know only. 詳細內容 on-demand lazy load。
 
 ---
@@ -128,4 +128,4 @@ Verify_Agent → Phase 3+，Agent B<80 或自評差異>20 時觸發 → **docs/V
 | 任務初始化 Prompt | `docs/TASK_INITIALIZATION_PROMPT.md` |
 
 ---
-*methodology-v2 v6.23 | Agent Executable Specification | Last Updated: 2026-04-03*
+*methodology-v2 v6.24 | Agent Executable Specification | Last Updated: 2026-04-03*
