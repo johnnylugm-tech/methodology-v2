@@ -83,6 +83,18 @@ python cli.py run-phase --phase 3 --step 3.1 --task "FR-01 實作"
 
 ## 3. 快速開始
 
+### 新專案初始化（第一次）
+
+```
+對 Agent 說：
+「請根據 TASK_INITIALIZATION_PROMPT.md 初始化專案」
+
+Agent 會：
+- 讀取 SRS.md
+- 建立 GitHub 倉庫
+- 初始化 state.json
+```
+
 ### Step 1: 發布任務
 
 ```
