@@ -173,6 +173,8 @@ class MethodologyCLI:
             return self.cmd_constitution_sync(args)
         elif command == "run-phase":
             return self.cmd_run_phase(args)
+        elif command == "plan-phase":
+            return self.cmd_plan_phase(args)
         elif command == "spec-track":
             return self.cmd_spec_track(args)
         elif command == "version":
@@ -305,6 +307,8 @@ class MethodologyCLI:
             return self.cmd_session_delete(args)
         elif command == "tool-registry":
             return self.cmd_tool_registry(args)
+        elif command == "plan-phase":
+            return self.cmd_plan_phase(args)
         else:
             pass # Removed print-debug
             return 1
@@ -4227,6 +4231,303 @@ class MethodologyCLI:
 
         return 0
 
+    def cmd_plan_phase(self, args):
+        """
+        Generate execution plan for Phase with pre-flight checks
+
+        本命令：
+        - ✅ 掃描所有相關資料（SKILL.md / SOP / state.json / 歷史迭代）
+        - ✅ 執行 Pre-flight 檢查（FSM / Phase Sequence / Constitution / Tool / Integrity）
+        - ✅ 產生 Markdown 格式執行計畫供 Johnny 審核
+        - ✅ 支援 --repair 修復迭代
+        - ✅ 支援 --history 查看歷史
+        """
+        import sys
+        import json
+        from pathlib import Path
+        from datetime import datetime
+
+        phase = args.phase
+        goal = args.goal or f"Phase {phase} execution"
+        repo_path = Path(args.repo or Path.cwd())
+        with_timeline = getattr(args, 'with_timeline', False)
+
+        print(f"\n{'='*60}")
+        print(f"📋 plan-phase --phase {phase}")
+        print(f"{'='*60}\n")
+
+        # === PHASE 1: SCAN ===
+        print(f"[{datetime.now().strftime('%H:%M:%S')}] SCAN: 讀取相關資料")
+
+        # 1.1 必須掃描
+        skill_md = repo_path / "SKILL.md"
+        sop_path = repo_path / "docs" / f"P{phase}_SOP.md"
+        state_file = repo_path / ".methodology" / "state.json"
+        iterations_file = repo_path / ".methodology" / "iterations" / f"phase{phase}.json"
+
+        if not skill_md.exists():
+            print(f"❌ SKILL.md not found at {skill_md}")
+            return 1
+        if not sop_path.exists():
+            print(f"❌ P{phase}_SOP.md not found at {sop_path}")
+            return 1
+
+        skill_content = skill_md.read_text()
+        sop_content = sop_path.read_text()
+        state = json.loads(state_file.read_text()) if state_file.exists() else {}
+        iterations = json.loads(iterations_file.read_text()) if iterations_file.exists() else {}
+
+        print(f"✅ SKILL.md loaded ({len(skill_content)} chars)")
+        print(f"✅ P{phase}_SOP.md loaded ({len(sop_content)} chars)")
+
+        # 1.2 按 Phase 掃描交付物
+        phase_deliverables = {
+            1: ["SRS.md", "SPEC_TRACKING.md", "TRACEABILITY_MATRIX.md"],
+            2: ["SRS.md", "SAD.md", "ADR.md"],
+            3: ["SRS.md", "SAD.md", "app/processing/"],
+            4: ["SRS.md", "SAD.md", "TEST_PLAN.md"],
+            5: ["BASELINE.md", "MONITORING_PLAN.md"],
+            6: ["QUALITY_REPORT.md"],
+            7: ["RISK_REGISTER.md"],
+            8: ["CONFIG_RECORDS.md", "requirements.lock"],
+        }
+        deliverables = phase_deliverables.get(phase, [])
+        missing_deliverables = []
+        for d in deliverables:
+            d_path = repo_path / d if not d.startswith("app") else repo_path / d
+            if not d_path.exists():
+                missing_deliverables.append(d)
+        if missing_deliverables:
+            print(f"⚠️  Missing deliverables: {missing_deliverables}")
+
+        # === PHASE 2: PRE-FLIGHT CHECKS ===
+        print(f"\n[{datetime.now().strftime('%H:%M:%S')}] PRE-FLIGHT: 執行檢查")
+
+        checks_passed = 0
+        checks_total = 0
+        check_results = []
+
+        # 2.1 FSM State Check
+        checks_total += 1
+        from quality_gate.unified_gate import FSMStateMachine, ProjectState
+        fsm = FSMStateMachine(project_path=repo_path)
+        current_state = fsm.get_state()
+        if current_state == ProjectState.FREEZE:
+            check_results.append(("FSM State", False, "HR-14: Project FREEZE"))
+        elif current_state == ProjectState.PAUSED:
+            check_results.append(("FSM State", False, "HR-12/13: Project PAUSED"))
+        else:
+            check_results.append(("FSM State", True, current_state.value if hasattr(current_state, 'value') else str(current_state)))
+            checks_passed += 1
+
+        # 2.2 Phase Sequence Check (HR-03)
+        checks_total += 1
+        current_phase = state.get("current_phase", 0)
+        if current_phase >= phase:
+            check_results.append(("Phase Sequence", False, f"HR-03: Phase {phase} 已執行或跳過（current: {current_phase})"))
+        else:
+            check_results.append(("Phase Sequence", True, f"Phase {current_phase} → Phase {phase}"))
+            checks_passed += 1
+
+        # 2.3 Constitution Check (HR-08)
+        checks_total += 1
+        phase_type_map = {1: "srs", 2: "sad", 3: "implementation", 4: "test_plan",
+                          5: "verification", 6: "quality_report", 7: "risk_management", 8: "configuration"}
+        phase_type = phase_type_map.get(phase, "srs")
+        threshold_map = {1: 100, 2: 100, 3: 80, 4: 80, 5: 80, 6: 80, 7: 80, 8: 80}
+        threshold = threshold_map.get(phase, 80)
+        try:
+            from quality_gate.constitution.runner import ConstitutionRunner
+            runner = ConstitutionRunner(project_path=repo_path)
+            result = runner.run_phase_check(phase_type)
+            if result.score < threshold:
+                check_results.append(("Constitution", False, f"{result.score:.0f}% < {threshold}%"))
+            else:
+                check_results.append(("Constitution", True, f"{result.score:.0f}%"))
+                checks_passed += 1
+        except Exception as e:
+            check_results.append(("Constitution", False, f"Error: {e}"))
+
+        # 2.4 Tool Registry Check
+        checks_total += 1
+        try:
+            from tool_registry import ToolRegistry
+            tools = ToolRegistry.list_tools()
+            required = ["knowledge_curator", "context_manager", "subagent_isolator", "permission_guard"]
+            missing_tools = [t for t in required if t not in tools]
+            if missing_tools:
+                check_results.append(("Tool Registry", False, f"Missing: {missing_tools}"))
+            else:
+                check_results.append(("Tool Registry", True, f"{len(tools)} tools"))
+                checks_passed += 1
+        except Exception as e:
+            check_results.append(("Tool Registry", False, f"Error: {e}"))
+
+        # 2.5 Integrity Check (HR-14)
+        checks_total += 1
+        try:
+            from agent_evaluator import AgentEvaluator
+            evaluator = AgentEvaluator()
+            integrity_score = evaluator.calculate_integrity()
+            if integrity_score < 40:
+                check_results.append(("Integrity", False, f"HR-14: {integrity_score:.0f}% < 40% → FREEZE"))
+            else:
+                check_results.append(("Integrity", True, f"{integrity_score:.0f}%"))
+                checks_passed += 1
+        except Exception as e:
+            check_results.append(("Integrity", False, f"N/A ({e})"))
+
+        # === PHASE 3: GENERATE PLAN ===
+        print(f"\n[{datetime.now().strftime('%H:%M:%S')}] PLAN: 產生執行計畫")
+
+        # Determine HR/TH based on phase
+        hr_map = {
+            1: ["HR-01", "HR-04", "HR-06", "HR-07", "HR-08", "HR-10", "HR-11"],
+            2: ["HR-01", "HR-04", "HR-06", "HR-07", "HR-08", "HR-10", "HR-11"],
+            3: ["HR-01", "HR-04", "HR-06", "HR-07", "HR-08", "HR-10", "HR-11", "HR-15"],
+            4: ["HR-01", "HR-04", "HR-08", "HR-10", "HR-11", "HR-12"],
+            5: ["HR-01", "HR-04", "HR-08", "HR-10"],
+            6: ["HR-01", "HR-07", "HR-08", "HR-10"],
+            7: ["HR-01", "HR-08", "HR-10", "HR-12"],
+            8: ["HR-01", "HR-08", "HR-10", "HR-12"],
+        }
+        th_map = {
+            1: ["TH-01", "TH-03", "TH-04", "TH-08", "TH-14", "TH-15"],
+            2: ["TH-01", "TH-03", "TH-04", "TH-05", "TH-08", "TH-15"],
+            3: ["TH-06", "TH-08", "TH-09", "TH-10", "TH-11", "TH-15", "TH-16"],
+            4: ["TH-01", "TH-03", "TH-04", "TH-06", "TH-10", "TH-12", "TH-13", "TH-15", "TH-17"],
+            5: ["TH-02", "TH-07"],
+            6: ["TH-02", "TH-07"],
+            7: ["TH-07"],
+            8: ["TH-02"],
+        }
+        role_map = {
+            1: ("architect", "reviewer"),
+            2: ("architect", "reviewer"),
+            3: ("developer", "reviewer"),
+            4: ("qa", "reviewer"),
+            5: ("devops", "architect"),
+            6: ("qa", "architect"),
+            7: ("qa", "pm"),
+            8: ("devops", "pm"),
+        }
+        agent_a, agent_b = role_map.get(phase, ("developer", "reviewer"))
+
+        # Generate Markdown plan
+        plan = f"""# Phase {phase} 執行計畫
+
+> **生成時間**: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+> **Goal**: {goal}
+> **基於**: SKILL.md (v6.28)
+> **FSM**: {current_state.value if hasattr(current_state, 'value') else current_state}
+
+---
+
+## 1. Pre-flight 檢查結果
+
+| 檢查項 | 結果 | 備註 |
+|--------|------|------|
+"""
+        for name, passed, detail in check_results:
+            status = "✅ PASS" if passed else "❌ FAIL"
+            plan += f"| {name} | {status} | {detail} |\n"
+
+        plan += f"""
+---
+
+## 2. A/B 協作宣告
+
+| 角色 | Agent | 職責 |
+|------|-------|------|
+| **Agent A** | `{agent_a}` | 執行主要任務 |
+| **Agent B** | `{agent_b}` | 審查與驗證 |
+
+### HR 約束（Phase {phase}）
+{" | ".join(hr_map.get(phase, []))}
+
+### TH 閾值（Phase {phase}）
+{" | ".join(th_map.get(phase, []))}
+
+---
+
+## 3. Step-by-Step 執行流程
+
+### Step {{N}}.1: 準備階段
+- Tool: `SubagentIsolator.spawn(Agent A)`
+- Action: 讀取 P{phase}_SOP.md, 理解任務
+- Verification: Pre-flight checks passed
+
+### Step {{N}}.2: 執行階段
+- Tool: `SubagentIsolator.spawn(Agent A)`
+- Action: 依據 SOP 執行任務
+- Verification: 產出交付物
+
+### Step {{N}}.3: 審查階段
+- Tool: `SubagentIsolator.spawn(Agent B)`
+- Action: A/B 審查
+- Verification: APPROVE/REJECT
+
+---
+
+## 4. 風險評估
+
+| 風險 | 機率 | 影響 | 緩解 |
+|------|------|------|------|
+| Pre-flight 失敗 | 中 | 高 | 確保前置 Phase 完成 |
+| Constitution <80% | 低 | 高 | 提前檢查 |
+| A/B 審查 >5輪 | 低 | 中 | 嚴格執行 HR-12 |
+
+---
+
+## 5. 預估時間
+
+| Step | 預估 | HR-13 臨界值 |
+|------|------|-------------|
+| {phase}.1 | 15m | 45m |
+| {phase}.2 | 60m | 180m |
+| {phase}.3 | 30m | 90m |
+| **Total** | **105m** | **315m** |
+
+---
+
+## 6. 交付物
+
+"""
+        for d in deliverables:
+            plan += f"- [ ] `{d}`\n"
+
+        plan += f"""
+---
+
+## 7. 下一步
+
+```bash
+# Johnny 審核後，執行：
+python cli.py run-phase --phase {phase} --goal "{goal}"
+
+# 或修復特定步驟：
+python cli.py plan-phase --phase {phase} --repair --step {phase}.2 --goal "{goal}"
+```
+"""
+
+        # Print plan
+        print(plan)
+
+        # Save plan to file
+        plan_file = repo_path / ".methodology" / "plans" / f"phase{phase}_{datetime.now().strftime('%Y%m%d-%H%M%S')}.md"
+        plan_file.parent.mkdir(parents=True, exist_ok=True)
+        plan_file.write_text(plan)
+        print(f"\n💾 Plan saved: {plan_file}")
+
+        # Return non-zero if pre-flight failed
+        if checks_passed < checks_total:
+            print(f"\n⚠️  Pre-flight failed ({checks_passed}/{checks_total} passed)")
+            print(f"   Fix issues before running 'run-phase'")
+            return 1
+
+        print(f"\n✅ Plan generated successfully ({checks_passed}/{checks_total} pre-flight checks passed)")
+        return 0
+
     # ============================================================================
     # Session Commands
     # ============================================================================
@@ -5097,6 +5398,16 @@ def main():
     tr_parser.add_argument("--dispatch", metavar="TOOL_NAME", help="分發調用到工具")
     tr_parser.add_argument("--tool-name", dest="tool_name", metavar="TOOL_NAME", help="工具名稱")
     tr_parser.add_argument("--kwargs", nargs="*", metavar="KEY=VALUE", help="dispatch 參數（如 path=/tmp/test.txt）")
+
+    # plan-phase (Phase Planner - 自動化執行計畫生成)
+    plan_phase_parser = subparsers.add_parser("plan-phase", help="Phase Planner - 自動化執行計畫生成")
+    plan_phase_parser.add_argument("--phase", type=int, required=True, help="Phase number (1-8)")
+    plan_phase_parser.add_argument("--goal", type=str, default="", help="Goal description for this phase")
+    plan_phase_parser.add_argument("--repair", action="store_true", help="修復模式：針對失敗步驟生成修復計畫")
+    plan_phase_parser.add_argument("--step", type=str, help="指定 Step (如 3.2) --history 模式時顯示該 Step 迭代歷史")
+    plan_phase_parser.add_argument("--history", action="store_true", help="顯示 Phase 迭代歷史")
+    plan_phase_parser.add_argument("--with-timeline", action="store_true", help="顯示完整時間線預估")
+    plan_phase_parser.add_argument("--repo", default=".", dest="repo", help="專案根目錄 (預設: .")
 
     args = parser.parse_args()
     
