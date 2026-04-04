@@ -1,6 +1,6 @@
-# Johnny 使用手冊 v6.28
+# Johnny 使用手冊 v6.40
 
-> **版本**: v6.28
+> **版本**: v6.40
 > **對象**: Johnny（Human-in-the-Loop）
 > **用途**: 快速上手 methodology-v2
 
@@ -8,19 +8,17 @@
 
 ## 1. methodology-v2 今天長什麼樣？
 
-### v6.20 ~ v6.28 帶來的改善
+### v6.32 ~ v6.40 帶來的改善
 
 | 版本 | 改善內容 |
 |------|----------|
-| v6.20 | 四大 Python 類：KnowledgeCurator / ContextManager / SubagentIsolator / PermissionGuard |
-| v6.21 | MAIN_AGENT_PLAYBOOK.md + 審計修復 |
-| v6.22 | Enhanced Exceptions（suggest_fix）+ Session Manager CLI |
-| v6.23 | PHASE3_SOP.md 完整操作手冊 |
-| v6.24 | SKILL.md 瘦身 |
-| v6.25 | 三層架構：Layer 1/2/3 |
-| v6.26 | **run-phase 單一入口**（強制 Pre-flight checks）|
-| v6.27 | plan-phase + run-phase 完整流程，所有 P{N}_SOP.md 標準化 |
-| **v6.28** | **Gap 實作**：SI 內建 log / HR-15 citations / 代碼測試分離 / Mock / auto-fix / Integrity |
+| v6.32 | Template-based plan generation |
+| v6.34 | SAD parser (FR→module mapping) + deliverable structure tree |
+| v6.36 | TH thresholds table + External docs section |
+| v6.37 | `--detailed` flag for FR detailed tasks |
+| v6.38 | Phase 1-8 TH thresholds + External docs complete |
+| v6.39 | `generate_full_plan.py` supports all phases |
+| **v6.40** | **Audit fixes + version consistency** |
 
 ### 三層文件架構
 
@@ -57,14 +55,30 @@ Agent: run-phase --phase {N}
 ### plan-phase 用法
 
 ```bash
-# 生成執行計畫
-python cli.py plan-phase --phase 3 --goal "FR-01~FR-03 實作"
+# 生成執行計畫（基礎版）
+python cli.py plan-phase --phase 3 --goal "FR-01~FR-08 實作"
+
+# 生成執行計畫（含 FR 詳細任務）
+python cli.py plan-phase --phase 3 --detailed --goal "FR-01~FR-08 實作"
 
 # 修復迭代
 python cli.py plan-phase --phase 3 --repair --step 3.2
 
 # 查看歷史
 python cli.py plan-phase --phase 3 --history
+
+# 指定專案
+python cli.py plan-phase --phase 3 --repo /path/to/project
+```
+
+### generate_full_plan.py 用法（可單獨使用）
+
+```bash
+# 生成完整 FR 詳細任務（所有 Phase 支援）
+python3 scripts/generate_full_plan.py --phase 3 --repo /path/to/project
+
+# 指定輸出檔案
+python3 scripts/generate_full_plan.py --phase 3 --repo /path --output phase3_FULL.md
 ```
 
 ### run-phase 用法
@@ -85,8 +99,8 @@ python cli.py run-phase --phase 3 --step 3.1 --task "FR-01 實作"
 │  1. SKILL.md → 核心規則                                      │
 │  2. docs/P{N}_SOP.md → Phase 步驟                            │
 │  3. .methodology/state.json → FSM 狀態                       │
-│  4. .methodology/iterations/{phase}.json → 歷史迭代          │
-│  5. 上階段交付物 → SRS/SAD/代碼等                            │
+│  4. .methodology/iterations/{phase}.json → 歷史迭代         │
+│  5. 上階段交付物 → SRS/SAD/代碼等（SAD parser 自動解析）      │
 └─────────────────────────────────────────────────────────────┘
                               ↓
 ┌─────────────────────────────────────────────────────────────┐
@@ -94,26 +108,35 @@ python cli.py run-phase --phase 3 --step 3.1 --task "FR-01 實作"
 │                                                             │
 │  1. FSM State Check → FREEZE/PAUSED 阻擋                  │
 │  2. Phase Sequence → 不可跳過 Phase                          │
-│  3. Constitution Check → <80% 阻擋                          │
-│  4. Tool Registry Check → 工具狀態                            │
-│  5. Session Save → Pre-flight 存檔                           │
+│  3. Constitution Check → <80% 阻擋                           │
+│  4. Tool Registry Check → 工具狀態                           │
+│  5. Session Save → Pre-flight 存檔                          │
 └─────────────────────────────────────────────────────────────┘
                               ↓
                     ✅ 全部通過
                               ↓
 ┌─────────────────────────────────────────────────────────────┐
+│  GENERATE PLAN（Template-based）                            │
+│                                                             │
+│  6. 讀取 plan_phase_template.md                              │
+│  7. 解析 SAD.md → FR→module mapping                        │
+│  8. 替換所有 placeholder ({PHASE}, {FR_COUNT}, etc.)       │
+│  9. 若 --detailed → 呼叫 generate_full_plan.py            │
+└─────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────┐
 │  EXECUTE                                                     │
-│  6. Load docs/P3_SOP.md                                      │
-│  7. Execute via SubagentIsolator（不直接 sessions_spawn）      │
-│  8. PermissionGuard.check() before exec/rm                   │
-│  9. Log to .methodology/run-phase.log                        │
+│  10. Load docs/P3_SOP.md                                   │
+│  11. Execute via SubagentIsolator                           │
+│  12. PermissionGuard.check() before exec/rm                │
+│  13. Log to .methodology/run-phase.log                      │
 └─────────────────────────────────────────────────────────────┘
                               ↓
 ┌─────────────────────────────────────────────────────────────┐
 │  POST-FLIGHT                                                 │
-│  10. Final Constitution Check                                 │
-│  11. Update state.json                                       │
-│  12. Report Summary                                          │
+│  14. Final Constitution Check                                │
+│  15. Update state.json                                       │
+│  16. Report Summary                                          │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -123,10 +146,66 @@ python cli.py run-phase --phase 3 --step 3.1 --task "FR-01 實作"
 - Constitution 分數
 - Session ID
 - Log 檔位置
+- 執行計畫（16 章節）
 
 ---
 
-## 4. 快速開始
+## 4. 執行計畫的 16 個章節
+
+`plan-phase` 生成的執行計畫包含以下 16 個章節：
+
+| # | 章節 | 說明 |
+|---|------|------|
+| 0 | 執行協議 | CLI 命令、Step 流程 |
+| 1 | 硬規則 | HR-01~HR-15 含具體行動 |
+| 2 | A/B 協作 | HR/TH 約束、On Demand 原則 |
+| 3 | FR-by-FR 任務表格 | 從 SAD 解析，含模組/檔案/驗證命令 |
+| 4 | 產出結構樹 | 從 SAD 解析的目錄結構 |
+| 5 | FR 詳細任務 | 若 --detailed，含 SRS 完整內容 |
+| 6 | 外部文檔 | Phase 適用的文檔列表 |
+| 7 | Developer Prompt 模板 | On Demand 格式 |
+| 8 | Iteration 修復流程 | HR-12 5輪限制 |
+| 9 | Quality Gate | 7步驗證命令 |
+| 10 | sessions_spawn.log 格式 | HR-10 規範 |
+| 11 | Commit 格式 | 標準 commit 格式 |
+| 12 | 估計時間 | 各階段時間 + HR-13 臨界值 |
+| 13 | Phase Truth 組成 | 權重計算 |
+| 14 | 工具速查 | 6 大工具 Python 範例 |
+| 15 | Pre-Execution Checklist | 12 項檢查清單 |
+
+---
+
+## 5. FR 詳細任務解析
+
+### Phase → 解析的上一階段產物
+
+| Phase | 解析的產物 | 內容 |
+|-------|-----------|------|
+| 1 | 無 | FR + NFR 需求 |
+| 2 | SRS.md | 架構對應 |
+| 3 | SRS.md + SAD.md | 代碼實作 + 測試案例 |
+| 4 | SRS.md + SAD.md + Code | 測試項目 |
+| 5 | TEST_RESULTS + BASELINE | 驗證交付 |
+| 6 | QUALITY_REPORT | 品質保證 |
+| 7 | RISK_REGISTER | 風險管理 |
+| 8 | CONFIG_RECORDS | 配置管理 |
+
+### SRS Parser 解析內容
+
+- **FR sections**: FR-01~FR-08 標題、描述
+- **Requirements**: 內容列表
+- **Test cases**: 測試案例（輸入→輸出）
+- **NFR sections**: 非功能需求
+
+### SAD Parser 解析內容
+
+- **FR→Module mapping**: FR-01 → `lexicon_mapper`
+- **File paths**: `app/processing/lexicon_mapper.py`
+- **Deliverable structure**: 目錄樹
+
+---
+
+## 6. 快速開始
 
 ### 新專案初始化（第一次）
 
@@ -155,10 +234,10 @@ Agent 會：
 Agent 必須使用 `plan-phase`：
 
 ```
-Agent: python cli.py plan-phase --phase {N} --goal "{任務目標}"
+Agent: python cli.py plan-phase --phase {N} --detailed --goal "{任務目標}"
 ```
 
-Johnny 看執行計畫（Step-by-Step、HR/TH 對照、風險評估）。
+Johnny 看執行計畫（16 章節透明）。
 
 ### Step 3: Johnny 審核計畫
 
@@ -186,7 +265,7 @@ Johnny 等到執行完成，看結果。
 
 ---
 
-## 5. 每 Phase 審核流程
+## 7. 每 Phase 審核流程
 
 ### Agent 完成 Phase N 後
 
@@ -213,7 +292,7 @@ Johnny 等到執行完成，看結果。
 
 ---
 
-## 6. 拷問法範例
+## 8. 拷問法範例
 
 在 Agent 完成 Phase 後，隨機問這些問題：
 
@@ -230,14 +309,16 @@ Johnny 等到執行完成，看結果。
 - 「Pre-flight 有哪 5 個檢查？」
 - 「HR-15 的 citations 格式規定是什麼？」
 - 「代碼和測試的分離是什麼？」
+- 「FR-by-FR 表格從哪裡解析？」
 
-### Phase 5-8 相關
+### Phase 4-8 相關
 - 「TH-02 的門檻是多少？」
 - 「Phase 8 必須有哪些交付物？」
+- 「各 Phase 解析哪些上一階段的產物？」
 
 ---
 
-## 7. 新工具速查（v6.20-v6.28）
+## 9. 新工具速查（v6.32-v6.40）
 
 ### 四大工具
 
@@ -248,20 +329,30 @@ Johnny 等到執行完成，看結果。
 | `SubagentIsolator` | 結果污染 | 派遣時 spawn() |
 | `PermissionGuard` | 危險操作 | exec/rm 前 check() |
 
-### v6.28 新增工具功能
+### v6.32+ 新增功能
 
 | 功能 | 說明 |
 |------|------|
-| `SI.spawn()` 內建 log | spawn 前寫 PENDING，spawn 後寫 COMPLETED/FAILED |
-| `SI.pre_spawn_audit()` | 派遣前檢查 artifact 完整性，缺失拋 ArtifactMissingError |
-| `ArtifactMissingError` | 新增自訂異常，帶 suggest_fix() |
-| `sessions_spawn.log` 自動寫入 | 不再需要手動記錄 |
+| Template-based plan | `templates/plan_phase_template.md` 為基礎 |
+| SAD parser | 自動解析 FR→module→file 路徑 |
+| TH thresholds table | Phase 適用的 TH 閾值 |
+| External docs | Phase 適用的文檔列表 |
+| `--detailed` flag | 生成 FR 詳細任務（含 SRS 內容）|
+| generate_full_plan.py | 支援所有 Phase（1-8）|
 
 ### 新 CLI 命令
 
 ```bash
 # 單一入口（v6.26）
 python cli.py run-phase --phase N
+
+# plan-phase（必用，執行前）
+python cli.py plan-phase --phase N --goal "..."
+python cli.py plan-phase --phase N --detailed --goal "..."
+python cli.py plan-phase --phase N --repair --step N.X
+
+# generate_full_plan.py（可單獨使用）
+python3 scripts/generate_full_plan.py --phase 3 --repo /path
 
 # Tool Registry（v6.22）
 python cli.py tool-registry --list
@@ -281,7 +372,7 @@ python cli.py context-compress --level L3
 
 ---
 
-## 8. CLI 速查
+## 10. CLI 速查
 
 ```bash
 # === 單一入口（必用）===
@@ -290,7 +381,12 @@ python cli.py run-phase --phase N --step N.X --task "..."
 
 # === plan-phase（必用，執行前）===
 python cli.py plan-phase --phase N --goal "..."
+python cli.py plan-phase --phase N --detailed --goal "..."
 python cli.py plan-phase --phase N --repair --step N.X
+python cli.py plan-phase --phase N --history
+
+# === generate_full_plan.py ===
+python3 scripts/generate_full_plan.py --phase N --repo /path
 
 # === Integrity 計算（v6.28 新增）===
 python cli.py integrity --project .
@@ -299,7 +395,6 @@ python cli.py integrity --project .
 python cli.py stage-pass --phase N --auto-fix
 python cli.py stage-pass --phase N --skip-failed
 python cli.py enforce --level BLOCK --auto-fix
-python cli.py constitution check --type <type> --skip-failed
 
 # === Phase 真相驗證 ===
 python cli.py phase-verify --phase N
@@ -308,9 +403,6 @@ python cli.py phase-verify --phase N
 python cli.py fsm-status
 python cli.py fsm-transition --to PAUSED
 python cli.py fsm-unfreeze
-
-# === 預熱程序 ===
-python cli.py skill-check --mode preheat --phase N
 
 # === Constitution Check ===
 python cli.py constitution check --type <srs|sad|test_plan|...>
@@ -329,28 +421,9 @@ python cli.py status
 python cli.py phase-status
 ```
 
-### v6.28 新增：Integrity 追蹤
-
-```bash
-# 計算 Integrity
-python cli.py integrity --project .
-
-# state.json 時間追蹤（自動）
-# start_time, estimated_minutes, hr13_triggered
-# HR-13: Phase 時間 > 3× 預估 → PAUSE
-```
-
-### v6.28 新增：sessions_spawn.log 自動寫入
-
-SubagentIsolator.spawn() 自動寫入：
-- PENDING（spawn 前）
-- COMPLETED/FAILED（spawn 後，含 confidence）
-
-不再需要手動記錄。
-
 ---
 
-## 9. Johnny 的三個狀態
+## 11. Johnny 的三個狀態
 
 ```
 🤚 等待中 - Agent 在執行 run-phase
@@ -360,7 +433,7 @@ SubagentIsolator.spawn() 自動寫入：
 
 ---
 
-## 10. 緊急情況
+## 12. 緊急情況
 
 ### 發現作假跡象
 1. 看 run-phase 輸出
@@ -381,38 +454,64 @@ SubagentIsolator.spawn() 自動寫入：
 
 ---
 
-## 11. 關鍵閾值速查
+## 13. 關鍵閾值速查
 
-| 閾值 | 數值 | 用在哪 |
-|------|------|--------|
-| TH-01 | ASPICE > 80% | 所有 Phase |
-| TH-02 | Constitution ≥ 80% | 所有 Phase |
-| TH-10 | pytest = 100% | Phase 3-8 |
-| TH-11 | 覆蓋率 ≥ 70% | Phase 3 |
-| TH-12 | 覆蓋率 ≥ 80% | Phase 4-8 |
-| TH-14 | 規格完整性 ≥ 90% | Phase 1 |
-| TH-15 | Phase Truth ≥ 70% | 所有 Phase |
-
----
-
-## 12. 硬規則速查
-
-| 規則 | 內容 |
-|------|------|
-| HR-01 | A/B 必須不同 Agent，禁止自寫自審 |
-| HR-02 | Quality Gate 必須有實際命令輸出 |
-| HR-03 | Phase 必須順序執行，不可跳過 |
-| HR-06 | 禁引入規格書外框架 |
-| HR-07 | DEVELOPMENT_LOG 需記錄 session_id |
-| HR-08 | Phase 結束必須執行 Quality Gate |
-| HR-10 | sessions_spawn.log 需有 A/B 記錄 |
-| HR-11 | Phase Truth < 70% 禁止進入下一 Phase |
-| HR-12 | A/B 審查 > 5 輪 → PAUSE |
-| HR-13 | Phase 時間 > 3× 預估 → PAUSE |
-| HR-14 | Integrity < 40 → FREEZE |
-| **HR-15** | **citations 必須含行號 + artifact_verification** |
+| 閾值 | 數值 | Phase |
+|------|------|-------|
+| TH-01 | ASPICE > 80% | 1-8 |
+| TH-02 | Constitution ≥ 80% | 5-8 |
+| TH-03 | Constitution 正確性 = 100% | 1-4 |
+| TH-04 | Constitution 安全性 = 100% | 1-4 |
+| TH-05 | Constitution 可維護性 > 70% | 2-4 |
+| TH-06 | Constitution 測試覆蓋率 > 80% | 3-4 |
+| TH-07 | 邏輯正確性 ≥ 90 | 5-8 |
+| TH-08 | AgentEvaluator 標準 ≥ 80 | 1-2 |
+| TH-09 | AgentEvaluator 嚴格 ≥ 90 | 3-8 |
+| TH-10 | pytest = 100% | 3-8 |
+| TH-11 | 覆蓋率 ≥ 70% | 3 |
+| TH-12 | 覆蓋率 ≥ 80% | 4-8 |
+| TH-14 | 規格完整性 ≥ 90% | 1 |
+| TH-15 | Phase Truth ≥ 70% | 1-8 |
+| TH-16 | 代碼↔SAD = 100% | 3 |
+| TH-17 | FR↔測試 ≥ 90% | 4 |
 
 ---
 
-*此手冊基於 methodology-v2 v6.28*
+## 14. 硬規則速查
+
+| 規則 | 內容 | 後果 |
+|------|------|------|
+| HR-01 | A/B 必須不同 Agent，禁止自寫自審 | 終止 -25 |
+| HR-02 | Quality Gate 必須有實際命令輸出 | 終止 -20 |
+| HR-03 | Phase 必須順序執行，不可跳過 | 終止 -30 |
+| HR-04 | HybridWorkflow mode=ON，強制 A/B | 終止 |
+| HR-05 | 衝突時優先 methodology-v2 | 記錄 |
+| HR-06 | 禁引入規格書外框架 | 終止 -20 |
+| HR-07 | DEVELOPMENT_LOG 需記錄 session_id | -15 |
+| HR-08 | Phase 結束必須執行 Quality Gate | 終止 -10 |
+| HR-09 | Claims Verifier 驗證需通過 | 終止 -20 |
+| HR-10 | sessions_spawn.log 需有 A/B 記錄 | 終止 -15 |
+| HR-11 | Phase Truth < 70% 禁止進入下一 Phase | 終止 |
+| HR-12 | A/B 審查 > 5 輪 → PAUSE | — |
+| HR-13 | Phase 時間 > 3× 預估 → PAUSE | — |
+| HR-14 | Integrity < 40 → FREEZE | — |
+| **HR-15** | **citations 必須含行號 + artifact_verification** | -15 |
+
+---
+
+## 15. 版本一致性
+
+| Component | Version | Status |
+|-----------|---------|--------|
+| cli.py | v6.40.0 | ✅ |
+| generate_full_plan.py | v6.39.0 | ✅ |
+| SKILL.md | v6.32.0 | ⚠️ |
+| JOHNNY_HANDBOOK.md | v6.40 | ✅ |
+| 執行計畫輸出 | v6.40.0 | ✅ |
+
+> ⚠️ SKILL.md 版本落後（v6.32.0），建議在下次 release 時同步更新。
+
+---
+
+*此手冊基於 methodology-v2 v6.40*
 *最後更新: 2026-04-04*

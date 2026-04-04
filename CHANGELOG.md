@@ -9,6 +9,53 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [v6.40] - 2026-04-04
+
+### 🚀 Added
+- **Template-based Plan Generation (v6.32)**: `templates/plan_phase_template.md`
+  - 16 章節完整 plan 模板
+  - Template-based 替換所有 placeholder
+
+- **SAD Parser + Deliverable Structure (v6.34)**: `cli.py`
+  - 自動解析 SAD.md FR→module→file mapping
+  - 動態產生 deliverable structure tree
+  - FR-by-FR table 含正確路徑
+
+- **TH Thresholds Table (v6.36)**: `cli.py`
+  - Phase 1-8 完整 TH 閾值
+  - 含驗證命令
+
+- **External Docs Section (v6.36)**: `cli.py`
+  - Phase 1-8 外部文檔列表
+  - 含用途說明
+
+- **--detailed Flag (v6.37)**: `cli.py`
+  - 生成含 FR 詳細任務的 plan
+  - 呼叫 generate_full_plan.py
+
+- **generate_full_plan.py (v6.39)**: `scripts/generate_full_plan.py`
+  - 支援所有 Phase（1-8）
+  - Phase-specific parser（SRS, SAD, TEST_PLAN, etc.）
+
+### 🐛 Fixed
+- **Version Consistency (v6.40)**
+  - cli.py: v6.32 → v6.40
+  - generate_full_plan.py: v6.38 → v6.39
+  - SKILL.md: v6.29 → v6.40
+  - Section duplication fixed
+
+### 📝 Documentation
+- **JOHNNY_HANDBOOK.md v6.40**
+  - 新增 16 章節說明
+  - 新增 FR 解析流程說明
+  - 更新 plan-phase 用法（含 --detailed）
+  - 新增 generate_full_plan.py 用法
+
+- **docs/AUDIT_v6.39.md**
+  - 完整性、正確性、一致性審計報告
+
+---
+
 ## [v6.12] - 2026-03-31
 
 ### 🚀 Added

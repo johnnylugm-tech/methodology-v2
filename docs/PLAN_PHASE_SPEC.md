@@ -1,6 +1,6 @@
 # plan-phase 完整規格 v1.0
 
-> 基於 SKILL.md v6.28 100% 落實
+> 基於 SKILL.md v6.40 100% 落實
 
 ---
 
