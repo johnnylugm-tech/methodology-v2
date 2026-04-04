@@ -80,7 +80,7 @@ from tool_registry import ToolRegistry, TOOL_HANDLERS
 class MethodologyCLI:
     """統一 CLI 入口"""
     
-    VERSION = "6.28.0"
+    VERSION = "6.30.0"
     
     def __init__(self):
         self.progress = ProgressDashboard()
@@ -4231,6 +4231,201 @@ class MethodologyCLI:
 
         return 0
 
+    # ============================================================================
+    # plan-phase Helper Functions
+    # ============================================================================
+
+    def _parse_srs_fr_list(self, repo_path: Path) -> list:
+        """解析 SRS.md，提取 FR 清單"""
+        srs_paths = [
+            repo_path / "SRS.md",
+            repo_path / "01-requirements" / "SRS.md",
+        ]
+        srs_path = None
+        for p in srs_paths:
+            if p.exists():
+                srs_path = p
+                break
+        
+        if not srs_path:
+            return []
+        
+        content = srs_path.read_text()
+        import re
+        # 匹配 FR-01, FR-02 等（支持全型冒號 ： 和 半型 :）
+        fr_pattern = re.compile(r'(FR-\d+)[:：][^\n]+', re.IGNORECASE)
+        frs = []
+        for m in fr_pattern.finditer(content):
+            fr_id = m.group(1).upper()
+            raw = m.group(0)
+            # 移除 FR-XX: 或 FR-XX： 获取标题
+            if '：' in raw:
+                title = raw.split('：', 1)[1].strip()
+            elif ':' in raw:
+                title = raw.split(':', 1)[1].strip()
+            else:
+                title = raw.strip()
+            title = title[:60]
+            frs.append({
+                "fr": fr_id,
+                "title": title,
+                "srs_path": str(srs_path)
+            })
+        
+        # 如果正則沒匹配，用簡單關鍵詞搜索
+        if not frs:
+            fr_lines = re.findall(r'(FR-\d+)', content, re.IGNORECASE)
+            seen = set()
+            for fr_id in fr_lines:
+                if fr_id.upper() not in seen:
+                    seen.add(fr_id.upper())
+                    frs.append({"fr": fr_id.upper(), "title": fr_id, "srs_path": str(srs_path)})
+        
+        # Deduplicate by FR ID
+        seen_frs = {}
+        deduped = []
+        for fr in frs:
+            if fr["fr"] not in seen_frs:
+                seen_frs[fr["fr"]] = fr
+                deduped.append(fr)
+        frs = deduped
+        
+        return frs
+
+    def _parse_sad_modules(self, repo_path: Path) -> list:
+        """解析 SAD.md，提取模組對應"""
+        sad_paths = [
+            repo_path / "SAD.md",
+            repo_path / "02-architecture" / "SAD.md",
+        ]
+        sad_path = None
+        for p in sad_paths:
+            if p.exists():
+                sad_path = p
+                break
+        
+        if not sad_path:
+            return []
+        
+        content = sad_path.read_text()
+        import re
+        # 匹配 Module 或 FR 引用
+        module_pattern = re.compile(r'(##?\s*Module\s*(\d+)|###?\s*(\d+)[^\n]*Module[^\n]*|FR-(\d+)[^\n]*module)', re.IGNORECASE)
+        modules = []
+        for m in module_pattern.finditer(content):
+            module_num = m.group(2) or m.group(3) or "?"
+            fr_ref = m.group(4) or ""
+            modules.append({
+                "module": f"Module {module_num}",
+                "fr": f"FR-{fr_ref}" if fr_ref else "",
+                "sad_path": str(sad_path)
+            })
+        return modules
+
+    def _generate_fr_table(self, frs: list, modules: list) -> str:
+        """產生 FR-by-FR 任務表格"""
+        if not frs:
+            return "*（未找到 FR 清單）*"
+        
+        table = "| FR | 模組 | 產出檔案 | 測試檔案 |\n|------|------|---------|----------|\n"
+        for fr in frs:
+            fr_lower = fr["fr"].lower().replace("-", "")
+            module = next((m["module"] for m in modules if m["fr"] == fr["fr"]), "—")
+            # 推斷檔案路徑
+            impl_path = f"app/processing/{fr_lower.replace('fr', '')}.py"
+            test_path = f"tests/test_{fr_lower.replace('fr', '')}.py"
+            table += f"| {fr['fr']} | {module} | `{impl_path}` | `{test_path}` |\n"
+        return table
+
+    def _generate_quality_gate_commands(self, phase: int) -> str:
+        """根據 Phase 產生 Quality Gate 命令"""
+        commands = {
+            3: [
+                ("# 1. TH-06 Constitution 測試覆蓋率 >80%", "python3 quality_gate/constitution/runner.py --type implementation"),
+                ("# 2. TH-10 測試通過率 =100%", "pytest tests/ -v"),
+                ("# 3. TH-11 覆蓋率 ≥70%", "pytest --cov=app/ -v"),
+                ("# 4. TH-16 代碼↔SAD =100%", "python3 cli.py trace-check"),
+                ("# 5. TH-15 Phase Truth ≥70%", "python3 cli.py phase-verify --phase 3"),
+                ("# 6. HR-08 stage-pass", "python3 cli.py stage-pass --phase 3"),
+                ("# 7. HR-02 FrameworkEnforcer BLOCK", "python3 cli.py enforce --level BLOCK"),
+            ],
+            4: [
+                ("# 1. TH-12 覆蓋率 ≥80%", "pytest --cov=app/ -v"),
+                ("# 2. TH-10 =100%", "pytest tests/ -v"),
+                ("# 3. TH-13 FR覆蓋率 =100%", "python3 cli.py trace-check"),
+                ("# 4. TH-17 FR↔測試 ≥90%", "python3 cli.py phase-verify --phase 4"),
+            ],
+            1: [
+                ("# 1. TH-03 Constitution 正確性 =100%", "python3 quality_gate/constitution/runner.py --type srs"),
+                ("# 2. TH-04 Constitution 安全性 =100%", "python3 quality_gate/constitution/runner.py --type srs"),
+                ("# 3. TH-14 規格完整性 ≥90%", "python3 quality_gate/doc_checker.py"),
+            ],
+            2: [
+                ("# 1. TH-03 Constitution 正確性 =100%", "python3 quality_gate/constitution/runner.py --type sad"),
+                ("# 2. TH-04 Constitution 安全性 =100%", "python3 quality_gate/constitution/runner.py --type sad"),
+                ("# 3. TH-05 Constitution 可維護性 >70%", "python3 quality_gate/constitution/runner.py --type sad"),
+            ],
+        }
+        
+        cmds = commands.get(phase, [("# Phase-specific QG commands", "# Add based on phase")])
+        result = ""
+        for desc, cmd in cmds:
+            result += f"{desc}\n{cmd}\n\n"
+        return result
+
+    def _generate_developer_prompt(self, fr: dict, phase: int) -> str:
+        """產生 Developer Prompt 模板"""
+        # Extract FR number: "FR-01" -> "01"
+        fr_num = fr["fr"].lower().replace("fr-", "").strip()
+        task_id = f"task-{fr_num}"
+        
+        prompts = {
+            3: f"""```
+TASK: {fr['fr']} {fr['title']}
+TASK_ID: {task_id}
+═══════════════════════════════════════
+
+PROMPT（自己讀）：
+- SRS.md (§{fr['fr']})
+- 02-architecture/SAD.md (§Module 邊界對照表)
+
+OUTPUT:
+- app/processing/{fr_num}.py
+- tests/test_{fr_num}.py
+
+FORBIDDEN:
+- ❌ app/infrastructure/
+- ❌ @covers: L1 Error
+- ❌ @type: edge
+- ❌ ... 省略 → 任務失敗
+
+OUTPUT_FORMAT:
+{{
+ "status": "success|error|unable_to_proceed",
+ "result": "實際產出",
+ "confidence": 1-10,
+ "citations": ["{fr['fr']}", "SRS.md#L23-L45"],
+ "summary": "50字內"
+}}
+═══════════════════════════════════════
+```""",
+        }
+        return prompts.get(phase, f"# Phase {phase} Developer Prompt for {fr['fr']}")
+
+    def _generate_sessions_spawn_log_format(self, frs: list, phase: int) -> str:
+        """產生 sessions_spawn.log 格式說明"""
+        if phase != 3:
+            return "每 Phase 2 筆記錄（developer + reviewer）"
+        
+        lines = ["每個 FR 產生 2 筆記錄，共 " + str(len(frs) * 2) + " 筆記錄："]
+        lines.append("```json")
+        for fr in frs[:2]:
+            lines.append(f'{{"timestamp":"ISO8601","role":"developer","task":"{fr["fr"]} {fr["title"]}","session_id":"uuid","confidence":8,"commit":"HASH"}}')
+            lines.append(f'{{"timestamp":"ISO8601","role":"reviewer","task":"{fr["fr"]} Review","session_id":"uuid","confidence":9,"verdict":"APPROVE"}}')
+        lines.append("...")
+        lines.append("```")
+        return "\n".join(lines)
+
     def cmd_plan_phase(self, args):
         """
         Generate execution plan for Phase with pre-flight checks
@@ -4396,6 +4591,10 @@ class MethodologyCLI:
         # === PHASE 3: GENERATE PLAN ===
         print(f"\n[{datetime.now().strftime('%H:%M:%S')}] PLAN: 產生執行計畫")
 
+        # 讀取專案上下文
+        frs = self._parse_srs_fr_list(repo_path)
+        modules = self._parse_sad_modules(repo_path)
+
         # Determine HR/TH based on phase
         hr_map = {
             1: ["HR-01", "HR-04", "HR-06", "HR-07", "HR-08", "HR-10", "HR-11"],
@@ -4428,6 +4627,11 @@ class MethodologyCLI:
             8: ("devops", "pm"),
         }
         agent_a, agent_b = role_map.get(phase, ("developer", "reviewer"))
+
+        # Generate FR-by-FR table
+        fr_table = self._generate_fr_table(frs, modules)
+        qg_commands = self._generate_quality_gate_commands(phase)
+        log_format = self._generate_sessions_spawn_log_format(frs, phase)
 
         # Generate Markdown plan
         plan = f"""# Phase {phase} 執行計畫
@@ -4466,26 +4670,38 @@ class MethodologyCLI:
 
 ---
 
-## 3. Step-by-Step 執行流程
+## 3. FR-by-FR 任務表格（共 {len(frs)} 項）
 
-### Step {{N}}.1: 準備階段
-- Tool: `SubagentIsolator.spawn(Agent A)`
-- Action: 讀取 P{phase}_SOP.md, 理解任務
-- Verification: Pre-flight checks passed
-
-### Step {{N}}.2: 執行階段
-- Tool: `SubagentIsolator.spawn(Agent A)`
-- Action: 依據 SOP 執行任務
-- Verification: 產出交付物
-
-### Step {{N}}.3: 審查階段
-- Tool: `SubagentIsolator.spawn(Agent B)`
-- Action: A/B 審查
-- Verification: APPROVE/REJECT
+{fr_table}
 
 ---
 
-## 4. 風險評估
+## 4. Developer Prompt 模板（Phase {phase}）
+
+"""
+        for fr in frs[:5]:  # 最多顯示5個
+            plan += f"\n### {fr['fr']}: {fr['title']}\n"
+            plan += self._generate_developer_prompt(fr, phase) + "\n"
+
+        if len(frs) > 5:
+            plan += f"\n> ...（共 {len(frs)} 個 FR，其餘見完整 plan）\n"
+
+        plan += f"""
+---
+
+## 5. Quality Gate 命令
+
+```bash
+{qg_commands}
+---
+
+## 6. sessions_spawn.log 格式
+
+{log_format}
+
+---
+
+## 7. 風險評估
 
 | 風險 | 機率 | 影響 | 緩解 |
 |------|------|------|------|
@@ -4495,7 +4711,7 @@ class MethodologyCLI:
 
 ---
 
-## 5. 預估時間
+## 8. 預估時間
 
 | Step | 預估 | HR-13 臨界值 |
 |------|------|-------------|
@@ -4506,7 +4722,7 @@ class MethodologyCLI:
 
 ---
 
-## 6. 交付物
+## 9. 交付物
 
 """
         for d in deliverables:
@@ -4515,7 +4731,7 @@ class MethodologyCLI:
         plan += f"""
 ---
 
-## 7. 下一步
+## 10. 下一步
 
 ```bash
 # Johnny 審核後，執行：
