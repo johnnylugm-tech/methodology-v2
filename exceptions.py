@@ -112,3 +112,13 @@ class ArtifactMissingError(MethodologyError):
     def suggest_fix(self) -> str:
         artifacts = [a['artifact'] for a in self.context.get('artifacts', [])]
         return f"請確認以下 artifact 存在：{artifacts}"
+
+
+# ─── On Demand ─────────────────────────────────────────────────────────────────
+
+
+class OnDemandViolationError(MethodologyError):
+    """On Demand / Need to Know 原則違規。"""
+
+    def suggest_fix(self) -> str:
+        return "請使用 artifact_paths 而非 context=完整內容"
