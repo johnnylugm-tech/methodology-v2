@@ -1,6 +1,6 @@
-# Johnny 使用手冊 v6.26
+# Johnny 使用手冊 v6.27
 
-> **版本**: v6.26
+> **版本**: v6.27
 > **對象**: Johnny（Human-in-the-Loop）
 > **用途**: 快速上手 methodology-v2
 
@@ -8,7 +8,7 @@
 
 ## 1. methodology-v2 今天長什麼樣？
 
-### v6.20 ~ v6.26 帶來的改善
+### v6.20 ~ v6.27 帶來的改善
 
 | 版本 | 改善內容 |
 |------|----------|
@@ -17,8 +17,9 @@
 | v6.22 | Enhanced Exceptions（suggest_fix）+ Session Manager CLI |
 | v6.23 | PHASE3_SOP.md 完整操作手冊 |
 | v6.24 | SKILL.md 瘦身（131行）|
-| v6.25 | 三層架構：Layer 1（SKILL.md）/ Layer 2（P{N}_SOP.md）/ Layer 3（templates/）|
+| v6.25 | 三層架構：Layer 1/2/3 |
 | v6.26 | **run-phase 單一入口**（強制 Pre-flight checks）|
+| **v6.27** | **plan-phase + run-phase 完整流程**，所有 P{N}_SOP.md 標準化 |
 
 ### 三層文件架構
 
@@ -30,20 +31,63 @@
 
 ---
 
-## 2. 單一入口：run-phase（v6.26 核心）
+## 2. 執行流程：plan-phase → Johnny 審核 → run-phase
 
-> ⚠️ **所有 Phase 執行必須經過此入口**，不可繞過。
+> ⚠️ **所有 Phase 執行必須經過此流程**，不可繞過。
 
-### 用法
+### 完整流程
+
+```
+Johnny: 「執行 Phase {N}」
+    ↓
+Agent: plan-phase --phase {N} --goal "..."
+    ↓
+Johnny: 看執行計畫（透明）
+    ↓
+Johnny: 「確認執行」
+    ↓
+Agent: run-phase --phase {N}
+    ↓
+失敗 → plan-phase --repair --step {N}.{X}
+    ↓
+成功 → 下一 Phase
+```
+
+### plan-phase 用法
+
+```bash
+# 生成執行計畫
+python cli.py plan-phase --phase 3 --goal "FR-01~FR-03 實作"
+
+# 修復迭代
+python cli.py plan-phase --phase 3 --repair --step 3.2
+
+# 查看歷史
+python cli.py plan-phase --phase 3 --history
+```
+
+### run-phase 用法
 
 ```bash
 python cli.py run-phase --phase 3
 python cli.py run-phase --phase 3 --step 3.1 --task "FR-01 實作"
 ```
 
-### run-phase 自動做什麼
+---
+
+## 3. plan-phase 自動做什麼
 
 ```
+┌─────────────────────────────────────────────────────────────┐
+│  SCAN（讀取所有相關資料）                                      │
+│                                                             │
+│  1. SKILL.md → 核心規則                                      │
+│  2. docs/P{N}_SOP.md → Phase 步驟                            │
+│  3. .methodology/state.json → FSM 狀態                       │
+│  4. .methodology/iterations/{phase}.json → 歷史迭代          │
+│  5. 上階段交付物 → SRS/SAD/代碼等                            │
+└─────────────────────────────────────────────────────────────┘
+                              ↓
 ┌─────────────────────────────────────────────────────────────┐
 │  PRE-FLIGHT（任一失敗就停止）                                 │
 │                                                             │
@@ -81,7 +125,7 @@ python cli.py run-phase --phase 3 --step 3.1 --task "FR-01 實作"
 
 ---
 
-## 3. 快速開始
+## 4. 快速開始
 
 ### 新專案初始化（第一次）
 
@@ -105,9 +149,24 @@ Agent 會：
 」
 ```
 
-### Step 2: Agent 執行
+### Step 2: Agent 生成計畫
 
-Agent 必須使用 `run-phase`：
+Agent 必須使用 `plan-phase`：
+
+```
+Agent: python cli.py plan-phase --phase {N} --goal "{任務目標}"
+```
+
+Johnny 看執行計畫（Step-by-Step、HR/TH 對照、風險評估）。
+
+### Step 3: Johnny 審核計畫
+
+```
+如果計畫合理 → 「確認執行」
+如果計畫有問題 → 「修改：{具體要求}」
+```
+
+### Step 4: Agent 執行
 
 ```
 Agent: python cli.py run-phase --phase {N}
@@ -115,7 +174,14 @@ Agent: python cli.py run-phase --phase {N}
 
 Johnny 等到執行完成，看結果。
 
-### Step 3: Johnny 審核
+### Step 5: Johnny 最終審核
+
+```
+1. 看 run-phase 輸出
+2. 問 2-3 題拷問法
+3. 如果正確 → ✅ CONFIRM
+4. 如果錯誤 → ❌ REJECT
+```
 
 ```
 1. Johnny: 看 run-phase 輸出
@@ -306,5 +372,5 @@ python cli.py phase-status
 
 ---
 
-*此手冊基於 methodology-v2 v6.26*
+*此手冊基於 methodology-v2 v6.27*
 *最後更新: 2026-04-04*
