@@ -4650,12 +4650,12 @@ SAD.md 只讀取：
 - §Module 邊界對照表（對應 {fr['fr']} 的章節）
 
 OUTPUT:
-- app/processing/{fr_num}.py  # 實際檔名從 SAD 解析
+- {fr.get('file', 'app/processing/{fr_num}.py')}  # 從 SAD 解析
 - tests/test_{fr_num}.py
 
 FORBIDDEN:
 - ❌ dump SRS.md/SAD.md 全文
-- ❌ app/infrastructure/
+- ❌ app/infrastructure/（已廢除，請用 app/{dir}/）
 - ❌ @covers: L1 Error
 - ❌ @type: edge
 - ❌ ... 省略 → 任務失敗
@@ -4995,9 +4995,16 @@ OUTPUT_FORMAT:
             plan = plan.replace('{AGENT_A_UPPER}', agent_a.upper())
             plan = plan.replace('{AGENT_B_UPPER}', agent_b.upper())
             
-            # Developer and Reviewer prompts
-            developer_prompt = self._generate_developer_prompt(frs[0] if frs else {'fr': 'FR-01', 'title': 'Task'}, phase)
-            reviewer_prompt = self._generate_reviewer_prompt(frs[0] if frs else {'fr': 'FR-01', 'title': 'Task'}, phase)
+            # Enrich FR with module info from SAD
+            first_fr = frs[0] if frs else {'fr': 'FR-01', 'title': 'Task', 'module': 'module', 'file': 'app/processing/01.py'}
+            mod_match = next((m for m in modules if m.get("fr", "").upper() == first_fr["fr"].upper()), None)
+            if mod_match:
+                first_fr['module'] = mod_match.get("module", first_fr.get('module', 'module'))
+                first_fr['file'] = mod_match.get("file", first_fr.get('file', ''))
+            
+            # Developer and Reviewer prompts (with enriched FR info)
+            developer_prompt = self._generate_developer_prompt(first_fr, phase)
+            reviewer_prompt = self._generate_reviewer_prompt(first_fr, phase)
             plan = plan.replace('{DEVELOPER_PROMPT}', developer_prompt)
             plan = plan.replace('{REVIEWER_PROMPT}', reviewer_prompt)
             
