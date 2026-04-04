@@ -1,4 +1,7 @@
-# Phase 3 SOP — 模組化 FR 實作流程（v6.26 完整版）
+# Phase 3 SOP — 代碼實作
+
+> 本檔案為 On-demand Lazy Load 檔案，僅在執行 Phase 3 時載入。
+> 基於：SKILL.md v6.26 + PLAN_PHASE_SPEC.md
 
 > **核心理念**：工具不缺，缺的是紀律。主代理 = 專案經理，Sub-agent = 執行者。
 

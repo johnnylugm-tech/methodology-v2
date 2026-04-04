@@ -1,34 +1,134 @@
 # Phase 5 SOP — 驗證交付
 
 > 本檔案為 On-demand Lazy Load 檔案，僅在執行 Phase 5 時載入。
+> 基於：SKILL.md v6.26 + PLAN_PHASE_SPEC.md
 
-## 執行步驟
+---
 
-**ROLE**:
-- Agent A: `devops` — 建立 BASELINE.md, MONITORING_PLAN.md
-- Agent B: `architect` — 兩次審查
-- 禁止：BASELINE 功能對照不完整
+## 單一入口：plan-phase + run-phase
 
-**ENTRY**: Phase 4 APPROVE, 測試通過率 = 100%
+> ⚠️ **所有 Phase 執行必須經過此入口**，不可繞過。
 
-```
-1. Agent A 建立 BASELINE.md（功能/品質/效能基線）
-2. Agent B 基線審查
-3. Agent A 建立 MONITORING_PLAN.md（四個監控維度）
-4. Agent B 驗收報告審查
-5. Quality Gate: logic checker ≥ 90 + constitution ≥ 80
-6. 生成 Phase5_STAGE_PASS.md
-7. python cli.py update-step / end-phase
+### 用法
+
+```bash
+python cli.py plan-phase --phase 5 --goal "BASELINE.md, MONITORING_PLAN.md"
+python cli.py run-phase --phase 5
 ```
 
-## 進入條件
+---
 
-Phase 4 APPROVE, 測試通過率 = 100%
+## Pre-flight 檢查（自動化）
 
-## 退出條件
+| 檢查項 | 標準 | 不通過時 |
+|--------|------|---------|
+| FSM State | 非 FREEZE/PAUSED | ❌ 停在 Pre-flight |
+| Phase Sequence | Phase 4 APPROVE → Phase 5 | ❌ HR-03 阻擋 |
+| Constitution | TH-02 ≥80% | ❌ HR-08 阻擋 |
+| 前置交付物 | TEST_RESULTS.md 存在 | ❌ 停在 Pre-flight |
+| Tool Registry | 6 核心工具就緒 | ⚠️ 警告 |
 
-TH-02 ≥ 80%, TH-07 ≥ 90, Agent B APPROVE
+---
 
-## 關鍵交付物
+## A/B 角色（HR-01, HR-04）
 
-BASELINE.md, MONITORING_PLAN.md
+| 角色 | Agent | 職責 |
+|------|-------|------|
+| **Agent A** | `devops` | 建立 BASELINE.md, MONITORING_PLAN.md |
+| **Agent B** | `architect` | 兩次審查 |
+
+### 禁止事項（HR-01, HR-04）
+- ❌ 自寫自審（HR-01）
+- ❌ HybridWorkflow=OFF（HR-04）
+- ❌ sessions_spawn.log 缺失（HR-10）
+
+---
+
+## 四大工具定位
+
+| 工具 | 解決的問題 | 觸發時機 |
+|------|-----------|---------|
+| `KnowledgeCurator` | 知識一致性 | **派遣前**（verify_coverage）|
+| `ContextManager` | 上下文膨脹 | **派遣後**（context > 50）|
+| `SubagentIsolator` | 結果污染 | **派遣時**（spawn）|
+| `PermissionGuard` | 危險操作 | **任何 exec/rm 前** |
+
+---
+
+## 產出格式標準
+
+```json
+{
+  "status": "success | error | unable_to_proceed",
+  "result": "實際產出",
+  "confidence": 1-10,
+  "citations": ["BASELINE.md#section"],
+  "summary": "50字內摘要"
+}
+```
+
+---
+
+## Step-by-Step 執行
+
+### Step 5.1: 建立 BASELINE.md
+
+| 項目 | 內容 |
+|------|------|
+| **工具** | SubagentIsolator（Agent A: devops）|
+| **Prompt** | 使用 `templates/BASELINE.md` 模板 |
+| **驗證** | TH-02 ≥80% |
+
+### Step 5.2: 建立 MONITORING_PLAN.md
+
+| 項目 | 內容 |
+|------|------|
+| **工具** | SubagentIsolator（Agent A: devops）|
+| **Prompt** | 使用 `templates/MONITORING_PLAN.md` 模板 |
+| **驗證** | 監控計畫完整 |
+
+### Step 5.3: A/B 審查（兩次）
+
+| 項目 | 內容 |
+|------|------|
+| **工具** | SubagentIsolator（Agent B: architect）|
+| **驗證** | Constitution TH-02 ≥80%, TH-07 ≥90 |
+| **產出** | APPROVE 或 REJECT |
+
+---
+
+## 閾值對照（TH-02, TH-07）
+
+| 閾值 | 門檻 | 驗證方式 |
+|------|------|---------|
+| TH-02 | Constitution 總分 ≥80% | constitution runner |
+| TH-07 | 邏輯正確性 ≥90 | verification |
+
+---
+
+## HR-12/13 時間追蹤
+
+| Step | 預估 | HR-13 臨界值 |
+|------|------|--------------|
+| 5.1 | 45m | 135m |
+| 5.2 | 30m | 90m |
+| 5.3 | 45m | 135m |
+| **總計** | **120m** | **360m** |
+
+---
+
+## 交付物
+
+| 交付物 | 模板 | 驗證 |
+|--------|------|------|
+| BASELINE.md | `templates/BASELINE.md` | TH-02 ≥80% |
+| MONITORING_PLAN.md | `templates/MONITORING_PLAN.md` | TH-07 ≥90 |
+
+---
+
+## Exit 條件
+
+- ✅ Constitution TH-02 ≥80%
+- ✅ TH-07 ≥90
+- ✅ Agent B 兩次 APPROVE
+- ✅ sessions_spawn.log 有記錄（HR-10）
