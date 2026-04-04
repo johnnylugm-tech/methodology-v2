@@ -203,5 +203,31 @@ A: `@covers: FR-01, FR-03`
 **Q: annotation 會影響程式效能嗎？**
 A: 不會，annotation 只在 docstring 中，是純文字
 
+## Mock 策略（Phase 3 必讀）
+
+### 外部依賴 Mock 規則
+
+| 依賴 | Mock 工具 | 範例 |
+|------|---------|------|
+| httpx.AsyncClient | pytest-httpx | `pytest-httpx_mock` |
+| Redis | fakeredis | `fakeredis.FakeRedis()` |
+| Kokoro Backend | responses | `responses.mock` |
+| 檔案系統 | pytest-mock | `mocker.patch("pathlib.Path")` |
+
+### Mock 等級
+
+| 等級 | 說明 | 何時使用 |
+|------|------|---------|
+| L1 | Mock 外部 API | 所有網路請求 |
+| L2 | Mock 檔案 I/O | 測試檔案處理 |
+| L3 | Mock 時間 | 測試超時、TTL |
+
+### 禁止事項
+- ❌ Mock 內部邏輯（應重構）
+- ❌ Mock 資料庫（應用 integration test）
+- ❌ 不寫測試（`pass`）= 任務失敗
+
+---
+
 **Q: trace-check 找不到 annotation 會怎樣？**
 A: 該項目顯示 ❌（missing），不阻擋執行但影響覆蓋率
