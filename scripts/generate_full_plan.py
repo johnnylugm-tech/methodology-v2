@@ -590,10 +590,10 @@ def generate_full_plan(phase: int, repo_path: Path, output_path: Path = None) ->
     plan_lines = [
         f"# Phase {phase} 完整執行計劃 — {repo_path.name}",
         "",
-        f"> **版本**: v6.39.0",
+        f"> **版本**: v6.45.0",
         f"> **專案**: {repo_path.name}",
         f"> **日期**: {datetime.now().strftime('%Y-%m-%d')}",
-        f"> **Framework**: methodology-v2 v6.39.0",
+        f"> **Framework**: methodology-v2 v6.45.0",
         f"> **Phase**: {phase} - {phase_names.get(phase, 'Unknown')}",
         f"> **狀態**: 完整版（含 Phase {phase} 詳細任務）",
         "",
