@@ -67,7 +67,7 @@ Phase Reset → **docs/CLI_REFERENCE.md**
 Phase N 詳細 SOP → **LAZY LOAD `docs/P{N}_SOP.md`** · Verify_Agent → Phase 3+，Agent B<80 或自評差異>20 → **docs/VERIFIER_GUIDE.md**
 
 ## 5. 外部文檔
-`SKILL_DOMAIN.md` · `docs/P{N}_SOP.md`（Phase SOP）· `templates/`（交付物模板） · `docs/HYBRID_WORKFLOW_GUIDE.md` · `docs/CLI_REFERENCE.md` · `docs/ANNOTATION_GUIDE.md` · `docs/VERIFIER_GUIDE.md` · `docs/RUNTIME_METRICS_MANUAL.md` · `docs/CONSTITUTION_GUIDE.md` · `docs/COWORK_PROTOCOL_v1.0.md` · `docs/TASK_INITIALIZATION_PROMPT.md`
+`SKILL_DOMAIN.md` · `docs/P{N}_SOP.md`（Phase SOP）· `templates/`（交付物模板） · `docs/PLAN_PHASE_SPEC.md`（plan-phase 完整規格）· `docs/HYBRID_WORKFLOW_GUIDE.md` · `docs/CLI_REFERENCE.md` · `docs/ANNOTATION_GUIDE.md` · `docs/VERIFIER_GUIDE.md` · `docs/RUNTIME_METRICS_MANUAL.md` · `docs/CONSTITUTION_GUIDE.md` · `docs/COWORK_PROTOCOL_v1.0.md` · `docs/TASK_INITIALIZATION_PROMPT.md`
 
 ---
 *methodology-v2 v6.26 | Agent Executable Specification | Last Updated: 2026-04-03*
