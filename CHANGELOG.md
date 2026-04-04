@@ -9,6 +9,60 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [v6.46] - 2026-04-04
+
+### 🐛 Fixed
+- **Version Consistency**: All components now at v6.45.0
+
+### 📝 Documentation
+- **AUDIT_v6.45.md**: Audit report for v6.40-v6.45
+- **JOHNNY_HANDBOOK.md**: Updated to v6.46 with 18 chapters
+
+---
+
+## [v6.45] - 2026-04-04
+
+### 🐛 Fixed
+- **OUTPUT path**: Now correctly shows `app/processing/lexicon_mapper.py` from SAD parsing
+- **Forbidden infrastructure**: Clarified as deprecated
+- **FR enrichment**: Developer Prompt receives correct module name
+
+---
+
+## [v6.44] - 2026-04-04
+
+### 🐛 Fixed
+- **Pre-flight deliverable check**: Searches subdirectories for SAD.md, skips Phase outputs
+
+---
+
+## [v6.43] - 2026-04-04
+
+### 🚀 Added
+- **Developer/Reviewer Prompt On Demand restrictions**
+- **Tool Usage Timing section** (Section 9)
+- **HR-15 citations line number emphasis**
+
+### 🐛 Fixed
+- Anti-Dump rule in prompts
+
+---
+
+## [v6.42] - 2026-04-04
+
+### 🚀 Added
+- **Agent A/B roles per phase** (8 different role combinations)
+- **Reviewer Prompt template** with REJECT_IF conditions
+
+---
+
+## [v6.41] - 2026-04-04
+
+### 🚀 Added
+- **`--detailed` flag**: Merges FR tasks into single plan file
+
+---
+
 ## [v6.40] - 2026-04-04
 
 ### 🚀 Added

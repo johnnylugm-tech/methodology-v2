@@ -1,6 +1,6 @@
-# Johnny 使用手冊 v6.40
+# Johnny 使用手冊 v6.46
 
-> **版本**: v6.40
+> **版本**: v6.46
 > **對象**: Johnny（Human-in-the-Loop）
 > **用途**: 快速上手 methodology-v2
 
@@ -8,7 +8,7 @@
 
 ## 1. methodology-v2 今天長什麼樣？
 
-### v6.32 ~ v6.40 帶來的改善
+### v6.32 ~ v6.46 帶來的改善
 
 | 版本 | 改善內容 |
 |------|----------|
@@ -18,7 +18,13 @@
 | v6.37 | `--detailed` flag for FR detailed tasks |
 | v6.38 | Phase 1-8 TH thresholds + External docs complete |
 | v6.39 | `generate_full_plan.py` supports all phases |
-| **v6.40** | **Audit fixes + version consistency** |
+| v6.41 | `--detailed` merges FR tasks into single plan |
+| v6.42 | Agent A/B roles per phase + Reviewer Prompt |
+| v6.43 | On Demand restrictions + Tool Usage Timing section |
+| v6.44 | Pre-flight deliverable check fix |
+| v6.45 | OUTPUT path from SAD parsing + Forbidden clarification |
+| v6.46 | Version consistency audit fix |
+| **v6.46** | **Audit fixes + version consistency** |
 
 ### 三層文件架構
 
@@ -146,11 +152,11 @@ python cli.py run-phase --phase 3 --step 3.1 --task "FR-01 實作"
 - Constitution 分數
 - Session ID
 - Log 檔位置
-- 執行計畫（16 章節）
+- 執行計畫（18 章節）
 
 ---
 
-## 4. 執行計畫的 16 個章節
+## 4. 執行計畫的 18 個章節
 
 `plan-phase` 生成的執行計畫包含以下 16 個章節：
 
@@ -158,20 +164,22 @@ python cli.py run-phase --phase 3 --step 3.1 --task "FR-01 實作"
 |---|------|------|
 | 0 | 執行協議 | CLI 命令、Step 流程 |
 | 1 | 硬規則 | HR-01~HR-15 含具體行動 |
-| 2 | A/B 協作 | HR/TH 約束、On Demand 原則 |
+| 2 | A/B 協作 | HR/TH 約束、Agent A/B 角色 |
 | 3 | FR-by-FR 任務表格 | 從 SAD 解析，含模組/檔案/驗證命令 |
 | 4 | 產出結構樹 | 從 SAD 解析的目錄結構 |
 | 5 | FR 詳細任務 | 若 --detailed，含 SRS 完整內容 |
 | 6 | 外部文檔 | Phase 適用的文檔列表 |
-| 7 | Developer Prompt 模板 | On Demand 格式 |
+| 7 | Developer/Reviewer Prompt | On Demand 格式，含 Anti-Dump |
 | 8 | Iteration 修復流程 | HR-12 5輪限制 |
-| 9 | Quality Gate | 7步驗證命令 |
-| 10 | sessions_spawn.log 格式 | HR-10 規範 |
-| 11 | Commit 格式 | 標準 commit 格式 |
-| 12 | 估計時間 | 各階段時間 + HR-13 臨界值 |
-| 13 | Phase Truth 組成 | 權重計算 |
-| 14 | 工具速查 | 6 大工具 Python 範例 |
-| 15 | Pre-Execution Checklist | 12 項檢查清單 |
+| 9 | **工具調用時機** | **6 大工具觸發條件** |
+| 10 | Quality Gate | 7步驗證命令 |
+| 11 | sessions_spawn.log 格式 | HR-10 規範 |
+| 12 | Commit 格式 | 標準 commit 格式 |
+| 13 | 估計時間 | 各階段時間 + HR-13 臨界值 |
+| 14 | Phase Truth 組成 | 權重計算 |
+| 15 | 工具速查 | 6 大工具 Python 範例 |
+| 16 | Pre-Execution Checklist | 12 項檢查清單 |
+| 17 | 下一步 | --repair 指令 |
 
 ---
 
@@ -237,7 +245,7 @@ Agent 必須使用 `plan-phase`：
 Agent: python cli.py plan-phase --phase {N} --detailed --goal "{任務目標}"
 ```
 
-Johnny 看執行計畫（16 章節透明）。
+Johnny 看執行計畫（18 章節透明）。
 
 ### Step 3: Johnny 審核計畫
 
@@ -292,7 +300,41 @@ Johnny 等到執行完成，看結果。
 
 ---
 
-## 8. 拷問法範例
+## 8. On Demand 執行原則（v6.43+）
+
+### 核心原則
+
+| 原則 | 定義 |
+|------|------|
+| **Need to Know** | 只給必要資訊，L1/NFR 被問時才提供 |
+| **On Demand** | Sub-agent 自己讀 artifact paths，不 dump |
+| **Anti-Dump** | 禁止要求主代理給完整 artifact 內容 |
+
+### Prompt 限制
+
+Developer/Reviewer Prompt 明確規定：
+```
+【On Demand 讀取範圍】（只讀這些章節，❌ 禁止 dump 全文）
+
+FORBIDDEN:
+- ❌ dump SRS.md/SAD.md 全文
+- ❌ 無 citations 或 citations 無行號 → HR-15 違規
+```
+
+### 工具調用時機
+
+| 工具 | 觸發時機 |
+|------|---------|
+| SubagentIsolator | 派遣 Sub-agent 前（HR-01）|
+| PermissionGuard | exec/rm 操作前 |
+| ContextManager | context > 50 條訊息 |
+| SessionManager | 任務 > 30 分鐘 |
+| KnowledgeCurator | Phase 開始前 verify |
+| ToolRegistry | 新工具引入時 |
+
+---
+
+## 9. 拷問法範例
 
 在 Agent 完成 Phase 後，隨機問這些問題：
 
@@ -310,6 +352,7 @@ Johnny 等到執行完成，看結果。
 - 「HR-15 的 citations 格式規定是什麼？」
 - 「代碼和測試的分離是什麼？」
 - 「FR-by-FR 表格從哪裡解析？」
+- 「On Demand 原則是什麼？禁止什麼？」
 
 ### Phase 4-8 相關
 - 「TH-02 的門檻是多少？」
@@ -318,9 +361,9 @@ Johnny 等到執行完成，看結果。
 
 ---
 
-## 9. 新工具速查（v6.32-v6.40）
+## 10. 新工具速查（v6.32-v6.46）
 
-### 四大工具
+### 六大工具
 
 | 工具 | 解決的問題 | Agent 什麼時候用 |
 |------|-----------|----------------|
@@ -328,6 +371,8 @@ Johnny 等到執行完成，看結果。
 | `ContextManager` | 上下文膨脹 | context > 50 時 compress() |
 | `SubagentIsolator` | 結果污染 | 派遣時 spawn() |
 | `PermissionGuard` | 危險操作 | exec/rm 前 check() |
+| `SessionManager` | 任務中斷 | 任務 > 30 分鐘 |
+| `ToolRegistry` | 新工具追蹤 | 發現新工具時 |
 
 ### v6.32+ 新增功能
 
@@ -372,7 +417,7 @@ python cli.py context-compress --level L3
 
 ---
 
-## 10. CLI 速查
+## 11. CLI 速查
 
 ```bash
 # === 單一入口（必用）===
@@ -423,7 +468,7 @@ python cli.py phase-status
 
 ---
 
-## 11. Johnny 的三個狀態
+## 12. Johnny 的三個狀態
 
 ```
 🤚 等待中 - Agent 在執行 run-phase
@@ -433,7 +478,7 @@ python cli.py phase-status
 
 ---
 
-## 12. 緊急情況
+## 13. 緊急情況
 
 ### 發現作假跡象
 1. 看 run-phase 輸出
@@ -454,7 +499,7 @@ python cli.py phase-status
 
 ---
 
-## 13. 關鍵閾值速查
+## 14. 關鍵閾值速查
 
 | 閾值 | 數值 | Phase |
 |------|------|-------|
@@ -477,7 +522,7 @@ python cli.py phase-status
 
 ---
 
-## 14. 硬規則速查
+## 15. 硬規則速查
 
 | 規則 | 內容 | 後果 |
 |------|------|------|
@@ -499,19 +544,19 @@ python cli.py phase-status
 
 ---
 
-## 15. 版本一致性
+## 16. 版本一致性
 
 | Component | Version | Status |
 |-----------|---------|--------|
-| cli.py | v6.40.0 | ✅ |
+| cli.py | v6.46.0 | ✅ |
 | generate_full_plan.py | v6.39.0 | ✅ |
 | SKILL.md | v6.32.0 | ⚠️ |
-| JOHNNY_HANDBOOK.md | v6.40 | ✅ |
-| 執行計畫輸出 | v6.40.0 | ✅ |
+| JOHNNY_HANDBOOK.md | v6.46 | ✅ |
+| 執行計畫輸出 | v6.46.0 | ✅ |
 
 > ⚠️ SKILL.md 版本落後（v6.32.0），建議在下次 release 時同步更新。
 
 ---
 
-*此手冊基於 methodology-v2 v6.40*
+*此手冊基於 methodology-v2 v6.46*
 *最後更新: 2026-04-04*
