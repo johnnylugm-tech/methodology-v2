@@ -458,13 +458,14 @@ except MethodologyError as e:
 
 ## Phase 3 Quality Gate
 
-| Threshold | 標準 | 工具 |
-|-----------|------|------|
-| TH-06 | Constitution ≥ 80% | constitution runner |
-| TH-08 | doc_checker > 80% | doc_checker |
-| TH-10 | phase-verify ≥ 70% | phase-verify |
-| TH-11 | trace-check = 100% | trace-check |
-| TH-16 | Coverage ≥ 70% per module | pytest --cov |
+| Threshold | 標準 | 工具 | 備註 |
+|-----------|------|------|------|
+| TH-06 | Constitution ≥ 80% | constitution runner | Phase 3 Constitution 門檻 |
+| TH-09 | AgentEvaluator 嚴格 ≥90 | agent_evaluator | Phase 3-8 嚴格標準（TH-09，非 TH-08）|
+| TH-10 | 測試通過率 =100% | pytest | Phase 3-8 統一門檻 |
+| TH-11 | 單元測試覆蓋率 ≥70% | pytest --cov | Phase 3 模組覆蓋 |
+| TH-15 | Phase Truth ≥70% | phase-verify | HR-11 進階條件 |
+| TH-16 | SAD↔代碼映射 =100% | trace-check | Phase 3 SAD→代碼對照 |
 
 ---
 

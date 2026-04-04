@@ -217,6 +217,8 @@ class MethodologyCLI:
             return self.cmd_p2p(args)
         elif command == "hitl":
             return self.cmd_hitl(args)
+        elif command == "integrity":
+            return self.cmd_integrity(args)
         elif command == "gatekeeper":
             return self.cmd_gatekeeper(args)
         elif command == "confirmations":
@@ -673,6 +675,119 @@ class MethodologyCLI:
         print(f"▶️  Phase {phase} RESUMED")
         return 0
     
+    def cmd_integrity(self, args):
+        """HR-14 Integrity 分數計算 — 根據 SKILL.md §6 公式"""
+        from pathlib import Path
+        import json
+        import os
+
+        project_path = Path(args.project)
+        state_file = project_path / ".methodology" / "state.json"
+        spawn_log = project_path / "sessions_spawn.log"
+
+        # 讀取 state.json
+        if not state_file.exists():
+            print("❌ state.json 不存在，請確認 --project 路徑正確")
+            return 1
+
+        with open(state_file) as f:
+            state = json.load(f)
+
+        current_phase = state.get("current_phase", 0)
+
+        # Phase Completeness：根據交付物是否存在推估
+        phase_deliverables = {
+            1: ["SRS.md", "SPEC_TRACKING.md", "TRACEABILITY_MATRIX.md"],
+            2: ["SAD.md", "ADR.md"],
+            3: ["app"],
+            4: ["TEST_PLAN.md", "TEST_RESULTS.md"],
+            5: ["BASELINE.md", "MONITORING_PLAN.md"],
+            6: ["QUALITY_REPORT.md"],
+            7: ["RISK_REGISTER.md"],
+            8: ["CONFIG_RECORDS.md"],
+        }
+
+        # Constitution 分數：從 state 或推估
+        constitution_scores = state.get("constitution_scores", {})
+        for p in range(1, 9):
+            if p not in constitution_scores:
+                constitution_scores[p] = 0
+
+        # Phase Completeness
+        phase_completions = {}
+        for phase, deliverables in phase_deliverables.items():
+            if phase > current_phase:
+                phase_completions[phase] = 0.0
+            elif phase == current_phase:
+                # 目前 Phase 只算 50%
+                phase_completions[phase] = 0.5
+            else:
+                # 已完成 Phase，檢查交付物
+                present = sum(1 for d in deliverables if (project_path / d).exists()) / len(deliverables)
+                phase_completions[phase] = present
+
+        # Log Completeness：sessions_spawn.log
+        if spawn_log.exists():
+            with open(spawn_log) as f:
+                lines = f.readlines()
+            total_expected = sum(len(d) for d in phase_deliverables.values())
+            log_completeness = min(len(lines) / max(total_expected, 1), 1.0)
+        else:
+            log_completeness = 0.0
+
+        # SKILL.md §6 Integrity 公式
+        weights = {1: 0.10, 2: 0.15, 3: 0.20, 4: 0.15,
+                    5: 0.10, 6: 0.10, 7: 0.10, 8: 0.10}
+
+        integrity = 0.0
+        for phase, completion in phase_completions.items():
+            constitution = constitution_scores.get(phase, 0)
+            phase_score = completion * (constitution / 100.0) * log_completeness
+            integrity += phase_score * weights.get(phase, 0)
+
+        integrity_pct = integrity * 100
+
+        # HR-14 FREEZE 判斷
+        if integrity_pct < 40:
+            hr14_icon = "🔒 FREEZE"
+            hr14_msg = "HR-14 觸發！需執行全面審計"
+        elif integrity_pct < 60:
+            hr14_icon = "⚠️ WARNING"
+            hr14_msg = "Integrity偏低，建議檢查落後 Phase"
+        else:
+            hr14_icon = "✅ HEALTHY"
+            hr14_msg = "Integrity正常"
+
+        print(f"""
+╔══════════════════════════════════════════════════════════════════╗
+║  HR-14 Integrity 分數                                            ║
+╠══════════════════════════════════════════════════════════════════╣
+║  Integrity Score: {hr14_icon:<50}║
+║  {integrity_pct:>6.1f}%{' ':>44}║
+╠══════════════════════════════════════════════════════════════════╣
+║  組成因子                                                        ║""")
+
+        for phase in range(1, 9):
+            completion = phase_completions.get(phase, 0)
+            constitution = constitution_scores.get(phase, 0)
+            weight = weights.get(phase, 0)
+            contrib = completion * (constitution / 100.0) * log_completeness * weight * 100
+            status = "✅" if phase <= current_phase else "  "
+            if phase == current_phase:
+                status = "▶️"
+            print(f"║  {status} Phase {phase}: completions={completion:.0%}  "
+                  f"constitution={constitution:>4.0f}%  weight={weight:.0%}  "
+                  f"contrib={contrib:>5.1f}%     ║")
+
+        print(f"""╠══════════════════════════════════════════════════════════════════╣
+║  Log Completeness: {log_completeness:.0%} (sessions_spawn.log)                        ║
+║  Current Phase:   {current_phase}                                                  ║
+╠══════════════════════════════════════════════════════════════════╣
+║  {hr14_msg:<62}  ║
+╚══════════════════════════════════════════════════════════════════╝
+""")
+        return 0
+
     def cmd_phase_freeze(self, args):
         """凍結專案（HR-14觸發時使用）"""
         from pathlib import Path
@@ -2189,18 +2304,40 @@ class MethodologyCLI:
             for k, v in levels.items():
                 pass # Removed print-debug
         elif subcmd == "check":
-            pass # Removed print-debug
-            # TODO: 檢查專案是否符合憲章
             skip_failed = getattr(args, 'skip_failed', False)
             auto_fix = getattr(args, 'auto_fix', False)
 
-            # 框架：Constitution check 目前是 placeholder
-            # --skip-failed / --auto-fix 預留給未來實作
-            if skip_failed:
-                pass # Removed print-debug
-            if auto_fix:
-                pass # Removed print-debug
-            pass # Removed print-debug
+            # Constitution check 是框架 Constitution 驗證的前端介面
+            # --auto-fix / --skip-failed 選項已預留（用於 phase-level Constitution）
+            # 目前 Constitution 驗證請使用: python cli.py enforce --level BLOCK
+            if auto_fix or skip_failed:
+                print("⚠️  --auto-fix / --skip-failed for constitution check is in development.")
+                print("   現有 Constitution 驗證請使用: python cli.py enforce --level BLOCK")
+                return 0
+
+            # Constitution check 框架
+            from pathlib import Path
+            project_root = Path(getattr(args, 'project', '.'))
+            phase_type = getattr(args, 'type', None)
+            if not phase_type:
+                print("❌ constitution check 需要 --type 參數 (如: srs, sad, test_plan, implementation)")
+                return 1
+
+            # 使用 validate_constitution_compliance（constitution 模块提供的接口）
+            try:
+                from constitution import validate_constitution_compliance
+                result = validate_constitution_compliance(str(project_root))
+                compliant = result.get("compliant", False)
+                checks = result.get("checks", [])
+                icon = "✅" if compliant else "❌"
+                print(f"\n{icon} Constitution check ({phase_type}): compliant={compliant}")
+                if checks:
+                    for check in checks[:10]:
+                        print(f"   - {check}")
+            except Exception as e:
+                print(f"❌ Constitution check failed: {e}")
+                return 1
+            return 0
         elif subcmd == "edit":
             pass # Removed print-debug
             import subprocess
@@ -4696,6 +4833,11 @@ def main():
     # version
     subparsers.add_parser("version", help="Show version")
     
+    # integrity (HR-14: Integrity 分數計算)
+    integrity_parser = subparsers.add_parser("integrity", help="HR-14 Integrity 分數計算")
+    integrity_parser.add_argument("--project", default=".", dest="project",
+                                  help="專案根目錄 (預設: .)")
+
     # gatekeeper
     gatekeeper_parser = subparsers.add_parser("gatekeeper", help="Workflow Gatekeeper")
     gatekeeper_parser.add_argument("action", choices=["status", "check", "enforce"],

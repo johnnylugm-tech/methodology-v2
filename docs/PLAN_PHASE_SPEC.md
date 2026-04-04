@@ -1,6 +1,6 @@
 # plan-phase 完整規格 v1.0
 
-> 基於 SKILL.md v6.26 100% 落實
+> 基於 SKILL.md v6.28 100% 落實
 
 ---
 
@@ -490,32 +490,30 @@ Johnny: 看結果
 
 ## 15. HR-14 Integrity 計算
 
-Integrity 分數由以下組成：
+> ⚠️ **公式定義已遷移至 SKILL.md §6（權威來源）**
 
-```python
-def calculate_integrity():
-    """
-    Integrity = 扣分後的分數
-    初始 = 100
-    """
-    penalties = {
-        "HR-01": -25,  # 自寫自審
-        "HR-02": -20,  # 無實際命令輸出
-        "HR-03": -30,  # 跳過 Phase
-        "HR-06": -20,  # 引入外框架
-        "HR-07": -15,  # 無 session_id
-        "HR-08": -10,  # 未執行 Quality Gate
-        "HR-09": -20,  # Claims Verifier 失敗
-        "HR-10": -15,  # sessions_spawn.log 缺失
-    }
-
-    score = 100
-    for hr, penalty in penalties.items():
-        if violations[hr]:
-            score += penalty  # penalty 是負數
-
-    return max(0, score)
+**驗證命令：**
+```bash
+python cli.py integrity --project .
 ```
+
+**公式（SKILL.md §6）：**
+```python
+Integrity = Σ(Phase_N_completeness × Constitution_Score/100 × log_completeness) × 100
+
+# Weights:
+# P1: 0.10, P2: 0.15, P3: 0.20, P4: 0.15,
+# P5: 0.10, P6: 0.10, P7: 0.10, P8: 0.10
+
+# Phase Completeness =
+#   (交付物數量 / 預期數量) ×
+#   (Constitution Score / 100) ×
+#   (sessions_spawn.log 完整度)
+
+# HR-14: Integrity < 40 → FREEZE
+```
+
+**CLI實作：** `cmd_integrity()` — 讀取 state.json 和 sessions_spawn.log 計算。
 
 ---
 
