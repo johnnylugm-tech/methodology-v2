@@ -625,6 +625,7 @@ Examples:
     parser.add_argument('--phase', type=int, required=True, help='Phase number (1-8)')
     parser.add_argument('--repo', type=str, required=True, help='Repository path')
     parser.add_argument('--output', type=str, help='Output file path')
+    parser.add_argument('--no-output', action='store_true', help='Print to stdout instead of saving to file')
     
     args = parser.parse_args()
     
@@ -640,8 +641,12 @@ Examples:
     plan = generate_full_plan(args.phase, repo_path, output_path)
     
     if plan:
-        print(f"\n✅ Full plan generated ({len(plan)} chars)")
-        print(plan[:1500])
+        if args.no_output:
+            # Print full plan to stdout for piping
+            print(plan)
+        else:
+            print(f"\n✅ Full plan generated ({len(plan)} chars)")
+            print(plan[:1500])
         return 0
     else:
         return 1

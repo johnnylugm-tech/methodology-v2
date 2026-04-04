@@ -4935,7 +4935,14 @@ OUTPUT_FORMAT:
             # Generate deliverable structure from modules
             deliverable_structure = self._generate_deliverable_structure(frs, modules)
             plan = plan.replace('{DELIVERABLE_STRUCTURE}', deliverable_structure)
-            plan = plan.replace('{FR_DETAILED_TASKS}', self._generate_fr_detailed_tasks_placeholder(frs, modules, phase))
+            
+            # FR detailed tasks: placeholder only if not --detailed
+            if not getattr(args, 'detailed', False):
+                plan = plan.replace('{FR_DETAILED_TASKS}', self._generate_fr_detailed_tasks_placeholder(frs, modules, phase))
+            else:
+                # Remove placeholder line, will be replaced by merge later
+                plan = plan.replace('{FR_DETAILED_TASKS}', '')
+            
             plan = plan.replace('{TH_THRESHOLDS_TABLE}', self._generate_thresholds_table(phase))
             plan = plan.replace('{EXTERNAL_DOCS}', self._generate_external_docs(phase))
         else:
@@ -4954,21 +4961,46 @@ OUTPUT_FORMAT:
         plan_file.write_text(plan)
         print(f"\n💾 Plan saved: {plan_file}")
 
-        # Generate full FR detailed tasks if --detailed flag is set
+        # Generate FR detailed tasks inline if --detailed flag is set
         if getattr(args, 'detailed', False):
-            print(f"\n[{datetime.now().strftime('%H:%M:%S')}] DETAILED: 生成 FR 詳細任務...")
-            full_plan_file = repo_path / ".methodology" / "plans" / f"phase{phase}_FULL.md"
+            print(f"\n[{datetime.now().strftime('%H:%M:%S')}] DETAILED: 生成 FR 詳細任務（合併到主 plan）...")
             try:
                 import subprocess
+                # Run generate_full_plan.py and capture output
                 result = subprocess.run(
                     [sys.executable, str(Path(__file__).parent / "scripts" / "generate_full_plan.py"),
-                     "--phase", str(phase), "--repo", str(repo_path), "--output", str(full_plan_file)],
+                     "--phase", str(phase), "--repo", str(repo_path), "--no-output"],
                     capture_output=True, text=True, timeout=60
                 )
-                if result.returncode == 0:
-                    print(f"✅ FR 詳細任務已生成: {full_plan_file}")
+                if result.returncode == 0 and result.stdout:
+                    # Parse FR detailed tasks from output (skip header lines)
+                    full_plan_content = result.stdout
+                    # Extract just the task sections (skip header/banner)
+                    lines = full_plan_content.split('\n')
+                    task_start = 0
+                    for i, line in enumerate(lines):
+                        if '## Phase' in line and i > 0:
+                            task_start = i
+                            break
+                    fr_tasks = '\n'.join(lines[task_start:]) if task_start else full_plan_content
+                    
+                    # Insert FR tasks after section 5 header
+                    # Find "## 5. FR 詳細任務" and insert after it
+                    section_marker = f"## 5. FR 詳細任務"
+                    marker_idx = plan.find(section_marker)
+                    if marker_idx != -1:
+                        # Find end of this section (next ## at same level or end of file)
+                        insert_pos = plan.find('\n## ', marker_idx + len(section_marker))
+                        if insert_pos == -1:
+                            insert_pos = len(plan)
+                        plan = plan[:insert_pos] + '\n\n' + fr_tasks + plan[insert_pos:]
+                        # Re-save the merged plan
+                        plan_file.write_text(plan)
+                        print(f"✅ FR 詳細任務已合併到: {plan_file}")
+                    else:
+                        print(f"⚠️ 找不到 FR 詳細任務 section")
                 else:
-                    print(f"⚠️ FR 詳細任務生成失敗: {result.stderr[:200]}")
+                    print(f"⚠️ FR 詳細任務生成失敗")
             except Exception as e:
                 print(f"⚠️ FR 詳細任務生成異常: {e}")
 
