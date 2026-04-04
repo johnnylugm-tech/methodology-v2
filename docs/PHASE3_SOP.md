@@ -1,13 +1,73 @@
-# Phase 3 SOP — 模組化 FR 實作流程（v6.22 完整版）
+# Phase 3 SOP — 模組化 FR 實作流程（v6.26 完整版）
 
 > **核心理念**：工具不缺，缺的是紀律。主代理 = 專案經理，Sub-agent = 執行者。
 
 ---
 
+## 單一入口：run-phase（v6.26 新增）
+
+> ⚠️ **所有 Phase 執行必須經過此入口**，不可繞過。
+
+```bash
+python cli.py run-phase --phase 3
+python cli.py run-phase --phase 3 --step 3.1 --task "FR-01 實作"
+```
+
+### run-phase 執行流程
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  Johnny: 「執行 Phase 3」                                     │
+└─────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────┐
+│  PRE-FLIGHT CHECKS（強制，不通過就停止）                       │
+│                                                             │
+│  1. FSM State Check → FREEZE/PAUSED 阻擋                    │
+│  2. Phase Sequence → 不可跳過 Phase                          │
+│  3. Constitution Check → <80% 阻擋                           │
+│  4. Tool Registry Check → 工具狀態                            │
+│  5. Session Save → Pre-flight 存檔                           │
+└─────────────────────────────────────────────────────────────┘
+                              ↓
+                    ✅ 全部通過
+                              ↓
+┌─────────────────────────────────────────────────────────────┐
+│  EXECUTE                                                     │
+│  6. Load docs/P3_SOP.md                                      │
+│  7. Execute steps via SubagentIsolator (不直接 sessions_spawn)│
+│  8. PermissionGuard.check() before exec/rm                  │
+│  9. Log to .methodology/run-phase.log                        │
+└─────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────┐
+│  POST-FLIGHT                                                 │
+│  10. Final Constitution Check                                │
+│  11. Update state.json                                       │
+│  12. Report Summary                                          │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### run-phase 合規宣言
+
+```
+本命令：
+- ✅ 調用 SubagentIsolator.spawn()，不直接用 sessions_spawn
+- ✅ 讀取 state.json 並服從 FSM 狀態
+- ✅ Pre-flight 失敗時停在 Pre-flight，不進入執行
+- ✅ Post-flight 自動執行 Constitution check
+- ✅ HR-12/13/14 觸發時自動服從（pause/freeze）
+- ❌ 不繞過任何 HR 規則
+- ❌ 不跳過 Phase 順序
+```
+
+---
+
 ## 核心參考
 
-- **Main Agent Playbook**：`methodology-v2/docs/MAIN_AGENT_PLAYBOOK.md`（v6.22）
-- **v6.22 新工具**：KnowledgeCurator / ContextManager / SubagentIsolator / PermissionGuard / **ToolRegistry** / **SessionManager** / **Enhanced Exceptions**
+- **Main Agent Playbook**：`methodology-v2/docs/MAIN_AGENT_PLAYBOOK.md`（v6.26）
+- **v6.26 單一入口**：`run-phase`（所有 Phase 執行必經）
+- **v6.22 新工具**：KnowledgeCurator / ContextManager / SubagentIsolator / PermissionGuard / ToolRegistry / SessionManager / Enhanced Exceptions
 
 ---
 
@@ -517,4 +577,4 @@ tests/
 
 ---
 
-*本 SOP 整合 Main Agent Playbook (v6.22) + On Demand 管理原則 + Phase 3 實作經驗 + v6.22 新工具*
+*本 SOP 整合 Main Agent Playbook (v6.26) + run-phase 單一入口 + On Demand 管理原則 + Phase 3 實作經驗 + v6.26 新工具*
