@@ -4567,7 +4567,7 @@ class MethodologyCLI:
         
         return "\n".join(lines)
 
-    def _generate_fr_detailed_tasks_placeholder(self, frs: list, modules: list) -> str:
+    def _generate_fr_detailed_tasks_placeholder(self, frs: list, modules: list, phase: int) -> str:
         """產生 FR 詳細任務的 placeholder（具體內容需從 SRS 解析）"""
         lines = []
         for fr in frs:
@@ -4579,7 +4579,7 @@ class MethodologyCLI:
 **任務**：實作 {module_name}
 
 **SRS §{fr['fr']} 要求**：
-> 詳見 `.methodology/plans/phase3_FULL.md` 或執行 `python3 scripts/generate_full_plan.py --phase 3`
+> 詳見 `.methodology/plans/phase{phase}_FULL.md` 或執行 `python3 scripts/generate_full_plan.py --phase {phase}`
 
 **SAD §Module 對應**：
 - `{module_name}` 類
@@ -4935,7 +4935,7 @@ OUTPUT_FORMAT:
             # Generate deliverable structure from modules
             deliverable_structure = self._generate_deliverable_structure(frs, modules)
             plan = plan.replace('{DELIVERABLE_STRUCTURE}', deliverable_structure)
-            plan = plan.replace('{FR_DETAILED_TASKS}', self._generate_fr_detailed_tasks_placeholder(frs, modules))
+            plan = plan.replace('{FR_DETAILED_TASKS}', self._generate_fr_detailed_tasks_placeholder(frs, modules, phase))
             plan = plan.replace('{TH_THRESHOLDS_TABLE}', self._generate_thresholds_table(phase))
             plan = plan.replace('{EXTERNAL_DOCS}', self._generate_external_docs(phase))
         else:
