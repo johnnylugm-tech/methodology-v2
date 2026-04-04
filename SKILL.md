@@ -1,4 +1,4 @@
-# methodology-v2 v6.26
+# methodology-v2 v6.27
 > Agent Executable Spec. Phase detail → Lazy Load `docs/P{N}_SOP.md`
 
 ## 0. 執行協議
@@ -70,4 +70,4 @@ Phase N 詳細 SOP → **LAZY LOAD `docs/P{N}_SOP.md`** · Verify_Agent → Phas
 `SKILL_DOMAIN.md` · `docs/P{N}_SOP.md`（Phase SOP）· `templates/`（交付物模板） · `docs/PLAN_PHASE_SPEC.md`（plan-phase 完整規格）· `docs/HYBRID_WORKFLOW_GUIDE.md` · `docs/CLI_REFERENCE.md` · `docs/ANNOTATION_GUIDE.md` · `docs/VERIFIER_GUIDE.md` · `docs/RUNTIME_METRICS_MANUAL.md` · `docs/CONSTITUTION_GUIDE.md` · `docs/COWORK_PROTOCOL_v1.0.md` · `docs/TASK_INITIALIZATION_PROMPT.md`
 
 ---
-*methodology-v2 v6.26 | Agent Executable Specification | Last Updated: 2026-04-03*
+*methodology-v2 v6.27 | Agent Executable Specification | Last Updated: 2026-04-03*
