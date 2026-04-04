@@ -1,4 +1,4 @@
-# methodology-v2 v6.27
+# methodology-v2 v6.28
 > Agent Executable Spec. Phase detail → Lazy Load `docs/P{N}_SOP.md`
 
 ## 0. 執行協議
@@ -69,5 +69,57 @@ Phase N 詳細 SOP → **LAZY LOAD `docs/P{N}_SOP.md`** · Verify_Agent → Phas
 ## 5. 外部文檔
 `SKILL_DOMAIN.md` · `docs/P{N}_SOP.md`（Phase SOP）· `templates/`（交付物模板） · `docs/PLAN_PHASE_SPEC.md`（plan-phase 完整規格）· `docs/HYBRID_WORKFLOW_GUIDE.md` · `docs/CLI_REFERENCE.md` · `docs/ANNOTATION_GUIDE.md` · `docs/VERIFIER_GUIDE.md` · `docs/RUNTIME_METRICS_MANUAL.md` · `docs/CONSTITUTION_GUIDE.md` · `docs/COWORK_PROTOCOL_v1.0.md` · `docs/TASK_INITIALIZATION_PROMPT.md`
 
+## 6. HR-14 Integrity 計算
+
+Integrity = 各 Phase 交付物完整度加權平均
+
+```python
+def calculate_integrity(
+    phase_completions: dict[int, float],
+    constitution_scores: dict[int, float],
+    log_completeness: float
+) -> float:
+    """
+    Formula:
+        Integrity = Σ(Phase_N_completeness × Weight_N) × 100
+
+    Weights:
+        P1: 0.10, P2: 0.15, P3: 0.20, P4: 0.15,
+        P5: 0.10, P6: 0.10, P7: 0.10, P8: 0.10
+
+    Phase Completeness =
+        (交付物數量 / 預期數量) ×
+        (Constitution Score / 100) ×
+        (sessions_spawn.log 完整度)
+
+    HR-14: Integrity < 40 → FREEZE
+
+    驗證命令：python cli.py integrity --project .
+    """
+    weights = {1: 0.10, 2: 0.15, 3: 0.20, 4: 0.15,
+               5: 0.10, 6: 0.10, 7: 0.10, 8: 0.10}
+
+    integrity = 0
+    for phase, completion in phase_completions.items():
+        constitution = constitution_scores.get(phase, 0)
+        phase_score = completion * (constitution / 100) * log_completeness
+        integrity += phase_score * weights.get(phase, 0)
+
+    return integrity * 100
+```
+
+狀態追蹤欄位（state.json）：
+```json
+{
+  "current_phase": 3,
+  "start_time": "2026-04-04T05:00:00Z",
+  "estimated_minutes": 180,
+  "checkpoint_interval_minutes": 60,
+  "last_checkpoint": "2026-04-04T06:00:00Z",
+  "hr13_triggered": false,
+  "hr13_remaining_minutes": null
+}
+```
+
 ---
-*methodology-v2 v6.27 | Agent Executable Specification | Last Updated: 2026-04-03*
+*methodology-v2 v6.28 | Agent Executable Specification | Last Updated: 2026-04-04*

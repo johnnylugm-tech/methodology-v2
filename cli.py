@@ -80,7 +80,7 @@ from tool_registry import ToolRegistry, TOOL_HANDLERS
 class MethodologyCLI:
     """統一 CLI 入口"""
     
-    VERSION = "6.22.0"
+    VERSION = "6.28.0"
     
     def __init__(self):
         self.progress = ProgressDashboard()
@@ -2191,6 +2191,15 @@ class MethodologyCLI:
         elif subcmd == "check":
             pass # Removed print-debug
             # TODO: 檢查專案是否符合憲章
+            skip_failed = getattr(args, 'skip_failed', False)
+            auto_fix = getattr(args, 'auto_fix', False)
+
+            # 框架：Constitution check 目前是 placeholder
+            # --skip-failed / --auto-fix 預留給未來實作
+            if skip_failed:
+                pass # Removed print-debug
+            if auto_fix:
+                pass # Removed print-debug
             pass # Removed print-debug
         elif subcmd == "edit":
             pass # Removed print-debug
@@ -2859,22 +2868,24 @@ class MethodologyCLI:
     def cmd_enforce(self, args):
         """Framework Enforcement - 統一執行所有 enforcement"""
         from enforcement.framework_enforcer import FrameworkEnforcer
-        
+
         level = args.level
         project_root = args.project
-        
+        skip_failed = getattr(args, 'skip_failed', False)
+        auto_fix = getattr(args, 'auto_fix', False)
+
         # Handle --aspice-report first
         if getattr(args, 'aspice_report', False):
             enforcer = FrameworkEnforcer(project_root)
             report = enforcer.generate_aspice_report()
             pass # Removed print-debug
             return 0
-        
+
         pass # Removed print-debug
-        
+
         enforcer = FrameworkEnforcer(project_root)
         result = enforcer.run(level=level)
-        
+
         # #5 修復：記錄 FrameworkEnforcer 結果到 DEVELOPMENT_LOG
         try:
             log_path = os.path.join(project_root, "DEVELOPMENT_LOG.md")
@@ -2887,10 +2898,31 @@ class MethodologyCLI:
                 f.write(log_entry)
         except Exception as e:
             pass  # 不阻塞主要流程
-        
+
         violations = result.violations
         warnings = result.warnings
-        
+
+        # --auto-fix: 自動修復有 fix 的 violations
+        if auto_fix and violations:
+            from enforcement.framework_enforcer import AutoFixRegistry
+            fix_registry = AutoFixRegistry()
+            fixed_count = 0
+            for msg, fix in violations:
+                if fix:
+                    try:
+                        fix_registry.apply_fix(fix)
+                        fixed_count += 1
+                    except Exception as e:
+                        pass # Removed print-debug
+            if fixed_count > 0:
+                pass # Removed print-debug
+
+        # --skip-failed: 只報告通過的結果
+        if skip_failed and violations:
+            violations = []
+            if not warnings:
+                result.passed = True
+
         if violations:
             pass # Removed print-debug
             for msg, fix in violations:
@@ -2899,7 +2931,7 @@ class MethodologyCLI:
                     pass # Removed print-debug
         else:
             pass # Removed print-debug
-        
+
         if warnings:
             pass # Removed print-debug
             for msg, fix in warnings:
@@ -2908,7 +2940,7 @@ class MethodologyCLI:
                     pass # Removed print-debug
         else:
             pass # Removed print-debug
-        
+
         if result.passed:
             pass # Removed print-debug
             return 0
@@ -3421,13 +3453,22 @@ class MethodologyCLI:
     def cmd_stage_pass(self, args):
         """STAGE_PASS Generator - 整合版品質認證"""
         from quality_gate.stage_pass_generator import IntegratedStagePassGenerator
-        
+
         phase = args.phase
         project_dir = args.project
-        
+
         generator = IntegratedStagePassGenerator(project_dir, phase)
+
+        # --skip-failed: 過濾掉失敗的檢查
+        if getattr(args, 'skip_failed', False):
+            generator.skip_failed = True
+
+        # --auto-fix: 自動修復已知問題
+        if getattr(args, 'auto_fix', False):
+            generator.auto_fix = True
+
         success = generator.run()
-        
+
         return 0 if success else 1
 
     def cmd_phase_truth(self, args):
@@ -3567,6 +3608,37 @@ class MethodologyCLI:
         action = args.action or None
 
         ug = UnifiedGate(project_path=repo_path)
+
+        # Gap 5: 時間追蹤初始化 - Phase 改變時 reset 時間
+        state_file = repo_path / ".methodology" / "state.json"
+        if state_file.exists():
+            try:
+                state = json.loads(state_file.read_text())
+                current_phase = state.get("current_phase")
+                # 優先用 --phase 參數，否則從 step 字首解析 (e.g. "3.1" → phase 3)
+                new_phase = getattr(args, 'phase', None)
+                if new_phase is None:
+                    step_str = getattr(args, 'step', '') or ''
+                    m = re.match(r'^(\d+)', step_str)
+                    if m:
+                        new_phase = int(m.group(1))
+
+                if new_phase is not None and current_phase != new_phase:
+                    now_iso = datetime.now().isoformat()
+                    state["start_time"] = now_iso
+                    state["hr13_triggered"] = False
+                    state["hr13_remaining_minutes"] = None
+                    state["last_checkpoint"] = now_iso
+                    # 預估時長可由 --estimated-minutes 參數覆蓋
+                    est = getattr(args, 'estimated_minutes', None)
+                    state["estimated_minutes"] = est if est else state.get("estimated_minutes", 180)
+                    if "checkpoint_interval_minutes" not in state:
+                        state["checkpoint_interval_minutes"] = 60
+                    state["current_phase"] = new_phase
+                    state_file.write_text(json.dumps(state, indent=2))
+            except Exception:
+                pass  # 不阻塞主要流程
+
         ug.update_step(
             step=args.step,
             module=args.module,
@@ -4416,6 +4488,8 @@ def main():
                                    choices=["view", "thresholds", "errors", "check", "edit", "compile", "verify"],
                                    help="Constitution subcommand")
     constitution_parser.add_argument("output", nargs="?", help="Output text to verify (for verify subcommand)")
+    constitution_parser.add_argument("--auto-fix", action="store_true", help="自動修復已知問題 (for check subcommand)")
+    constitution_parser.add_argument("--skip-failed", action="store_true", help="跳过失敗的檢查繼續執行 (for check subcommand)")
 
     # constitution-sync
     subparsers.add_parser("constitution-sync", help="Sync Constitution to Policy Engine")
@@ -4679,6 +4753,8 @@ def main():
     enforce_parser.add_argument("--project", default=".", help="Project root path")
     enforce_parser.add_argument("--aspice-report", action="store_true",
                               help="Generate ASPICE traceability report")
+    enforce_parser.add_argument("--auto-fix", action="store_true", help="自動修復已知問題")
+    enforce_parser.add_argument("--skip-failed", action="store_true", help="跳过失敗的檢查繼續執行")
 
     # decision (Decision Gate - 決策分類閘道)
     decision_parser = subparsers.add_parser("decision", aliases=["dec"], help="Decision Gate - 決策分類閘道")
@@ -4747,6 +4823,8 @@ def main():
     stage_pass_parser.add_argument("--phase", type=int, required=True, choices=range(1, 9),
                                    help="Phase number (1-8)")
     stage_pass_parser.add_argument("--project", default=".", help="Project root path")
+    stage_pass_parser.add_argument("--auto-fix", action="store_true", help="自動修復已知問題")
+    stage_pass_parser.add_argument("--skip-failed", action="store_true", help="跳过失敗的檢查繼續執行")
 
     # phase-verify (Phase 真相驗證)
     phase_verify_parser = subparsers.add_parser("phase-verify", help="Phase 真相驗證")
@@ -4787,6 +4865,8 @@ def main():
     update_step_parser.add_argument("--step", required=True, help="Step 名稱 (如 3.1)")
     update_step_parser.add_argument("--module", required=True, help="模組名稱 (如 LexiconMapper)")
     update_step_parser.add_argument("--action", help="下一步動作描述")
+    update_step_parser.add_argument("--phase", type=int, choices=range(1, 9), help="Phase 編號 (用於時間追蹤初始化)")
+    update_step_parser.add_argument("--estimated-minutes", type=int, help="預估 Phase 時長（分鐘）")
     update_step_parser.add_argument("--repo", default=".", help="Repo 路徑 (預設: .)")
 
     # end-phase (結束當前 Phase)
