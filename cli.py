@@ -4647,117 +4647,59 @@ OUTPUT_FORMAT:
         # Generate FR-by-FR table
         fr_table = self._generate_fr_table(frs, modules)
         qg_commands = self._generate_quality_gate_commands(phase)
+        # === PHASE 3: GENERATE PLAN FROM TEMPLATE ===
+        print(f"\n[{datetime.now().strftime('%H:%M:%S')}] TEMPLATE: 讀取 plan_phase_template.md")
+        # Read template
+        template_path = Path(__file__).parent / "templates" / "plan_phase_template.md"
+        if not template_path.exists():
+            print(f"⚠️  Template not found, using inline generation")
+            template_content = None
+        else:
+            template_content = template_path.read_text(encoding='utf-8')
+        
+        # Generate supporting data
+        fr_table_rows = self._generate_fr_table(frs, modules)
         log_format = self._generate_sessions_spawn_log_format(frs, phase)
-
-        # Generate Markdown plan
-        plan = f"""# Phase {phase} 執行計畫
-
-> **生成時間**: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
-> **Goal**: {goal}
-> **基於**: SKILL.md (v6.28)
-> **FSM**: {current_state.value if hasattr(current_state, 'value') else current_state}
-
----
-
-## 1. Pre-flight 檢查結果
-
-| 檢查項 | 結果 | 備註 |
-|--------|------|------|
-"""
+        
+        # Build pre-flight results
+        pf_lines = []
         for name, passed, detail in check_results:
             status = "✅ PASS" if passed else "❌ FAIL"
-            plan += f"| {name} | {status} | {detail} |\n"
-
-        plan += f"""
----
-
-## 2. A/B 協作宣告
-
-| 角色 | Agent | 職責 |
-|------|-------|------|
-| **Agent A** | `{agent_a}` | 執行主要任務 |
-| **Agent B** | `{agent_b}` | 審查與驗證 |
-
-### HR 約束（Phase {phase}）
-{" | ".join(hr_map.get(phase, []))}
-
-### TH 閾值（Phase {phase}）
-{" | ".join(th_map.get(phase, []))}
-
----
-
-## 3. FR-by-FR 任務表格（共 {len(frs)} 項）
-
-{fr_table}
-
----
-
-## 4. Developer Prompt 模板（Phase {phase}）
-
-"""
-        for fr in frs[:5]:  # 最多顯示5個
-            plan += f"\n### {fr['fr']}: {fr['title']}\n"
-            plan += self._generate_developer_prompt(fr, phase) + "\n"
-
-        if len(frs) > 5:
-            plan += f"\n> ...（共 {len(frs)} 個 FR，其餘見完整 plan）\n"
-
-        plan += f"""
----
-
-## 5. Quality Gate 命令
-
-```bash
-{qg_commands}
----
-
-## 6. sessions_spawn.log 格式
-
-{log_format}
-
----
-
-## 7. 風險評估
-
-| 風險 | 機率 | 影響 | 緩解 |
-|------|------|------|------|
-| Pre-flight 失敗 | 中 | 高 | 確保前置 Phase 完成 |
-| Constitution <80% | 低 | 高 | 提前檢查 |
-| A/B 審查 >5輪 | 低 | 中 | 嚴格執行 HR-12 |
-
----
-
-## 8. 預估時間
-
-| Step | 預估 | HR-13 臨界值 |
-|------|------|-------------|
-| {phase}.1 | 15m | 45m |
-| {phase}.2 | 60m | 180m |
-| {phase}.3 | 30m | 90m |
-| **Total** | **105m** | **315m** |
-
----
-
-## 9. 交付物
-
-"""
+            pf_lines.append(f"| {name} | {status} | {detail} |")
+        
+        # Build deliverables
+        deliv_lines = []
         for d in deliverables:
-            plan += f"- [ ] `{d}`\n"
-
-        plan += f"""
----
-
-## 10. 下一步
-
-```bash
-# Johnny 審核後，執行：
-python cli.py run-phase --phase {phase} --goal "{goal}"
-
-# 或修復特定步驟：
-python cli.py plan-phase --phase {phase} --repair --step {phase}.2 --goal "{goal}"
-```
-"""
-
+            deliv_lines.append(f"- [ ] `{d}`")
+        
+        # Determine FSM string
+        fsm_str = current_state.value if hasattr(current_state, 'value') else str(current_state)
+        
+        if template_content:
+            # Use template
+            plan = template_content
+            plan = plan.replace('{PHASE}', str(phase))
+            plan = plan.replace('{PHASE_PLUS_1}', str(phase + 1))
+            plan = plan.replace('{VERSION}', 'v6.32.0')
+            plan = plan.replace('{PROJECT_NAME}', state.get('project_name', repo_path.name))
+            plan = plan.replace('{DATE}', datetime.now().strftime('%Y-%m-%d'))
+            plan = plan.replace('{GOAL}', goal)
+            plan = plan.replace('{HR_LIST}', ' | '.join(hr_map.get(phase, [])))
+            plan = plan.replace('{TH_LIST}', ' | '.join(th_map.get(phase, [])))
+            plan = plan.replace('{FR_COUNT}', str(len(frs)))
+            plan = plan.replace('{FR_TABLE_ROWS}', fr_table_rows)
+            plan = plan.replace('{QG_COMMANDS}', qg_commands)
+            plan = plan.replace('{SESSION_LOG_EXAMPLE}', log_format)
+            plan = plan.replace('{TOTAL_RECORDS}', str(len(frs) * 2))
+            plan = plan.replace('{PREFLIGHT_RESULTS}', '\n'.join(pf_lines))
+            plan = plan.replace('{DELIVERABLES}', '\n'.join(deliv_lines))
+        else:
+            # Inline generation fallback
+            plan = self._generate_plan_fallback(phase, goal, state, fsm_str, 
+                                                check_results, hr_map, th_map, 
+                                                agent_a, agent_b, deliverables,
+                                                frs, fr_table_rows, qg_commands,
+                                                log_format)
         # Print plan
         print(plan)
 
