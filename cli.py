@@ -4432,6 +4432,31 @@ class MethodologyCLI:
         
         return '\n'.join(lines)
 
+    def _generate_fr_detailed_tasks_placeholder(self, frs: list, modules: list) -> str:
+        """產生 FR 詳細任務的 placeholder（具體內容需從 SRS 解析）"""
+        lines = []
+        for fr in frs:
+            fr_num = fr['fr'].lower().replace('-', '').replace('fr', '').zfill(2)
+            mod_match = next((m for m in modules if m.get('fr', '').upper() == fr['fr'].upper()), None)
+            module_name = mod_match.get('module', 'Unknown') if mod_match else 'Unknown'
+            lines.append(f"### {fr['fr']} {module_name}")
+            lines.append(f"""
+**任務**：實作 {module_name}
+
+**SRS §{fr['fr']} 要求**：
+> 詳見 `.methodology/plans/phase3_FULL.md` 或執行 `python3 scripts/generate_full_plan.py --phase 3`
+
+**SAD §Module 對應**：
+- `{module_name}` 類
+- `{mod_match.get('file', 'N/A') if mod_match else 'N/A'}`
+
+**Forbidden**：
+- ❌ app/infrastructure/
+- ❌ @covers: L1 Error
+- ❌ @type: edge
+""")
+        return '\n'.join(lines)
+
     def _generate_quality_gate_commands(self, phase: int) -> str:
         """根據 Phase 產生 Quality Gate 命令"""
         commands = {
@@ -4775,6 +4800,7 @@ OUTPUT_FORMAT:
             # Generate deliverable structure from modules
             deliverable_structure = self._generate_deliverable_structure(frs, modules)
             plan = plan.replace('{DELIVERABLE_STRUCTURE}', deliverable_structure)
+            plan = plan.replace('{FR_DETAILED_TASKS}', self._generate_fr_detailed_tasks_placeholder(frs, modules))
         else:
             # Inline generation fallback
             plan = self._generate_plan_fallback(phase, goal, state, fsm_str, 

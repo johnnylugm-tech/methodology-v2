@@ -76,27 +76,27 @@ python3 cli.py run-phase --phase {PHASE} --goal "{GOAL}"
 
 ---
 
-
 ## 4. 產出結構樹
 
 ```
 {DELIVERABLE_STRUCTURE}
 ```
 
-> 📋 結構從 SAD.md §1.3 FR 需求對應表解析，詳見 `.methodology/plans/phase{PHASE}_FULL.md`
+> 📋 結構從 SAD.md §1.3 FR 需求對應表解析
 
 ---
 
 ## 5. FR 詳細任務（共 {FR_COUNT} 項）
 
-> ⚠️ FR 詳細任務需要解析 SRS.md §FR-XX，完整內容見 `.methodology/plans/phase{PHASE}_FULL.md`
-> 若要生成詳細任務，加上 `--detailed` flag：
-> ```bash
-> python3 cli.py plan-phase --phase {PHASE} --detailed
-> ```
+> ⚠️ FR 詳細任務需要解析 SRS.md §FR-XX
+> 完整內容見 `.methodology/plans/phase{PHASE}_FULL.md`
+> 若要生成詳細任務，加上 `--detailed` flag
 
-{DELIVERABLE_STRUCTURE}
-## 4. Developer Prompt 模板（On Demand）
+{FR_DETAILED_TASKS}
+
+---
+
+## 6. Developer Prompt 模板（On Demand）
 
 ```
 ═══════════════════════════════════════
@@ -131,7 +131,7 @@ OUTPUT_FORMAT:
 
 ---
 
-## 5. Iteration 修復流程
+## 7. Iteration 修復流程
 
 ```
 [FR-{FR_NUM}]
@@ -153,7 +153,7 @@ OUTPUT_FORMAT:
 
 ---
 
-## 6. Quality Gate（Step 9）
+## 8. Quality Gate（Step 9）
 
 ### 依序執行，全部通過才能 APPROVE
 
@@ -163,7 +163,7 @@ OUTPUT_FORMAT:
 
 ---
 
-## 7. sessions_spawn.log 格式（HR-10）
+## 9. sessions_spawn.log 格式（HR-10）
 
 每個 FR 產生 2 筆記錄，共 {FR_COUNT} × 2 = {TOTAL_RECORDS} 筆記錄：
 
@@ -173,7 +173,7 @@ OUTPUT_FORMAT:
 
 ---
 
-## 8. Commit 格式
+## 10. Commit 格式
 
 ```
 [Phase {PHASE}] Step {N}: FR-{FR_NUM} {MODULE_NAME} (HASH)
@@ -188,7 +188,7 @@ OUTPUT_FORMAT:
 
 ---
 
-## 9. 估計時間
+## 11. 估計時間
 
 | 階段 | 估計時間 |
 |------|---------|
@@ -199,7 +199,7 @@ OUTPUT_FORMAT:
 
 ---
 
-## 10. Phase Truth 組成
+## 12. Phase Truth 組成
 
 ```
 ✅ FrameworkEnforcer BLOCK (權重 40%)
@@ -210,7 +210,7 @@ OUTPUT_FORMAT:
 
 ---
 
-## 11. 工具速查
+## 13. 工具速查
 
 ### SubagentIsolator
 ```python
@@ -256,7 +256,7 @@ tr.register("NewTool", handler)
 
 ---
 
-## 12. Pre-Execution Checklist
+## 14. Pre-Execution Checklist
 
 ```
 □ state.json 已初始化（phase={PHASE}, step=0）
@@ -275,7 +275,7 @@ tr.register("NewTool", handler)
 
 ---
 
-## 13. 下一步
+## 15. 下一步
 
 ```bash
 # Johnny 審核後，執行：
@@ -283,6 +283,9 @@ python3 cli.py run-phase --phase {PHASE} --goal "{GOAL}"
 
 # 或修復特定步驟：
 python3 cli.py plan-phase --phase {PHASE} --repair --step {PHASE}.2 --goal "{GOAL}"
+
+# 生成完整 FR 詳細任務（需要 SRS.md）：
+python3 scripts/generate_full_plan.py --phase {PHASE} --repo /path/to/project
 ```
 
 ---
