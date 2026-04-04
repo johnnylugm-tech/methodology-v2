@@ -156,7 +156,8 @@ class SubagentIsolator:
         self.active_sessions = {}  # session_key -> metadata
         self.results = {}  # session_key -> SubagentResult
         self._persona_cache = {}
-        self._log_file = Path(project_path) / "sessions_spawn.log"
+        # sessions_spawn.log 寫入 .methodology/ 目錄（HR-10 合規）
+        self._log_file = Path(project_path) / ".methodology" / "sessions_spawn.log"
 
     # ─── Internal Helpers ────────────────────────────────────────────────────────
 

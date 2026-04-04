@@ -1,61 +1,18 @@
 {
-  "current_phase": 1,
-  "current_step": null,
-  "current_module": null,
-  "status": "RUNNING",
-  "last_commit": null,
-  "last_updated": "2026-04-03T04:18:36.072403+00:00",
-  "phase_state": {
-    "started_at": null,
-    "blocks": 0,
-    "ab_rounds": 0,
-    "warnings": 0,
-    "last_gate_score": null,
-    "estimated_minutes": 60
-  },
-  "artifacts": {},
-  "tasks": {
-    "task-001": {
-      "task_id": "task-001",
-      "title": "測試任務",
-      "status": "pending",
-      "messages": [],
-      "summary": null,
-      "created_at": "2026-04-03T06:26:35.521765+00:00",
-      "updated_at": "2026-04-03T06:26:35.521870+00:00",
-      "dependencies": [],
-      "artifacts": {}
-    }
-  },
-  "dependencies": {},
-  "next_action": null,
-  "blockers": [],
-  "history": [],
-  "state_history": [
-    {
-      "from": "INIT",
-      "to": "RUNNING",
-      "reason": "測試 Phase 開始",
-      "timestamp": "2026-04-03T04:18:39.903280+00:00"
-    },
-    {
-      "from": "RUNNING",
-      "to": "PAUSED",
-      "reason": "測試煞車",
-      "timestamp": "2026-04-03T04:19:17.440395+00:00"
-    },
-    {
-      "from": "PAUSED",
-      "to": "RUNNING",
-      "reason": "Manual resume",
-      "timestamp": "2026-04-03T04:19:21.117971+00:00"
-    }
-  ],
-  "knowledge_state": {
-    "methodology-v2": {
-      "path": "/Users/johnny/.openclaw/workspace-musk/skills/methodology-v2/SKILL.md",
-      "loaded_at": "2026-04-03T14:27:17.319551",
-      "version": "v6.17"
-    }
-  }
+  "current_phase": 0,
+  "fsm_state": "INIT",
+  "phase_1_status": "PENDING",
+  "phase_2_status": "PENDING",
+  "phase_3_status": "PENDING",
+  "phase_4_status": "PENDING",
+  "phase_5_status": "PENDING",
+  "phase_6_status": "PENDING",
+  "phase_7_status": "PENDING",
+  "phase_8_status": "PENDING",
+  "project_name": "",
+  "start_time": "2026-04-04T09:46:00+08:00",
+  "estimated_minutes": 180,
+  "hr13_triggered": false,
+  "hr13_remaining_minutes": null,
+  "last_updated": "2026-04-04T09:46:00+08:00"
 }
