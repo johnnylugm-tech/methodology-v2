@@ -1,6 +1,6 @@
-# Johnny 使用手冊 v6.27
+# Johnny 使用手冊 v6.28
 
-> **版本**: v6.27
+> **版本**: v6.28
 > **對象**: Johnny（Human-in-the-Loop）
 > **用途**: 快速上手 methodology-v2
 
@@ -8,7 +8,7 @@
 
 ## 1. methodology-v2 今天長什麼樣？
 
-### v6.20 ~ v6.27 帶來的改善
+### v6.20 ~ v6.28 帶來的改善
 
 | 版本 | 改善內容 |
 |------|----------|
@@ -16,16 +16,17 @@
 | v6.21 | MAIN_AGENT_PLAYBOOK.md + 審計修復 |
 | v6.22 | Enhanced Exceptions（suggest_fix）+ Session Manager CLI |
 | v6.23 | PHASE3_SOP.md 完整操作手冊 |
-| v6.24 | SKILL.md 瘦身（131行）|
+| v6.24 | SKILL.md 瘦身 |
 | v6.25 | 三層架構：Layer 1/2/3 |
 | v6.26 | **run-phase 單一入口**（強制 Pre-flight checks）|
-| **v6.27** | **plan-phase + run-phase 完整流程**，所有 P{N}_SOP.md 標準化 |
+| v6.27 | plan-phase + run-phase 完整流程，所有 P{N}_SOP.md 標準化 |
+| **v6.28** | **Gap 實作**：SI 內建 log / HR-15 citations / 代碼測試分離 / Mock / auto-fix / Integrity |
 
 ### 三層文件架構
 
 | 層級 | 檔案 | 用途 |
 |------|------|------|
-| Layer 1 | SKILL.md（73行）| 核心規則（HR/TH/Phase路由）|
+| Layer 1 | SKILL.md | 核心規則（HR/TH/Phase路由 + Integrity計算）|
 | Layer 2 | docs/P{N}_SOP.md（8檔）| Phase 詳細步驟（按需載入）|
 | Layer 3 | templates/*.md（16檔）| 交付物模板（按需載入）|
 
@@ -177,13 +178,6 @@ Johnny 等到執行完成，看結果。
 ### Step 5: Johnny 最終審核
 
 ```
-1. 看 run-phase 輸出
-2. 問 2-3 題拷問法
-3. 如果正確 → ✅ CONFIRM
-4. 如果錯誤 → ❌ REJECT
-```
-
-```
 1. Johnny: 看 run-phase 輸出
 2. Johnny: 問 2-3 題拷問法
 3. 如果正確 → ✅ CONFIRM
@@ -192,7 +186,7 @@ Johnny 等到執行完成，看結果。
 
 ---
 
-## 4. 每 Phase 審核流程
+## 5. 每 Phase 審核流程
 
 ### Agent 完成 Phase N 後
 
@@ -219,7 +213,7 @@ Johnny 等到執行完成，看結果。
 
 ---
 
-## 5. 拷問法範例
+## 6. 拷問法範例
 
 在 Agent 完成 Phase 後，隨機問這些問題：
 
@@ -234,6 +228,8 @@ Johnny 等到執行完成，看結果。
 ### Phase 3 相關
 - 「SubagentIsolator 和直接 sessions_spawn 的差別？」
 - 「Pre-flight 有哪 5 個檢查？」
+- 「HR-15 的 citations 格式規定是什麼？」
+- 「代碼和測試的分離是什麼？」
 
 ### Phase 5-8 相關
 - 「TH-02 的門檻是多少？」
@@ -241,7 +237,7 @@ Johnny 等到執行完成，看結果。
 
 ---
 
-## 6. 新工具速查（v6.20-v6.22）
+## 7. 新工具速查（v6.20-v6.28）
 
 ### 四大工具
 
@@ -251,6 +247,15 @@ Johnny 等到執行完成，看結果。
 | `ContextManager` | 上下文膨脹 | context > 50 時 compress() |
 | `SubagentIsolator` | 結果污染 | 派遣時 spawn() |
 | `PermissionGuard` | 危險操作 | exec/rm 前 check() |
+
+### v6.28 新增工具功能
+
+| 功能 | 說明 |
+|------|------|
+| `SI.spawn()` 內建 log | spawn 前寫 PENDING，spawn 後寫 COMPLETED/FAILED |
+| `SI.pre_spawn_audit()` | 派遣前檢查 artifact 完整性，缺失拋 ArtifactMissingError |
+| `ArtifactMissingError` | 新增自訂異常，帶 suggest_fix() |
+| `sessions_spawn.log` 自動寫入 | 不再需要手動記錄 |
 
 ### 新 CLI 命令
 
@@ -276,43 +281,76 @@ python cli.py context-compress --level L3
 
 ---
 
-## 7. CLI 速查
+## 8. CLI 速查
 
 ```bash
-# 單一入口（必用）
+# === 單一入口（必用）===
 python cli.py run-phase --phase N
+python cli.py run-phase --phase N --step N.X --task "..."
 
-# Phase 真相驗證
+# === plan-phase（必用，執行前）===
+python cli.py plan-phase --phase N --goal "..."
+python cli.py plan-phase --phase N --repair --step N.X
+
+# === Integrity 計算（v6.28 新增）===
+python cli.py integrity --project .
+
+# === auto-fix / skip-failed（v6.28 新增）===
+python cli.py stage-pass --phase N --auto-fix
+python cli.py stage-pass --phase N --skip-failed
+python cli.py enforce --level BLOCK --auto-fix
+python cli.py constitution check --type <type> --skip-failed
+
+# === Phase 真相驗證 ===
 python cli.py phase-verify --phase N
 
-# FSM 狀態
+# === FSM 狀態 ===
 python cli.py fsm-status
 python cli.py fsm-transition --to PAUSED
 python cli.py fsm-unfreeze
 
-# 預熱程序
+# === 預熱程序 ===
 python cli.py skill-check --mode preheat --phase N
 
-# Constitution Check
+# === Constitution Check ===
 python cli.py constitution check --type <srs|sad|test_plan|...>
 
-# Tool Registry
+# === Tool Registry ===
 python cli.py tool-registry --list
 
-# Session 管理
+# === Session 管理 ===
 python cli.py session-save --id <name>
 python cli.py session-list
 python cli.py session-load --id <name>
 python cli.py session-delete --id <name>
 
-# 狀態查詢
+# === 狀態查詢 ===
 python cli.py status
 python cli.py phase-status
 ```
 
+### v6.28 新增：Integrity 追蹤
+
+```bash
+# 計算 Integrity
+python cli.py integrity --project .
+
+# state.json 時間追蹤（自動）
+# start_time, estimated_minutes, hr13_triggered
+# HR-13: Phase 時間 > 3× 預估 → PAUSE
+```
+
+### v6.28 新增：sessions_spawn.log 自動寫入
+
+SubagentIsolator.spawn() 自動寫入：
+- PENDING（spawn 前）
+- COMPLETED/FAILED（spawn 後，含 confidence）
+
+不再需要手動記錄。
+
 ---
 
-## 8. Johnny 的三個狀態
+## 9. Johnny 的三個狀態
 
 ```
 🤚 等待中 - Agent 在執行 run-phase
@@ -322,7 +360,7 @@ python cli.py phase-status
 
 ---
 
-## 9. 緊急情況
+## 10. 緊急情況
 
 ### 發現作假跡象
 1. 看 run-phase 輸出
@@ -343,7 +381,7 @@ python cli.py phase-status
 
 ---
 
-## 10. 關鍵閾值速查
+## 11. 關鍵閾值速查
 
 | 閾值 | 數值 | 用在哪 |
 |------|------|--------|
@@ -357,20 +395,24 @@ python cli.py phase-status
 
 ---
 
-## 11. 硬規則速查
+## 12. 硬規則速查
 
 | 規則 | 內容 |
 |------|------|
 | HR-01 | A/B 必須不同 Agent，禁止自寫自審 |
 | HR-02 | Quality Gate 必須有實際命令輸出 |
 | HR-03 | Phase 必須順序執行，不可跳過 |
+| HR-06 | 禁引入規格書外框架 |
+| HR-07 | DEVELOPMENT_LOG 需記錄 session_id |
 | HR-08 | Phase 結束必須執行 Quality Gate |
+| HR-10 | sessions_spawn.log 需有 A/B 記錄 |
 | HR-11 | Phase Truth < 70% 禁止進入下一 Phase |
 | HR-12 | A/B 審查 > 5 輪 → PAUSE |
 | HR-13 | Phase 時間 > 3× 預估 → PAUSE |
 | HR-14 | Integrity < 40 → FREEZE |
+| **HR-15** | **citations 必須含行號 + artifact_verification** |
 
 ---
 
-*此手冊基於 methodology-v2 v6.27*
+*此手冊基於 methodology-v2 v6.28*
 *最後更新: 2026-04-04*
