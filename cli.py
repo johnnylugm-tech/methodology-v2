@@ -4667,6 +4667,40 @@ OUTPUT_FORMAT:
         }
         return prompts.get(phase, f"# Phase {phase} Developer Prompt for {fr['fr']}")
 
+    def _generate_reviewer_prompt(self, fr: dict, phase: int) -> str:
+        """產生 Reviewer Prompt 模板"""
+        fr_num = fr["fr"].lower().replace("fr-", "").strip()
+        task_id = f"task-{fr_num}-review"
+        
+        prompts = {
+            3: f""""```
+TASK: Review {fr['fr']} {fr['title']}
+TASK_ID: {task_id}
+═══════════════════════════════════════
+
+PROMPT（自己讀）：
+- app/processing/{fr_num}.py（待審查）
+- tests/test_{fr_num}.py
+- SRS.md (§{fr['fr']})
+
+REJECT_IF:
+- ❌ 無 @covers: {fr['fr']} → REJECT
+- ❌ NFR 約束違背 → REJECT
+- ❌ confidence < 6 → REJECT
+- ❌ 缺少 citations → REJECT
+
+OUTPUT_FORMAT:
+{{
+ "status": "APPROVE|REJECT",
+ "confidence": 1-10,
+ "violations": ["具體問題"],
+ "summary": "50字內"
+}}
+═══════════════════════════════════════
+```""",
+        }
+        return prompts.get(phase, f"# Phase {phase} Reviewer Prompt for {fr['fr']}")
+
     def _generate_sessions_spawn_log_format(self, frs: list, phase: int) -> str:
         """產生 sessions_spawn.log 格式說明"""
         if phase != 3:
@@ -4925,6 +4959,17 @@ OUTPUT_FORMAT:
             plan = plan.replace('{GOAL}', goal)
             plan = plan.replace('{HR_LIST}', ' | '.join(hr_map.get(phase, [])))
             plan = plan.replace('{TH_LIST}', ' | '.join(th_map.get(phase, [])))
+            
+            # Agent roles for A/B collaboration
+            plan = plan.replace('{AGENT_A}', agent_a)
+            plan = plan.replace('{AGENT_B}', agent_b)
+            
+            # Developer and Reviewer prompts
+            developer_prompt = self._generate_developer_prompt(frs[0] if frs else {'fr': 'FR-01', 'title': 'Task'}, phase)
+            reviewer_prompt = self._generate_reviewer_prompt(frs[0] if frs else {'fr': 'FR-01', 'title': 'Task'}, phase)
+            plan = plan.replace('{DEVELOPER_PROMPT}', developer_prompt)
+            plan = plan.replace('{REVIEWER_PROMPT}', reviewer_prompt)
+            
             plan = plan.replace('{FR_COUNT}', str(len(frs)))
             plan = plan.replace('{FR_TABLE_ROWS}', fr_table_rows)
             plan = plan.replace('{QG_COMMANDS}', qg_commands)

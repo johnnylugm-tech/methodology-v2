@@ -68,6 +68,13 @@ python3 cli.py run-phase --phase {PHASE} --goal "{GOAL}"
 ### TH 閾值（Phase {PHASE}）
 {TH_LIST}
 
+### A/B 角色（Phase {PHASE}）
+
+| 角色 | Agent | 職責 |
+|------|-------|------|
+| **Agent A** | `{AGENT_A}` | 主要實作 |
+| **Agent B** | `{AGENT_B}` | 審查驗證 |
+
 ### TH 閾值詳細
 
 {TH_THRESHOLDS_TABLE}
@@ -107,6 +114,18 @@ python3 cli.py run-phase --phase {PHASE} --goal "{GOAL}"
 ---
 
 ## 7. Developer Prompt 模板（On Demand）
+
+### Agent A（Developer）
+
+```
+{DEVELOPER_PROMPT}
+```
+
+### Agent B（Reviewer）
+
+```
+{REVIEWER_PROMPT}
+```
 
 ```
 ═══════════════════════════════════════
