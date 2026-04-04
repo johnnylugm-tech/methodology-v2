@@ -4894,6 +4894,24 @@ OUTPUT_FORMAT:
         plan_file.write_text(plan)
         print(f"\n💾 Plan saved: {plan_file}")
 
+        # Generate full FR detailed tasks if --detailed flag is set
+        if getattr(args, 'detailed', False):
+            print(f"\n[{datetime.now().strftime('%H:%M:%S')}] DETAILED: 生成 FR 詳細任務...")
+            full_plan_file = repo_path / ".methodology" / "plans" / f"phase{phase}_FULL.md"
+            try:
+                import subprocess
+                result = subprocess.run(
+                    [sys.executable, str(Path(__file__).parent / "scripts" / "generate_full_plan.py"),
+                     "--phase", str(phase), "--repo", str(repo_path), "--output", str(full_plan_file)],
+                    capture_output=True, text=True, timeout=60
+                )
+                if result.returncode == 0:
+                    print(f"✅ FR 詳細任務已生成: {full_plan_file}")
+                else:
+                    print(f"⚠️ FR 詳細任務生成失敗: {result.stderr[:200]}")
+            except Exception as e:
+                print(f"⚠️ FR 詳細任務生成異常: {e}")
+
         # Return non-zero if pre-flight failed
         if checks_passed < checks_total:
             print(f"\n⚠️  Pre-flight failed ({checks_passed}/{checks_total} passed)")
@@ -5782,7 +5800,8 @@ def main():
     plan_phase_parser.add_argument("--step", type=str, help="指定 Step (如 3.2) --history 模式時顯示該 Step 迭代歷史")
     plan_phase_parser.add_argument("--history", action="store_true", help="顯示 Phase 迭代歷史")
     plan_phase_parser.add_argument("--with-timeline", action="store_true", help="顯示完整時間線預估")
-    plan_phase_parser.add_argument("--repo", default=".", dest="repo", help="專案根目錄 (預設: .")
+    plan_phase_parser.add_argument("--repo", default=".", dest="repo", help="專案根目錄 (預設: .)")
+    plan_phase_parser.add_argument("--detailed", action="store_true", help="生成完整 FR 詳細任務（需解析 SRS.md）")
 
     args = parser.parse_args()
     
