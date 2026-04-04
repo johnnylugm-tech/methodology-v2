@@ -22,6 +22,7 @@ SubagentIsolator — Subagent 隔離管理模組
 
 import json
 import uuid
+from pathlib import Path
 from dataclasses import dataclass, field
 from typing import List, Dict, Optional, Any, Callable
 from enum import Enum
@@ -35,6 +36,12 @@ try:
     HAS_SPAWN = True
 except ImportError:
     HAS_SPAWN = False
+
+# 嘗試导入自訂異常
+try:
+    from exceptions import MethodologyError, ArtifactMissingError
+except ImportError:
+    from .exceptions import MethodologyError, ArtifactMissingError
 
 
 class AgentRole(Enum):
@@ -149,6 +156,14 @@ class SubagentIsolator:
         self.active_sessions = {}  # session_key -> metadata
         self.results = {}  # session_key -> SubagentResult
         self._persona_cache = {}
+        self._log_file = Path(project_path) / "sessions_spawn.log"
+
+    # ─── Internal Helpers ────────────────────────────────────────────────────────
+
+    def _write_log(self, entry: dict):
+        """寫入 sessions_spawn.log"""
+        with open(self._log_file, "a", encoding="utf-8") as f:
+            f.write(json.dumps(entry, ensure_ascii=False) + "\n")
     
     def get_persona(self, role: AgentRole, custom: AgentPersona = None) -> str:
         """取得 Agent persona"""
@@ -185,8 +200,20 @@ class SubagentIsolator:
         Returns:
             SubagentResult: 執行結果
         """
+        session_id = str(uuid.uuid4())
         session_key = f"sub_{role.value}_{uuid.uuid4().hex[:8]}"
         start_time = datetime.now()
+        
+        # === Gap 2: spawn 前寫入 log ===
+        self._write_log({
+            "timestamp": start_time.isoformat(),
+            "role": role.value,
+            "task": task,
+            "session_id": session_id,
+            "session_key": session_key,
+            "confidence": None,
+            "status": "PENDING"
+        })
         
         # 建立 fresh messages[]（隔離關鍵）
         system_prompt = self.get_persona(role, custom_persona)
@@ -254,6 +281,17 @@ class SubagentIsolator:
         )
         
         self.results[session_key] = sub_result
+        
+        # === Gap 2: spawn 後更新 log ===
+        self._write_log({
+            "timestamp": datetime.now().isoformat(),
+            "session_id": session_id,
+            "session_key": session_key,
+            "status": "COMPLETED" if sub_result.status == "success" else "FAILED",
+            "confidence": sub_result.confidence,
+            "duration_seconds": duration
+        })
+        
         return sub_result
     
     def _generate_summary(self, content: Any, max_len: int = 50) -> str:
@@ -333,6 +371,36 @@ class SubagentIsolator:
                 scores.append((citation_score + confidence_score) / 2)
         
         return sum(scores) / len(scores)
+
+    # ─── Gap 7: pre_spawn_audit ─────────────────────────────────────────────────
+
+    def pre_spawn_audit(self, task_id: str, artifact_paths: List[str]) -> List[dict]:
+        """
+        在派遣前檢查 artifact 完整性
+        
+        若 artifact 缺失，拋出 ArtifactMissingError
+        
+        Args:
+            task_id: 任務 ID
+            artifact_paths: 要檢查的 artifact 路徑列表
+            
+        Returns:
+            List[dict]: 檢查結果列表
+        """
+        results = []
+        for path in artifact_paths:
+            if not Path(path).exists():
+                results.append({"artifact": path, "status": "MISSING"})
+            else:
+                results.append({"artifact": path, "status": "OK"})
+        
+        missing = [r for r in results if r["status"] == "MISSING"]
+        if missing:
+            raise ArtifactMissingError(
+                f"Artifact 缺失: {[r['artifact'] for r in missing]}",
+                artifacts=missing
+            )
+        return results
 
 
 # CLI 介面

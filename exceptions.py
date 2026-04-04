@@ -101,3 +101,14 @@ class AgentSpawnError(MethodologyError):
     def suggest_fix(self) -> str:
         role = self.context.get("role", "?")
         return f"派遣 {role} 失敗。請檢查 session 狀態或嘗試重試。"
+
+
+# ─── Artifact ─────────────────────────────────────────────────────────────────
+
+
+class ArtifactMissingError(MethodologyError):
+    """Artifact 缺失錯誤。"""
+
+    def suggest_fix(self) -> str:
+        artifacts = [a['artifact'] for a in self.context.get('artifacts', [])]
+        return f"請確認以下 artifact 存在：{artifacts}"

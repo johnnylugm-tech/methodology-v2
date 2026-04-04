@@ -110,6 +110,27 @@ python cli.py run-phase --phase 3 --step 3.1 --task "FR-01 實作"
 }
 ```
 
+### citations 強制格式（HR-15）
+
+```json
+{
+  "citations": [
+    "FR-01",
+    "SRS.md#L23-L45",
+    "SAD.md#§Module-1"
+  ],
+  "artifact_verification": {
+    "SRS.md": "已讀 §FR-01",
+    "SAD.md": "已讀 §Module-1"
+  }
+}
+```
+
+**規定**：
+- citations 必須包含檔案名 + 行號或段落
+- artifact_verification 必須列出所有已讀的 artifact
+- 若無 artifact_verification，視為 HR-15 違規
+
 | 分數 | 意義 | 動作 |
 |------|------|------|
 | 9-10 | 高度確定，有引用 | 繼續 |
@@ -118,6 +139,19 @@ python cli.py run-phase --phase 3 --step 3.1 --task "FR-01 實作"
 | 1-4 | 嚴重懷疑 | 上報 Johnny |
 
 ---
+
+### 每個 FR 的最小執行單位
+
+| Step | 角色 | 動作 |
+|------|------|------|
+| N.1 | Developer | 代碼實作 → commit |
+| N.2 | Developer | 測試實作 → commit |
+| N.3 | Reviewer | 代碼 + 測試 審查 → APPROVE/REJECT |
+
+**sessions_spawn.log 每 FR 3 筆記錄**：
+- developer → FR-0X Code
+- developer → FR-0X Tests
+- reviewer → FR-0X Review
 
 ## 完整工作流（6+3 步）
 
