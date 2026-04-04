@@ -205,6 +205,7 @@ OUTPUT_FORMAT:
 • ToolRegistry → 發現新工具時 register
 ```
 
+{subagent_mgmt}
 
 ## 10. Quality Gate（Step 9）
 

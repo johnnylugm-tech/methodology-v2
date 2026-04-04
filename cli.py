@@ -19,6 +19,7 @@ from datetime import datetime
 import re
 from pathlib import Path
 import cli_phase_prompts
+import cli_phase_subagent
 
 # Add current directory to path for imports
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -4665,6 +4666,77 @@ class MethodologyCLI:
         return phase_prompts["reviewer"]
 
 
+    def _generate_subagent_management(self, phase: int) -> str:
+        """產生 Sub-Agent Management 區段（Need-to-Know + On-Demand）"""
+        config = cli_phase_subagent.get_subagent_config(phase)
+        
+        lines = ["## 9.5 Sub-Agent Management（Need-to-Know + On-Demand）", ""]
+        lines.append(f"**Phase {phase}: {config['name']}**")
+        lines.append("")
+        
+        # Agent roles
+        lines.append("### Agent 角色")
+        lines.append(f"- **Agent A（{config['agent_a']['role']}）**: {config['agent_a']['task']}")
+        lines.append(f"- **Agent B（{config['agent_b']['role']}）**: {config['agent_b']['task']}")
+        lines.append("")
+        
+        # Need-to-Know
+        ntk = config.get("need_to_know", {})
+        lines.append("### Need-to-Know（只給必要資訊）")
+        lines.append("")
+        lines.append("| 檔案 | 章節 | 原因 |")
+        lines.append("|------|------|------|")
+        for item in ntk.get("read", []):
+            lines.append(f"| {item['path']} | {item['section']} | {item['why']} |")
+        lines.append("")
+        lines.append(f"**Skip**: `{', '.join(ntk.get('skip', []))}`")
+        lines.append(f"**Context**: {ntk.get('context', 'N/A')}")
+        lines.append("")
+        
+        # On-Demand
+        od = config.get("on_demand", {})
+        lines.append("### On-Demand（需要時才請求）")
+        lines.append("")
+        lines.append(f"- **觸發條件**: {od.get('trigger', 'N/A')}")
+        lines.append(f"- **請求對象**: {od.get('request_to', 'N/A')}")
+        lines.append(f"- **格式**: {od.get('format', 'N/A')}")
+        lines.append("")
+        
+        # Tool Timing
+        tt = config.get("tool_timing", {})
+        lines.append("### 工具調用時機")
+        lines.append("")
+        
+        tool_events = [
+            ("spawn", "派遣 Sub-agent"),
+            ("knowledge_curator", "KnowledgeCurator"),
+            ("context_manager", "ContextManager"),
+            ("quality_gate", "Quality Gate"),
+            ("checkpoint", "Checkpoint")
+        ]
+        
+        lines.append("| 事件 | 工具 | 參數 |")
+        lines.append("|------|------|------|")
+        for event, name in tool_events:
+            if event in tt:
+                params = str(tt[event].get('params', tt[event]))
+                lines.append(f"| {event} | {name} | {params} |")
+            else:
+                lines.append(f"| {event} | {name} | - |")
+        lines.append("")
+        
+        # Isolation
+        iso = config.get("isolation", {})
+        lines.append("### 隔離方法")
+        lines.append("")
+        lines.append(f"- **Method**: `{iso.get('method', 'N/A')}`")
+        lines.append(f"- **Fresh Messages**: `{', '.join(iso.get('fresh_messages', [])) or '（空）'}`")
+        lines.append(f"- **Log Format**: `{iso.get('log_format', 'N/A')}`")
+        lines.append("")
+        
+        return "\n".join(lines)
+
+
     def _generate_sessions_spawn_log_format(self, frs: list, phase: int) -> str:
         """產生 sessions_spawn.log 格式說明"""
         if phase != 3:
@@ -4912,6 +4984,7 @@ class MethodologyCLI:
         # Generate supporting data
         fr_table_rows = self._generate_fr_table(frs, modules)
         log_format = self._generate_sessions_spawn_log_format(frs, phase)
+        subagent_mgmt = self._generate_subagent_management(phase)
         
         # Build pre-flight results
         pf_lines = []
@@ -4932,7 +5005,7 @@ class MethodologyCLI:
             plan = template_content
             plan = plan.replace('{PHASE}', str(phase))
             plan = plan.replace('{PHASE_PLUS_1}', str(phase + 1))
-            plan = plan.replace('{VERSION}', 'v6.45.0')
+            plan = plan.replace('{VERSION}', 'v6.49.0')
             plan = plan.replace('{PROJECT_NAME}', state.get('project_name', repo_path.name))
             plan = plan.replace('{DATE}', datetime.now().strftime('%Y-%m-%d'))
             plan = plan.replace('{GOAL}', goal)
@@ -4978,6 +5051,7 @@ class MethodologyCLI:
             
             plan = plan.replace('{TH_THRESHOLDS_TABLE}', self._generate_thresholds_table(phase))
             plan = plan.replace('{EXTERNAL_DOCS}', self._generate_external_docs(phase))
+            plan = plan.replace('{subagent_mgmt}', subagent_mgmt)
         else:
             # Inline generation fallback
             plan = self._generate_plan_fallback(phase, goal, state, fsm_str, 
