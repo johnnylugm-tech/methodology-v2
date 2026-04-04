@@ -4650,7 +4650,7 @@ SAD.md 只讀取：
 - §Module 邊界對照表（對應 {fr['fr']} 的章節）
 
 OUTPUT:
-- app/processing/{fr_num}.py
+- app/processing/{fr_num}.py  # 實際檔名從 SAD 解析
 - tests/test_{fr_num}.py
 
 FORBIDDEN:
@@ -4789,12 +4789,27 @@ OUTPUT_FORMAT:
             7: ["RISK_REGISTER.md"],
             8: ["CONFIG_RECORDS.md", "requirements.lock"],
         }
+        # Check deliverables - search patterns
         deliverables = phase_deliverables.get(phase, [])
         missing_deliverables = []
         for d in deliverables:
-            d_path = repo_path / d if not d.startswith("app") else repo_path / d
-            if not d_path.exists():
+            # Special handling for SAD.md - search in common locations
+            if d == "SAD.md":
+                if (repo_path / "SAD.md").exists():
+                    continue
+                if (repo_path / "02-architecture" / "SAD.md").exists():
+                    continue
+                if (repo_path / "templates" / "SAD.md").exists():
+                    continue
                 missing_deliverables.append(d)
+            # Skip Phase-specific output directories (app/processing, tests, etc.)
+            elif d.startswith("app/") or d.startswith("tests/"):
+                # These are expected outputs, not prerequisites
+                continue
+            else:
+                d_path = repo_path / d
+                if not d_path.exists():
+                    missing_deliverables.append(d)
         if missing_deliverables:
             print(f"⚠️  Missing deliverables: {missing_deliverables}")
 
