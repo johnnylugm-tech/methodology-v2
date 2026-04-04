@@ -141,7 +141,7 @@ OUTPUT_FORMAT:
 
 ---
 
-## 7. Iteration 修復流程
+## 8. Iteration 修復流程
 
 ```
 [FR-{FR_NUM}]
@@ -163,7 +163,7 @@ OUTPUT_FORMAT:
 
 ---
 
-## 8. Quality Gate（Step 9）
+## 9. Quality Gate（Step 9）
 
 ### 依序執行，全部通過才能 APPROVE
 
@@ -173,7 +173,7 @@ OUTPUT_FORMAT:
 
 ---
 
-## 9. sessions_spawn.log 格式（HR-10）
+## 10. sessions_spawn.log 格式（HR-10）
 
 每個 FR 產生 2 筆記錄，共 {FR_COUNT} × 2 = {TOTAL_RECORDS} 筆記錄：
 
@@ -183,7 +183,7 @@ OUTPUT_FORMAT:
 
 ---
 
-## 10. Commit 格式
+## 11. Commit 格式
 
 ```
 [Phase {PHASE}] Step {N}: FR-{FR_NUM} {MODULE_NAME} (HASH)
@@ -198,7 +198,7 @@ OUTPUT_FORMAT:
 
 ---
 
-## 11. 估計時間
+## 12. 估計時間
 
 | 階段 | 估計時間 |
 |------|---------|
@@ -209,7 +209,7 @@ OUTPUT_FORMAT:
 
 ---
 
-## 12. Phase Truth 組成
+## 13. Phase Truth 組成
 
 ```
 ✅ FrameworkEnforcer BLOCK (權重 40%)
@@ -220,7 +220,7 @@ OUTPUT_FORMAT:
 
 ---
 
-## 13. 工具速查
+## 14. 工具速查
 
 ### SubagentIsolator
 ```python
@@ -266,7 +266,7 @@ tr.register("NewTool", handler)
 
 ---
 
-## 14. Pre-Execution Checklist
+## 15. Pre-Execution Checklist
 
 ```
 □ state.json 已初始化（phase={PHASE}, step=0）
@@ -285,7 +285,7 @@ tr.register("NewTool", handler)
 
 ---
 
-## 15. 下一步
+## 16. 下一步
 
 ```bash
 # Johnny 審核後，執行：

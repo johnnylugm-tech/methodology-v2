@@ -4435,28 +4435,56 @@ class MethodologyCLI:
     def _generate_thresholds_table(self, phase: int) -> str:
         """產生 TH 閾值表格（Phase 3）"""
         thresholds = {
-            3: [
-                ("TH-06", "Constitution 測試覆蓋率", ">80%", "python3 quality_gate/constitution/runner.py --type implementation"),
-                ("TH-08", "AgentEvaluator 嚴格", "≥90", "phase-verify 內含"),
-                ("TH-10", "測試通過率", "=100%", "pytest tests/ -v"),
-                ("TH-11", "單元測試覆蓋率", "≥70%", "pytest --cov=app/ -v"),
-                ("TH-16", "代碼↔SAD 映射率", "=100%", "trace-check"),
-                ("TH-15", "Phase Truth", "≥70%", "phase-verify --phase 3"),
-            ],
             1: [
                 ("TH-01", "FSM State", "INIT", "state.json"),
-                ("TH-03", "Phase Sequence", "P1 未執行", "state.json"),
-                ("TH-04", "Constitution SRS", "≥80%", "constitution/runner.py --type srs"),
-                ("TH-08", "AgentEvaluator 嚴格", "≥90", "phase-verify"),
-                ("TH-14", "Integrity", "≥40%", "phase-verify"),
+                ("TH-03", "Constitution 正確性", "=100%", "constitution/runner.py --type srs"),
+                ("TH-04", "Constitution 安全性", "=100%", "constitution/runner.py --type srs"),
+                ("TH-08", "AgentEvaluator 標準", "≥80", "phase-verify"),
+                ("TH-14", "規格完整性", "≥90%", "trace-check"),
                 ("TH-15", "Phase Truth", "≥70%", "phase-verify"),
             ],
             2: [
                 ("TH-01", "FSM State", "RUNNING", "state.json"),
-                ("TH-03", "Phase Sequence", "P2 未執行", "state.json"),
-                ("TH-04", "Constitution SAD", "≥80%", "constitution/runner.py --type sad"),
-                ("TH-05", "SAD↔SRS 一致性", "100%", "trace-check"),
+                ("TH-03", "Constitution 正確性", "=100%", "constitution/runner.py --type sad"),
+                ("TH-04", "Constitution 安全性", "=100%", "constitution/runner.py --type sad"),
+                ("TH-05", "Constitution 可維護性", ">70%", "constitution/runner.py --type sad"),
+                ("TH-08", "AgentEvaluator 標準", "≥80", "phase-verify"),
+                ("TH-15", "Phase Truth", "≥70%", "phase-verify"),
+            ],
+            3: [
+                ("TH-06", "Constitution 測試覆蓋率", ">80%", "constitution/runner.py --type implementation"),
                 ("TH-08", "AgentEvaluator 嚴格", "≥90", "phase-verify"),
+                ("TH-10", "測試通過率", "=100%", "pytest tests/ -v"),
+                ("TH-11", "單元測試覆蓋率", "≥70%", "pytest --cov=app/ -v"),
+                ("TH-15", "Phase Truth", "≥70%", "phase-verify"),
+                ("TH-16", "代碼↔SAD 映射率", "=100%", "trace-check"),
+            ],
+            4: [
+                ("TH-01", "ASPICE 合規率", ">80%", "doc_checker.py"),
+                ("TH-03", "Constitution 正確性", "=100%", "constitution/runner.py --type test_plan"),
+                ("TH-06", "Constitution 測試覆蓋率", ">80%", "constitution/runner.py --type test_plan"),
+                ("TH-10", "測試通過率", "=100%", "pytest tests/ -v"),
+                ("TH-12", "單元測試覆蓋率", "≥80%", "pytest --cov=app/ -v"),
+                ("TH-15", "Phase Truth", "≥70%", "phase-verify"),
+                ("TH-17", "FR↔測試映射率", "≥90%", "trace-check"),
+            ],
+            5: [
+                ("TH-02", "Constitution 總分", "≥80%", "constitution/runner.py --type verification"),
+                ("TH-07", "邏輯正確性分數", "≥90", "phase-verify"),
+                ("TH-15", "Phase Truth", "≥70%", "phase-verify"),
+            ],
+            6: [
+                ("TH-02", "Constitution 總分", "≥80%", "constitution/runner.py --type quality_report"),
+                ("TH-07", "邏輯正確性分數", "≥90", "phase-verify"),
+                ("TH-15", "Phase Truth", "≥70%", "phase-verify"),
+            ],
+            7: [
+                ("TH-07", "邏輯正確性分數", "≥90", "phase-verify"),
+                ("TH-15", "Phase Truth", "≥70%", "phase-verify"),
+            ],
+            8: [
+                ("TH-02", "Constitution 總分", "≥80%", "constitution/runner.py --type configuration"),
+                ("TH-12", "單元測試覆蓋率", "≥80%", "pytest --cov=app/ -v"),
                 ("TH-15", "Phase Truth", "≥70%", "phase-verify"),
             ],
         }
@@ -4494,6 +4522,38 @@ class MethodologyCLI:
                 ("docs/P2_SOP.md", "Phase 2 詳細步驟"),
                 ("templates/SAD_TEMPLATE.md", "SAD 模板"),
                 ("docs/ARCHITECTURE_GUIDE.md", "架構設計規範"),
+            ],
+            4: [
+                ("SKILL_DOMAIN.md", "領域知識"),
+                ("docs/P4_SOP.md", "Phase 4 詳細步驟"),
+                ("docs/TEST_PLAN_TEMPLATE.md", "測試計畫模板"),
+                ("docs/TEST_RESULTS_TEMPLATE.md", "測試結果模板"),
+                ("docs/QA_GUIDE.md", "QA 測試規範"),
+            ],
+            5: [
+                ("SKILL_DOMAIN.md", "領域知識"),
+                ("docs/P5_SOP.md", "Phase 5 詳細步驟"),
+                ("docs/BASELINE_TEMPLATE.md", "基線模板"),
+                ("docs/MONITORING_PLAN_TEMPLATE.md", "監控計畫模板"),
+                ("docs/VERIFICATION_GUIDE.md", "驗證規範"),
+            ],
+            6: [
+                ("SKILL_DOMAIN.md", "領域知識"),
+                ("docs/P6_SOP.md", "Phase 6 詳細步驟"),
+                ("docs/QUALITY_REPORT_TEMPLATE.md", "品質報告模板"),
+                ("docs/QUALITY_ASSURANCE_GUIDE.md", "品質保證規範"),
+            ],
+            7: [
+                ("SKILL_DOMAIN.md", "領域知識"),
+                ("docs/P7_SOP.md", "Phase 7 詳細步驟"),
+                ("docs/RISK_REGISTER_TEMPLATE.md", "風險註冊表模板"),
+                ("docs/RISK_MANAGEMENT_GUIDE.md", "風險管理規範"),
+            ],
+            8: [
+                ("SKILL_DOMAIN.md", "領域知識"),
+                ("docs/P8_SOP.md", "Phase 8 詳細步驟"),
+                ("docs/CONFIG_RECORDS_TEMPLATE.md", "配置記錄模板"),
+                ("docs/CONFIGURATION_GUIDE.md", "配置管理規範"),
             ],
         }
         
