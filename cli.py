@@ -18,6 +18,7 @@ import json
 from datetime import datetime
 import re
 from pathlib import Path
+import cli_phase_prompts
 
 # Add current directory to path for imports
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -4629,91 +4630,40 @@ class MethodologyCLI:
         return result
 
     def _generate_developer_prompt(self, fr: dict, phase: int) -> str:
-        """產生 Developer Prompt 模板"""
-        # Extract FR number: "FR-01" -> "01"
-        fr_num = fr["fr"].lower().replace("fr-", "").strip()
-        task_id = f"task-{fr_num}"
+        """產生 Developer Prompt 模板（Phase-specific）"""
+        phase_prompts = cli_phase_prompts.PHASE_PROMPTS.get(phase, cli_phase_prompts.PHASE_PROMPTS[3])
         
-        prompts = {
-            3: f"""```
-TASK: {fr['fr']} {fr['title']}
-TASK_ID: {task_id}
-═══════════════════════════════════════
+        # For Phase 3, handle FR-specific placeholders
+        if phase == 3:
+            fr_num = fr.get("fr", "FR-01").lower().replace("fr-", "").strip()
+            template = phase_prompts["developer"]
+            import re
+            template = re.sub(r"\{fr_num\}", fr_num, template)
+            template = re.sub(r"\{fr\['fr'\]\}", fr.get("fr", f"FR-{fr_num}"), template)
+            template = re.sub(r"\{fr\['title'\]\}", fr.get("title", ""), template)
+            file_path = fr.get("file", f"app/processing/{fr_num}.py")
+            template = re.sub(r"\{fr\.get\('file'[^}]*\)", file_path, template)
+            return template
+        
+        return phase_prompts["developer"]
 
-【On Demand 讀取範圍】（只讀這些章節，❌ 禁止 dump 全文）
-
-SRS.md 只讀取：
-- §{fr['fr']} 需求描述
-- §{fr['fr']} 測試案例（有的話）
-
-SAD.md 只讀取：
-- §Module 邊界對照表（對應 {fr['fr']} 的章節）
-
-OUTPUT:
-- {fr.get('file', 'app/processing/{fr_num}.py')}  # 從 SAD 解析
-- tests/test_{fr_num}.py
-
-FORBIDDEN:
-- ❌ dump SRS.md/SAD.md 全文
-- ❌ app/infrastructure/（已廢除，請用 app/{dir}/）
-- ❌ @covers: L1 Error
-- ❌ @type: edge
-- ❌ ... 省略 → 任務失敗
-- ❌ 無 citations 或 citations 無行號 → HR-15 違規
-
-OUTPUT_FORMAT:
-{{
- "status": "success|error|unable_to_proceed",
- "result": "實際產出（路徑）",
- "confidence": 1-10,
- "citations": ["{fr['fr']}", "SRS.md#L23-L45", "SAD.md#L50-L60"],
- "summary": "50字內"
-}}
-
-HR-15 強制執行：citations 必須包含「檔名#L行號」格式
-═══════════════════════════════════════
-```""",
-        }
-        return prompts.get(phase, f"# Phase {phase} Developer Prompt for {fr['fr']}")
 
     def _generate_reviewer_prompt(self, fr: dict, phase: int) -> str:
-        """產生 Reviewer Prompt 模板"""
-        fr_num = fr["fr"].lower().replace("fr-", "").strip()
-        task_id = f"task-{fr_num}-review"
+        """產生 Reviewer Prompt 模板（Phase-specific）"""
+        phase_prompts = cli_phase_prompts.PHASE_PROMPTS.get(phase, cli_phase_prompts.PHASE_PROMPTS[3])
         
-        prompts = {
-            3: f"""```
-TASK: Review {fr['fr']} {fr['title']}
-TASK_ID: {task_id}
-═══════════════════════════════════════
+        # For Phase 3, handle FR-specific placeholders
+        if phase == 3:
+            fr_num = fr.get("fr", "FR-01").lower().replace("fr-", "").strip()
+            template = phase_prompts["reviewer"]
+            import re
+            template = re.sub(r"\{fr_num\}", fr_num, template)
+            template = re.sub(r"\{fr\['fr'\]\}", fr.get("fr", f"FR-{fr_num}"), template)
+            template = re.sub(r"\{fr\['title'\]\}", fr.get("title", ""), template)
+            return template
+        
+        return phase_prompts["reviewer"]
 
-【On Demand 讀取範圍】（只讀這些章節，❌ 禁止 dump 全文）
-
-待審查檔案：
-- app/processing/{fr_num}.py（只看有 @covers: {fr['fr']} 的函數）
-- tests/test_{fr_num}.py
-
-規格參考：
-- SRS.md §{fr['fr']}（只讀需求和測試案例章節）
-
-REJECT_IF:
-- ❌ 無 @covers: {fr['fr']} → REJECT
-- ❌ NFR 約束違背 → REJECT
-- ❌ confidence < 6 → REJECT
-- ❌ 缺少 citations 或 citations 無行號 → REJECT（HR-15）
-
-OUTPUT_FORMAT:
-{{
- "status": "APPROVE|REJECT",
- "confidence": 1-10,
- "violations": ["具體問題"],
- "citations": ["app/processing/{fr_num}.py#L20"],
- "summary": "50字內"
-}}
-═══════════════════════════════════════
-```""",
-        }
-        return prompts.get(phase, f"# Phase {phase} Reviewer Prompt for {fr['fr']}")
 
     def _generate_sessions_spawn_log_format(self, frs: list, phase: int) -> str:
         """產生 sessions_spawn.log 格式說明"""
