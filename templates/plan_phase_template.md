@@ -76,6 +76,26 @@ python3 cli.py run-phase --phase {PHASE} --goal "{GOAL}"
 
 ---
 
+
+## 4. 產出結構樹
+
+```
+{DELIVERABLE_STRUCTURE}
+```
+
+> 📋 結構從 SAD.md §1.3 FR 需求對應表解析，詳見 `.methodology/plans/phase{PHASE}_FULL.md`
+
+---
+
+## 5. FR 詳細任務（共 {FR_COUNT} 項）
+
+> ⚠️ FR 詳細任務需要解析 SRS.md §FR-XX，完整內容見 `.methodology/plans/phase{PHASE}_FULL.md`
+> 若要生成詳細任務，加上 `--detailed` flag：
+> ```bash
+> python3 cli.py plan-phase --phase {PHASE} --detailed
+> ```
+
+{DELIVERABLE_STRUCTURE}
 ## 4. Developer Prompt 模板（On Demand）
 
 ```

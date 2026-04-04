@@ -4309,10 +4309,11 @@ class MethodologyCLI:
         return frs
 
     def _parse_sad_modules(self, repo_path: Path) -> list:
-        """解析 SAD.md，提取模組對應"""
+        """解析 SAD.md，提取 FR → 模組檔案對應（增強版）"""
         sad_paths = [
-            repo_path / "SAD.md",
             repo_path / "02-architecture" / "SAD.md",
+            repo_path / "SAD.md",
+            repo_path / "templates" / "SAD.md",
         ]
         sad_path = None
         for p in sad_paths:
@@ -4325,9 +4326,40 @@ class MethodologyCLI:
         
         content = sad_path.read_text()
         import re
-        # 匹配 Module 或 FR 引用
-        module_pattern = re.compile(r'(##?\s*Module\s*(\d+)|###?\s*(\d+)[^\n]*Module[^\n]*|FR-(\d+)[^\n]*module)', re.IGNORECASE)
+        
+        # 優先：解析 Markdown 表格格式（FR ID | 需求 | app/...）
+        # 例如：| **FR-01** | TaiwanLexicon ≥ 50 詞映射 | `app/processing/lexicon_mapper.py` |
+        # 簡化：直接找 FR-XX 和 app/ 路徑
+        simple_pattern = re.compile(r'FR-(\d+)[^\n]*?`?(app/[^\s`]+)`?', re.DOTALL)
         modules = []
+        seen_frs = set()
+        for m in simple_pattern.finditer(content):
+            fr_num = m.group(1)
+            if fr_num in seen_frs:
+                continue
+            file_path = m.group(2) or ""
+            seen_frs.add(fr_num)
+            # 從路徑推斷模組名：app/processing/lexicon_mapper.py → lexicon_mapper
+            if '/' in file_path:
+                filename = file_path.split('/')[-1].replace('.py', '')
+                module_name = filename
+            else:
+                module_name = f"Module{fr_num}"
+            modules.append({
+                "fr": f"FR-{fr_num}",
+                "module": module_name,
+                "file": file_path,
+                "source": "table"
+            })
+        
+        if modules:
+            return modules
+        
+        # Fallback：舊的 pattern matching
+        module_pattern = re.compile(
+            r'(##?\s*Module\s*(\d+)|###?\s*(\d+)[^\n]*Module[^\n]*|FR-(\d+)[^\n]*module)',
+            re.IGNORECASE
+        )
         for m in module_pattern.finditer(content):
             module_num = m.group(2) or m.group(3) or "?"
             fr_ref = m.group(4) or ""
@@ -4338,20 +4370,67 @@ class MethodologyCLI:
             })
         return modules
 
+
     def _generate_fr_table(self, frs: list, modules: list) -> str:
-        """產生 FR-by-FR 任務表格"""
+        """產生 FR-by-FR 任務表格（增強版：使用 SAD 真實映射）"""
         if not frs:
             return "*（未找到 FR 清單）*"
         
-        table = "| FR | 模組 | 產出檔案 | 測試檔案 |\n|------|------|---------|----------|\n"
+        table = "| FR | 模組 | 產出檔案 | 測試檔案 | 驗證命令 |\n|------|------|---------|----------|---------|\n"
         for fr in frs:
-            fr_lower = fr["fr"].lower().replace("-", "")
-            module = next((m["module"] for m in modules if m["fr"] == fr["fr"]), "—")
-            # 推斷檔案路徑
-            impl_path = f"app/processing/{fr_lower.replace('fr', '')}.py"
-            test_path = f"tests/test_{fr_lower.replace('fr', '')}.py"
-            table += f"| {fr['fr']} | {module} | `{impl_path}` | `{test_path}` |\n"
+            fr_num = fr["fr"].lower().replace("-", "").replace("fr", "")
+            # 從 modules 中找對應的 FR（不区分大小写）
+            mod_match = next((m for m in modules if m.get("fr", "").upper() == fr["fr"].upper()), None)
+            if mod_match:
+                module = mod_match.get("module", "—")
+                impl_path = mod_match.get("file", "")
+            else:
+                module = "—"
+                impl_path = ""
+            
+            # 推斷測試檔案（從 impl_path）
+            if impl_path and "app/" in impl_path:
+                filename = impl_path.split("/")[-1].replace(".py", "")
+                test_path = f"tests/test_fr{fr_num.zfill(2)}_{filename}.py"
+            else:
+                test_path = f"tests/test_fr{fr_num.zfill(2)}.py"
+            
+            verify_cmd = f"`pytest tests/test_fr{fr_num.zfill(2)}*.py -v`"
+            table += f"| {fr['fr']} | {module} | `{impl_path}` | `{test_path}` | {verify_cmd} |\n"
         return table
+
+    def _generate_deliverable_structure(self, frs: list, modules: list) -> str:
+        """從 FR/Module 對應產生產出結構樹"""
+        if not modules:
+            return "*（請從 SAD.md §1.3 解析）*"
+        
+        # Group by directory
+        dirs = {}
+        for m in modules:
+            file_path = m.get('file', '')
+            if '/' in file_path:
+                dir_name = '/'.join(file_path.split('/')[:-1])
+                filename = file_path.split('/')[-1]
+                if dir_name not in dirs:
+                    dirs[dir_name] = []
+                dirs[dir_name].append(filename)
+        
+        lines = ["03-implementation/", "├── app/"]
+        for dir_name, files in sorted(dirs.items()):
+            indent = "│   " * dir_name.count('/')
+            lines.append(f"{indent}├── {dir_name}/")
+            file_indent = indent + "│   "
+            for f in sorted(files):
+                lines.append(f"{file_indent}{f}")
+        
+        lines.append("├── tests/")
+        for fr in frs[:5]:
+            fr_num = fr['fr'].lower().replace('-', '').replace('fr', '').zfill(2)
+            lines.append(f"│   ├── test_fr{fr_num}_*.py")
+        if len(frs) > 5:
+            lines.append(f"│   ... ({len(frs) - 5} more)")
+        
+        return '\n'.join(lines)
 
     def _generate_quality_gate_commands(self, phase: int) -> str:
         """根據 Phase 產生 Quality Gate 命令"""
@@ -4692,7 +4771,10 @@ OUTPUT_FORMAT:
             plan = plan.replace('{SESSION_LOG_EXAMPLE}', log_format)
             plan = plan.replace('{TOTAL_RECORDS}', str(len(frs) * 2))
             plan = plan.replace('{PREFLIGHT_RESULTS}', '\n'.join(pf_lines))
-            plan = plan.replace('{DELIVERABLES}', '\n'.join(deliv_lines))
+            
+            # Generate deliverable structure from modules
+            deliverable_structure = self._generate_deliverable_structure(frs, modules)
+            plan = plan.replace('{DELIVERABLE_STRUCTURE}', deliverable_structure)
         else:
             # Inline generation fallback
             plan = self._generate_plan_fallback(phase, goal, state, fsm_str, 
