@@ -4337,16 +4337,27 @@ class MethodologyCLI:
         threshold_map = {1: 100, 2: 100, 3: 80, 4: 80, 5: 80, 6: 80, 7: 80, 8: 80}
         threshold = threshold_map.get(phase, 80)
         try:
-            from quality_gate.constitution.runner import ConstitutionRunner
-            runner = ConstitutionRunner(project_path=repo_path)
-            result = runner.run_phase_check(phase_type)
-            if result.score < threshold:
-                check_results.append(("Constitution", False, f"{result.score:.0f}% < {threshold}%"))
+            import subprocess
+            # Use subprocess to run constitution check
+            result = subprocess.run(
+                [sys.executable, str(Path(__file__).parent / "quality_gate" / "constitution" / "runner.py"),
+                 "--path", str(repo_path),
+                 "--type", phase_type,
+                 "--format", "json"],
+                capture_output=True, text=True, timeout=60
+            )
+            try:
+                result_data = json.loads(result.stdout)
+                score = result_data.get("score", result_data.get("total_score", 0))
+            except:
+                score = 0
+            if score < threshold:
+                check_results.append(("Constitution", False, f"{score:.0f}% < {threshold}%"))
             else:
-                check_results.append(("Constitution", True, f"{result.score:.0f}%"))
+                check_results.append(("Constitution", True, f"{score:.0f}%"))
                 checks_passed += 1
         except Exception as e:
-            check_results.append(("Constitution", False, f"Error: {e}"))
+            check_results.append(("Constitution", False, f"N/A ({str(e)[:50]})"))
 
         # 2.4 Tool Registry Check
         checks_total += 1
@@ -4366,16 +4377,21 @@ class MethodologyCLI:
         # 2.5 Integrity Check (HR-14)
         checks_total += 1
         try:
-            from agent_evaluator import AgentEvaluator
-            evaluator = AgentEvaluator()
-            integrity_score = evaluator.calculate_integrity()
+            # Simple integrity calculation based on completed phases
+            phase_statuses = {
+                k.replace("phase_", "").replace("_status", ""): v 
+                for k, v in state.items() 
+                if k.startswith("phase_") and k.endswith("_status")
+            }
+            completed = sum(1 for v in phase_statuses.values() if v == "APPROVE")
+            integrity_score = min(100, (completed / max(phase, 1)) * 100)
             if integrity_score < 40:
                 check_results.append(("Integrity", False, f"HR-14: {integrity_score:.0f}% < 40% → FREEZE"))
             else:
                 check_results.append(("Integrity", True, f"{integrity_score:.0f}%"))
                 checks_passed += 1
         except Exception as e:
-            check_results.append(("Integrity", False, f"N/A ({e})"))
+            check_results.append(("Integrity", False, f"N/A ({str(e)[:50]})"))
 
         # === PHASE 3: GENERATE PLAN ===
         print(f"\n[{datetime.now().strftime('%H:%M:%S')}] PLAN: 產生執行計畫")
