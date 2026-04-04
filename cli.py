@@ -4640,28 +4640,37 @@ TASK: {fr['fr']} {fr['title']}
 TASK_ID: {task_id}
 ═══════════════════════════════════════
 
-PROMPT（自己讀）：
-- SRS.md (§{fr['fr']})
-- 02-architecture/SAD.md (§Module 邊界對照表)
+【On Demand 讀取範圍】（只讀這些章節，❌ 禁止 dump 全文）
+
+SRS.md 只讀取：
+- §{fr['fr']} 需求描述
+- §{fr['fr']} 測試案例（有的話）
+
+SAD.md 只讀取：
+- §Module 邊界對照表（對應 {fr['fr']} 的章節）
 
 OUTPUT:
 - app/processing/{fr_num}.py
 - tests/test_{fr_num}.py
 
 FORBIDDEN:
+- ❌ dump SRS.md/SAD.md 全文
 - ❌ app/infrastructure/
 - ❌ @covers: L1 Error
 - ❌ @type: edge
 - ❌ ... 省略 → 任務失敗
+- ❌ 無 citations 或 citations 無行號 → HR-15 違規
 
 OUTPUT_FORMAT:
 {{
  "status": "success|error|unable_to_proceed",
- "result": "實際產出",
+ "result": "實際產出（路徑）",
  "confidence": 1-10,
- "citations": ["{fr['fr']}", "SRS.md#L23-L45"],
+ "citations": ["{fr['fr']}", "SRS.md#L23-L45", "SAD.md#L50-L60"],
  "summary": "50字內"
 }}
+
+HR-15 強制執行：citations 必須包含「檔名#L行號」格式
 ═══════════════════════════════════════
 ```""",
         }
@@ -4673,27 +4682,32 @@ OUTPUT_FORMAT:
         task_id = f"task-{fr_num}-review"
         
         prompts = {
-            3: f""""```
+            3: f"""```
 TASK: Review {fr['fr']} {fr['title']}
 TASK_ID: {task_id}
 ═══════════════════════════════════════
 
-PROMPT（自己讀）：
-- app/processing/{fr_num}.py（待審查）
+【On Demand 讀取範圍】（只讀這些章節，❌ 禁止 dump 全文）
+
+待審查檔案：
+- app/processing/{fr_num}.py（只看有 @covers: {fr['fr']} 的函數）
 - tests/test_{fr_num}.py
-- SRS.md (§{fr['fr']})
+
+規格參考：
+- SRS.md §{fr['fr']}（只讀需求和測試案例章節）
 
 REJECT_IF:
 - ❌ 無 @covers: {fr['fr']} → REJECT
 - ❌ NFR 約束違背 → REJECT
 - ❌ confidence < 6 → REJECT
-- ❌ 缺少 citations → REJECT
+- ❌ 缺少 citations 或 citations 無行號 → REJECT（HR-15）
 
 OUTPUT_FORMAT:
 {{
  "status": "APPROVE|REJECT",
  "confidence": 1-10,
  "violations": ["具體問題"],
+ "citations": ["app/processing/{fr_num}.py#L20"],
  "summary": "50字內"
 }}
 ═══════════════════════════════════════
@@ -4963,6 +4977,8 @@ OUTPUT_FORMAT:
             # Agent roles for A/B collaboration
             plan = plan.replace('{AGENT_A}', agent_a)
             plan = plan.replace('{AGENT_B}', agent_b)
+            plan = plan.replace('{AGENT_A_UPPER}', agent_a.upper())
+            plan = plan.replace('{AGENT_B_UPPER}', agent_b.upper())
             
             # Developer and Reviewer prompts
             developer_prompt = self._generate_developer_prompt(frs[0] if frs else {'fr': 'FR-01', 'title': 'Task'}, phase)

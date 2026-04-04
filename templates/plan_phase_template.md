@@ -182,7 +182,31 @@ OUTPUT_FORMAT:
 
 ---
 
-## 9. Quality Gate（Step 9）
+
+## 9. 工具調用時機（On Demand 觸發）
+
+| 工具 | 觸發時機 | 調用方式 |
+|------|---------|---------|
+| **SubagentIsolator** | 派遣 Sub-agent 前 | `si.spawn(role=AgentRole.{AGENT_A_UPPER}, task="...")` |
+| **PermissionGuard** | exec/rm 操作前 | `pg.check(Operation(type="exec", ...))` |
+| **ContextManager** | context > 50 條訊息 | `cm.compress_if_needed()` |
+| **SessionManager** | 任務 > 30 分鐘 | `sm.save("task-id", state)` |
+| **KnowledgeCurator** | 派遣前驗證覆蓋率 | `kc.verify_coverage(fr_list=["FR-01"])` |
+| **ToolRegistry** | 新工具引入時 | `tr.register("Tool", handler)` |
+
+### On Demand 觸發條件
+
+```
+• SubagentIsolator → 每次派遣前（HR-01）
+• PermissionGuard → exec/rm 前（安全檢查）
+• ContextManager → context > 50 時自動壓縮
+• SessionManager → 任務開始時 + 30 分鐘後自動 save
+• KnowledgeCurator → Phase 開始前 verify
+• ToolRegistry → 發現新工具時 register
+```
+
+
+## 10. Quality Gate（Step 9）
 
 ### 依序執行，全部通過才能 APPROVE
 
@@ -192,7 +216,7 @@ OUTPUT_FORMAT:
 
 ---
 
-## 10. sessions_spawn.log 格式（HR-10）
+## 11. sessions_spawn.log 格式（HR-10）
 
 每個 FR 產生 2 筆記錄，共 {FR_COUNT} × 2 = {TOTAL_RECORDS} 筆記錄：
 
@@ -202,7 +226,7 @@ OUTPUT_FORMAT:
 
 ---
 
-## 11. Commit 格式
+## 12. Commit 格式
 
 ```
 [Phase {PHASE}] Step {N}: FR-{FR_NUM} {MODULE_NAME} (HASH)
@@ -217,7 +241,7 @@ OUTPUT_FORMAT:
 
 ---
 
-## 12. 估計時間
+## 13. 估計時間
 
 | 階段 | 估計時間 |
 |------|---------|
@@ -228,7 +252,7 @@ OUTPUT_FORMAT:
 
 ---
 
-## 13. Phase Truth 組成
+## 14. Phase Truth 組成
 
 ```
 ✅ FrameworkEnforcer BLOCK (權重 40%)
@@ -239,7 +263,7 @@ OUTPUT_FORMAT:
 
 ---
 
-## 14. 工具速查
+## 15. 工具速查
 
 ### SubagentIsolator
 ```python
@@ -285,7 +309,7 @@ tr.register("NewTool", handler)
 
 ---
 
-## 15. Pre-Execution Checklist
+## 16. Pre-Execution Checklist
 
 ```
 □ state.json 已初始化（phase={PHASE}, step=0）
@@ -304,7 +328,7 @@ tr.register("NewTool", handler)
 
 ---
 
-## 16. 下一步
+## 17. 下一步
 
 ```bash
 # Johnny 審核後，執行：
