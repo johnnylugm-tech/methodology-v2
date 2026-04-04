@@ -4119,9 +4119,8 @@ class MethodologyCLI:
                           5: "verification", 6: "quality_report", 7: "risk_management", 8: "configuration"}
         phase_type = phase_type_map.get(phase, "srs")
 
-        from quality_gate.constitution.runner import ConstitutionRunner
-        runner = ConstitutionRunner(project_path=repo_path)
-        result = runner.run_phase_check(phase_type)
+        from quality_gate.constitution import run_constitution_check
+        result = run_constitution_check(phase_type, docs_path=str(repo_path / "docs"), current_phase=phase)
 
         if result.score < 80:
             print(f"❌ Constitution score {result.score:.0f}% < 80% (required)")
