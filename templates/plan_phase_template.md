@@ -68,6 +68,10 @@ python3 cli.py run-phase --phase {PHASE} --goal "{GOAL}"
 ### TH 閾值（Phase {PHASE}）
 {TH_LIST}
 
+### TH 閾值詳細
+
+{TH_THRESHOLDS_TABLE}
+
 ---
 
 ## 3. FR-by-FR 任務表格（共 {FR_COUNT} 項）
@@ -96,7 +100,13 @@ python3 cli.py run-phase --phase {PHASE} --goal "{GOAL}"
 
 ---
 
-## 6. Developer Prompt 模板（On Demand）
+## 6. 外部文檔
+
+{EXTERNAL_DOCS}
+
+---
+
+## 7. Developer Prompt 模板（On Demand）
 
 ```
 ═══════════════════════════════════════

@@ -4432,6 +4432,81 @@ class MethodologyCLI:
         
         return '\n'.join(lines)
 
+    def _generate_thresholds_table(self, phase: int) -> str:
+        """產生 TH 閾值表格（Phase 3）"""
+        thresholds = {
+            3: [
+                ("TH-06", "Constitution 測試覆蓋率", ">80%", "python3 quality_gate/constitution/runner.py --type implementation"),
+                ("TH-08", "AgentEvaluator 嚴格", "≥90", "phase-verify 內含"),
+                ("TH-10", "測試通過率", "=100%", "pytest tests/ -v"),
+                ("TH-11", "單元測試覆蓋率", "≥70%", "pytest --cov=app/ -v"),
+                ("TH-16", "代碼↔SAD 映射率", "=100%", "trace-check"),
+                ("TH-15", "Phase Truth", "≥70%", "phase-verify --phase 3"),
+            ],
+            1: [
+                ("TH-01", "FSM State", "INIT", "state.json"),
+                ("TH-03", "Phase Sequence", "P1 未執行", "state.json"),
+                ("TH-04", "Constitution SRS", "≥80%", "constitution/runner.py --type srs"),
+                ("TH-08", "AgentEvaluator 嚴格", "≥90", "phase-verify"),
+                ("TH-14", "Integrity", "≥40%", "phase-verify"),
+                ("TH-15", "Phase Truth", "≥70%", "phase-verify"),
+            ],
+            2: [
+                ("TH-01", "FSM State", "RUNNING", "state.json"),
+                ("TH-03", "Phase Sequence", "P2 未執行", "state.json"),
+                ("TH-04", "Constitution SAD", "≥80%", "constitution/runner.py --type sad"),
+                ("TH-05", "SAD↔SRS 一致性", "100%", "trace-check"),
+                ("TH-08", "AgentEvaluator 嚴格", "≥90", "phase-verify"),
+                ("TH-15", "Phase Truth", "≥70%", "phase-verify"),
+            ],
+        }
+        
+        rows = thresholds.get(phase, thresholds.get(3, []))
+        if not rows:
+            return "*（無閾值資料）*"
+        
+        lines = ["| TH | 指標 | 門檻 | 驗證命令 |", "|------|------|------|---------|"]
+        for th_id, name, threshold, cmd in rows:
+            lines.append(f"| {th_id} | {name} | {threshold} | `{cmd}` |")
+        
+        return "\n".join(lines)
+
+    def _generate_external_docs(self, phase: int) -> str:
+        """產生外部文檔列表"""
+        docs = {
+            3: [
+                ("SKILL_DOMAIN.md", "領域知識（TTS/SSML/台灣中文）"),
+                ("docs/P3_SOP.md", "Phase 3 詳細步驟"),
+                ("templates/", "交付物模板（.md）"),
+                ("docs/HYBRID_WORKFLOW_GUIDE.md", "A/B 協作規範"),
+                ("docs/CLI_REFERENCE.md", "CLI 工具用法"),
+                ("docs/ANNOTATION_GUIDE.md", "@FR annotation 規範"),
+                ("docs/VERIFIER_GUIDE.md", "Reviewer 規範"),
+                ("docs/CONSTITUTION_GUIDE.md", "Constitution 規範"),
+            ],
+            1: [
+                ("SKILL_DOMAIN.md", "領域知識"),
+                ("docs/P1_SOP.md", "Phase 1 詳細步驟"),
+                ("templates/SRS_TEMPLATE.md", "SRS 模板"),
+            ],
+            2: [
+                ("SKILL_DOMAIN.md", "領域知識"),
+                ("docs/P2_SOP.md", "Phase 2 詳細步驟"),
+                ("templates/SAD_TEMPLATE.md", "SAD 模板"),
+                ("docs/ARCHITECTURE_GUIDE.md", "架構設計規範"),
+            ],
+        }
+        
+        rows = docs.get(phase, docs.get(3, []))
+        if not rows:
+            return "*（無文檔資料）*"
+        
+        lines = ["| 文檔 | 用途 |", "|------|------|"]
+        for doc, usage in rows:
+            lines.append(f"| `{doc}` | {usage} |")
+        
+        return "\n".join(lines)
+
     def _generate_fr_detailed_tasks_placeholder(self, frs: list, modules: list) -> str:
         """產生 FR 詳細任務的 placeholder（具體內容需從 SRS 解析）"""
         lines = []
@@ -4801,6 +4876,8 @@ OUTPUT_FORMAT:
             deliverable_structure = self._generate_deliverable_structure(frs, modules)
             plan = plan.replace('{DELIVERABLE_STRUCTURE}', deliverable_structure)
             plan = plan.replace('{FR_DETAILED_TASKS}', self._generate_fr_detailed_tasks_placeholder(frs, modules))
+            plan = plan.replace('{TH_THRESHOLDS_TABLE}', self._generate_thresholds_table(phase))
+            plan = plan.replace('{EXTERNAL_DOCS}', self._generate_external_docs(phase))
         else:
             # Inline generation fallback
             plan = self._generate_plan_fallback(phase, goal, state, fsm_str, 
