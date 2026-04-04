@@ -1,3 +1,34 @@
+## [v6.49] - 2026-04-05
+
+### 🚀 Added
+- **Sub-Agent Management (v6.49)**: `cli_phase_subagent.py`
+  - Need-to-Know + On-Demand for all 8 phases
+  - Phase-specific tool timing (spawn/KC/CM/QG/checkpoint)
+  - SubagentIsolator + fresh_messages per phase
+  - Dynamic {subagent_mgmt} section in plan template
+
+- **Phase Prompts Module (v6.48)**: `cli_phase_prompts.py`
+  - All 8 phases have independent Developer/Reviewer prompts
+  - Phase 1: SRS制定/審查
+  - Phase 2: SAD+ADR 制定/審查
+  - Phase 3: 代碼實作/審查 (full FR support)
+  - Phase 4: TEST_PLAN/RESULTS
+  - Phase 5: Baseline/Monitoring
+  - Phase 6: QUALITY_REPORT
+  - Phase 7: 風險管理
+  - Phase 8: 配置管理
+
+- **IntegrationManager (v6.48)**: 迭代修復管理
+  - HR-12 5輪限制自動追蹤
+  - get_repair_suggestions()
+  - get_repair_flow()
+
+- **ToolDispatcher (v6.48)**: 動態工具觸發
+  - on_spawn/on_message/on_error/on_complete
+
+### 🐛 Fixed
+- **Phase prompts all 8 phases**: Now with Need-to-Know + On-Demand
+
 # CHANGELOG
 
 > methodology-v2 版本變更記錄

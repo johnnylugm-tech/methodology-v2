@@ -1,6 +1,6 @@
-# Johnny 使用手冊 v6.46
+# Johnny 使用手冊 v6.49
 
-> **版本**: v6.46
+> **版本**: v6.49
 > **對象**: Johnny（Human-in-the-Loop）
 > **用途**: 快速上手 methodology-v2
 
@@ -8,7 +8,7 @@
 
 ## 1. methodology-v2 今天長什麼樣？
 
-### v6.32 ~ v6.46 帶來的改善
+### v6.32 ~ v6.49 帶來的改善
 
 | 版本 | 改善內容 |
 |------|----------|
@@ -23,8 +23,8 @@
 | v6.43 | On Demand restrictions + Tool Usage Timing section |
 | v6.44 | Pre-flight deliverable check fix |
 | v6.45 | OUTPUT path from SAD parsing + Forbidden clarification |
-| v6.46 | Version consistency audit fix |
-| **v6.46** | **Audit fixes + version consistency** |
+| v6.49 | Version consistency audit fix |
+| **v6.49** | **Audit fixes + version consistency** |
 
 ### 三層文件架構
 
@@ -158,7 +158,7 @@ python cli.py run-phase --phase 3 --step 3.1 --task "FR-01 實作"
 
 ## 4. 執行計畫的 18 個章節
 
-`plan-phase` 生成的執行計畫包含以下 16 個章節：
+`plan-phase` 生成的執行計畫包含以下 19 個章節：
 
 | # | 章節 | 說明 |
 |---|------|------|
@@ -334,6 +334,71 @@ FORBIDDEN:
 
 ---
 
+
+## 8.5 Sub-Agent Management（v6.49+）
+
+### 核心原則
+
+每個 Phase 的 Sub-agent 管理都有明確的 5 大要素：
+
+| 要素 | 說明 |
+|------|------|
+| **Need-to-Know** | 只給必要資訊（L1/NFR 被問時才提供）|
+| **On-Demand** | Sub-agent 自己讀 artifact paths，不 dump |
+| **Tool Timing** | 何時用什麼工具（spawn/KC/CM/QG/checkpoint）|
+| **Isolation** | SubagentIsolator + fresh_messages |
+| **HR-12** | 5 輪限制自動追蹤 |
+
+### 8 個 Phase 的管理重點
+
+| Phase | Agent A | Need-to-Know | 工具時機 |
+|-------|---------|--------------|----------|
+| 1 | architect | TASK_INITIALIZATION_PROMPT.md | spawn → KC |
+| 2 | architect | SRS.md（只讀 FR） | spawn → KC → QG |
+| 3 | developer | SRS §FR + SAD §Module | parallel → KC → CM → QG |
+| 4 | qa | SRS + SAD + src/ | spawn → test_runner → coverage |
+| 5 | devops | TEST_RESULTS + SRS | spawn → monitoring |
+| 6 | qa | TEST_RESULTS + BASELINE | spawn → QG |
+| 7 | qa | QUALITY_REPORT + SRS | spawn → risk_matrix |
+| 8 | devops | RISK_REGISTER + BASELINE | spawn → lock_deps |
+
+### Phase 3 範例
+
+```
+## 9.5 Sub-Agent Management（Need-to-Know + On-Demand）
+
+**Phase 3: 代碼實現**
+
+### Agent 角色
+- **Agent A（developer）**: 實作 FR-XX
+- **Agent B（reviewer）**: 審查 FR-XX 代碼
+
+### Need-to-Know（只給必要資訊）
+
+| 檔案 | 章節 | 原因 |
+|------|------|------|
+| SRS.md | §FR-XX 需求描述 | 只實作這個 FR 的功能 |
+| SAD.md | §Module 邊界對照表 | 知道 Module 介面和邊界 |
+
+**Skip**: `完整 SRS.md, 完整 SAD.md, 其他 FR 的實作`
+**Context**: single_fr
+
+### On-Demand（需要時才請求）
+- **觸發條件**: 當需要知道其他 FR 的實作細節時
+- **請求對象**: N/A（不該發生，每個 FR 獨立）
+- **格式**: 返回錯誤：違反 Need-to-Know
+
+### 工具調用時機
+| 事件 | 工具 | 參數 |
+|------|------|------|
+| spawn | 派遣 Sub-agent | {'role': 'developer'} |
+| knowledge_curator | KnowledgeCurator | verify_coverage |
+| context_manager | ContextManager | 訊息 >30 時 L1 壓縮 |
+| checkpoint | SessionManager | 每 FR 完成後 save |
+```
+
+---
+
 ## 9. 拷問法範例
 
 在 Agent 完成 Phase 後，隨機問這些問題：
@@ -361,7 +426,7 @@ FORBIDDEN:
 
 ---
 
-## 10. 新工具速查（v6.32-v6.46）
+## 10. 新工具速查（v6.32-v6.49）
 
 ### 六大工具
 
@@ -548,15 +613,15 @@ python cli.py phase-status
 
 | Component | Version | Status |
 |-----------|---------|--------|
-| cli.py | v6.46.0 | ✅ |
+| cli.py | v6.49.0 | ✅ |
 | generate_full_plan.py | v6.39.0 | ✅ |
 | SKILL.md | v6.32.0 | ⚠️ |
-| JOHNNY_HANDBOOK.md | v6.46 | ✅ |
-| 執行計畫輸出 | v6.46.0 | ✅ |
+| JOHNNY_HANDBOOK.md | v6.49 | ✅ |
+| 執行計畫輸出 | v6.49.0 | ✅ |
 
 > ⚠️ SKILL.md 版本落後（v6.32.0），建議在下次 release 時同步更新。
 
 ---
 
-*此手冊基於 methodology-v2 v6.46*
+*此手冊基於 methodology-v2 v6.49*
 *最後更新: 2026-04-04*
