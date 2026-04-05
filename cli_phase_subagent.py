@@ -400,3 +400,167 @@ def get_on_demand_config(phase: int) -> dict:
     """取得指定 Phase 的 On-Demand 規範"""
     config = get_subagent_config(phase)
     return config.get("on_demand", {})
+
+
+# Phase-specific Four-Dimensional Goals and Iteration Rounds
+# This extends PHASE_SUBAGENT with iteration-specific information
+
+PHASE_ITERATION = {
+    1: {
+        "name": "需求規格",
+        "four_dimensional": {
+            "規範符合度": {"target": "10/10", "metric": "HR-15 citations", "method": "grep -c '\[FR-' SRS.md"},
+            "A/B 協作": {"target": "10/10", "metric": "sessions_spawn.log", "method": "developer + reviewer 各 1 筆記錄"},
+            "子代理管理": {"target": "10/10", "metric": "SubagentIsolator", "method": "fresh_messages 隔離"},
+            "Traceability": {"target": "10/10", "metric": "FR↔NFR 映射", "method": "每個 FR 有對應 NFR"}
+        },
+        "rounds": [
+            {"round": 1, "goal": "基礎 FR 識別", "deliverable": "FR 列表 + 初步描述"},
+            {"round": 2, "goal": "NFR 補充", "deliverable": "NFR 列表 + 約束條件"},
+            {"round": 3, "goal": "介面規格", "deliverable": "API 規格 + 錯誤處理"},
+            {"round": 4, "goal": "Traceability 建立", "deliverable": "TRACEABILITY_MATRIX.md"},
+            {"round": 5, "goal": "完整審查", "deliverable": "SRS.md APPROVE"}
+        ]
+    },
+    2: {
+        "name": "架構設計",
+        "four_dimensional": {
+            "規範符合度": {"target": "10/10", "metric": "SAD↔SRS 一致性", "method": "每個 FR 有對應 Module"},
+            "A/B 協作": {"target": "10/10", "metric": "sessions_spawn.log", "method": "developer + reviewer 各 1 筆記錄"},
+            "子代理管理": {"target": "10/10", "metric": "SubagentIsolator", "method": "fresh_messages 隔離"},
+            "模組化": {"target": "10/10", "metric": "Module 邊界清晰", "method": "每個 Module 單一職責"}
+        },
+        "rounds": [
+            {"round": 1, "goal": "基礎架構", "deliverable": "SAD.md 初步架構"},
+            {"round": 2, "goal": "Module 邊界", "deliverable": "Module 介面定義"},
+            {"round": 3, "goal": "介面定義", "deliverable": "API 規格 + 資料流"},
+            {"round": 4, "goal": "ADR 記錄", "deliverable": "ADR.md 關鍵決策"},
+            {"round": 5, "goal": "SAD↔SRS 驗證", "deliverable": "SAD.md APPROVE"}
+        ]
+    },
+    3: {
+        "name": "代碼實現",
+        "four_dimensional": {
+            "規範符合度": {"target": "10/10", "metric": "HR-15 citations + docstring [FR-XX]", "method": "grep -c '\[FR-' app/**/*.py"},
+            "A/B 協作": {"target": "10/10", "metric": "sessions_spawn.log", "method": "developer + reviewer 各 1 筆記錄"},
+            "子代理管理": {"target": "10/10", "metric": "SubagentIsolator", "method": "fresh_messages 隔離"},
+            "測試覆蓋率": {"target": "10/10", "metric": "pytest PASS + coverage ≥80%", "method": "pytest --cov=app/ -v"}
+        },
+        "rounds": [
+            {"round": 1, "goal": "基礎實作", "deliverable": "代碼 + 測試 + pytest PASS"},
+            {"round": 2, "goal": "Production-ready", "deliverable": "logging + error handling"},
+            {"round": 3, "goal": "穩定化", "deliverable": "pytest 持續 PASS"},
+            {"round": 4, "goal": "HR-15 落實", "deliverable": "citations 含行號"},
+            {"round": 5, "goal": "A/B 協作", "deliverable": "sessions_spawn.log 完整"}
+        ]
+    },
+    4: {
+        "name": "測試規劃",
+        "four_dimensional": {
+            "規範符合度": {"target": "10/10", "metric": "FR↔測試 映射率 ≥90%", "method": "每個 FR 有對應測試案例"},
+            "A/B 協作": {"target": "10/10", "metric": "sessions_spawn.log", "method": "developer + reviewer 各 1 筆記錄"},
+            "子代理管理": {"target": "10/10", "metric": "SubagentIsolator", "method": "fresh_messages 隔離"},
+            "關鍵路徑覆蓋": {"target": "10/10", "metric": "關鍵路徑覆蓋 100%", "method": "測試覆蓋率報告"}
+        },
+        "rounds": [
+            {"round": 1, "goal": "測試策略", "deliverable": "TEST_PLAN.md 測試策略"},
+            {"round": 2, "goal": "測試案例", "deliverable": "測試案例覆蓋所有 FR"},
+            {"round": 3, "goal": "環境設置", "deliverable": "測試環境隔離"},
+            {"round": 4, "goal": "執行與記錄", "deliverable": "TEST_RESULTS.md"},
+            {"round": 5, "goal": "覆蓋率分析", "deliverable": "COVERAGE_REPORT.md"}
+        ]
+    },
+    5: {
+        "name": "驗證交付",
+        "four_dimensional": {
+            "規範符合度": {"target": "10/10", "metric": "Baseline 符合 SRS 約束", "method": "效能數據對照 SRS"},
+            "A/B 協作": {"target": "10/10", "metric": "sessions_spawn.log", "method": "developer + reviewer 各 1 筆記錄"},
+            "子代理管理": {"target": "10/10", "metric": "SubagentIsolator", "method": "fresh_messages 隔離"},
+            "監控覆蓋": {"target": "10/10", "metric": "監控指標覆蓋 100%", "method": "MONITORING_PLAN.md 完整性"}
+        },
+        "rounds": [
+            {"round": 1, "goal": "效能基準", "deliverable": "BASELINE.md 效能基準"},
+            {"round": 2, "goal": "監控設置", "deliverable": "監控指標定義"},
+            {"round": 3, "goal": "警報配置", "deliverable": "警報閾值合理"},
+            {"round": 4, "goal": "驗證報告", "deliverable": "VERIFICATION_REPORT.md"},
+            {"round": 5, "goal": "交付準備", "deliverable": "交付檢查清單完成"}
+        ]
+    },
+    6: {
+        "name": "品質保證",
+        "four_dimensional": {
+            "規範符合度": {"target": "10/10", "metric": "Constitution ≥80%", "method": "Constitution runner"},
+            "A/B 協作": {"target": "10/10", "metric": "sessions_spawn.log", "method": "developer + reviewer 各 1 筆記錄"},
+            "子代理管理": {"target": "10/10", "metric": "SubagentIsolator", "method": "fresh_messages 隔離"},
+            "邏輯正確性": {"target": "10/10", "metric": "邏輯正確性 ≥90%", "method": "QUALITY_REPORT.md"}
+        },
+        "rounds": [
+            {"round": 1, "goal": "品質維度定義", "deliverable": "品質維度列表"},
+            {"round": 2, "goal": "指標測量", "deliverable": "指標數據收集"},
+            {"round": 3, "goal": "問題分析", "deliverable": "問題清單 + 優先級"},
+            {"round": 4, "goal": "修復計畫", "deliverable": "修復計畫文件"},
+            {"round": 5, "goal": "最終報告", "deliverable": "QUALITY_REPORT.md APPROVE"}
+        ]
+    },
+    7: {
+        "name": "風險管理",
+        "four_dimensional": {
+            "規範符合度": {"target": "10/10", "metric": "所有風險有緩解計畫", "method": "RISK_REGISTER.md 完整性"},
+            "A/B 協作": {"target": "10/10", "metric": "sessions_spawn.log", "method": "developer + reviewer 各 1 筆記錄"},
+            "子代理管理": {"target": "10/10", "metric": "SubagentIsolator", "method": "fresh_messages 隔離"},
+            "風險評估合理性": {"target": "10/10", "metric": "機率×影響 合理", "method": "風險分數對照"}
+        },
+        "rounds": [
+            {"round": 1, "goal": "風險識別", "deliverable": "風險清單"},
+            {"round": 2, "goal": "評估與分類", "deliverable": "風險分數 + 等級"},
+            {"round": 3, "goal": "緩解計畫", "deliverable": "RISK_MITIGATION_PLANS.md"},
+            {"round": 4, "goal": "責任分配", "deliverable": "每個風險有負責人"},
+            {"round": 5, "goal": "追蹤機制", "deliverable": "追蹤機制文件化"}
+        ]
+    },
+    8: {
+        "name": "配置管理",
+        "four_dimensional": {
+            "規範符合度": {"target": "10/10", "metric": "requirements.lock 一致性", "method": "pip freeze == requirements.lock"},
+            "A/B 協作": {"target": "10/10", "metric": "sessions_spawn.log", "method": "developer + reviewer 各 1 筆記錄"},
+            "子代理管理": {"target": "10/10", "metric": "SubagentIsolator", "method": "fresh_messages 隔離"},
+            "部署檢查覆蓋": {"target": "10/10", "metric": "部署檢查清單 100%", "method": "DEPLOYMENT_CHECKLIST.md 完整性"}
+        },
+        "rounds": [
+            {"round": 1, "goal": "配置審計", "deliverable": "CONFIG_RECORDS.md"},
+            {"round": 2, "goal": "依賴鎖定", "deliverable": "requirements.lock"},
+            {"round": 3, "goal": "環境規格", "deliverable": "ENVIRONMENT_SPEC.md"},
+            {"round": 4, "goal": "部署腳本", "deliverable": "部署腳本可用"},
+            {"round": 5, "goal": "最終驗證", "deliverable": "DEPLOYMENT_CHECKLIST.md APPROVE"}
+        ]
+    }
+}
+
+
+def get_phase_iteration(phase: int) -> dict:
+    """取得指定 Phase 的迭代配置"""
+    return PHASE_ITERATION.get(phase, PHASE_ITERATION[3])
+
+
+def get_four_dimensional_table(phase: int) -> str:
+    """產生四維度 Markdown 表格"""
+    iteration = get_phase_iteration(phase)
+    lines = []
+    lines.append("| 維度 | 目標 | 指標 | 評估方法 |")
+    lines.append("|------|------|------|---------|")
+    for dim, info in iteration["four_dimensional"].items():
+        lines.append(f"| **{dim}** | {info['target']} | {info['metric']} | {info['method']} |")
+    return "\n".join(lines)
+
+
+def get_iteration_rounds_table(phase: int) -> str:
+    """產生迭代輪次 Markdown 表格"""
+    iteration = get_phase_iteration(phase)
+    lines = []
+    lines.append("### 每輪目標")
+    lines.append("")
+    lines.append("| Round | 目標 | 交付物 |")
+    lines.append("|-------|------|--------|")
+    for r in iteration["rounds"]:
+        lines.append(f"| Round {r['round']} | {r['goal']} | {r['deliverable']} |")
+    return "\n".join(lines)

@@ -196,12 +196,7 @@ OUTPUT_FORMAT:
 
 ### 四維度評核標準（目標 10/10）
 
-| 維度 | 目標 | 關鍵動作 |
-|------|------|---------|
-| **規範符合度** | 10/10 | HR-15 citations（含行號）、docstring [FR-XX] |
-| **A/B 協作** | 10/10 | sessions_spawn.log 完整、Developer↔Reviewer 記錄 |
-| **子代理管理** | 10/10 | SubagentIsolator.spawn()、fresh_messages 隔離 |
-| **測試覆蓋率** | 10/10 | pytest PASS + coverage ≥80% |
+{four_dimensional_table}
 
 ### 迭代策略（每個 FR）
 
@@ -222,14 +217,7 @@ graph TD
 
 ### 每輪目標
 
-| Round | 目標 | 交付物 |
-|-------|------|--------|
-| Round 1 | 基礎實作 | 代碼 + 測試 + pytest PASS |
-| Round 2 | Production-ready | logging + error handling |
-| Round 3 | 穩定化 | pytest 持續 PASS |
-| Round 4 | HR-15 落實 | citations 含行號 |
-| Round 5 | A/B 協作 | sessions_spawn.log 完整 |
-| Round 6+ | 持續優化 | 直到四維度 10/10 |
+{iteration_rounds_table}
 
 ### 終止條件
 

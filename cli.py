@@ -4985,6 +4985,10 @@ class MethodologyCLI:
         log_format = self._generate_sessions_spawn_log_format(frs, phase)
         subagent_mgmt = self._generate_subagent_management(phase)
         
+        # Generate phase-specific four-dimensional tables
+        four_dimensional_table = cli_phase_subagent.get_four_dimensional_table(phase)
+        iteration_rounds_table = cli_phase_subagent.get_iteration_rounds_table(phase)
+        
         # Build pre-flight results
         pf_lines = []
         for name, passed, detail in check_results:
@@ -5051,6 +5055,8 @@ class MethodologyCLI:
             plan = plan.replace('{TH_THRESHOLDS_TABLE}', self._generate_thresholds_table(phase))
             plan = plan.replace('{EXTERNAL_DOCS}', self._generate_external_docs(phase))
             plan = plan.replace('{subagent_mgmt}', subagent_mgmt)
+            plan = plan.replace('{four_dimensional_table}', four_dimensional_table)
+            plan = plan.replace('{iteration_rounds_table}', iteration_rounds_table)
         else:
             # Inline generation fallback
             plan = self._generate_plan_fallback(phase, goal, state, fsm_str, 
