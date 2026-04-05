@@ -195,7 +195,7 @@ SAD.md 只讀取：
 【FORBIDDEN】
 - ❌ dump SRS.md/SAD.md 全文
 - ❌ app/infrastructure/（已廢除，請用正確目錄）
-- ❌ @covers: L1 Error
+- ❌ docstring 沒有 [FR-XX] 標記
 - ❌ @type: edge
 - ❌ ... 省略 → 任務失敗
 - ❌ 無 citations 或 citations 無行號 → HR-15 違規

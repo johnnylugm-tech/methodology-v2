@@ -83,7 +83,7 @@ class PhaseArtifactRegistry:
         Phase.IMPLEMENT: {  # Phase 3
             "required": ["src/", "tests/"],
             "output_dir": "03-implementation",
-            "alt_dirs": ["03-implement", "03-implementation", "implementation", "src"],
+            "alt_dirs": ["03-implement", "03-implementation", "implementation", "src", "app"],
             "depends_on": [Phase.PLAN],
         },
         Phase.VERIFY: {  # Phase 4

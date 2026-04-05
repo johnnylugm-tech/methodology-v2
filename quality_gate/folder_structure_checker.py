@@ -135,8 +135,13 @@ class FolderStructureChecker:
             "required_dirs": [
                 "01-requirements",
                 "02-architecture",
+                # Standard path
                 "03-implementation/src",
                 "03-implementation/tests",
+                # Alternative: app/ structure (e.g., tts-kokoro-v613)
+                "app",
+                "app/processing",
+                "tests",
                 "00-summary"
             ],
             "required_files": [
@@ -151,7 +156,10 @@ class FolderStructureChecker:
                 "coverage_report_exists": "03-implementation/coverage_report/index.html",
                 "src_has_py_files": "03-implementation/src",
                 "tests_has_test_files": "03-implementation/tests",
-                "DEV_LOG_has_review": "DEVELOPMENT_LOG.md"
+                "DEV_LOG_has_review": "DEVELOPMENT_LOG.md",
+                # Alternative: app/ structure
+                "app_dir_exists": "app",
+                "app_has_py_files": "app"
             }
         },
         4: {

@@ -195,7 +195,18 @@ class PhaseTruthVerifier:
         phase_artifacts = {
             1: ["01-requirements/SRS.md", "01-requirements/SPEC_TRACKING.md", "01-requirements/TRACEABILITY_MATRIX.md"],
             2: ["02-architecture/SAD.md", "02-architecture/adr/001-fastapi-proxy-layer.md", "02-architecture/adr/002-redis-caching-strategy.md", "02-architecture/adr/003-circuit-breaker-resilience.md", "02-architecture/adr/004-text-chunking-strategy.md", "02-architecture/adr/005-cli-click-framework.md", "02-architecture/adr/006-audio-converter-ffmpeg.md"],
-            3: ["03-implementation/src/", "03-implementation/tests/", "03-implementation/COMPLIANCE_MATRIX.md"],
+            3: [
+                # Standard path
+                "03-implementation/src/",
+                "03-implementation/tests/",
+                "03-implementation/COMPLIANCE_MATRIX.md",
+                # Alternative: app/ structure (e.g., tts-kokoro-v613)
+                "app/",
+                "app/processing/",
+                "app/synth/",
+                "app/infrastructure/",
+                "tests/",
+            ],
             4: ["04-testing/TEST_PLAN.md", "04-testing/TEST_RESULTS.md"],
             5: ["05-verify/BASELINE.md", "05-verify/VERIFICATION_REPORT.md", "05-verify/MONITORING_PLAN.md"],
             6: ["06-quality/QUALITY_REPORT.md", "06-quality/MONITORING_PLAN.md"],
