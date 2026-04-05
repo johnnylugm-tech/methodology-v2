@@ -4159,6 +4159,7 @@ class MethodologyCLI:
         print(f"\n[{datetime.now().strftime('%H:%M:%S')}] PRE-FLIGHT: SubagentIsolator Hooks Verification")
         try:
             from subagent_isolator import SubagentIsolator
+            from sessions_spawn_logger import SessionsSpawnLogger
             # 驗證 SubagentIsolator 可以正常實例化（鉤子可調用）
             si = SubagentIsolator(project_path=str(repo_path))
             spawn_log_path = repo_path / ".methodology" / "sessions_spawn.log"
@@ -4166,12 +4167,23 @@ class MethodologyCLI:
             print(f"   sessions_spawn.log path: {spawn_log_path}")
             # P2-1: Auto-create sessions_spawn.log
             sessions_spawn_log = repo_path / ".methodology" / "sessions_spawn.log"
+            # P2-1: Auto-create sessions_spawn.log with validation
             sessions_spawn_log.parent.mkdir(parents=True, exist_ok=True)
             if not sessions_spawn_log.exists():
                 sessions_spawn_log.write_text("")
                 print(f"✅ [PRE-FLIGHT] Created sessions_spawn.log")
             else:
-                print(f"✅ [PRE-FLIGHT] sessions_spawn.log exists")
+                # Validate existing log format
+                logger = SessionsSpawnLogger(repo_path)
+                result = logger.validate()
+                if result["valid"]:
+                    summary = logger.get_summary()
+                    print(f"✅ [PRE-FLIGHT] sessions_spawn.log exists ({summary['total_entries']} entries)")
+                    if summary['fr_tasks']:
+                        print(f"   FR tasks: {', '.join(summary['fr_tasks'])}")
+                else:
+                    print(f"⚠️  [PRE-FLIGHT] sessions_spawn.log has {len(result['errors'])} format errors")
+                    print(f"   First error: {result['errors'][0]}")
             
             # P0: 整合 IterationManager (Aspect 7)
             try:
