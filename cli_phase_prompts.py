@@ -191,14 +191,17 @@ SAD.md 只讀取：
 - pytest 100% 通過
 - 覆蓋率 ≥70%
 - docstring 包含 [FR-XX] 標記
+- docstring 包含 Citations（SRS.md#L行號, SAD.md#L行號）
 
 【FORBIDDEN】
 - ❌ dump SRS.md/SAD.md 全文
 - ❌ app/infrastructure/（已廢除，請用正確目錄）
 - ❌ docstring 沒有 [FR-XX] 標記
+- ❌ docstring 沒有 Citations（含行號）
 - ❌ @type: edge
 - ❌ ... 省略 → 任務失敗
 - ❌ 無 citations 或 citations 無行號 → HR-15 違規
+- ❌ citations 未寫入 code docstring → HR-15 違規
 
 【OUTPUT_FORMAT】
 {{
@@ -209,7 +212,7 @@ SAD.md 只讀取：
  "summary": "50字內"
 }}
 
-HR-15 強制執行：citations 必須包含「檔名#L行號」格式
+HR-15 強制執行：citations 必須包含「檔名#L行號」格式，且需寫入 code docstring
 ═══════════════════════════════════════
 ```""",
         "reviewer": """```
@@ -228,13 +231,15 @@ TASK_ID: task-{fr_num}-review
 
 【驗證檢查清單】
 1. 每個公開函數的 docstring 含 [FR-XX] 標記
-2. 測試覆蓋率 ≥70%
-3. pytest 100% 通過
-4. 無邏輯錯誤或安全漏洞
-5. Constitution 代碼分數 ≥80%
+2. 每個公開函數的 docstring 含 Citations（SRS.md#L行號, SAD.md#L行號）
+3. 測試覆蓋率 ≥70%
+4. pytest 100% 通過
+5. 無邏輯錯誤或安全漏洞
+6. Constitution 代碼分數 ≥80%
 
 【REJECT_IF】
 - ❌ docstring 無 [FR-XX] 標記 → REJECT
+- ❌ docstring 無 Citations（含行號）→ REJECT
 - ❌ NFR 約束違背 → REJECT
 - ❌ confidence < 6 → REJECT
 - ❌ 缺少 citations 或 citations 無行號 → REJECT（HR-15）
