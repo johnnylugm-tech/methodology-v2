@@ -1,5 +1,5 @@
 {
-  "current_phase": 0,
+  "current_phase": 1,
   "fsm_state": "INIT",
   "phase_1_status": "PENDING",
   "phase_2_status": "PENDING",
@@ -14,5 +14,816 @@
   "estimated_minutes": 180,
   "hr13_triggered": false,
   "hr13_remaining_minutes": null,
-  "last_updated": "2026-04-04T09:46:00+08:00"
+  "last_updated": "2026-04-04T09:46:00+08:00",
+  "phase_state": {
+    "last_check_at": "2026-04-05T11:27:47.161660+00:00",
+    "last_gate_score": 12.37,
+    "warnings": 2361,
+    "started_at": "2026-04-05T08:34:57.106456+00:00",
+    "blocks": 0,
+    "ab_rounds": 0,
+    "estimated_minutes": 60
+  },
+  "history": [
+    {
+      "timestamp": "2026-04-05T11:17:42.644528+00:00",
+      "event": "GATE_CHECK",
+      "phase": null,
+      "score": 12.37,
+      "passed": false,
+      "integrity_score": 0
+    },
+    {
+      "timestamp": "2026-04-05T11:17:43.005990+00:00",
+      "event": "GATE_CHECK",
+      "phase": null,
+      "score": 12.37,
+      "passed": false,
+      "integrity_score": 0
+    },
+    {
+      "timestamp": "2026-04-05T11:17:43.299977+00:00",
+      "event": "GATE_CHECK",
+      "phase": null,
+      "score": 12.37,
+      "passed": false,
+      "integrity_score": 0
+    },
+    {
+      "timestamp": "2026-04-05T11:17:43.774041+00:00",
+      "event": "GATE_CHECK",
+      "phase": null,
+      "score": 12.37,
+      "passed": false,
+      "integrity_score": 0
+    },
+    {
+      "timestamp": "2026-04-05T11:17:46.394966+00:00",
+      "event": "GATE_CHECK",
+      "phase": null,
+      "score": 12.37,
+      "passed": false,
+      "integrity_score": 0
+    },
+    {
+      "timestamp": "2026-04-05T11:17:47.516069+00:00",
+      "event": "GATE_CHECK",
+      "phase": null,
+      "score": 12.37,
+      "passed": false,
+      "integrity_score": 0
+    },
+    {
+      "timestamp": "2026-04-05T11:18:35.915943+00:00",
+      "event": "GATE_CHECK",
+      "phase": null,
+      "score": 12.37,
+      "passed": false,
+      "integrity_score": 0
+    },
+    {
+      "timestamp": "2026-04-05T11:18:43.381302+00:00",
+      "event": "GATE_CHECK",
+      "phase": null,
+      "score": 12.37,
+      "passed": false,
+      "integrity_score": 0
+    },
+    {
+      "timestamp": "2026-04-05T11:18:55.410732+00:00",
+      "event": "GATE_CHECK",
+      "phase": null,
+      "score": 12.37,
+      "passed": false,
+      "integrity_score": 0
+    },
+    {
+      "timestamp": "2026-04-05T11:18:57.491241+00:00",
+      "event": "GATE_CHECK",
+      "phase": null,
+      "score": 12.37,
+      "passed": false,
+      "integrity_score": 0
+    },
+    {
+      "timestamp": "2026-04-05T11:19:07.901353+00:00",
+      "event": "GATE_CHECK",
+      "phase": null,
+      "score": 12.37,
+      "passed": false,
+      "integrity_score": 0
+    },
+    {
+      "timestamp": "2026-04-05T11:19:09.403292+00:00",
+      "event": "GATE_CHECK",
+      "phase": null,
+      "score": 12.37,
+      "passed": false,
+      "integrity_score": 0
+    },
+    {
+      "timestamp": "2026-04-05T11:19:12.026381+00:00",
+      "event": "GATE_CHECK",
+      "phase": null,
+      "score": 12.37,
+      "passed": false,
+      "integrity_score": 0
+    },
+    {
+      "timestamp": "2026-04-05T11:19:17.323825+00:00",
+      "event": "GATE_CHECK",
+      "phase": null,
+      "score": 12.37,
+      "passed": false,
+      "integrity_score": 0
+    },
+    {
+      "timestamp": "2026-04-05T11:19:18.657329+00:00",
+      "event": "GATE_CHECK",
+      "phase": null,
+      "score": 12.37,
+      "passed": false,
+      "integrity_score": 0
+    },
+    {
+      "timestamp": "2026-04-05T11:19:20.053825+00:00",
+      "event": "GATE_CHECK",
+      "phase": null,
+      "score": 12.37,
+      "passed": false,
+      "integrity_score": 0
+    },
+    {
+      "timestamp": "2026-04-05T11:19:21.875204+00:00",
+      "event": "GATE_CHECK",
+      "phase": null,
+      "score": 12.37,
+      "passed": false,
+      "integrity_score": 0
+    },
+    {
+      "timestamp": "2026-04-05T11:19:22.548251+00:00",
+      "event": "GATE_CHECK",
+      "phase": null,
+      "score": 12.37,
+      "passed": false,
+      "integrity_score": 0
+    },
+    {
+      "timestamp": "2026-04-05T11:19:27.208303+00:00",
+      "event": "GATE_CHECK",
+      "phase": null,
+      "score": 12.37,
+      "passed": false,
+      "integrity_score": 0
+    },
+    {
+      "timestamp": "2026-04-05T11:19:27.425808+00:00",
+      "event": "GATE_CHECK",
+      "phase": null,
+      "score": 12.37,
+      "passed": false,
+      "integrity_score": 0
+    },
+    {
+      "timestamp": "2026-04-05T11:19:28.003855+00:00",
+      "event": "GATE_CHECK",
+      "phase": null,
+      "score": 12.37,
+      "passed": false,
+      "integrity_score": 0
+    },
+    {
+      "timestamp": "2026-04-05T11:19:29.933661+00:00",
+      "event": "GATE_CHECK",
+      "phase": null,
+      "score": 12.37,
+      "passed": false,
+      "integrity_score": 0
+    },
+    {
+      "timestamp": "2026-04-05T11:19:31.735548+00:00",
+      "event": "GATE_CHECK",
+      "phase": null,
+      "score": 12.37,
+      "passed": false,
+      "integrity_score": 0
+    },
+    {
+      "timestamp": "2026-04-05T11:19:32.412162+00:00",
+      "event": "GATE_CHECK",
+      "phase": null,
+      "score": 12.37,
+      "passed": false,
+      "integrity_score": 0
+    },
+    {
+      "timestamp": "2026-04-05T11:19:35.835102+00:00",
+      "event": "GATE_CHECK",
+      "phase": null,
+      "score": 12.37,
+      "passed": false,
+      "integrity_score": 0
+    },
+    {
+      "timestamp": "2026-04-05T11:19:36.586267+00:00",
+      "event": "GATE_CHECK",
+      "phase": null,
+      "score": 12.37,
+      "passed": false,
+      "integrity_score": 0
+    },
+    {
+      "timestamp": "2026-04-05T11:19:36.909635+00:00",
+      "event": "GATE_CHECK",
+      "phase": null,
+      "score": 12.37,
+      "passed": false,
+      "integrity_score": 0
+    },
+    {
+      "timestamp": "2026-04-05T11:19:37.896647+00:00",
+      "event": "GATE_CHECK",
+      "phase": null,
+      "score": 12.37,
+      "passed": false,
+      "integrity_score": 0
+    },
+    {
+      "timestamp": "2026-04-05T11:19:38.768688+00:00",
+      "event": "GATE_CHECK",
+      "phase": null,
+      "score": 12.37,
+      "passed": false,
+      "integrity_score": 0
+    },
+    {
+      "timestamp": "2026-04-05T11:19:38.852443+00:00",
+      "event": "GATE_CHECK",
+      "phase": null,
+      "score": 12.37,
+      "passed": false,
+      "integrity_score": 0
+    },
+    {
+      "timestamp": "2026-04-05T11:19:40.447116+00:00",
+      "event": "GATE_CHECK",
+      "phase": null,
+      "score": 12.37,
+      "passed": false,
+      "integrity_score": 0
+    },
+    {
+      "timestamp": "2026-04-05T11:19:42.761859+00:00",
+      "event": "GATE_CHECK",
+      "phase": null,
+      "score": 12.37,
+      "passed": false,
+      "integrity_score": 0
+    },
+    {
+      "timestamp": "2026-04-05T11:19:43.173560+00:00",
+      "event": "GATE_CHECK",
+      "phase": null,
+      "score": 12.37,
+      "passed": false,
+      "integrity_score": 0
+    },
+    {
+      "timestamp": "2026-04-05T11:19:53.110099+00:00",
+      "event": "GATE_CHECK",
+      "phase": null,
+      "score": 12.37,
+      "passed": false,
+      "integrity_score": 0
+    },
+    {
+      "timestamp": "2026-04-05T11:19:59.671806+00:00",
+      "event": "GATE_CHECK",
+      "phase": null,
+      "score": 12.37,
+      "passed": false,
+      "integrity_score": 0
+    },
+    {
+      "timestamp": "2026-04-05T11:24:29.292219+00:00",
+      "event": "GATE_CHECK",
+      "phase": null,
+      "score": 12.37,
+      "passed": false,
+      "integrity_score": 0
+    },
+    {
+      "timestamp": "2026-04-05T11:24:30.680544+00:00",
+      "event": "GATE_CHECK",
+      "phase": null,
+      "score": 12.37,
+      "passed": false,
+      "integrity_score": 0
+    },
+    {
+      "timestamp": "2026-04-05T11:24:38.195250+00:00",
+      "event": "GATE_CHECK",
+      "phase": null,
+      "score": 12.37,
+      "passed": false,
+      "integrity_score": 0
+    },
+    {
+      "timestamp": "2026-04-05T11:24:40.101816+00:00",
+      "event": "GATE_CHECK",
+      "phase": null,
+      "score": 12.37,
+      "passed": false,
+      "integrity_score": 0
+    },
+    {
+      "timestamp": "2026-04-05T11:24:44.489223+00:00",
+      "event": "GATE_CHECK",
+      "phase": null,
+      "score": 12.37,
+      "passed": false,
+      "integrity_score": 0
+    },
+    {
+      "timestamp": "2026-04-05T11:24:45.650273+00:00",
+      "event": "GATE_CHECK",
+      "phase": null,
+      "score": 12.37,
+      "passed": false,
+      "integrity_score": 0
+    },
+    {
+      "timestamp": "2026-04-05T11:24:46.335714+00:00",
+      "event": "GATE_CHECK",
+      "phase": null,
+      "score": 12.37,
+      "passed": false,
+      "integrity_score": 0
+    },
+    {
+      "timestamp": "2026-04-05T11:24:49.354089+00:00",
+      "event": "GATE_CHECK",
+      "phase": null,
+      "score": 12.37,
+      "passed": false,
+      "integrity_score": 0
+    },
+    {
+      "timestamp": "2026-04-05T11:24:49.436615+00:00",
+      "event": "GATE_CHECK",
+      "phase": null,
+      "score": 12.37,
+      "passed": false,
+      "integrity_score": 0
+    },
+    {
+      "timestamp": "2026-04-05T11:24:50.339702+00:00",
+      "event": "GATE_CHECK",
+      "phase": null,
+      "score": 12.37,
+      "passed": false,
+      "integrity_score": 0
+    },
+    {
+      "timestamp": "2026-04-05T11:24:51.782263+00:00",
+      "event": "GATE_CHECK",
+      "phase": null,
+      "score": 12.37,
+      "passed": false,
+      "integrity_score": 0
+    },
+    {
+      "timestamp": "2026-04-05T11:24:52.034793+00:00",
+      "event": "GATE_CHECK",
+      "phase": null,
+      "score": 12.37,
+      "passed": false,
+      "integrity_score": 0
+    },
+    {
+      "timestamp": "2026-04-05T11:24:54.348559+00:00",
+      "event": "GATE_CHECK",
+      "phase": null,
+      "score": 12.37,
+      "passed": false,
+      "integrity_score": 0
+    },
+    {
+      "timestamp": "2026-04-05T11:24:54.386290+00:00",
+      "event": "GATE_CHECK",
+      "phase": null,
+      "score": 12.37,
+      "passed": false,
+      "integrity_score": 0
+    },
+    {
+      "timestamp": "2026-04-05T11:24:54.456778+00:00",
+      "event": "GATE_CHECK",
+      "phase": null,
+      "score": 12.37,
+      "passed": false,
+      "integrity_score": 0
+    },
+    {
+      "timestamp": "2026-04-05T11:24:54.640298+00:00",
+      "event": "GATE_CHECK",
+      "phase": null,
+      "score": 12.37,
+      "passed": false,
+      "integrity_score": 0
+    },
+    {
+      "timestamp": "2026-04-05T11:24:56.532963+00:00",
+      "event": "GATE_CHECK",
+      "phase": null,
+      "score": 12.37,
+      "passed": false,
+      "integrity_score": 0
+    },
+    {
+      "timestamp": "2026-04-05T11:24:57.022920+00:00",
+      "event": "GATE_CHECK",
+      "phase": null,
+      "score": 12.37,
+      "passed": false,
+      "integrity_score": 0
+    },
+    {
+      "timestamp": "2026-04-05T11:24:57.886263+00:00",
+      "event": "GATE_CHECK",
+      "phase": null,
+      "score": 12.37,
+      "passed": false,
+      "integrity_score": 0
+    },
+    {
+      "timestamp": "2026-04-05T11:24:58.936408+00:00",
+      "event": "GATE_CHECK",
+      "phase": null,
+      "score": 12.37,
+      "passed": false,
+      "integrity_score": 0
+    },
+    {
+      "timestamp": "2026-04-05T11:24:59.362842+00:00",
+      "event": "GATE_CHECK",
+      "phase": null,
+      "score": 12.37,
+      "passed": false,
+      "integrity_score": 0
+    },
+    {
+      "timestamp": "2026-04-05T11:24:59.709977+00:00",
+      "event": "GATE_CHECK",
+      "phase": null,
+      "score": 12.37,
+      "passed": false,
+      "integrity_score": 0
+    },
+    {
+      "timestamp": "2026-04-05T11:24:59.847148+00:00",
+      "event": "GATE_CHECK",
+      "phase": null,
+      "score": 12.37,
+      "passed": false,
+      "integrity_score": 0
+    },
+    {
+      "timestamp": "2026-04-05T11:25:00.247391+00:00",
+      "event": "GATE_CHECK",
+      "phase": null,
+      "score": 12.37,
+      "passed": false,
+      "integrity_score": 0
+    },
+    {
+      "timestamp": "2026-04-05T11:25:00.634148+00:00",
+      "event": "GATE_CHECK",
+      "phase": null,
+      "score": 12.37,
+      "passed": false,
+      "integrity_score": 0
+    },
+    {
+      "timestamp": "2026-04-05T11:25:02.582661+00:00",
+      "event": "GATE_CHECK",
+      "phase": null,
+      "score": 12.37,
+      "passed": false,
+      "integrity_score": 0
+    },
+    {
+      "timestamp": "2026-04-05T11:25:03.286232+00:00",
+      "event": "GATE_CHECK",
+      "phase": null,
+      "score": 12.37,
+      "passed": false,
+      "integrity_score": 0
+    },
+    {
+      "timestamp": "2026-04-05T11:25:09.776928+00:00",
+      "event": "GATE_CHECK",
+      "phase": null,
+      "score": 12.37,
+      "passed": false,
+      "integrity_score": 0
+    },
+    {
+      "timestamp": "2026-04-05T11:25:17.415104+00:00",
+      "event": "GATE_CHECK",
+      "phase": null,
+      "score": 12.37,
+      "passed": false,
+      "integrity_score": 0
+    },
+    {
+      "timestamp": "2026-04-05T11:25:47.547736+00:00",
+      "event": "GATE_CHECK",
+      "phase": null,
+      "score": 12.37,
+      "passed": false,
+      "integrity_score": 0
+    },
+    {
+      "timestamp": "2026-04-05T11:25:48.697747+00:00",
+      "event": "GATE_CHECK",
+      "phase": null,
+      "score": 12.37,
+      "passed": false,
+      "integrity_score": 0
+    },
+    {
+      "timestamp": "2026-04-05T11:25:55.185226+00:00",
+      "event": "GATE_CHECK",
+      "phase": null,
+      "score": 12.37,
+      "passed": false,
+      "integrity_score": 0
+    },
+    {
+      "timestamp": "2026-04-05T11:25:56.978102+00:00",
+      "event": "GATE_CHECK",
+      "phase": null,
+      "score": 12.37,
+      "passed": false,
+      "integrity_score": 0
+    },
+    {
+      "timestamp": "2026-04-05T11:26:01.613769+00:00",
+      "event": "GATE_CHECK",
+      "phase": null,
+      "score": 12.37,
+      "passed": false,
+      "integrity_score": 0
+    },
+    {
+      "timestamp": "2026-04-05T11:26:02.409457+00:00",
+      "event": "GATE_CHECK",
+      "phase": null,
+      "score": 12.37,
+      "passed": false,
+      "integrity_score": 0
+    },
+    {
+      "timestamp": "2026-04-05T11:26:03.724069+00:00",
+      "event": "GATE_CHECK",
+      "phase": null,
+      "score": 12.37,
+      "passed": false,
+      "integrity_score": 0
+    },
+    {
+      "timestamp": "2026-04-05T11:26:06.380429+00:00",
+      "event": "GATE_CHECK",
+      "phase": null,
+      "score": 12.37,
+      "passed": false,
+      "integrity_score": 0
+    },
+    {
+      "timestamp": "2026-04-05T11:26:07.078419+00:00",
+      "event": "GATE_CHECK",
+      "phase": null,
+      "score": 12.37,
+      "passed": false,
+      "integrity_score": 0
+    },
+    {
+      "timestamp": "2026-04-05T11:26:07.451987+00:00",
+      "event": "GATE_CHECK",
+      "phase": null,
+      "score": 12.37,
+      "passed": false,
+      "integrity_score": 0
+    },
+    {
+      "timestamp": "2026-04-05T11:26:08.170521+00:00",
+      "event": "GATE_CHECK",
+      "phase": null,
+      "score": 12.37,
+      "passed": false,
+      "integrity_score": 0
+    },
+    {
+      "timestamp": "2026-04-05T11:26:08.957781+00:00",
+      "event": "GATE_CHECK",
+      "phase": null,
+      "score": 12.37,
+      "passed": false,
+      "integrity_score": 0
+    },
+    {
+      "timestamp": "2026-04-05T11:26:10.590368+00:00",
+      "event": "GATE_CHECK",
+      "phase": null,
+      "score": 12.37,
+      "passed": false,
+      "integrity_score": 0
+    },
+    {
+      "timestamp": "2026-04-05T11:26:10.805371+00:00",
+      "event": "GATE_CHECK",
+      "phase": null,
+      "score": 12.37,
+      "passed": false,
+      "integrity_score": 0
+    },
+    {
+      "timestamp": "2026-04-05T11:26:11.171300+00:00",
+      "event": "GATE_CHECK",
+      "phase": null,
+      "score": 12.37,
+      "passed": false,
+      "integrity_score": 0
+    },
+    {
+      "timestamp": "2026-04-05T11:26:11.196384+00:00",
+      "event": "GATE_CHECK",
+      "phase": null,
+      "score": 12.37,
+      "passed": false,
+      "integrity_score": 0
+    },
+    {
+      "timestamp": "2026-04-05T11:26:12.975525+00:00",
+      "event": "GATE_CHECK",
+      "phase": null,
+      "score": 12.37,
+      "passed": false,
+      "integrity_score": 0
+    },
+    {
+      "timestamp": "2026-04-05T11:26:13.735634+00:00",
+      "event": "GATE_CHECK",
+      "phase": null,
+      "score": 12.37,
+      "passed": false,
+      "integrity_score": 0
+    },
+    {
+      "timestamp": "2026-04-05T11:26:15.357602+00:00",
+      "event": "GATE_CHECK",
+      "phase": null,
+      "score": 12.37,
+      "passed": false,
+      "integrity_score": 0
+    },
+    {
+      "timestamp": "2026-04-05T11:26:15.469199+00:00",
+      "event": "GATE_CHECK",
+      "phase": null,
+      "score": 12.37,
+      "passed": false,
+      "integrity_score": 0
+    },
+    {
+      "timestamp": "2026-04-05T11:26:16.758726+00:00",
+      "event": "GATE_CHECK",
+      "phase": null,
+      "score": 12.37,
+      "passed": false,
+      "integrity_score": 0
+    },
+    {
+      "timestamp": "2026-04-05T11:26:17.075340+00:00",
+      "event": "GATE_CHECK",
+      "phase": null,
+      "score": 12.37,
+      "passed": false,
+      "integrity_score": 0
+    },
+    {
+      "timestamp": "2026-04-05T11:26:17.133610+00:00",
+      "event": "GATE_CHECK",
+      "phase": null,
+      "score": 12.37,
+      "passed": false,
+      "integrity_score": 0
+    },
+    {
+      "timestamp": "2026-04-05T11:26:17.373083+00:00",
+      "event": "GATE_CHECK",
+      "phase": null,
+      "score": 12.37,
+      "passed": false,
+      "integrity_score": 0
+    },
+    {
+      "timestamp": "2026-04-05T11:26:17.880768+00:00",
+      "event": "GATE_CHECK",
+      "phase": null,
+      "score": 12.37,
+      "passed": false,
+      "integrity_score": 0
+    },
+    {
+      "timestamp": "2026-04-05T11:26:19.283950+00:00",
+      "event": "GATE_CHECK",
+      "phase": null,
+      "score": 12.37,
+      "passed": false,
+      "integrity_score": 0
+    },
+    {
+      "timestamp": "2026-04-05T11:26:19.388253+00:00",
+      "event": "GATE_CHECK",
+      "phase": null,
+      "score": 12.37,
+      "passed": false,
+      "integrity_score": 0
+    },
+    {
+      "timestamp": "2026-04-05T11:26:26.082878+00:00",
+      "event": "GATE_CHECK",
+      "phase": null,
+      "score": 12.37,
+      "passed": false,
+      "integrity_score": 0
+    },
+    {
+      "timestamp": "2026-04-05T11:26:33.597249+00:00",
+      "event": "GATE_CHECK",
+      "phase": null,
+      "score": 12.37,
+      "passed": false,
+      "integrity_score": 0
+    },
+    {
+      "timestamp": "2026-04-05T11:27:15.342644+00:00",
+      "event": "GATE_CHECK",
+      "phase": null,
+      "score": 12.37,
+      "passed": false,
+      "integrity_score": 0
+    },
+    {
+      "timestamp": "2026-04-05T11:27:18.114905+00:00",
+      "event": "GATE_CHECK",
+      "phase": null,
+      "score": 12.37,
+      "passed": false,
+      "integrity_score": 0
+    },
+    {
+      "timestamp": "2026-04-05T11:27:29.555469+00:00",
+      "event": "GATE_CHECK",
+      "phase": null,
+      "score": 12.37,
+      "passed": false,
+      "integrity_score": 0
+    },
+    {
+      "timestamp": "2026-04-05T11:27:34.499333+00:00",
+      "event": "GATE_CHECK",
+      "phase": null,
+      "score": 12.37,
+      "passed": false,
+      "integrity_score": 0
+    },
+    {
+      "timestamp": "2026-04-05T11:27:42.970747+00:00",
+      "event": "GATE_CHECK",
+      "phase": null,
+      "score": 12.37,
+      "passed": false,
+      "integrity_score": 0
+    },
+    {
+      "timestamp": "2026-04-05T11:27:44.393635+00:00",
+      "event": "GATE_CHECK",
+      "phase": null,
+      "score": 12.37,
+      "passed": false,
+      "integrity_score": 0
+    },
+    {
+      "timestamp": "2026-04-05T11:27:47.161927+00:00",
+      "event": "GATE_CHECK",
+      "phase": null,
+      "score": 12.37,
+      "passed": false,
+      "integrity_score": 0
+    }
+  ]
 }
