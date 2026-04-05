@@ -5049,7 +5049,7 @@ class MethodologyCLI:
             plan = template_content
             plan = plan.replace('{PHASE}', str(phase))
             plan = plan.replace('{PHASE_PLUS_1}', str(phase + 1))
-            plan = plan.replace('{VERSION}', 'v6.49.0')
+            plan = plan.replace('{VERSION}', 'v6.54.0')
             plan = plan.replace('{PROJECT_NAME}', state.get('project_name', repo_path.name))
             plan = plan.replace('{DATE}', datetime.now().strftime('%Y-%m-%d'))
             plan = plan.replace('{GOAL}', goal)

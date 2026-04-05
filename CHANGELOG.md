@@ -1,3 +1,34 @@
+## [v6.54] - 2026-04-05
+
+### 🚀 Added
+- **HR-05/09 explicit checks**: `check_hr05_methodology_priority()`, `check_hr09_claims_verifier()`
+- **sessions_spawn.log auto-create**: Auto-created in run-phase pre-flight
+- **ToolRegistry integration**: Integrated in run-phase pre-flight
+
+### 🐛 Fixed
+- N/A
+
+### 📝 Documentation
+- JOHNNY_HANDBOOK.md updated to v6.54
+
+---
+
+## [v6.53] - 2026-04-05
+
+### 🚀 Added
+- **parse_phase_artifacts.py**: Phase 產出自動繼承（Section 3.5）
+- **integration_manager.py**: 迭代自動追蹤（HR-12/13）
+- **tool_dispatcher.py**: 工具自動觸發（spawn/message/error/complete）
+- **Section 3.5**: 新增上階段產出承接
+
+### 🐛 Fixed
+- N/A
+
+### 📝 Documentation
+- Section 3.5: 上階段產出承接 added to plan template
+
+---
+
 ## [v6.49] - 2026-04-05
 
 ### 🚀 Added

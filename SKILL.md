@@ -1,4 +1,4 @@
-# methodology-v2 v6.49
+# methodology-v2 v6.54
 > Agent Executable Spec. Phase detail → Lazy Load `docs/P{N}_SOP.md`
 
 ## 0. 執行協議
@@ -123,4 +123,4 @@ def calculate_integrity(
 ```
 
 ---
-*methodology-v2 v6.49 | Agent Executable Specification | Last Updated: 2026-04-04*
+*methodology-v2 v6.54 | Agent Executable Specification | Last Updated: 2026-04-04*
