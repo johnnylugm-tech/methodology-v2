@@ -181,7 +181,7 @@ OUTPUT:
 
 FORBIDDEN:
 - ❌ app/infrastructure/（已廢除）
-- ❌ @covers: L1 Error → @covers: FR-{FR_NUM}
+- ❌ 使用 @covers annotation → 請改用 docstring [FR-XX]
 - ❌ @type: edge → positive/negative/boundary
 - ❌ ... 省略 → 任務失敗
 

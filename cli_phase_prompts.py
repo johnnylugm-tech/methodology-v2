@@ -190,7 +190,7 @@ SAD.md 只讀取：
 【驗證標準】
 - pytest 100% 通過
 - 覆蓋率 ≥70%
-- @covers: {fr['fr']} 標註每個函數
+- docstring 包含 [FR-XX] 標記
 
 【FORBIDDEN】
 - ❌ dump SRS.md/SAD.md 全文
@@ -220,21 +220,21 @@ TASK_ID: task-{fr_num}-review
 【審查範圍】（只讀這些章節，❌ 禁止 dump 全文）
 
 待審查檔案：
-- {fr.get('file', 'app/processing/{fr_num}.py')}（只看有 @covers: {fr['fr']} 的函數）
+- {fr.get('file', 'app/processing/{fr_num}.py')}（每個函數的 docstring 需含 [FR-XX]）
 - tests/test_{fr_num}.py
 
 規格參考：
 - SRS.md §{fr['fr']}（只讀需求和測試案例章節）
 
 【驗證檢查清單】
-1. 每個公開函數有 @covers: {fr['fr']} 標註
+1. 每個公開函數的 docstring 含 [FR-XX] 標記
 2. 測試覆蓋率 ≥70%
 3. pytest 100% 通過
 4. 無邏輯錯誤或安全漏洞
 5. Constitution 代碼分數 ≥80%
 
 【REJECT_IF】
-- ❌ 無 @covers: {fr['fr']} → REJECT
+- ❌ docstring 無 [FR-XX] 標記 → REJECT
 - ❌ NFR 約束違背 → REJECT
 - ❌ confidence < 6 → REJECT
 - ❌ 缺少 citations 或 citations 無行號 → REJECT（HR-15）
