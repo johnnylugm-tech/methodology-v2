@@ -95,6 +95,36 @@ python3 cli.py run-phase --phase {PHASE} --goal "{GOAL}"
 
 > 📋 結構從 SAD.md §1.3 FR 需求對應表解析
 
+### 交付物檢查清單
+
+```markdown
+## Phase {PHASE} 交付物
+
+### 代碼產出
+- [ ] `app/processing/` - 處理模組
+- [ ] `app/synth/` - 合成模組
+- [ ] `app/infrastructure/` - 基礎設施模組（如有）
+- [ ] `app/api/` - API 路由（如有）
+
+### 測試產出
+- [ ] `tests/test_fr01*.py` - FR-01 測試
+- [ ] `tests/test_fr02*.py` - FR-02 測試
+- [ ] ...（共 {FR_COUNT} 個 FR）
+
+### 文檔產出
+- [ ] `AB_COLLABORATION.md` - Developer+Reviewer 協作記錄
+- [ ] `sessions_spawn.log` - A/B session 完整記錄
+
+### 驗證產出
+- [ ] pytest 所有測試 PASS
+- [ ] coverage ≥80%
+- [ ] Phase Truth ≥70%
+
+### Git 產出
+- [ ] git push 完成
+- [ ] remote 同步驗證
+```
+
 ---
 
 ## 5. FR 詳細任務（共 {FR_COUNT} 項）
@@ -162,18 +192,49 @@ OUTPUT_FORMAT:
 
 ## 8. Iteration 修復流程
 
+### 四維度評核標準（目標 10/10）
+
+| 維度 | 目標 | 關鍵動作 |
+|------|------|---------|
+| **規範符合度** | 10/10 | HR-15 citations（含行號）、docstring [FR-XX] |
+| **A/B 協作** | 10/10 | sessions_spawn.log 完整、Developer↔Reviewer 記錄 |
+| **子代理管理** | 10/10 | SubagentIsolator.spawn()、fresh_messages 隔離 |
+| **測試覆蓋率** | 10/10 | pytest PASS + coverage ≥80% |
+
+### 迭代策略（每個 FR）
+
+```mermaid
+graph TD
+    A[Round 1: 基礎實作] --> B[pytest PASS]
+    B --> C{Round 2-3: 穩定化}
+    C --> D[logging + error handling]
+    D --> E{Round 4: HR-15 落實}
+    E --> F[citations 含行號]
+    F --> G{Round 5: A/B 協作}
+    G --> H[sessions_spawn.log 完整]
+    H --> I{四維度 10/10?}
+    I -->|Yes| J[✅ APPROVE]
+    I -->|No| K[Round 6+: 持續優化]
+    K -->|HR-12 5輪| L[⚠️ PAUSE]
 ```
-[FR-{FR_NUM}]
- ↓
-[Developer spawn] → confidence < 6？（yes → 重新派遣，最多 3 次）
- ↓
-[本地驗證] pytest + coverage → FAIL？（yes → 修復 → re-verify）
- ↓
-[Reviewer spawn] → APPROVE？（no → 修復 → re-spawn）
- ↓
-[commit] → [sessions_spawn.log 補記 commit hash]
- ↓
-[next FR]
+
+### 每輪目標
+
+| Round | 目標 | 交付物 |
+|-------|------|--------|
+| Round 1 | 基礎實作 | 代碼 + 測試 + pytest PASS |
+| Round 2 | Production-ready | logging + error handling |
+| Round 3 | 穩定化 | pytest 持續 PASS |
+| Round 4 | HR-15 落實 | citations 含行號 |
+| Round 5 | A/B 協作 | sessions_spawn.log 完整 |
+| Round 6+ | 持續優化 | 直到四維度 10/10 |
+
+### 終止條件
+
+```
+✅ 四維度全部 10/10 → APPROVE
+⚠️ HR-12 5輪限制 → PAUSE（通知 Johnny）
+⏰ HR-13 >3x 預估時間 → PAUSE（checkpoint）
 ```
 
 **HR-12（5輪限制）**：
