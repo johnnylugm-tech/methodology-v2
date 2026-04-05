@@ -114,6 +114,8 @@ python3 cli.py run-phase --phase {PHASE} --goal "{GOAL}"
 ### 文檔產出
 - [ ] `AB_COLLABORATION.md` - Developer+Reviewer 協作記錄
 - [ ] `sessions_spawn.log` - A/B session 完整記錄
+- [ ] `docs/TOOL_HOOK_LOG.md` - 工具鉤子使用記錄（可選）
+- [ ] `docs/OPTIMIZATION_REPORT.md` - 四維度評核報告（可選）
 
 ### 驗證產出
 - [ ] pytest 所有測試 PASS
@@ -235,6 +237,31 @@ graph TD
 ✅ 四維度全部 10/10 → APPROVE
 ⚠️ HR-12 5輪限制 → PAUSE（通知 Johnny）
 ⏰ HR-13 >3x 預估時間 → PAUSE（checkpoint）
+```
+
+### 四維度達標判定
+
+| 維度 | 評估方法 | 目標 |
+|------|---------|------|
+| **規範符合度** | `grep -c '\[FR-' app/**/*.py` | citations ≥ 每函數 1 個 |
+| **A/B 協作** | `sessions_spawn.log` 記錄完整 | developer + reviewer 各 1 筆記錄 |
+| **子代理管理** | `SubagentIsolator` 使用正確 | `fresh_messages` 隔離 |
+| **測試覆蓋率** | `pytest --cov=app/ --cov-report=term` | ≥80% |
+
+### 四維度評核命令
+
+```bash
+# 1. 規範符合度
+grep -r "\[FR-" app/ --include="*.py" | wc -l
+
+# 2. A/B 協作
+cat sessions_spawn.log | grep -c "developer\|reviewer"
+
+# 3. 子代理管理
+cat sessions_spawn.log | grep -c "spawn"
+
+# 4. 測試覆蓋率
+pytest --cov=app/ --cov-report=term -q
 ```
 
 **HR-12（5輪限制）**：
