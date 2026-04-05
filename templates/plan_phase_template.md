@@ -87,6 +87,12 @@ python3 cli.py run-phase --phase {PHASE} --goal "{GOAL}"
 
 ---
 
+## 3.5 上階段產出承接（Phase {PHASE} 前置產出）
+
+{artifacts_summary}
+
+---
+
 ## 4. 產出結構樹
 
 ```

@@ -4164,10 +4164,27 @@ class MethodologyCLI:
             spawn_log_path = repo_path / ".methodology" / "sessions_spawn.log"
             print(f"✅ [PRE-FLIGHT] SubagentIsolator hooks verified")
             print(f"   sessions_spawn.log path: {spawn_log_path}")
-            # HR-12/13 tracking 初始化
-            print(f"✅ [POST-FLIGHT] HR-12/13 tracking enabled")
-            print(f"   HR-12: A/B 審查 > 5 輪 → PAUSE 通知")
-            print(f"   HR-13: Phase 執行 > 預估 ×3 → PAUSE checkpoint")
+            # P0: 整合 IterationManager (Aspect 7)
+            try:
+                from integration_manager import IntegrationManager
+                iteration_mgr = IntegrationManager(phase=phase, task_id="phase-init", repo_path=repo_path)
+                print(f"✅ [PRE-FLIGHT] IterationManager initialized")
+                print(f"   - Tracking HR-12: A/B 審查 > 5 輪 → PAUSE")
+                print(f"   - Tracking HR-13: Phase 執行 > 預估 ×3 → PAUSE")
+            except ImportError:
+                print(f"⚠️  [PRE-FLIGHT] IntegrationManager not available, using manual tracking")
+            
+            # P0: 整合 ToolDispatcher (Aspect 6)
+            try:
+                from tool_dispatcher import ToolDispatcher
+                tool_dispatcher = ToolDispatcher(repo_path=repo_path)
+                print(f"✅ [PRE-FLIGHT] ToolDispatcher ready")
+                print(f"   - on_spawn: Subagent派遣時")
+                print(f"   - on_message: 訊息 >50/100/200 時")
+                print(f"   - on_error: 錯誤發生時")
+                print(f"   - on_complete: 任務完成時")
+            except ImportError:
+                print(f"⚠️  [PRE-FLIGHT] ToolDispatcher not available")
         except Exception as e:
             print(f"⚠️  SubagentIsolator hook verification failed: {e}")
 
@@ -4989,6 +5006,10 @@ class MethodologyCLI:
         four_dimensional_table = cli_phase_subagent.get_four_dimensional_table(phase)
         iteration_rounds_table = cli_phase_subagent.get_iteration_rounds_table(phase)
         
+        # Generate Phase artifacts summary (P0: Aspect 3 - 上階段產出承接)
+        from parse_phase_artifacts import get_artifacts_summary
+        artifacts_summary = get_artifacts_summary(phase, repo_path)
+        
         # Build pre-flight results
         pf_lines = []
         for name, passed, detail in check_results:
@@ -5055,6 +5076,7 @@ class MethodologyCLI:
             plan = plan.replace('{TH_THRESHOLDS_TABLE}', self._generate_thresholds_table(phase))
             plan = plan.replace('{EXTERNAL_DOCS}', self._generate_external_docs(phase))
             plan = plan.replace('{subagent_mgmt}', subagent_mgmt)
+            plan = plan.replace('{artifacts_summary}', artifacts_summary)
             plan = plan.replace('{four_dimensional_table}', four_dimensional_table)
             plan = plan.replace('{iteration_rounds_table}', iteration_rounds_table)
         else:
