@@ -4164,6 +4164,15 @@ class MethodologyCLI:
             spawn_log_path = repo_path / ".methodology" / "sessions_spawn.log"
             print(f"✅ [PRE-FLIGHT] SubagentIsolator hooks verified")
             print(f"   sessions_spawn.log path: {spawn_log_path}")
+            # P2-1: Auto-create sessions_spawn.log
+            sessions_spawn_log = repo_path / ".methodology" / "sessions_spawn.log"
+            sessions_spawn_log.parent.mkdir(parents=True, exist_ok=True)
+            if not sessions_spawn_log.exists():
+                sessions_spawn_log.write_text("")
+                print(f"✅ [PRE-FLIGHT] Created sessions_spawn.log")
+            else:
+                print(f"✅ [PRE-FLIGHT] sessions_spawn.log exists")
+            
             # P0: 整合 IterationManager (Aspect 7)
             try:
                 from integration_manager import IntegrationManager
@@ -4185,6 +4194,17 @@ class MethodologyCLI:
                 print(f"   - on_complete: 任務完成時")
             except ImportError:
                 print(f"⚠️  [PRE-FLIGHT] ToolDispatcher not available")
+            
+            # P2-2: ToolRegistry integration
+            try:
+                from tool_registry import ToolRegistry
+                tr = ToolRegistry(repo_path=str(repo_path))
+                tools = tr.list_tools()
+                print(f"✅ [PRE-FLIGHT] ToolRegistry: {len(tools)} tools registered")
+                if len(tools) == 0:
+                    print(f"   ⚠️ No tools registered. Use 'python cli.py tool-registry --register'")
+            except ImportError:
+                print(f"⚠️  [PRE-FLIGHT] ToolRegistry not available")
         except Exception as e:
             print(f"⚠️  SubagentIsolator hook verification failed: {e}")
 

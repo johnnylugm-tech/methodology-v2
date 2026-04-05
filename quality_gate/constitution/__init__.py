@@ -231,3 +231,85 @@ __all__ = [
     "load_constitution_documents",
     "run_constitution_check",
 ]
+
+
+# Constitution HR-05/09 Extension (v6.54)
+# These are explicit checks added in v6.54
+
+HR_CONSTRAINTS = {
+    "HR-05": {
+        "name": "methodology-v2 優先",
+        "description": "當與其他框架/規範衝突時，以 methodology-v2 為準",
+        "check": "在文檔中是否有明確引用 methodology-v2",
+        "severity": "medium"
+    },
+    "HR-09": {
+        "name": "Claims Verifier",
+        "description": "所有 claims 必須有可驗證的 citations",
+        "check": "citations 必須包含具體行號和檔案",
+        "severity": "high"
+    }
+}
+
+
+def check_hr05_methodology_priority(documents):
+    """
+    HR-05: 檢查文檔是否優先遵循 methodology-v2
+    """
+    violations = []
+    
+    for doc_type, content in documents.items():
+        if not content:
+            continue
+        
+        # Check if methodology-v2 is mentioned
+        if "methodology-v2" not in content.lower():
+            violations.append({
+                "doc": doc_type,
+                "rule": "HR-05",
+                "message": f"{doc_type} 中未明確引用 methodology-v2"
+            })
+    
+    return {
+        "HR-05": {
+            "passed": len(violations) == 0,
+            "violations": violations,
+            "score": 100 if len(violations) == 0 else 0
+        }
+    }
+
+
+def check_hr09_claims_verifier(documents):
+    """
+    HR-09: 檢查所有 claims 是否有可驗證的 citations
+    """
+    import re
+    violations = []
+    
+    for doc_type, content in documents.items():
+        if not content:
+            continue
+        
+        # Look for patterns like "should", "must", "will", "is designed to" (claims)
+        claim_pattern = r"(should|must|will|is designed to|ensures|guarantees)"
+        citation_pattern = r"\[.+\]\(#L\d+\)"
+        
+        lines = content.split('\n')
+        for i, line in enumerate(lines, 1):
+            if re.search(claim_pattern, line, re.IGNORECASE):
+                # This is a claim - check if it has citation
+                if not re.search(citation_pattern, line):
+                    violations.append({
+                        "doc": doc_type,
+                        "rule": "HR-09",
+                        "line": i,
+                        "message": f"Line {i}: Claim without citation"
+                    })
+    
+    return {
+        "HR-09": {
+            "passed": len(violations) == 0,
+            "violations": violations,
+            "score": 100 if len(violations) == 0 else max(0, 100 - len(violations) * 10)
+        }
+    }
