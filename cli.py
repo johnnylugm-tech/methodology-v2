@@ -4666,7 +4666,7 @@ class MethodologyCLI:
             result += f"{desc}\n{cmd}\n\n"
         return result
 
-    def _generate_developer_prompt(self, fr: dict, phase: int) -> str:
+    def _generate_developer_prompt(self, fr: dict, phase: int, repo_path: str = "") -> str:
         """產生 Developer Prompt 模板（Phase-specific）"""
         phase_prompts = cli_phase_prompts.PHASE_PROMPTS.get(phase, cli_phase_prompts.PHASE_PROMPTS[3])
         
@@ -4680,12 +4680,18 @@ class MethodologyCLI:
             template = re.sub(r"\{fr\['title'\]\}", fr.get("title", ""), template)
             file_path = fr.get("file", f"app/processing/{fr_num}.py")
             template = re.sub(r"\{fr\.get\('file'[^}]*\)", file_path, template)
+            
+            # CWD fix: Inject cd directive for Phase 3
+            if repo_path:
+                cd_directive = f"\n\n【先決條件】先執行：\ncd {repo_path}\npwd # 確認包含 \"{Path(repo_path).name}\"\n"
+                template = template.replace("【階段目標】", cd_directive + "【階段目標】")
+            
             return template
         
         return phase_prompts["developer"]
 
 
-    def _generate_reviewer_prompt(self, fr: dict, phase: int) -> str:
+    def _generate_reviewer_prompt(self, fr: dict, phase: int, repo_path: str = "") -> str:
         """產生 Reviewer Prompt 模板（Phase-specific）"""
         phase_prompts = cli_phase_prompts.PHASE_PROMPTS.get(phase, cli_phase_prompts.PHASE_PROMPTS[3])
         
@@ -4697,6 +4703,12 @@ class MethodologyCLI:
             template = re.sub(r"\{fr_num\}", fr_num, template)
             template = re.sub(r"\{fr\['fr'\]\}", fr.get("fr", f"FR-{fr_num}"), template)
             template = re.sub(r"\{fr\['title'\]\}", fr.get("title", ""), template)
+            
+            # CWD fix: Inject cd directive for Phase 3
+            if repo_path:
+                cd_directive = f"\n\n【先決條件】先執行：\ncd {repo_path}\npwd # 確認包含 \"{Path(repo_path).name}\"\n"
+                template = template.replace("【審查範圍】", cd_directive + "【審查範圍】")
+            
             return template
         
         return phase_prompts["reviewer"]
@@ -5070,8 +5082,8 @@ class MethodologyCLI:
                 first_fr['file'] = mod_match.get("file", first_fr.get('file', ''))
             
             # Developer and Reviewer prompts (with enriched FR info)
-            developer_prompt = self._generate_developer_prompt(first_fr, phase)
-            reviewer_prompt = self._generate_reviewer_prompt(first_fr, phase)
+            developer_prompt = self._generate_developer_prompt(first_fr, phase, str(repo_path))
+            reviewer_prompt = self._generate_reviewer_prompt(first_fr, phase, str(repo_path))
             plan = plan.replace('{DEVELOPER_PROMPT}', developer_prompt)
             plan = plan.replace('{REVIEWER_PROMPT}', reviewer_prompt)
             
