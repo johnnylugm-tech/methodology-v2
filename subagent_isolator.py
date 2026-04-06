@@ -43,6 +43,12 @@ try:
 except ImportError:
     from .exceptions import MethodologyError, ArtifactMissingError, OnDemandViolationError
 
+# SessionsSpawnLogger（v6.60: 整合日誌）
+try:
+    from sessions_spawn_logger import SessionsSpawnLogger
+except ImportError:
+    from .sessions_spawn_logger import SessionsSpawnLogger
+
 # On Demand / Need to Know 約束
 MAX_CONTEXT_SIZE = 5000  # 字元
 
@@ -165,15 +171,11 @@ class SubagentIsolator:
         self.results = {}  # session_key -> SubagentResult
         self._persona_cache = {}
         # sessions_spawn.log 寫入 .methodology/ 目錄（HR-10 合規）
-        self._log_file = Path(project_path) / ".methodology" / "sessions_spawn.log"
+        # v6.60: 使用 SessionsSpawnLogger 取代直接寫入
+        self._logger = SessionsSpawnLogger(Path(project_path))
 
     # ─── Internal Helpers ────────────────────────────────────────────────────────
 
-    def _write_log(self, entry: dict):
-        """寫入 sessions_spawn.log"""
-        with open(self._log_file, "a", encoding="utf-8") as f:
-            f.write(json.dumps(entry, ensure_ascii=False) + "\n")
-    
     def get_persona(self, role: AgentRole, custom: AgentPersona = None) -> str:
         """取得 Agent persona"""
         if custom:
@@ -308,16 +310,14 @@ HR-15 強制：
         session_key = f"sub_{role.value}_{uuid.uuid4().hex[:8]}"
         start_time = datetime.now()
         
-        # === Gap 2: spawn 前寫入 log ===
-        self._write_log({
-            "timestamp": start_time.isoformat(),
-            "role": role.value,
-            "task": task,
-            "session_id": session_id,
-            "session_key": session_key,
-            "confidence": None,
-            "status": "PENDING"
-        })
+        # === Gap 2: spawn 前寫入 log（v6.60: 使用 SessionsSpawnLogger） ===
+        self._logger.log_spawn(
+            role=role.value,
+            task=task,
+            session_id=session_id,
+            session_key=session_key,
+            status="PENDING"
+        )
         
         # 建立 fresh messages[]（隔離關鍵）
         system_prompt = self.get_persona(role, custom_persona)
@@ -406,15 +406,14 @@ HR-15 強制：
         
         self.results[session_key] = sub_result
         
-        # === Gap 2: spawn 後更新 log ===
-        self._write_log({
-            "timestamp": datetime.now().isoformat(),
-            "session_id": session_id,
-            "session_key": session_key,
-            "status": "COMPLETED" if sub_result.status == "success" else "FAILED",
-            "confidence": sub_result.confidence,
-            "duration_seconds": duration
-        })
+        # === Gap 2: spawn 後更新 log（v6.60: 使用 SessionsSpawnLogger） ===
+        self._logger.log_update(
+            session_id=session_id,
+            session_key=session_key,
+            status="COMPLETED" if sub_result.status == "success" else "FAILED",
+            confidence=sub_result.confidence,
+            duration_seconds=duration
+        )
         
         return sub_result
     

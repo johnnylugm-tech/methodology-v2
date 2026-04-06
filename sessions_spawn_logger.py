@@ -1,10 +1,11 @@
 # Sessions Spawn Logger - 自動記錄 sub-agent 派遣
 # 解決方案：SubagentIsolator.spawn() hook 自動寫入 log
+# v6.60: 加入 log_update() 支援兩階段寫入（PENDING → COMPLETED/FAILED）
 
 import json
 from pathlib import Path
 from datetime import datetime
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 
 
 class SessionsSpawnLogger:
@@ -15,7 +16,24 @@ class SessionsSpawnLogger:
         from sessions_spawn_logger import SessionsSpawnLogger
         
         logger = SessionsSpawnLogger(repo_path)
-        logger.log_spawn(role="developer", task="FR-01", session_id="xxx")
+        
+        # Phase 1: 記錄 PENDING
+        entry = logger.log_spawn(
+            role="developer",
+            task="FR-01",
+            session_id="xxx",
+            session_key="sub_developer_abc123",
+            status="PENDING"
+        )
+        
+        # Phase 2: 更新為 COMPLETED
+        logger.log_update(
+            session_id="xxx",
+            session_key="sub_developer_abc123",
+            status="COMPLETED",
+            confidence=9,
+            duration_seconds=125.5
+        )
     """
     
     LOG_FILENAME = ".methodology/sessions_spawn.log"
@@ -30,6 +48,31 @@ class SessionsSpawnLogger:
         if not self.log_path.exists():
             self.log_path.write_text("")
     
+    def _read_entries(self) -> List[Dict[str, Any]]:
+        """讀取所有 log entries"""
+        if not self.log_path.exists():
+            return []
+        content = self.log_path.read_text().strip()
+        if not content:
+            return []
+        entries = []
+        for line in content.split("\n"):
+            line = line.strip()
+            if not line:
+                continue
+            if line.startswith(","):
+                line = line[1:]
+            try:
+                entries.append(json.loads(line))
+            except json.JSONDecodeError:
+                pass
+        return entries
+    
+    def _write_entries(self, entries: List[Dict[str, Any]]):
+        """寫回所有 entries（瓦片式覆寫）"""
+        lines = [json.dumps(e, ensure_ascii=False) for e in entries]
+        self.log_path.write_text("\n".join(lines) + "\n")
+    
     def log_spawn(
         self,
         role: str,
@@ -40,15 +83,15 @@ class SessionsSpawnLogger:
         **kwargs
     ) -> Dict[str, Any]:
         """
-        記錄一次 sub-agent 派遣
+        記錄一次 sub-agent 派遣（Phase 1：PENDING）
         
         Args:
-            role: "developer" | "reviewer"
+            role: "developer" | "reviewer" | "architect"
             task: 任務描述（如 "FR-01"）
             session_id: session key
             confidence: 信心度（可選）
-            status: "SPAWNED" | "COMPLETED" | "FAILED"
-            **kwargs: 其他欄位
+            status: "PENDING" | "SPAWNED"
+            **kwargs: 其他欄位（如 session_key）
         """
         self._ensure_initialized()
         
@@ -70,6 +113,36 @@ class SessionsSpawnLogger:
             f.write(json.dumps(entry, ensure_ascii=False) + "\n")
         
         return entry
+    
+    def log_update(
+        self,
+        session_id: str,
+        **updates
+    ) -> Optional[Dict[str, Any]]:
+        """
+        更新已存在的 entry（Phase 2：COMPLETED/FAILED）
+        
+        根據 session_id 找到 PENDING entry，更新其欄位（status, confidence, duration_seconds 等）
+        
+        Args:
+            session_id: 要更新的 session_id
+            **updates: 要更新的欄位（status, confidence, duration_seconds, error 等）
+            
+        Returns:
+            更新後的 entry，或 None（如果找不到）
+        """
+        entries = self._read_entries()
+        
+        for i, entry in enumerate(entries):
+            if entry.get("session_id") == session_id:
+                # 更新欄位
+                entry.update(updates)
+                entry["_updated_at"] = datetime.now().isoformat()
+                entries[i] = entry
+                self._write_entries(entries)
+                return entry
+        
+        return None
     
     def validate(self) -> Dict[str, Any]:
         """
@@ -118,29 +191,26 @@ class SessionsSpawnLogger:
         # 統計各 role
         role_counts = {}
         fr_tasks = set()
+        status_counts = {"PENDING": 0, "SPAWNED": 0, "COMPLETED": 0, "FAILED": 0}
         
-        if self.log_path.exists():
-            content = self.log_path.read_text().strip()
-            lines = [l for l in content.split("\n") if l.strip()]
+        entries = self._read_entries()
+        for entry in entries:
+            role = entry.get("role", "unknown")
+            role_counts[role] = role_counts.get(role, 0) + 1
             
-            for line in lines:
-                try:
-                    if line.startswith(","):
-                        line = line[1:]
-                    entry = json.loads(line)
-                    role = entry.get("role", "unknown")
-                    role_counts[role] = role_counts.get(role, 0) + 1
-                    
-                    task = entry.get("task", "")
-                    if task:
-                        fr_tasks.add(task.split()[0] if " " in task else task)
-                except:
-                    pass
+            task = entry.get("task", "")
+            if task:
+                fr_tasks.add(task.split()[0] if " " in task else task)
+            
+            status = entry.get("status", "")
+            if status in status_counts:
+                status_counts[status] += 1
         
         return {
             "total_entries": result["count"],
             "role_counts": role_counts,
             "fr_tasks": sorted(fr_tasks),
+            "status_counts": status_counts,
             "valid": result["valid"]
         }
 
