@@ -1,3 +1,37 @@
+## [v6.60] - 2026-04-06
+
+### 🚀 Added
+- **sessions_spawn_logger.py v6.60**:
+  - `_read_entries()` / `_write_entries()` — 瓦片式讀寫
+  - `log_update(session_id, **updates)` — 兩階段更新（PENDING → COMPLETED/FAILED）
+  - `get_summary()` — 加入 `status_counts`（PENDING/COMPLETED/FAILED 統計）
+- **subagent_isolator.py v6.60**:
+  - 移除 `_write_log()` 和 `_log_file`
+  - 使用 `SessionsSpawnLogger` 統一管理
+  - `spawn()` 前後分階段 log（PENDING → COMPLETED/FAILED）
+
+### 🐛 Fixed
+- N/A
+
+### 📝 Documentation
+- N/A
+
+---
+
+## [v6.59] - 2026-04-06
+
+### 🚀 Added
+- **sessions_spawn_logger.py**: New module for structured spawn logging
+- **Pre-flight validation**: Integrated into cli.py (+14 lines)
+
+### 🐛 Fixed
+- N/A
+
+### 📝 Documentation
+- N/A
+
+---
+
 ## [v6.54] - 2026-04-05
 
 ### 🚀 Added
