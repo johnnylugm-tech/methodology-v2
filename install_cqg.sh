@@ -13,7 +13,7 @@ if ! command -v pip3 &> /dev/null; then
 fi
 
 # Install Python packages
-pip3 install -r requirements-cqg.txt
+pip3 install --break-system-packages -r requirements-cqg.txt
 
 # Check eslint (optional)
 if command -v npm &> /dev/null; then
