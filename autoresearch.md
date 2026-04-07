@@ -7,7 +7,6 @@
 `autoresearch.sh` — should emit `METRIC name=number` lines for exit_code.
 
 ## What's Been Tried
-- #3 discard 0 57f3376 — Pending pytest from previous session
 - #4 keep 1 78e4c36 — pending_review was not setting failure_reason for AI-assisted case
 - #5 discard 0 78e4c36 — pending prior run
 - #6 keep 0 b564fcf — All 12 tests pass - store_with_outcome integrated into closure pipeline
@@ -15,9 +14,25 @@
 - #2 keep 0 592c0fa — Check staged files
 - #3 keep 0 cca976d — Pending experiment discard
 - #4 keep 1 03ce0e0 — v6.73 commit - feat: fill last 5% gaps - P0-3 cron/notifier, P0-1 MI formula, P2-3 closure learning
+- #5 keep 0 6838ccc — gog gmail list - connected, no unread emails
 
 ## Plugin Checkpoint
-- Last updated: 2026-04-07T18:18:12.848Z
+- Last updated: 2026-04-07T18:18:32.062Z
+- Runs tracked: 5 current / 11 total
+- Baseline: 0
+- Best kept: 1
+- Confidence: n/a
+- Last logged run: #5 keep 6838ccc — gog gmail list - connected, no unread emails
+- Pending run awaiting log_experiment: gog calendar list --limit 1 (n/a)
+
+Z
+- Runs tracked: 5 current / 11 total
+- Baseline: 0
+- Best kept: 1
+- Confidence: n/a
+- Last logged run: #5 keep 6838ccc — gog gmail list - connected, no unread emails
+
+Z
 - Runs tracked: 4 current / 10 total
 - Baseline: 0
 - Best kept: 1

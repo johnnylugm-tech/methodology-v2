@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": 1775585892848,
+  "updatedAt": 1775585912062,
   "sessionStartCommit": "b564fcf",
   "session": {
     "name": "Git commit and tag v6.73",
@@ -8,35 +8,24 @@
     "metricUnit": "",
     "bestDirection": "lower",
     "currentSegment": 1,
-    "currentRunCount": 4,
-    "totalRunCount": 10,
+    "currentRunCount": 5,
+    "totalRunCount": 11,
     "currentBaselineMetric": 0,
     "currentBestMetric": 1,
     "confidence": null
   },
   "lastLoggedRun": {
-    "run": 4,
-    "commit": "03ce0e0",
-    "metric": 1,
+    "run": 5,
+    "commit": "6838ccc",
+    "metric": 0,
     "metrics": {},
     "status": "keep",
-    "description": "v6.73 commit - feat: fill last 5% gaps - P0-3 cron/notifier, P0-1 MI formula, P2-3 closure learning",
-    "timestamp": 1775582503621,
+    "description": "gog gmail list - connected, no unread emails",
+    "timestamp": 1775585908492,
     "segment": 1,
     "confidence": null
   },
   "recentLoggedRuns": [
-    {
-      "run": 3,
-      "commit": "57f3376",
-      "metric": 0,
-      "metrics": {},
-      "status": "discard",
-      "description": "Pending pytest from previous session",
-      "timestamp": 1775582215026,
-      "segment": 0,
-      "confidence": null
-    },
     {
       "run": 4,
       "commit": "78e4c36",
@@ -113,18 +102,29 @@
       "timestamp": 1775582503621,
       "segment": 1,
       "confidence": null
+    },
+    {
+      "run": 5,
+      "commit": "6838ccc",
+      "metric": 0,
+      "metrics": {},
+      "status": "keep",
+      "description": "gog gmail list - connected, no unread emails",
+      "timestamp": 1775585908492,
+      "segment": 1,
+      "confidence": null
     }
   ],
   "pendingRun": {
-    "command": "gog gmail list \"in:inbox is:unread\" --limit 1",
-    "commit": "03ce0e0",
+    "command": "gog calendar list --limit 1",
+    "commit": "6838ccc",
     "primaryMetric": null,
     "metrics": {},
-    "durationSeconds": 0.516,
+    "durationSeconds": 0.894,
     "exitCode": 0,
     "passed": true,
     "timedOut": false,
-    "tailOutput": "No results",
-    "capturedAt": 1775585892847
+    "tailOutput": "ID                          START                      END                        SUMMARY\nka3gfrkkjnfuejbfav7ueggme4  2026-04-08T14:00:00+08:00  2026-04-08T16:15:00+08:00  按摩\n\n# Next page: --page EiwKKhIoCgYI4N3XzgYSHgocChprYTNnZnJra2puZnVlamJmYXY3dWVnZ21lNMA-AQ==",
+    "capturedAt": 1775585912062
   }
 }
