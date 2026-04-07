@@ -1,3 +1,41 @@
+## v6.62 (2026-04-07)
+
+### 新增功能
+
+#### BVS: Behaviour Validation System (IMPROVEMENT_P1-1)
+BVS 驗證 AI Agent 行為是否符合 Constitution HR 規則，補足 CQG 只看代碼不看病行為的缺口。
+
+##### BVS-P0: Invariant Engine (constitution/invariant_engine.py)
+- 7 個 HR rules → BehavioralInvariant
+- HR-03: Phase execution order (critical)
+- HR-07: Artifact citation required (high)
+- HR-10: Subagent isolation (high)
+- HR-12: A/B review threshold (medium)
+- HR-13: Phase timeout (medium)
+- HR-15: Artifact read before proceeding (critical)
+- TH-07: Confidence calibration (medium)
+- InvariantViolation dataclass + InvariantEngine.check_batch()
+
+##### BVS-P1: Execution Logger (constitution/execution_logger.py)
+- 從 sessions_spawn.log 收集執行日誌
+- ExecutionLogEntry dataclass 標準化格式
+- 支援 SubagentResult 直接消費
+
+##### BVS-P2: BVS Runner (constitution/bvs_runner.py)
+- 整合 InvariantEngine + ExecutionLogger
+- BVSRunner.run(phase) → phase 專屬檢查
+- BVSRunner.run_all_phases() → 全 Phase 彙總
+
+##### Constitution Runner 整合
+- Phase 3+ 自動執行 BVS 檢查
+- BVS violations 進入 Constitution check violations 清單
+- 向後相容：BVS 不可用時自動 skip
+
+### 修復
+- `unified_gate.py`: 傳遞 current_phase 至 run_constitution_check()，修復 BVS Phase 3+ 觸發
+
+---
+
 ## [v6.61] - 2026-04-07
 
 ### 🚀 Added

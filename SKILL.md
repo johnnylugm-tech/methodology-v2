@@ -158,4 +158,55 @@ pip3 install --break-system-packages -r requirements-cqg.txt
 
 ---
 
-*methodology-v2 v6.61 | Agent Executable Specification | Last Updated: 2026-04-07*
+### BVS — Behaviour Validation System (v6.62)
+
+BVS 驗證 AI Agent 的實際行為是否符合 Constitution HR 規則，補足 CQG 只測量代碼靜態品質的缺口。
+
+#### 與 CQG 的區別
+
+| 維度 | CQG | BVS |
+|------|-----|-----|
+| 測量對象 | Codebase（代碼本身）| Agent Behaviour（Agent 行為）|
+| 觸發時機 | 每個 Phase Gate | Phase 3+ Constitution |
+| 輸出 | 分數（72/100）| Pass/Fail（是否違反 HR）|
+| 資料來源 | AST, coverage.xml, linter | sessions_spawn.log |
+
+#### 工具清單
+
+| 工具 | 檔案 | 功能 |
+|------|------|------|
+| InvariantEngine | `constitution/invariant_engine.py` | 7 個 HR invariants 檢查 |
+| ExecutionLogger | `constitution/execution_logger.py` | 從 sessions_spawn.log 收集日誌 |
+| BVSRunner | `constitution/bvs_runner.py` | 整合 InvariantEngine + ExecutionLogger |
+
+#### Invariants 對照表
+
+| HR | Invariant | Severity | Trigger |
+|----|-----------|----------|---------|
+| HR-03 | Phase execution order | critical | Phase 執行順序 |
+| HR-07 | Artifact citation required | high | 無 citations |
+| HR-10 | Subagent isolation | high | Session 重用 |
+| HR-12 | A/B review threshold | medium | 審查 >5 輪 |
+| HR-13 | Phase timeout | medium | 超過預估 3 倍 |
+| HR-15 | Artifact read before proceeding | critical | 無 artifact 引用 |
+| TH-07 | Confidence calibration | medium | 低信心但聲稱成功 |
+
+#### Phase 整合
+
+| Phase | BVS 行為 |
+|-------|----------|
+| Phase 1-2 | 自動 skip |
+| Phase 3+ | 自動執行 invariant checks |
+
+#### 使用方式
+```bash
+# 單一 Phase 檢查
+python constitution/bvs_runner.py --project-path /path --phase 3
+
+# 全 Phase 檢查
+python constitution/bvs_runner.py --project-path /path --all
+```
+
+---
+
+*methodology-v2 v6.62 | Agent Executable Specification | Last Updated: 2026-04-07*
