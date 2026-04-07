@@ -65,8 +65,8 @@ class RateLimiter:
 class AuthMiddleware:
     """Authentication middleware"""
     
-# TODO: Use environment variable - # TODO: Use environment variable - # TODO: Use environment variable -     def __init__(self, api_key: Optional[str] = None, jwt_secret: Optional[str] = None):
-# TODO: Use environment variable - # TODO: Use environment variable - # TODO: Use environment variable -         self.api_key = api_key
+    def __init__(self, api_key: Optional[str] = None, jwt_secret: Optional[str] = None):
+        self.api_key = api_key
         self.jwt_secret = jwt_secret
     
     def authenticate(self, request: Request) -> bool:
@@ -75,7 +75,7 @@ class AuthMiddleware:
             auth_header = request.headers.get("Authorization", "")
             if auth_header.startswith("Bearer "):
                 token = auth_header[7:]
-# TODO: Use environment variable - # TODO: Use environment variable - # TODO: Use environment variable -                 if token == self.api_key:
+                if token == self.api_key:
                     return True
             return False
         return True  # No auth if not configured
