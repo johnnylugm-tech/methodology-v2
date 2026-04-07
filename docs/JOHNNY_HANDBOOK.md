@@ -1,6 +1,6 @@
-# Johnny 使用手冊 v6.65
+# Johnny 使用手冊 v6.69
 
-> **版本**: v6.65
+> **版本**: v6.69
 > **對象**: Johnny（Human-in-the-Loop）
 > **用途**: 快速上手 methodology-v2
 
@@ -8,7 +8,7 @@
 
 ## 1. methodology-v2 今天長什麼樣？
 
-### v6.32 ~ v6.65 帶來的改善
+### v6.32 ~ v6.69 版本歷史
 
 | 版本 | 改善內容 |
 |------|----------|
@@ -23,8 +23,15 @@
 | v6.43 | On Demand restrictions + Tool Usage Timing section |
 | v6.44 | Pre-flight deliverable check fix |
 | v6.45 | OUTPUT path from SAD parsing + Forbidden clarification |
-| v6.65 | Version consistency audit fix |
-| **v6.65** | **Audit fixes + version consistency** |
+| v6.61 | CQG+SAB — 代碼品質閘道 + 軟體架構基線 |
+| v6.62 | BVS — Behaviour Validation System |
+| v6.63 | HR-09 Claims Verifier |
+| v6.64 | AI Test Suite + HR-17 |
+| v6.65 | Steering Loop + AB Workflow 方向控制 |
+| v6.66 | Feedback Loop — 標準化品質信號收集（P2-2）|
+| v6.67 | Self-Correction Engine — 自動化錯誤修正（P2-3）|
+| v6.68 | P0 Integration Fix — 觸發鍊全部自動化 |
+| v6.69 | Audit fixes — core package、orchestration paths、CHANGELOG |
 
 ### 三層文件架構
 
@@ -53,7 +60,7 @@ Johnny: 「確認執行」
     ↓
 Agent: run-phase --phase {N}
     ↓
-失敗 → plan-phase --repair --step {N}.{X}
+失敗 → plan-phase --repair --step {N}.X
     ↓
 成功 → 下一 Phase
 ```
@@ -132,17 +139,17 @@ python cli.py run-phase --phase 3 --step 3.1 --task "FR-01 實作"
                               ↓
 ┌─────────────────────────────────────────────────────────────┐
 │  EXECUTE                                                     │
-│  10. Load docs/P3_SOP.md                                   │
-│  11. Execute via SubagentIsolator                           │
-│  12. PermissionGuard.check() before exec/rm                │
-│  13. Log to .methodology/run-phase.log                      │
+│ 10. Load docs/P3_SOP.md                                   │
+│ 11. Execute via SubagentIsolator                           │
+│ 12. PermissionGuard.check() before exec/rm                │
+│ 13. Log to .methodology/run-phase.log                      │
 └─────────────────────────────────────────────────────────────┘
                               ↓
 ┌─────────────────────────────────────────────────────────────┐
 │  POST-FLIGHT                                                 │
-│  14. Final Constitution Check                                │
-│  15. Update state.json                                       │
-│  16. Report Summary                                          │
+│ 14. Final Constitution Check                                │
+│ 15. Update state.json                                       │
+│ 16. Report Summary                                          │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -300,7 +307,7 @@ Johnny 等到執行完成，看結果。
 
 ---
 
-## 8. On Demand 執行原則（v6.43+）
+## 8. On Demand 執行原則
 
 ### 核心原則
 
@@ -334,8 +341,7 @@ FORBIDDEN:
 
 ---
 
-
-## 8.5 Sub-Agent Management（v6.65+）
+## 8.5 Sub-Agent Management
 
 ### 核心原則
 
@@ -365,9 +371,7 @@ FORBIDDEN:
 ### Phase 3 範例
 
 ```
-## 9.5 Sub-Agent Management（Need-to-Know + On-Demand）
-
-**Phase 3: 代碼實現**
+## Phase 3: 代碼實現
 
 ### Agent 角色
 - **Agent A（developer）**: 實作 FR-XX
@@ -426,7 +430,7 @@ FORBIDDEN:
 
 ---
 
-## 10. 新工具速查（v6.32-v6.65）
+## 10. 新工具速查
 
 ### 六大工具
 
@@ -450,36 +454,6 @@ FORBIDDEN:
 | `--detailed` flag | 生成 FR 詳細任務（含 SRS 內容）|
 | generate_full_plan.py | 支援所有 Phase（1-8）|
 
-### 新 CLI 命令
-
-```bash
-# 單一入口（v6.26）
-python cli.py run-phase --phase N
-
-# plan-phase（必用，執行前）
-python cli.py plan-phase --phase N --goal "..."
-python cli.py plan-phase --phase N --detailed --goal "..."
-python cli.py plan-phase --phase N --repair --step N.X
-
-# generate_full_plan.py（可單獨使用）
-python3 scripts/generate_full_plan.py --phase 3 --repo /path
-
-# Tool Registry（v6.22）
-python cli.py tool-registry --list
-python cli.py tool-registry --get <tool>
-
-# Session 管理（v6.22）
-python cli.py session-save --id <name>
-python cli.py session-list
-python cli.py session-load --id <name>
-python cli.py session-delete --id <name>
-
-# 三層壓縮（v6.20）
-python cli.py context-compress --level L1
-python cli.py context-compress --level L2
-python cli.py context-compress --level L3
-```
-
 ---
 
 ## 11. CLI 速查
@@ -498,10 +472,10 @@ python cli.py plan-phase --phase N --history
 # === generate_full_plan.py ===
 python3 scripts/generate_full_plan.py --phase N --repo /path
 
-# === Integrity 計算（v6.28 新增）===
+# === Integrity 計算 ===
 python cli.py integrity --project .
 
-# === auto-fix / skip-failed（v6.28 新增）===
+# === auto-fix / skip-failed ===
 python cli.py stage-pass --phase N --auto-fix
 python cli.py stage-pass --phase N --skip-failed
 python cli.py enforce --level BLOCK --auto-fix
@@ -516,6 +490,12 @@ python cli.py fsm-unfreeze
 
 # === Constitution Check ===
 python cli.py constitution check --type <srs|sad|test_plan|...>
+
+# === Feedback Loop Dashboard（v6.66+）===
+python cli.py feedback --list
+python cli.py feedback --dashboard
+python cli.py feedback --export json --output feedback.json
+python cli.py feedback --sla
 
 # === Tool Registry ===
 python cli.py tool-registry --list
@@ -605,23 +585,116 @@ python cli.py phase-status
 | HR-12 | A/B 審查 > 5 輪 → PAUSE | — |
 | HR-13 | Phase 時間 > 3× 預估 → PAUSE | — |
 | HR-14 | Integrity < 40 → FREEZE | — |
-| **HR-15** | **citations 必須含行號 + artifact_verification** | -15 |
+| HR-15 | citations 必須含行號 + artifact_verification | -15 |
 
 ---
 
-## 16. 版本一致性
+## 16. Feedback Loop — 品質信號追蹤（v6.66+）
+
+### 什麼是 Feedback Loop？
+
+Feedback Loop 是**統一框架**，用於收集、分類、優先排序和追蹤所有來源的品質信號。
+
+### 9 種 Feedback Sources
+
+| Source | 說明 | 觸發時機 |
+|--------|------|----------|
+| `constitution` | Constitution HR-01~HR-15 違規 | Phase 轉換 |
+| `quality_gate` | Linter/Complexity/Coverage 違規 | Phase 完成 |
+| `linter` | 代碼風格錯誤 | On commit |
+| `test_failure` | 測試失敗 | CI pipeline |
+| `complexity_alert` | Cyclomatic Complexity 超標 | On commit |
+| `drift_detector` | 架構 drift | Periodic |
+| `bvs` | Behaviour Validation 違規 | Phase 完成 |
+| `code_review` | Human review comments | PR review |
+| `user_report` | End user reports | Manual |
+
+### 5×5 Severity Matrix
+
+```
+              URGENCY
+IMPACT    |  Low      |  Medium   |  High     |  Critical
+----------|-----------|-----------|-----------|----------
+  Low     |  Low      |  Low      |  Medium   |  High
+  Medium  |  Low      |  Medium   |  Medium   |  High
+  High    |  Medium   |  Medium   |  High     |  Critical
+  Critical|  High     |  High     |  Critical |  Critical
+```
+
+### SLA 配置
+
+| Severity | Response | Resolution | Escalation |
+|----------|----------|------------|------------|
+| Critical | 15 min | 4 hours | Immediate |
+| High | 1 hour | 24 hours | 1 hour |
+| Medium | 4 hours | 3 days | Daily |
+| Low | 1 day | Next sprint | Weekly |
+
+### Self-Correction 三層策略（v6.67+）
+
+| Tier | 說明 | Confidence |
+|------|------|------------|
+| **Auto-Fix** | 8 種規則可直接 patch | 85%+ |
+| **AI-Assisted** | 需要 AI 介入 + human review | 60-75% |
+| **Manual-Required** | 必須人工處理 | — |
+
+### Auto-Fix 規則（8 種）
+
+| Strategy | Applies To | Confidence |
+|----------|------------|------------|
+| `patch_syntax` | Linter syntax errors | 95% |
+| `isort_autofix` | Unused imports | 90% |
+| `remove_unused` | Unused variables | 90% |
+| `ruff_format` | PEP8 violations | 95% |
+| `extract_function` | High cyclomatic complexity | 80% |
+| `add_test_stub` | Coverage gaps | 70% |
+| `regenerate_import` | Import errors in tests | 75% |
+| `ai_fix_logic` | Complex logic errors | 70% |
+
+### Integration Trigger Chain（v6.68+）
+
+```
+Constitution check 完成 → violations 自動進 FeedbackStore
+QualityGate check 完成 → violations 自動進 FeedbackStore
+BVS invariant 失敗 → 自動進 FeedbackStore
+Verification 失敗 → Self-Correction Engine 自動觸發
+```
+
+### 使用方式
+
+```python
+# 一行建立完整 Feedback Loop 系統
+from orchestration import create_full_pipeline
+
+pipeline = create_full_pipeline()
+store = pipeline["store"]      # FeedbackStore
+gate = pipeline["gate"]        # Integrated AutoQualityGate
+bvs = pipeline["bvs"]          # Integrated BVSRunner
+closure = pipeline["closure"]  # ClosureWithSelfCorrection
+
+# Dashboard
+from core.feedback.dashboard import print_dashboard
+print_dashboard(store)
+```
+
+---
+
+## 17. 版本一致性
 
 | Component | Version | Status |
 |-----------|---------|--------|
-| cli.py | v6.65.0 | ✅ |
+| cli.py | v6.69.0 | ✅ |
 | generate_full_plan.py | v6.39.0 | ✅ |
 | SKILL.md | v6.32.0 | ⚠️ |
-| JOHNNY_HANDBOOK.md | v6.65 | ✅ |
-| 執行計畫輸出 | v6.65.0 | ✅ |
+| JOHNNY_HANDBOOK.md | v6.69 | ✅ |
+| Feedback Loop | v6.66 | ✅ |
+| Self-Correction | v6.67 | ✅ |
+| Integration Fix | v6.68 | ✅ |
+| 執行計畫輸出 | v6.69.0 | ✅ |
 
 > ⚠️ SKILL.md 版本落後（v6.32.0），建議在下次 release 時同步更新。
 
 ---
 
-*此手冊基於 methodology-v2 v6.65*
-*最後更新: 2026-04-04*
+*此手冊基於 methodology-v2 v6.69*
+*最後更新: 2026-04-07*
