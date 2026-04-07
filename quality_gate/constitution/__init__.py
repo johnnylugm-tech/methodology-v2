@@ -24,6 +24,13 @@ from pathlib import Path
 from typing import Dict, List, Optional
 from dataclasses import dataclass, asdict
 
+# BVS — Behaviour Validation System (P1-1)
+try:
+    from constitution.bvs_runner import BVSRunner
+    BVS_AVAILABLE = True
+except ImportError:
+    BVS_AVAILABLE = False
+
 # Constitution 原則閾值（2026-03-27 調整 - 對標第三方審計目標）
 CONSTITUTION_THRESHOLDS = {
     "correctness": 100,      # 正確性 100%
@@ -128,6 +135,53 @@ def load_constitution_documents(docs_path: str) -> Dict[str, Optional[str]]:
     return documents
 
 
+def _check_behaviour(phase: int) -> dict:
+    """
+    BVS Behaviour 檢查
+    
+    在 Phase 3+ 執行，驗證 Subagent 行為是否符合 Constitution HR 規則
+    
+    Args:
+        phase: 當前 Phase (1-8)
+        
+    Returns:
+        {
+            "passed": bool,
+            "violations": [...],
+            "logs_analyzed": int,
+            "status": "passed" / "skipped" / "no_logs"
+        }
+    """
+    if not BVS_AVAILABLE:
+        return {"passed": True, "status": "skipped", "reason": "BVS not available"}
+    
+    # 只在 Phase 3+ 執行
+    if phase < 3:
+        return {"passed": True, "status": "skipped", "reason": f"Only Phase 3+ (current: {phase})"}
+    
+    try:
+        # 假設 project path 為 docs 的 parent
+        from pathlib import Path
+        docs_path = Path("docs") if Path("docs").exists() else Path(".")
+        project_path = str(docs_path.parent) if not docs_path.is_absolute() else str(docs_path)
+        
+        runner = BVSRunner(project_path, phase=phase)
+        report = runner.run()
+        
+        return {
+            "passed": report.get("passed", True),
+            "total_violations": report.get("total_violations", 0),
+            "critical": report.get("critical", 0),
+            "high": report.get("high", 0),
+            "medium": report.get("medium", 0),
+            "violations": report.get("violations", [])[:10],  # 最多10條
+            "logs_analyzed": report.get("logs_analyzed", 0),
+            "status": "passed" if report.get("passed") else "failed"
+        }
+    except Exception as e:
+        return {"passed": False, "status": "error", "reason": str(e)}
+
+
 def run_constitution_check(check_type: str, docs_path: str = "docs", current_phase: int = None) -> ConstitutionCheckResult:
     """執行 Constitution 檢查
     
@@ -197,12 +251,25 @@ def run_constitution_check(check_type: str, docs_path: str = "docs", current_pha
             all_violations.extend(r.violations)
             all_recommendations.extend(r.recommendations)
         
+        # BVS Behaviour Check (Phase 3+)
+        behaviour_result = None
+        if current_phase is not None and current_phase >= 3:
+            behaviour_result = _check_behaviour(current_phase)
+            if not behaviour_result.get("passed", True):
+                overall_passed = False
+                for v in behaviour_result.get("violations", []):
+                    all_violations.append({
+                        "type": "behaviour_violation",
+                        "severity": v.get("severity", "MEDIUM"),
+                        "message": v.get("message", str(v))
+                    })
+        
         return ConstitutionCheckResult(
             check_type="all",
             passed=overall_passed,
             score=avg_score,
             violations=all_violations,
-            details={"phases_checked": len(results)},
+            details={"phases_checked": len(results), "behaviour_check": behaviour_result},
             recommendations=all_recommendations
         )
     
