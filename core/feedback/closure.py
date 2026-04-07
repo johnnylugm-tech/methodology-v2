@@ -239,6 +239,7 @@ def verify_and_close(
     feedback_id: str,
     resolution_proof: dict[str, Any],
     store: FeedbackStore | None = None,
+    self_correction_engine: Any = None,  # Optional SelfCorrectionEngine for auto-correction
 ) -> ClosureResult:
     """
     Verify a feedback item's resolution and close it if verification passes.
@@ -247,6 +248,8 @@ def verify_and_close(
         feedback_id: ID of the feedback to close.
         resolution_proof: Source-specific evidence that the issue is resolved.
         store: Optional feedback store (uses global store if None).
+        self_correction_engine: Optional SelfCorrectionEngine — if provided and
+            verification fails, self-correction is automatically triggered.
 
     Returns:
         ClosureResult with success status and verification details.
@@ -289,18 +292,75 @@ def verify_and_close(
             message=f"Feedback '{feedback_id}' closed and verified.",
         )
     else:
-        # Reopen the feedback
-        _reopen_feedback(feedback_id, store)
-        return ClosureResult(
-            success=False,
-            feedback_id=feedback_id,
-            verification_result=verification_result,
-            message=(
-                f"Verification failed for '{feedback_id}'. "
-                "Feedback has been reopened. "
-                f"Reason: {verification_result.message}"
-            ),
-        )
+        # Verification failed — try self-correction if engine provided
+        if self_correction_engine is not None:
+            from .feedback import FeedbackUpdate
+
+            # Trigger self-correction
+            correction_result = self_correction_engine.correct(feedback_id)
+
+            if correction_result.verification_status == "success":
+                # Self-correction succeeded — update status to verified
+                store.update(
+                    feedback_id,
+                    FeedbackUpdate(status="verified"),
+                )
+                fb = store.get(feedback_id)
+                if fb:
+                    fb.verified_at = now_iso
+
+                return ClosureResult(
+                    success=True,
+                    feedback_id=feedback_id,
+                    verification_result=verification_result,
+                    message=(
+                        f"Feedback '{feedback_id}' verified via self-correction "
+                        f"(strategy={correction_result.strategy}, "
+                        f"confidence={correction_result.confidence:.2f})."
+                    ),
+                )
+            elif correction_result.verification_status == "pending_review":
+                # AI-assisted, needs human review
+                store.update(
+                    feedback_id,
+                    FeedbackUpdate(status="pending_human_review"),
+                )
+                return ClosureResult(
+                    success=False,
+                    feedback_id=feedback_id,
+                    verification_result=verification_result,
+                    message=(
+                        f"Self-correction for '{feedback_id}' requires human review "
+                        f"(confidence={correction_result.confidence:.2f})."
+                    ),
+                )
+            else:
+                # Failed or manual_required — reopen for manual handling
+                _reopen_feedback(feedback_id, store)
+                return ClosureResult(
+                    success=False,
+                    feedback_id=feedback_id,
+                    verification_result=verification_result,
+                    message=(
+                        f"Verification failed for '{feedback_id}'. "
+                        f"Self-correction also failed (strategy={correction_result.strategy}). "
+                        "Feedback has been reopened for manual review. "
+                        f"Reason: {verification_result.message}"
+                    ),
+                )
+        else:
+            # No self-correction engine — just reopen
+            _reopen_feedback(feedback_id, store)
+            return ClosureResult(
+                success=False,
+                feedback_id=feedback_id,
+                verification_result=verification_result,
+                message=(
+                    f"Verification failed for '{feedback_id}'. "
+                    "Feedback has been reopened. "
+                    f"Reason: {verification_result.message}"
+                ),
+            )
 
 
 def _reopen_feedback(

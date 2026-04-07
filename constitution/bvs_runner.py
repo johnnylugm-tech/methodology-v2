@@ -34,11 +34,27 @@ class BVSRunner:
     3. 整合進 Constitution runner
     """
 
-    def __init__(self, project_path: str, phase: int = 3):
+    def __init__(
+        self,
+        project_path: str,
+        phase: int = 3,
+        feedback_store: Any = None,  # Optional FeedbackStore for auto-submission
+    ):
         self.project_path = Path(project_path)
         self.phase = phase
         self.logger = ExecutionLogger(project_path)
         self.engine = InvariantEngine.from_constitution_rules()
+        self.feedback_store = feedback_store
+
+    def _invariant_severity_to_feedback_severity(self, severity: str) -> str:
+        """Map invariant severity to FeedbackSeverity string."""
+        mapping = {
+            "critical": "critical",
+            "high": "high",
+            "medium": "medium",
+            "low": "low",
+        }
+        return mapping.get(severity.lower(), "medium")
 
     def run(self) -> Dict[str, Any]:
         """
@@ -84,6 +100,43 @@ class BVSRunner:
         report = self.engine.generate_report(violations)
         report["logs_analyzed"] = len(phase_logs)
         report["phase"] = self.phase
+
+        # === Auto-submit violations to FeedbackStore ===
+        if self.feedback_store and report.get("violations"):
+            try:
+                from core.feedback import StandardFeedback, route_and_assign
+                from datetime import datetime, timezone
+                import uuid
+
+                for v in report["violations"]:
+                    fb = StandardFeedback(
+                        id=f"bvs-{uuid.uuid4().hex[:12]}",
+                        source="bvs",
+                        source_detail=v.get("name", "unknown"),
+                        type="violation",
+                        category="quality",
+                        severity=self._invariant_severity_to_feedback_severity(v.get("severity", "MEDIUM")),
+                        title=f"BVS Violation: {v.get('name', 'unknown')}",
+                        description=v.get("message", ""),
+                        context={"phase": self.phase, "invariant": v},
+                        timestamp=datetime.now(timezone.utc).isoformat(),
+                        sla_deadline=None,
+                        status="pending",
+                        assignee=None,
+                        resolution=None,
+                        verified_at=None,
+                        related_feedbacks=[],
+                        recurrence_count=0,
+                        confidence=0.95,
+                        tags=["bvs", "invariant", v.get("name", "unknown")],
+                    )
+                    self.feedback_store.add(fb)
+                    team, deadline = route_and_assign(fb, store=self.feedback_store)
+                    fb.assignee = team
+                    fb.sla_deadline = deadline
+            except Exception:
+                # Don't let feedback failures break the BVS run
+                pass
 
         return report
 

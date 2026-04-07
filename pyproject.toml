@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "methodology-v2"
-version = "6.67"
+version = "6.68"
 description = "企業級 AI Agent 開發框架 - 整合式開發方法論與品質閘道系統"
 readme = "README.md"
 authors = [

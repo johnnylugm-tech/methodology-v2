@@ -7,9 +7,11 @@ of checks (linter, complexity, coverage, style) and returns structured results.
 
 from __future__ import annotations
 
+import sys
 import uuid
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any
 
 
@@ -240,9 +242,23 @@ class AutoQualityGate:
         self,
         checkers: list[BaseChecker] | None = None,
         fail_fast: bool = False,
+        feedback_store: Any = None,  # Optional FeedbackStore for auto-submission
     ) -> None:
         self.checkers = checkers or self.DEFAULT_CHECKERS
         self.fail_fast = fail_fast
+        self._feedback_store = feedback_store
+        self._feedback_adapter: Any = None  # lazy import
+
+    def _get_feedback_adapter(self) -> Any:
+        """Lazily import and create the QualityGateFeedbackAdapter."""
+        if self._feedback_adapter is None and self._feedback_store is not None:
+            # Resolve from core/ level (where feedback/ is a sibling)
+            core_dir = Path(__file__).parent
+            if str(core_dir) not in sys.path:
+                sys.path.insert(0, str(core_dir))
+            from feedback.quality_gate_adapter import QualityGateFeedbackAdapter
+            self._feedback_adapter = QualityGateFeedbackAdapter(self._feedback_store)
+        return self._feedback_adapter
 
     def check(self, *, phase: int, artifacts: dict[str, Any]) -> dict[str, Any]:
         """
@@ -298,7 +314,7 @@ class AutoQualityGate:
         error_violations = [v for v in all_violations if v.get("severity") == "error"]
         passed = passed and len(error_violations) == 0
 
-        return {
+        result = {
             "phase": phase,
             "passed": passed,
             "timestamp": datetime.now(timezone.utc).isoformat(),
@@ -306,6 +322,21 @@ class AutoQualityGate:
             "checks_run": checks_run,
             "check_results": check_results,
         }
+
+        # === Auto-submit violations to FeedbackStore ===
+        adapter = self._get_feedback_adapter()
+        if adapter and all_violations:
+            try:
+                adapter.on_quality_gate_complete(
+                    gate_result=result,
+                    phase=phase,
+                    artifacts=artifacts,
+                )
+            except Exception:
+                # Don't let feedback failures break the gate
+                pass
+
+        return result
 
     def run(self, *, phase: int, artifacts: dict[str, Any]) -> dict[str, Any]:
         """Alias for check() — kept for backward compatibility."""

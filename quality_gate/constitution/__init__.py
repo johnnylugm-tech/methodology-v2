@@ -185,16 +185,26 @@ def _check_behaviour(phase: int) -> dict:
         return {"passed": False, "status": "error", "reason": str(e)}
 
 
-def run_constitution_check(check_type: str, docs_path: str = "docs", current_phase: int = None) -> ConstitutionCheckResult:
+def run_constitution_check(
+    check_type: str,
+    docs_path: str = "docs",
+    current_phase: int = None,
+    feedback_store=None,  # Optional FeedbackStore for auto-submission
+) -> ConstitutionCheckResult:
     """執行 Constitution 檢查
     
     Args:
         check_type: 檢查類型 ("srs", "sad", "test_plan", "implementation", "verification", "quality_report", "risk_management", "configuration", "all")
         docs_path: docs 目錄路徑
         current_phase: 只檢查到指定 Phase (1-8)。例如 current_phase=3 只檢查 Phase 1-3
+        feedback_store: Optional FeedbackStore — if provided, violations are auto-submitted
         
     Returns:
         ConstitutionCheckResult
+    
+    Auto-submission:
+        When feedback_store is provided and violations are found, each violation
+        is automatically converted to StandardFeedback and submitted to the store.
     """
     # Phase 映射
     phase_mapping = {
@@ -237,9 +247,9 @@ def run_constitution_check(check_type: str, docs_path: str = "docs", current_pha
             # For implementation check, use project root (parent of docs)
             if ct == "implementation":
                 impl_path = Path(docs_path).parent
-                result = run_constitution_check(ct, str(impl_path), current_phase=None)
+                result = run_constitution_check(ct, str(impl_path), current_phase=None, feedback_store=None)  # Don't re-submit in recursive calls
             else:
-                result = run_constitution_check(ct, docs_path, current_phase=None)
+                result = run_constitution_check(ct, docs_path, current_phase=None, feedback_store=None)  # Don't re-submit in recursive calls
             results.append(result)
         
         # 合併結果 - 使用平均分數判斷通過與否
@@ -267,7 +277,7 @@ def run_constitution_check(check_type: str, docs_path: str = "docs", current_pha
                         "message": v.get("message", str(v))
                     })
         
-        return ConstitutionCheckResult(
+        all_result = ConstitutionCheckResult(
             check_type="all",
             passed=overall_passed,
             score=avg_score,
@@ -275,6 +285,22 @@ def run_constitution_check(check_type: str, docs_path: str = "docs", current_pha
             details={"phases_checked": len(results), "behaviour_check": behaviour_result},
             recommendations=all_recommendations
         )
+
+        # === Auto-submit violations to FeedbackStore ===
+        if feedback_store is not None and all_violations:
+            try:
+                from core.feedback.constitution_adapter import ConstitutionFeedbackAdapter
+                adapter = ConstitutionFeedbackAdapter(feedback_store)
+                adapter.on_constitution_check_complete(
+                    constitution_result={"violations": all_violations, "score": avg_score},
+                    phase=current_phase,
+                    artifacts={"docs_path": docs_path, "phases_checked": len(results)}
+                )
+            except Exception:
+                # Don't let feedback failures break the check
+                pass
+
+        return all_result
     
     # 單一檢查
     checker_module = type_mapping.get(check_type)
@@ -282,9 +308,9 @@ def run_constitution_check(check_type: str, docs_path: str = "docs", current_pha
         from importlib import import_module
         module = import_module(f".{checker_module}", package="quality_gate.constitution")
         checker_fn = getattr(module, f"check_{check_type}_constitution")
-        return checker_fn(docs_path)
+        result = checker_fn(docs_path)
     else:
-        return ConstitutionCheckResult(
+        result = ConstitutionCheckResult(
             check_type=check_type,
             passed=False,
             score=0,
@@ -292,6 +318,22 @@ def run_constitution_check(check_type: str, docs_path: str = "docs", current_pha
             details={},
             recommendations=[f"Valid check types: {', '.join(type_mapping.keys())}, all"]
         )
+
+    # === Auto-submit violations to FeedbackStore ===
+    if feedback_store is not None and result.violations:
+        try:
+            from core.feedback.constitution_adapter import ConstitutionFeedbackAdapter
+            adapter = ConstitutionFeedbackAdapter(feedback_store)
+            adapter.on_constitution_check_complete(
+                constitution_result={"violations": result.violations, "score": result.score},
+                phase=current_phase,
+                artifacts={"docs_path": docs_path}
+            )
+        except Exception:
+            # Don't let feedback failures break the check
+            pass
+
+    return result
 
 
 __all__ = [

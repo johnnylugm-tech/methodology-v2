@@ -1,3 +1,65 @@
+## v6.68 (2026-04-07)
+
+### feat: P0 Integration Fix — 自動化串連所有觸發點
+
+讓 v6.61-v6.67 的所有模組真正自動化串在一起，不是「做好放在那裡等著被用」。
+
+#### Fix 1: Constitution → Feedback Loop 自動觸發
+- `quality_gate/constitution/__init__.py` — `run_constitution_check()` 現在接受可選 `feedback_store` 參數
+- 有 violations 時自動透過 `ConstitutionFeedbackAdapter.on_constitution_check_complete()` 提交到 FeedbackStore
+
+#### Fix 2: Quality Gate → Feedback Loop 自動觸發（合併 WithFeedback 為 default）
+- `core/quality_gate/__init__.py` — `AutoQualityGate.__init__()` 現在接受可選 `feedback_store` 參數
+- `AutoQualityGateWithFeedback` 邏輯合併進 `AutoQualityGate`（不通過繼承）
+- 有 violations 時自動透過 `QualityGateFeedbackAdapter.on_quality_gate_complete()` 提交
+
+#### Fix 3: BVS → Feedback Loop 自動觸發
+- `constitution/bvs_runner.py` — `BVSRunner.__init__()` 現在接受可選 `feedback_store` 參數
+- `run()` 完成後自動將 invariant violations 提交到 FeedbackStore
+
+#### Fix 4: Feedback verification 失敗 → Self-Correction 自動觸發
+- `core/feedback/closure.py` — `verify_and_close()` 現在接受可選 `self_correction_engine` 參數
+- verification 失敗時自動觸發 Self-Correction Engine
+- 成功 → status 改為 `verified`；需要 review → `pending_human_review`；失敗 → `manual_required`
+
+#### Fix 5: 統一工廠函數 `core/orchestration.py`
+新建 `core/orchestration.py`，提供統一的初始化入口：
+```python
+from core.orchestration import (
+    create_integrated_gate,    # Quality Gate + Feedback
+    create_bvs_runner,          # BVS + Feedback
+    create_self_correcting_closure,  # Closure + Self-Correction
+    create_full_pipeline,       # 全部串在一起
+)
+```
+
+#### 驗證方式
+```python
+from core.orchestration import create_full_pipeline
+
+pipeline = create_full_pipeline("/path/to/project", phase=3)
+store = pipeline["store"]
+gate = pipeline["gate"]
+bvs = pipeline["bvs"]
+closure = pipeline["closure"]
+
+# Constitution check → violations 自動進 Feedback Loop
+from quality_gate.constitution import run_constitution_check
+result = run_constitution_check("srs", "docs", phase=3, feedback_store=store)
+
+# Quality Gate → violations 自動進 Feedback Loop
+gate_result = gate.check(phase=2, artifacts={...})
+
+# Closure → verification 失敗自動觸發 Self-Correction
+closure_result = closure.close_with_correction(feedback_id)
+
+# Dashboard
+from core.feedback.dashboard import print_dashboard
+print_dashboard(store)
+```
+
+---
+
 ## v6.67 (2026-04-07)
 
 ### feat: Self-Correction Engine — Automated Error Fix & Learning
