@@ -2,3 +2,5 @@
 {"run":1,"commit":"ee04292","metric":1,"metrics":{},"status":"crash","description":"python command not found, crash","timestamp":1775582095007,"segment":0,"confidence":null}
 {"run":2,"commit":"57f3376","metric":4,"metrics":{},"status":"keep","description":"4 test failures: library pollution from persisted state, None feedback crash","timestamp":1775582198653,"segment":0,"confidence":null}
 {"run":3,"commit":"57f3376","metric":0,"metrics":{},"status":"discard","description":"Pending pytest from previous session","timestamp":1775582215026,"segment":0,"confidence":null}
+{"run":4,"commit":"78e4c36","metric":1,"metrics":{},"status":"keep","description":"pending_review was not setting failure_reason for AI-assisted case","timestamp":1775582224374,"segment":0,"confidence":null}
+{"run":5,"commit":"78e4c36","metric":0,"metrics":{},"status":"discard","description":"pending prior run","timestamp":1775582225976,"segment":0,"confidence":null}
