@@ -23,6 +23,7 @@ else
     echo "npm not found, skipping eslint"
 fi
 
+echo ""
 echo "CQG installation complete!"
 echo ""
 echo "Installed tools:"
