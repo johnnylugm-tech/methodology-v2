@@ -1,7 +1,7 @@
-# Johnny 使用者更新摘要（v6.45 → v6.54）
+# Johnny 使用者更新摘要（v6.45 → v6.61）
 
-> **適用版本**: v6.54
-> **更新日期**: 2026-04-05
+> **適用版本**: v6.61
+> **更新日期**: 2026-04-07
 > **給**: Johnny (呂小麟)
 
 ---
@@ -10,19 +10,55 @@
 
 | 版本 | 主要改善 |
 |------|---------|
-| v6.45 | 輸出路徑修正 |
+| v6.61 | **CQG+SAB 系統：linter/complexity/coverage/fitness/baseline/SAB drift** |
+| v6.54 | **HR-05/09 檢查 + 自動化** |
 | v6.48 | **8 個 Phase 都有專屬提示** |
 | v6.49 | **子代理管理（Need-to-Know + On-Demand）** |
 | v6.50 | **四維度目標（10/10）** |
 | v6.51 | 100% 持平 Auto-Research 優化版 |
 | v6.53 | **上階段產出自動繼承** |
-| v6.54 | **HR-05/09 檢查 + 自動化** |
 
 ---
 
 ## 對你有影響的改變
 
-### 1. plan-phase 現在更完整（v6.48+）
+### 1. CQG — Computational Quality Gate（v6.61）
+
+**以前**: Quality Gate 只靠人工審查，無自動度量
+**現在**: 一套度量驅動的 Quality Gate 工具，全部自動化
+
+#### CQG 工具族
+
+| 工具 | 用途 |
+|------|------|
+| LinterAdapter | 統一 pylint/eslint/golangci-lint 輸出為標準格式 |
+| ComplexityChecker | Cyclomatic Complexity 分析，抓到太複雜的函式 |
+| CoverageAnalyzer | 未覆蓋函式的「關鍵性」分析（critical/high/medium） |
+| FitnessFunctions | 架構健康分數：耦合、內聚、穩定性、可重用性 |
+| BaselineManager | Phase-Gate 後建立 Baseline，之後比對 drift |
+
+#### SAB: Software Architecture Baseline
+
+- `SAD.md` → 解析成結構化 `SabSpec` → 建立 `sab-phase2.json`
+- Phase 3+ 比對當前架構與 SAB 的 drift（偏離度）
+- Drift 超閾值 → 警告或阻擋
+
+#### Phase 整合
+
+| Phase | CQG 檢查 |
+|-------|----------|
+| Phase 2 | `_check_sab()` — 建立 SAB（從 SAD.md） |
+| Phase 3+ | `_check_fitness()` — SAB drift detection |
+| Any | `_check_linter()`, `_check_complexity()`, `_check_coverage_analyzer()` |
+
+#### 安裝
+```bash
+pip install -r requirements-cqg.txt
+```
+
+---
+
+### 2. plan-phase 現在更完整（v6.48+）
 
 **以前**: 只有 Phase 3 有完整提示  
 **現在**: 所有 8 個 Phase 都有專屬提示

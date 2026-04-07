@@ -155,6 +155,26 @@ try:
 except ImportError:
     PHASE_ENFORCER_AVAILABLE = False
 
+# 匯入 CQG Tools（v6.60+ 新增）
+try:
+    from .linter_adapter import LinterAdapter
+    from .complexity_checker import ComplexityChecker
+    from .coverage_analyzer import CoverageAnalyzer
+    from .fitness_functions import FitnessFunctions
+    CQG_AVAILABLE = True
+except ImportError:
+    CQG_AVAILABLE = False
+    _cqg_import_error = str(e)
+
+# 匯入 SAB Tools（v6.60+ 新增：用於 Phase 2 SAB 建立）
+try:
+    from .sab_parser import parse_sad
+    from .sab_spec import SabSpec
+    SAB_AVAILABLE = True
+except ImportError as _sab_e:
+    SAB_AVAILABLE = False
+    _sab_import_error = str(_sab_e)
+
 
 @dataclass
 class CheckResult:
@@ -202,8 +222,9 @@ class UnifiedGate:
     3. Phase References (phase_artifact)
     """
 
-    def __init__(self, project_path: str = "."):
+    def __init__(self, project_path: str = ".", config: dict = None):
         self.project_path = Path(project_path)
+        self.config = config or {}
         self.doc_checker = DocumentChecker(str(self.project_path))
         self.phase_enforcer = PhaseArtifactEnforcer(str(self.project_path))
         # PhaseEnforcer 初始化（2026-03-29 新增）
@@ -211,6 +232,19 @@ class UnifiedGate:
             self.phase_checker = PhaseEnforcer(str(self.project_path))
         else:
             self.phase_checker = None
+
+        # CQG Tools 初始化（v6.60+ 新增）
+        if CQG_AVAILABLE:
+            self.linter = LinterAdapter(str(self.project_path))
+            self.complexity = ComplexityChecker(str(self.project_path))
+            self.coverage_analyzer = CoverageAnalyzer(str(self.project_path))
+            self.fitness = FitnessFunctions(str(self.project_path))
+        else:
+            self.linter = None
+            self.complexity = None
+            self.coverage_analyzer = None
+            self.fitness = None
+        self.cqg_available = CQG_AVAILABLE
 
     def _log_to_development_log(self, tool_name: str, result: CheckResult, phase: int = None):
         """將 QG 工具執行結果寫入 DEVELOPMENT_LOG
@@ -519,6 +553,14 @@ class UnifiedGate:
         # 解析 phase 參數
         phase_filter = self._parse_phase_filter(phase)
         
+        # 儲存 phase 到實例屬性（供 SAB drift detection 使用）
+        if phase_filter and len(phase_filter) == 1 and not ("all" in phase_filter or len(phase_filter) > 1):
+            self.phase = list(phase_filter)[0]
+        else:
+            # 從 state 讀取當前 phase
+            state = self._read_state()
+            self.phase = state.get("current_phase", 1)
+        
         # 追蹤 Phase 開始（如果是新 Phase）
         if phase_filter and len(phase_filter) == 1:
             phase_num = list(phase_filter)[0]
@@ -526,7 +568,14 @@ class UnifiedGate:
                 self._update_state(event="PHASE_START", phase=phase_num)
 
         
-        # 1. Document Existence Check (Phase 1-4)
+        # 1. CQG Code Quality Checks (P0/P1/P2) — always run when enabled
+        if self.config.get("enable_cqg", True):
+            checks.append(self._check_linter())
+            checks.append(self._check_complexity())
+            checks.append(self._check_coverage_analyzer())
+            checks.append(self._check_fitness())
+
+        # 2. Document Existence Check (Phase 1-4)
         if phase_filter is None or 1 in phase_filter or "all" in phase_filter:
             doc_result = self._check_documents()
             checks.append(doc_result)
@@ -623,6 +672,11 @@ class UnifiedGate:
         if phase_filter is None or 2 in phase_filter or "all" in phase_filter:
             err_result = self._check_error_handling()
             checks.append(err_result)
+
+        # 16b. SAB Establishment (Phase 2) — 2026-04-07 新增
+        if phase_filter is None or 2 in phase_filter or "all" in phase_filter:
+            sab_result = self._check_sab()
+            checks.append(sab_result)
         
         # 17. Module Tracking Check (Phase 3)
         if phase_filter is None or 3 in phase_filter or "all" in phase_filter:
@@ -705,6 +759,237 @@ class UnifiedGate:
                 return {int(phase)}
         
         return None
+
+    # ========== CQG Code Quality Checks (v6.60+) ==========
+
+    def _check_linter(self) -> CheckResult:
+        """CQG-P0: Linter 檢查"""
+        if not getattr(self, 'cqg_available', False) or self.linter is None:
+            return CheckResult(
+                name="CQG: Linter",
+                passed=True,
+                score=100,
+                violations=[],
+                details={"status": "skipped", "reason": "CQG tools not available"}
+            )
+        try:
+            result = self.linter.run()
+            return CheckResult(
+                name="CQG: Linter",
+                passed=result.score >= 70,
+                score=result.score,
+                violations=[],
+                details={
+                    "tool": result.tool,
+                    "language": result.language,
+                    "errors": len(result.errors),
+                    "warnings": len(result.warnings),
+                    "violations": len(result.violations),
+                    "top_violations": result.violations[:5] if result.violations else []
+                }
+            )
+        except Exception as e:
+            return CheckResult(
+                name="CQG: Linter",
+                passed=False,
+                score=0,
+                violations=[],
+                details={"status": "error", "reason": str(e)}
+            )
+
+    def _check_complexity(self) -> CheckResult:
+        """CQG-P0: Complexity 檢查"""
+        if not getattr(self, 'cqg_available', False) or self.complexity is None:
+            return CheckResult(
+                name="CQG: Complexity",
+                passed=True,
+                score=100,
+                violations=[],
+                details={"status": "skipped", "reason": "CQG tools not available"}
+            )
+        try:
+            result = self.complexity.run()
+            violations = result.violations
+            critical_violations = [v for v in violations if v.get("rank") in ("A", "B")]
+            return CheckResult(
+                name="CQG: Complexity",
+                passed=len(critical_violations) == 0,
+                score=result.score,
+                violations=[],
+                details={
+                    "tool": result.tool,
+                    "avg_complexity": result.avg_complexity,
+                    "max_complexity": result.max_complexity,
+                    "total_violations": len(violations),
+                    "critical_violations": len(critical_violations),
+                    "top_violations": violations[:5] if violations else []
+                }
+            )
+        except Exception as e:
+            return CheckResult(
+                name="CQG: Complexity",
+                passed=False,
+                score=0,
+                violations=[],
+                details={"status": "error", "reason": str(e)}
+            )
+
+    def _check_coverage_analyzer(self) -> CheckResult:
+        """CQG-P1: Coverage 缺口分析"""
+        if not getattr(self, 'cqg_available', False) or self.coverage_analyzer is None:
+            return CheckResult(
+                name="CQG: Coverage Gap",
+                passed=True,
+                score=100,
+                violations=[],
+                details={"status": "skipped", "reason": "CQG tools not available"}
+            )
+        try:
+            result = self.coverage_analyzer.run()
+            return CheckResult(
+                name="CQG: Coverage Gap",
+                passed=result.score >= 70,
+                score=result.score,
+                violations=[],
+                details={
+                    "coverage_rate": result.coverage_rate,
+                    "critical_gaps": len(result.critical_gaps),
+                    "high_gaps": len(result.high_gaps),
+                    "medium_gaps": len(result.medium_gaps),
+                    "top_gaps": [(g.function, g.severity) for g in result.critical_gaps[:5]]
+                }
+            )
+        except Exception as e:
+            return CheckResult(
+                name="CQG: Coverage Gap",
+                passed=False,
+                score=0,
+                violations=[],
+                details={"status": "error", "reason": str(e)}
+            )
+
+    def _check_fitness(self) -> CheckResult:
+        """CQG-P2: Fitness Functions + SAB Drift Detection (Phase 3+)"""
+        if not getattr(self, 'cqg_available', False) or self.fitness is None:
+            return CheckResult(
+                name="CQG: Fitness Functions",
+                passed=True,
+                score=100,
+                violations=[],
+                details={"status": "skipped", "reason": "CQG tools not available"}
+            )
+        try:
+            result = self.fitness.evaluate()
+            
+            # === SAB Drift Detection (Phase 3+) ===
+            drift_report = {}
+            sab_baseline_tag = None
+            current_phase = getattr(self, 'phase', None)
+            if current_phase is not None and current_phase >= 3:
+                sab_baseline = self._load_sab_baseline()
+                if sab_baseline:
+                    drift_report = self._compute_fitness_drift(result, sab_baseline)
+                    sab_baseline_tag = getattr(self, '_current_sab_tag', None)
+            
+            return CheckResult(
+                name="CQG: Fitness Functions",
+                passed=result.overall_score >= 60,
+                score=result.overall_score,
+                violations=[],
+                details={
+                    "coupling_score": result.coupling_score,
+                    "cohesion_score": result.cohesion_score,
+                    "stability_score": result.stability_score,
+                    "reusability_score": result.reusability_score,
+                    "violations": len(result.violations),
+                    "cycle_groups": len(result.cycle_groups),
+                    "critical_modules": result.critical_modules,
+                    # SAB drift
+                    "sab_drift": drift_report if drift_report else None,
+                    "sab_baseline": sab_baseline_tag
+                }
+            )
+        except Exception as e:
+            return CheckResult(
+                name="CQG: Fitness Functions",
+                passed=False,
+                score=0,
+                violations=[],
+                details={"status": "error", "reason": str(e)}
+            )
+
+    def _load_sab_baseline(self) -> Optional[dict]:
+        """載入最新的 SAB baseline（從 .methodology/sab/）"""
+        sab_dir = self.project_path / ".methodology" / "sab"
+        if not sab_dir.exists():
+            return None
+        
+        latest = sab_dir / "latest.json"
+        if not latest.exists():
+            # 找最新的 sab-phaseN.json
+            files = sorted(sab_dir.glob("sab-phase*.json"), key=lambda p: p.stat().st_mtime)
+            if not files:
+                return None
+            latest = files[-1]
+        
+        self._current_sab_tag = latest.stem
+        return json.loads(latest.read_text())
+
+    def _compute_fitness_drift(self, current_result, sab_baseline: dict) -> dict:
+        """
+        計算當前 fitness 與 SAB baseline 的 drift
+        
+        Args:
+            current_result: FitnessFunctions.evaluate() 的結果
+            sab_baseline: 從 _load_sab_baseline() 載入的 SAB dict
+        
+        Returns:
+            drift dict，計算出的 drift 項目
+        """
+        drift = {}
+        
+        sab_modules = sab_baseline.get("modules", {})
+        current_modules = {m.name: m for m in current_result.modules}
+        
+        # 1. 檢查模組是否被移除
+        removed = [m for m in sab_modules if m not in current_modules]
+        if removed:
+            drift["removed_modules"] = removed
+        
+        # 2. Quality targets drift
+        targets = sab_baseline.get("quality_targets", {})
+        if targets:
+            if "max_complexity" in targets:
+                avg_complexity = getattr(current_result, 'avg_complexity', 0)
+                if avg_complexity > targets["max_complexity"]:
+                    drift["complexity_exceeded"] = {
+                        "baseline": targets["max_complexity"],
+                        "current": avg_complexity
+                    }
+        
+        # 3. Overall score drift
+        sab_score = sab_baseline.get("_fitness_score", None)
+        if sab_score is not None:
+            score_delta = current_result.overall_score - sab_score
+            if abs(score_delta) > 5:  # 5% threshold
+                drift["score_drift"] = {
+                    "baseline": sab_score,
+                    "current": current_result.overall_score,
+                    "delta": score_delta,
+                    "severity": "critical" if abs(score_delta) > 15 else "high" if abs(score_delta) > 10 else "medium"
+                }
+        
+        # 4. Module count drift
+        baseline_module_count = len(sab_modules)
+        current_module_count = len(current_modules)
+        if current_module_count != baseline_module_count:
+            drift["module_count_drift"] = {
+                "baseline": baseline_module_count,
+                "current": current_module_count,
+                "delta": current_module_count - baseline_module_count
+            }
+        
+        return drift
 
     def _check_documents(self) -> CheckResult:
         """檢查文檔存在性（ASPICE Compliance Rate）"""
@@ -1697,6 +1982,124 @@ class UnifiedGate:
     def check_phase_enforcement_only(self, phase: int) -> CheckResult:
         """只檢查指定 Phase 的 Enforcement 結果"""
         return self._check_phase_enforcement(phase)
+
+    # ========== SAB — Software Architecture Baseline (Phase 2) ==========
+
+    def _check_sab(self) -> CheckResult:
+        """Phase 2: Parse SAD.md → SabSpec, save to .methodology/sab/"""
+        # 只在 Phase 2 時實際建立 SAB
+        current_phase = getattr(self, 'phase', None)
+        if current_phase is not None and current_phase != 2:
+            return CheckResult(
+                name="SAB Establishment (Phase 2)",
+                passed=True,
+                score=100,
+                violations=[],
+                details={"status": "skipped", "reason": f"Only runs in Phase 2 (current: Phase {current_phase})"}
+            )
+        
+        if not SAB_AVAILABLE:
+            return CheckResult(
+                name="SAB Establishment (Phase 2)",
+                passed=True,
+                score=100,
+                violations=[],
+                details={"status": "skipped", "reason": "SAB tools not available"}
+            )
+
+        sad_path = self.project_path / "SAD.md"
+        if not sad_path.exists():
+            return CheckResult(
+                name="SAB Establishment (Phase 2)",
+                passed=False,
+                score=0,
+                violations=[f"SAD.md not found at {sad_path}"],
+                details={"status": "missing_sad"}
+            )
+
+        try:
+            sab = parse_sad(sad_path)
+            errors = sab.validate()
+
+            # 同時執行 fitness 檢查並附上分數到 SAB
+            fitness_score = None
+            if getattr(self, 'cqg_available', False) and self.fitness is not None:
+                try:
+                    fitness_result = self.fitness.evaluate()
+                    fitness_score = fitness_result.overall_score
+                except Exception:
+                    pass  # fitness 失敗不影響 SAB 建立
+
+            # 儲存 SAB snapshot 到 .methodology/sab/
+            sab_dir = self.project_path / ".methodology" / "sab"
+            sab_dir.mkdir(parents=True, exist_ok=True)
+            
+            # 建立包含 _fitness_score 的 dict
+            sab_dict = sab.to_dict()
+            if fitness_score is not None:
+                sab_dict["_fitness_score"] = fitness_score
+            
+            # 儲存 sab-phase{phase}.json
+            phase_tag = current_phase if current_phase is not None else 2
+            sab_path = sab_dir / f"sab-phase{phase_tag}.json"
+            sab_path.write_text(json.dumps(sab_dict, ensure_ascii=False, indent=2))
+            
+            # 更新 latest.json
+            latest_path = sab_dir / "latest.json"
+            latest_path.write_text(json.dumps(sab_dict, ensure_ascii=False, indent=2))
+
+            if errors:
+                return CheckResult(
+                    name="SAB Establishment (Phase 2)",
+                    passed=False,
+                    score=50,
+                    violations=errors,
+                    details={
+                        "status": "validation_errors",
+                        "modules": list(sab.modules.keys()),
+                        "layers": [l["name"] for l in sab.layers],
+                        "rules": len(sab.architecture_rules),
+                        "fitness_score": fitness_score
+                    }
+                )
+
+            return CheckResult(
+                name="SAB Establishment (Phase 2)",
+                passed=True,
+                score=100,
+                violations=[],
+                details={
+                    "status": "established",
+                    "project": sab.project,
+                    "phase": sab.phase,
+                    "modules": len(sab.modules),
+                    "layers": len(sab.layers),
+                    "rules": len(sab.architecture_rules),
+                    "sab_path": str(sab_path),
+                    "fitness_score": fitness_score
+                }
+            )
+        except Exception as e:
+            return CheckResult(
+                name="SAB Establishment (Phase 2)",
+                passed=False,
+                score=0,
+                violations=[f"SAB parse error: {str(e)}"],
+                details={"status": "parse_error"}
+            )
+
+    def establish_sab(self) -> Optional[SabSpec]:
+        """公開方法：手動建立 SAB（Phase 2 成功後呼叫）"""
+        if not SAB_AVAILABLE:
+            return None
+        sad_path = self.project_path / "SAD.md"
+        if not sad_path.exists():
+            return None
+        sab = parse_sad(sad_path)
+        sab_dir = self.project_path / ".methodology" / "sab"
+        sab_dir.mkdir(parents=True, exist_ok=True)
+        sab.save(sab_dir / f"sab-phase{getattr(self, 'phase', 2)}.json")
+        return sab
     
     def set_phase_enforcement(self, enabled: bool):
         """設定是否啟用 Phase Enforcement"""

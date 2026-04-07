@@ -1,3 +1,54 @@
+## [v6.61] - 2026-04-07
+
+### 🚀 Added
+
+#### CQG-P0: Computational Quality Gate
+- `quality_gate/linter_adapter.py` — 統一多語言 linter 輸出
+  - 支援 pylint (Python), eslint (JS/TS), golangci-lint (Go)
+  - 標準化 `LinterResult`: score, errors, warnings, violations
+- `quality_gate/complexity_checker.py` — Cyclomatic Complexity 分析
+  - 支援 radon (Python), lizard (多語言)
+  - 標準化 `ComplexityResult`: avg/max complexity, violations
+
+#### CQG-P1: Coverage & Baseline
+- `quality_gate/coverage_analyzer.py` — Coverage 缺口分析
+  - 解析 coverage.xml + AST call graph
+  - 根據引用數分級：critical(≥5 refs), high(≥3), medium(≥1)
+- `integrity/baseline_manager.py` — Phase-Gate Baseline 管理
+  - `capture_baseline()` — Phase-Gate 後建立快照
+  - `check_drift()` — 與 baseline 比對 drift
+
+#### CQG-P2: Fitness Functions
+- `quality_gate/fitness_functions.py` — 架構健康度量
+  - Coupling: Ca, Ce, Instability (I = Ce/(Ca+Ce))
+  - Cohesion: LCOM2
+  - Stability: Stable/Unstable 分類
+  - Reusability: 耦合+內聚的衍生指標
+
+#### SAB: Software Architecture Baseline
+- `sab_spec.py` — SabSpec dataclass (結構化 SAB 格式)
+- `sab_parser.py` — 從 SAD.md 解析生成 SabSpec
+- Drift Detection 鏈:
+  - Phase 2: `_check_sab()` → 建立 sab-phase2.json
+  - Phase 3+: `_check_fitness()` → 讀 SAB → 計算 drift
+
+#### 整合變更
+- `quality_gate/unified_gate.py` — 新增 5 個 CQG 檢查方法
+  - `_check_linter()`, `_check_complexity()`
+  - `_check_coverage_analyzer()`, `_check_fitness()`, `_check_sab()`
+- `install_cqg.sh` + `requirements-cqg.txt` — CQG 依賴安裝
+
+### 📝 Documentation
+- SKILL.md 新增 CQG 工具說明章節
+- CHANGELOG_FOR_JOHNNY.md 新增 v6.61 CQG+SAB 條目
+
+### 依賴
+- `pylint>=3.0.0`
+- `radon>=6.0.0`
+- `coverage>=7.0.0`
+
+---
+
 ## [v6.60] - 2026-04-06
 
 ### 🚀 Added

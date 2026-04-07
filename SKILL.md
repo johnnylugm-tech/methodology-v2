@@ -123,4 +123,38 @@ def calculate_integrity(
 ```
 
 ---
-*methodology-v2 v6.54 | Agent Executable Specification | Last Updated: 2026-04-04*
+
+---
+
+## 附錄：CQG — Computational Quality Gate (v6.61)
+
+CQG 是一組度量驅動的 Quality Gate 工具，自動偵測程式碼品質問題。
+
+### 工具清單
+
+| 工具 | 檔案 | 功能 |
+|------|------|------|
+| LinterAdapter | `quality_gate/linter_adapter.py` | 統一 pylint/eslint/golangci-lint 輸出 |
+| ComplexityChecker | `quality_gate/complexity_checker.py` | Cyclomatic complexity 分析 |
+| CoverageAnalyzer | `quality_gate/coverage_analyzer.py` | 未覆蓋函式「關鍵性」分析 |
+| FitnessFunctions | `quality_gate/fitness_functions.py` | Coupling/Cohesion/Stability/Reusability |
+| BaselineManager | `integrity/baseline_manager.py` | Phase-Gate baseline 建立/版本化 |
+| SabSpec | `sab_spec.py` | 結構化 SAB 格式 |
+| SabParser | `sab_parser.py` | 從 SAD.md 解析生成 SabSpec |
+
+### Phase 整合
+
+| Phase | CQG 檢查 |
+|-------|----------|
+| Phase 2 | `_check_sab()` — 建立 SAB |
+| Phase 3+ | `_check_fitness()` — SAB drift detection |
+| Any | `_check_linter()`, `_check_complexity()`, `_check_coverage_analyzer()` |
+
+### 安裝
+```bash
+pip install -r requirements-cqg.txt
+```
+
+---
+
+*methodology-v2 v6.61 | Agent Executable Specification | Last Updated: 2026-04-07*

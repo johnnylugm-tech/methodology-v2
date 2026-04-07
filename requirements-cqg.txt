@@ -1,0 +1,6 @@
+# CQG (Computational Quality Gate) Dependencies
+# Minimal set for full CQG functionality
+
+pylint>=3.0.0
+radon>=6.0.0
+coverage>=7.0.0
