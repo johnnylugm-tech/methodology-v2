@@ -1,0 +1,19 @@
+{
+  "mode": "cloud",
+  "platform": "github",
+  "enforce_on_commit": true,
+  "enforce_on_push": true,
+  "enforce_on_pr": true,
+  "enforce_on_merge": true,
+  "strict_mode": true,
+  "allow_bypass": false,
+  "quality_gate_threshold": 90.0,
+  "security_threshold": 95.0,
+  "coverage_threshold": 80.0,
+  "platform_config": {
+    "workflow_file": ".github/workflows/enforcement.yml"
+  },
+  "enable_registry": true,
+  "enable_constitution_check": true,
+  "enable_policy_engine": true
+}

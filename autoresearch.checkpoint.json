@@ -1,0 +1,31 @@
+{
+  "version": 1,
+  "updatedAt": 1775197605508,
+  "sessionStartCommit": "9fa596c",
+  "session": {
+    "name": null,
+    "metricName": "metric",
+    "metricUnit": "",
+    "bestDirection": "lower",
+    "currentSegment": 0,
+    "currentRunCount": 0,
+    "totalRunCount": 0,
+    "currentBaselineMetric": null,
+    "currentBestMetric": null,
+    "confidence": null
+  },
+  "lastLoggedRun": null,
+  "recentLoggedRuns": [],
+  "pendingRun": {
+    "command": "python3 knowledge_curator.py load --skill methodology-v2",
+    "commit": "9fa596c",
+    "primaryMetric": null,
+    "metrics": {},
+    "durationSeconds": 0.1,
+    "exitCode": 0,
+    "passed": true,
+    "timedOut": false,
+    "tailOutput": "Loaded methodology-v2 (13748 chars)",
+    "capturedAt": 1775197605508
+  }
+}

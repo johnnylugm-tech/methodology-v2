@@ -1,0 +1,31 @@
+{
+  "team": {
+    "teamId": "research-dev-team",
+    "mode": "peer-to-peer",
+    "settings": {
+      "maxSpawnDepth": 2,
+      "allowAgentToAgent": true,
+      "messageQueueSize": 100
+    }
+  },
+  "members": [
+    {
+      "agentId": "programmer-agent",
+      "role": "Developer",
+      "peerMemoryEnabled": true,
+      "canSpawnSubagent": true
+    },
+    {
+      "agentId": "reviewer-agent",
+      "role": "CodeReviewer",
+      "peerMemoryEnabled": true,
+      "canSpawnSubagent": true
+    },
+    {
+      "agentId": "researcher-agent",
+      "role": "Researcher",
+      "peerMemoryEnabled": true,
+      "canSpawnSubagent": false
+    }
+  ]
+}

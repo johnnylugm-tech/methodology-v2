@@ -1,0 +1,428 @@
+#!/usr/bin/env python3
+"""
+MethodologyCore - 統一入口
+
+提供一致的初始化和使用介面
+"""
+
+from typing import Dict, List, Optional, Any
+from dataclasses import dataclass, field
+
+
+@dataclass
+class MethodologyConfig:
+    """統一配置"""
+    # 專案設定
+    project_name: str = "Untitled Project"
+    debug: bool = False
+    
+    # 儲存設定
+    storage_path: str = "~/.methodology/projects.db"
+    
+    # 預設模型
+    default_model: str = "gpt-4o"
+    
+    # 預算設定
+    monthly_budget: float = 100.0
+    
+    # 功能開關
+    enable_audit: bool = True
+    enable_monitoring: bool = True
+    enable_quality_gate: bool = True
+    
+    # MCP 服務
+    mcp_services: List[str] = field(default_factory=list)
+
+
+class MethodologyCore:
+    """
+    統一入口
+    
+    使用方式：
+    
+    ```python
+    from methodology import MethodologyCore
+    
+    # 初始化
+    core = MethodologyCore()
+    
+    # 或者自訂配置
+    core = MethodologyCore(config=MethodologyConfig(
+        project_name="My Project",
+        monthly_budget=500
+    ))
+    
+    # 使用各模組
+    core.tasks.split_from_goal("新任務")
+    core.costs.track(...)
+    ```
+    """
+    
+    def __init__(self, config: MethodologyConfig = None):
+        self.config = config or MethodologyConfig()
+        
+        # 延遲載入
+        self._tasks = None
+        self._costs = None
+        self._project = None
+        self._workflow = None
+        self._registry = None
+        self._bus = None
+        self._audit = None
+        self._extensions = None
+        self._router = None
+        self._spawner = None
+        self._delivery_tracker = None
+        self._knowledge_base = None
+    
+    # ==================== 懶載入屬性 ====================
+    
+    @property
+    def tasks(self):
+        """任務管理"""
+        if self._tasks is None:
+            from .task_splitter_v2 import TaskSplitter
+            self._tasks = TaskSplitter()
+        return self._tasks
+    
+    @property
+    def costs(self):
+        """成本追蹤"""
+        if self._costs is None:
+            from .cost_allocator import CostAllocator
+            self._costs = CostAllocator()
+        return self._costs
+    
+    @property
+    def project(self):
+        """專案管理"""
+        if self._project is None:
+            from .project import Project
+            self._project = Project.create(
+                name=self.config.project_name,
+                db_path=self.config.storage_path
+            )
+        return self._project
+    
+    @property
+    def workflow(self):
+        """工作流"""
+        if self._workflow is None:
+            from .workflow_graph import WorkflowGraph
+            self._workflow = WorkflowGraph(name=self.config.project_name)
+        return self._workflow
+    
+    @property
+    def agents(self):
+        """Agent Registry"""
+        if self._registry is None:
+            from .agent_registry import AgentRegistry
+            self._registry = AgentRegistry()
+        return self._registry
+    
+    @property
+    def bus(self):
+        """Message Bus"""
+        if self._bus is None:
+            from .message_bus import MessageBus
+            self._bus = MessageBus()
+        return self._bus
+    
+    @property
+    def audit(self):
+        """審計日誌"""
+        if self._audit is None:
+            from .audit_logger import AuditLogger
+            self._audit = AuditLogger()
+        return self._audit
+    
+    @property
+    def router(self):
+        """Smart Router (含 Cost Optimizer)"""
+        if self._router is None:
+            from .smart_router import SmartRouter
+            self._router = SmartRouter()
+        return self._router
+    
+    @property
+    def extensions(self):
+        """Extensions 整合層"""
+        if self._extensions is None:
+            from .extensions import create_extensions
+            self._extensions = create_extensions(core=self)
+        return self._extensions
+    
+    @property
+    def spawner(self):
+        """Agent Spawner"""
+        if self._spawner is None:
+            from .agent_spawner import AgentSpawner
+            self._spawner = AgentSpawner()
+        return self._spawner
+    
+    @property
+    def delivery_tracker(self):
+        """版本控制"""
+        if self._delivery_tracker is None:
+            from .delivery_tracker import DeliveryTracker
+            self._delivery_tracker = DeliveryTracker()
+        return self._delivery_tracker
+    
+    @property
+    def knowledge_base(self):
+        """知識庫"""
+        if self._knowledge_base is None:
+            from .knowledge_base import KnowledgeBase
+            self._knowledge_base = KnowledgeBase()
+        return self._knowledge_base
+    
+    # ==================== 快捷方法 ====================
+    
+    def create_task(self, name: str, **kwargs):
+        """快速建立任務"""
+        if hasattr(self.tasks, 'add_task'):
+            return self.tasks.add_task(name, **kwargs)
+        return None
+    
+    def track_cost(self, amount: float, **kwargs):
+        """快速記錄成本"""
+        self.costs.add_entry(amount=amount, **kwargs)
+    
+    def register_agent(self, agent_id: str, name: str, **kwargs):
+        """快速注册 Agent"""
+        self.agents.register(agent_id, name, **kwargs)
+    
+    def publish_event(self, topic: str, payload: Any):
+        """發布事件"""
+        from .message_bus import MessageType
+        self.bus.publish(topic, payload, MessageType.EVENT)
+    
+    def log_action(self, action: str, resource: str, **kwargs):
+        """記錄操作"""
+        if self.config.enable_audit:
+            from .audit_logger import ActionType, ResourceType
+            self.audit.log(ActionType.UPDATE, ResourceType(resource), "", kwargs)
+    
+    # ==================== 整合方法 ====================
+    
+    def scan_security(self, target: str):
+        """安全掃描 (整合 SecurityAuditor)"""
+        return self.extensions.scan_security(target)
+    
+    def track_cost_usage(self, model: str, input_tokens: int, output_tokens: int):
+        """成本追蹤 (整合 CostOptimizer)"""
+        # 使用 SmartRouter 的追蹤功能
+        if hasattr(self.router, 'track_usage'):
+            self.router.track_usage(model, input_tokens, output_tokens)
+        # 同時使用 Extensions
+        self.extensions.track_cost(model, input_tokens, output_tokens)
+    
+    def generate_workflow_diagram(self, workflow=None):
+        """生成工作流圖表 (整合 WorkflowVisualizer)"""
+        wf = workflow or self.workflow
+        return self.extensions.visualize.generate_diagram_from_workflow(wf)
+    
+    def spawn_agent(self, role: str, task_id: str, task_description: str, **kwargs):
+        """Spawn Agent (整合 AgentSpawner)"""
+        from .agent_spawner import SpawnRequest, SpawnPolicy
+        request = SpawnRequest(
+            role=role,
+            task_id=task_id,
+            task_description=task_description,
+            policy=SpawnPolicy.EAGER,
+            **kwargs
+        )
+        return self.spawner.spawn_with_retry(request)
+    
+    def commit_version(self, artifact_id: str, content: str, message: str = "", **kwargs):
+        """提交版本 (整合 DeliveryTracker)"""
+        return self.delivery_tracker.commit(artifact_id, content, message=message, **kwargs)
+    
+    # ==================== 生命週期 ====================
+    
+    def save(self):
+        """保存所有狀態"""
+        if self._project:
+            self._project.save()
+        if self._delivery_tracker:
+            self.delivery_tracker.save()
+        if self._knowledge_base:
+            self.knowledge_base.save()
+    
+    def load(self, project_id: str):
+        """載入專案"""
+        from .project import Project
+        self._project = Project.load(project_id, self.config.storage_path)
+        return self._project
+    
+    def export(self) -> Dict:
+        """導出配置"""
+        return {
+            "config": {
+                "project_name": self.config.project_name,
+                "debug": self.config.debug,
+                "storage_path": self.config.storage_path,
+                "default_model": self.config.default_model,
+                "monthly_budget": self.config.monthly_budget,
+            },
+            "stats": {
+                "agents": len(self.agents.agents) if self._registry else 0,
+                "tasks": len(self.tasks.tasks) if self._tasks else 0,
+                "versions": len(self.delivery_tracker.versions) if self._delivery_tracker else 0,
+            }
+        }
+
+
+# ============================================================================
+# 便捷工廠函數
+# ============================================================================
+
+def create_pm_setup() -> MethodologyCore:
+    """建立 PM 常用配置"""
+    config = MethodologyConfig(
+        project_name="AI 開發專案",
+        debug=False,
+        enable_audit=True,
+        enable_monitoring=True,
+        enable_quality_gate=True,
+    )
+    return MethodologyCore(config=config)
+
+
+def create_minimal_setup() -> MethodologyCore:
+    """建立最小配置"""
+    config = MethodologyConfig(
+        project_name="Quick Project",
+        debug=True,
+        enable_audit=False,
+        enable_monitoring=False,
+        enable_quality_gate=False,
+    )
+    return MethodologyCore(config=config)
+
+
+# ============================================================================
+# Main
+# ============================================================================
+
+if __name__ == "__main__":
+# # #     print("=== MethodologyCore Demo ===\n")
+    
+    # 初始化
+    core = MethodologyCore()
+    
+# # #     print(f"Project: {core.config.project_name}")
+    
+    # 任務
+# # #     print("\n--- Tasks ---")
+    if hasattr(core.tasks, 'split_from_goal'):
+        tasks = core.tasks.split_from_goal("開發一個 AI 客服系統")
+# # #         print(f"Created {len(tasks)} tasks")
+    
+    # Agent
+# # #     print("\n--- Agents ---")
+    from .agent_registry import AgentType
+    core.agents.register("dev-1", "Developer", AgentType.DEVELOPER)
+# # #     print(f"Registered agents: {len(core.agents.agents)}")
+    
+    # Event
+# # #     print("\n--- Events ---")
+    core.publish_event("task:created", {"task_id": "task-1"})
+# # #     print(f"Queue size: {core.bus.get_queue_status()['queue_size']}")
+    
+    # Audit
+# # #     print("\n--- Audit ---")
+    core.log_action("test", "system")
+# # #     print(f"Total messages: {len(core.audit.get_statistics())}")
+    
+    # Router
+# # #     print("\n--- Router ---")
+    if hasattr(core.router, 'route'):
+        result = core.router.route("Hello world")
+# # #         print(f"Routed to: {result.model if hasattr(result, 'model') else 'N/A'}")
+    
+# # #     print("\n=== Done ===")
+
+# ==================== Solutions A-E Integration ====================
+
+    @property
+    def evaluator(self):
+        """Solution A: Agent Evaluation Framework"""
+        if not hasattr(self, '_evaluator'):
+            from agent_evaluator import AgentEvaluator, HumanEvaluator
+            self._evaluator = AgentEvaluator()
+            self._hitl = HumanEvaluator()
+        return self._evaluator
+    
+    @property
+    def structured_output(self):
+        """Solution B: Structured Output Engine"""
+        if not hasattr(self, '_structured_output'):
+            from structured_output import StructuredOutputEngine
+            self._structured_output = StructuredOutputEngine()
+        return self._structured_output
+    
+    @property
+    def data_quality(self):
+        """Solution C: Data Quality Connector"""
+        if not hasattr(self, '_data_quality'):
+            from data_quality import DataQualityChecker
+            self._data_quality = DataQualityChecker()
+        return self._data_quality
+    
+    @property
+    def enterprise(self):
+        """Solution D: Enterprise Integration Hub"""
+        if not hasattr(self, '_enterprise'):
+            from enterprise_hub import EnterpriseHub
+            self._enterprise = EnterpriseHub()
+        return self._enterprise
+    
+    @property
+    def migrator(self):
+        """Solution E: LangGraph Migration Tool"""
+        if not hasattr(self, '_migrator'):
+            from langgraph_migrator import LangGraphMigrationTool
+            self._migrator = LangGraphMigrationTool()
+        return self._migrator
+
+    def run_full_evaluation(self, agent_fn, test_cases):
+        """執行完整評估流程 (Solution A)"""
+        from agent_evaluator import TestCase
+        
+        suite = self.evaluator.create_suite(
+            name="Full Evaluation",
+            iterations=1
+        )
+        
+        for tc in test_cases:
+            self.evaluator.add_test_case(
+                suite.id,
+                name=tc.get('name', 'Test'),
+                input_prompt=tc.get('prompt', ''),
+                expected_output=tc.get('expected')
+            )
+        
+        self.evaluator.run_suite(suite.id, agent_fn)
+        return self.evaluator.generate_report(suite.id)
+    
+    def validate_and_parse_output(self, prompt, llm_call, schema_name):
+        """驗證並解析輸出 (Solution B)"""
+        return self.structured_output.parse(
+            prompt=prompt,
+            llm_call=llm_call,
+            schema_name=schema_name
+        )
+    
+    def check_data_quality(self, data, field_types=None):
+        """檢查資料品質 (Solution C)"""
+        return self.data_quality.analyze(data, field_types)
+    
+    def migrate_to_langgraph(self, file_path):
+        """遷移到 LangGraph (Solution E)"""
+        result = self.migrator.analyze_file(file_path)
+        self.migrator.generate_langgraph_code(result)
+        return result
+
+# Alias for backward compatibility
+Methodology = MethodologyCore

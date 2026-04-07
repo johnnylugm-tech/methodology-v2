@@ -1,0 +1,31 @@
+{
+  "mode": "local",
+  "platform": "none",
+  "enforce_on_commit": true,
+  "enforce_on_push": false,
+  "enforce_on_pr": false,
+  "enforce_on_merge": false,
+  "strict_mode": true,
+  "allow_bypass": false,
+  "quality_gate_threshold": 90.0,
+  "security_threshold": 95.0,
+  "coverage_threshold": 80.0,
+  "enable_registry": true,
+  "enable_constitution_check": true,
+  "enable_policy_engine": true,
+  "enable_document_gate": true,
+  "document_gate_config": {
+    "required_docs": {
+      "phase_1_requirements": ["SRS", "REQUIREMENTS", "需求規格"],
+      "phase_2_architecture": ["SAD", "ARCHITECTURE", "架構設計"],
+      "phase_3_design": ["DESIGN", "詳細設計"],
+      "phase_4_unit_test": ["TEST_PLAN", "測試計劃", "測試報告"],
+      "phase_5_integration_test": ["INTEGRATION_TEST", "整合測試"],
+      "phase_6_system_test": ["SYSTEM_TEST", "系統測試"]
+    },
+    "fail_on_missing_docs": true,
+    "check_template_usage": true,
+    "enforce_aspice_compliance": true
+  },
+  "_comment": "預設使用 LOCAL 模式（輕量級，適合個人/小專案）"
+}

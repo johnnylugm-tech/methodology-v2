@@ -1,0 +1,47 @@
+#!/bin/bash
+# Git commit-msg hook for Anti-Shortcut Enforcer
+# Install: ln -s ../../anti_shortcut/git-hooks/commit-msg .git/hooks/commit-msg
+#
+# Usage: commit-msg <commit-msg-file>
+#
+# This hook validates that commit messages contain a task_id (e.g., [TASK-123] or TASK-123)
+
+COMMIT_MSG_FILE="$1"
+
+# Check if file exists
+if [ ! -f "$COMMIT_MSG_FILE" ]; then
+    echo "commit-msg: error: file not found: $COMMIT_MSG_FILE" >&2
+    exit 1
+fi
+
+# Read commit message
+COMMIT_MSG=$(cat "$COMMIT_MSG_FILE")
+
+# Task ID patterns
+# Matches: [TASK-123], [PROJ-1], TASK-123, PROJ-1, etc.
+TASK_ID_PATTERN='\[[A-Z]+-[0-9]+\]|\b[A-Z]+-[0-9]+\b'
+
+# Check if commit message contains task_id
+if ! echo "$COMMIT_MSG" | grep -qE "$TASK_ID_PATTERN"; then
+    echo "" >&2
+    echo "============================================" >&2
+    echo "  ANTI-SHORTCUT VIOLATION DETECTED" >&2
+    echo "============================================" >&2
+    echo "" >&2
+    echo "  Commit message MUST contain a task_id" >&2
+    echo "  Examples:" >&2
+    echo "    [TASK-123] Add user authentication" >&2
+    echo "    [PROJ-1] Fix memory leak in agent" >&2
+    echo "    TASK-456: Update documentation" >&2
+    echo "" >&2
+    echo "  Your commit message:" >&2
+    echo "    $COMMIT_MSG" >&2
+    echo "" >&2
+    echo "  To bypass (requires approval):" >&2
+    echo "    git commit --no-verify ..." >&2
+    echo "" >&2
+    echo "============================================" >&2
+    exit 1
+fi
+
+exit 0

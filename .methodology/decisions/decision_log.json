@@ -1,0 +1,25 @@
+[
+  {
+    "id": "D-9C3F7F",
+    "item": "timeout_value",
+    "description": "API timeout configuration",
+    "type": "api_choice",
+    "risk": "🔴 HIGH",
+    "decision": "60",
+    "依据": "",
+    "status": "confirmed",
+    "timestamp": "2026-03-24T21:05:24.681586",
+    "confirmed_at": "2026-03-24T21:05:41.458537"
+  },
+  {
+    "id": "D-37DCD9",
+    "item": "chunk_size",
+    "description": "Embedding chunk size",
+    "type": "config_default",
+    "risk": "🟡 MEDIUM",
+    "decision": "512",
+    "依据": "",
+    "status": "auto",
+    "timestamp": "2026-03-24T21:05:33.170783"
+  }
+]

@@ -1,0 +1,68 @@
+# .gitlab-ci.yml
+# GitLab CI Pipeline for methodology-v2 Enforcement
+
+stages:
+  - validate
+  - policy
+  - quality
+  - security
+  - final
+
+variables:
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+
+cache:
+  paths:
+    - .cache/pip/
+
+# Job 1: Constitution Check
+constitution-check:
+  stage: validate
+  image: python:3.11-slim
+  before_script:
+    - pip install -q methodology-v2
+  script:
+    - python3 cli.py constitution verify || exit 1
+  allow_failure: false
+
+# Job 2: Policy Engine
+policy-engine:
+  stage: policy
+  image: python:3.11-slim
+  needs: ["constitution-check"]
+  before_script:
+    - pip install -q methodology-v2
+  script:
+    - python3 cli.py policy --strict || exit 1
+  allow_failure: false
+
+# Job 3: Quality Gate
+quality-gate:
+  stage: quality
+  image: python:3.11-slim
+  needs: ["policy-engine"]
+  before_script:
+    - pip install -q methodology-v2
+  script:
+    - python3 cli.py quality gate || exit 1
+  allow_failure: false
+
+# Job 4: Security Scan
+security-scan:
+  stage: security
+  image: python:3.11-slim
+  needs: ["quality-gate"]
+  before_script:
+    - pip install -q methodology-v2
+  script:
+    - python3 cli.py security scan || exit 1
+  allow_failure: false
+
+# Job 5: Final Gate
+final-gate:
+  stage: final
+  needs: ["constitution-check", "policy-engine", "quality-gate", "security-scan"]
+  script:
+    - echo "🎉 All enforcement checks passed"
+  rules:
+    - if: '$CI_MERGE_REQUEST_ID'  # Only on MRs

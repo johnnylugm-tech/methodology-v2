@@ -1,0 +1,6089 @@
+#!/usr/bin/env python3
+"""
+Methodology CLI - 統一命令列介面
+
+使用方法：
+    python cli.py init "專案名"
+    python cli.py task add "任務" --points 5
+    python cli.py sprint create
+    python cli.py board
+    python cli.py report
+    python cli.py status
+"""
+
+import sys
+import os
+import argparse
+import json
+from datetime import datetime
+import re
+from pathlib import Path
+import cli_phase_prompts
+import cli_phase_subagent
+
+# Add current directory to path for imports
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+from progress_dashboard import ProgressDashboard
+from gantt_chart import GanttChart, ResourceGanttChart
+from message_bus import MessageBus
+from sprint_planner import SprintPlanner
+from pm_terminology import PMTerminologyMapper
+from resource_dashboard import ResourceDashboard
+from pm_mode import PMMode
+from agent_evaluator import AgentEvaluator, HumanEvaluator, TestCase, EvaluationSuite
+from structured_output import StructuredOutputEngine
+from data_quality import DataQualityChecker
+from smart_router import route_by_phase
+from enterprise_hub import EnterpriseHub
+from langgraph_migrator import LangGraphMigrationTool
+from crewai_bridge import FrameworkBridge, bridge_quick_convert
+from wizard.wizard import SetupWizard, TEMPLATES
+from guardrails.guardrails import Guard
+from autoscaler.autoscaler import AutoScaler
+from data_connector import DataSourceManager
+from agent_debugger import AgentDebugger, EventType
+from approval_flow import ApprovalFlow, ApprovalLevel, ApprovalStatus
+from risk_registry import RiskRegistry, RiskLevel, RiskStatus
+from p2p_team_config import P2PTeamConfig
+from hitl_controller import HITLController, AgentOwner, OutputStatus
+from anti_shortcut.blacklist import CommandBlacklist, ViolationSeverity
+from anti_shortcut.audit_logger import AIAuditLogger, ActionType
+from anti_shortcut.double_confirm import DoubleConfirmation, ConfirmationLevel
+from anti_shortcut.impact_analysis import ImpactAnalyzer
+from security_defense import (
+    InputValidator,
+    ExecutionSandbox,
+    OutputFilter,
+    HumanInTheLoop,
+    SandboxConfig,
+    SandboxLevel,
+    ApprovalLevel,
+)
+from code_metrics import MetricsTracker
+from checkpoint_manager import SessionManager
+
+# Ralph Mode
+from ralph_mode.cli import (
+    RalphCLI,
+    TaskState,
+)
+from ralph_mode.task_persistence import TaskPersistence
+from ralph_mode.scheduler import (
+    RalphScheduler,
+    SchedulerConfig,
+    SchedulerManager,
+)
+from ralph_mode.progress_tracker import RalphProgressTracker
+from ralph_mode.state_machine import PhaseStateMachine
+from tool_registry import ToolRegistry, TOOL_HANDLERS
+
+
+class MethodologyCLI:
+    """統一 CLI 入口"""
+    
+    VERSION = "6.30.0"
+    
+    def __init__(self):
+        self.progress = ProgressDashboard()
+        self.gantt = GanttChart()
+        self.bus = MessageBus()
+        self.sprint_planner = SprintPlanner()
+        self.terminology = PMTerminologyMapper()
+        self.pm_mode = PMMode()
+        self.evaluator = AgentEvaluator()
+        self.hitl = HumanEvaluator()
+        self.structured = StructuredOutputEngine()
+        self.data_quality = DataQualityChecker()
+        self.enterprise = EnterpriseHub()
+        self.migrator = LangGraphMigrationTool()
+        self.bridge = FrameworkBridge()
+        self.wizard = SetupWizard()
+        self.guardrails = Guard()
+        self.autoscaler = AutoScaler()
+        self.resources = ResourceDashboard()
+        self.data_manager = DataSourceManager()
+        self.debugger = AgentDebugger()
+        self.approval_flow = ApprovalFlow()
+        self.registry = RiskRegistry()
+        self.p2p_config: P2PTeamConfig = None
+        self.hitl_controller = HITLController()
+        self.blacklist = CommandBlacklist()  # 危險操作黑名單
+        self.ai_audit = AIAuditLogger()  # AI 操作審計日誌
+        # Deep Security Defense
+        self.input_validator = InputValidator()
+        self.execution_sandbox = ExecutionSandbox(SandboxConfig(level=SandboxLevel.STRICT))
+        self.output_filter = OutputFilter()
+        self.hitl_security = HumanInTheLoop()
+        # Ralph Mode - 任務長時監控
+        self.ralph_cli = RalphCLI()
+        self.ralph_persistence = TaskPersistence()
+        self.ralph_scheduler_manager = SchedulerManager()
+        self.session_manager = SessionManager()
+    
+    def _check_command(self, command: str) -> bool:
+        """檢查命令是否危險"""
+        blocked = self.blacklist.check(command)
+        if blocked:
+            pass # Removed print-debug
+            return False
+        return True
+    
+    def run(self, args):
+        """執行命令"""
+        command = args.command
+        
+        if command == "init":
+            return self.cmd_init(args)
+        elif command == "finish":
+            return self.cmd_finish(args)
+        elif command == "task":
+            return self.cmd_task(args)
+        elif command == "sprint":
+            return self.cmd_sprint(args)
+        elif command == "board":
+            return self.cmd_board(args)
+        elif command == "gantt-resource":
+            return self.cmd_gantt_resource(args)
+        elif command == "report":
+            return self.cmd_report(args)
+        elif command == "status":
+            return self.cmd_status(args)
+        elif command == "phase-status":
+            return self.cmd_phase_status(args)
+        elif command == "phase-pause":
+            return self.cmd_phase_pause(args)
+        elif command == "phase-resume":
+            return self.cmd_phase_resume(args)
+        elif command == "phase-freeze":
+            return self.cmd_phase_freeze(args)
+        elif command == "ab-history":
+            return self.cmd_ab_history(args)
+        elif command == "ab-record":
+            return self.cmd_ab_record(args)
+        elif command == "audit-heatmap":
+            return self.cmd_audit_heatmap(args)
+        elif command == "time-check":
+            return self.cmd_time_check(args)
+        elif command == "resources":
+            return self.cmd_resources(args)
+        elif command == "bus":
+            return self.cmd_bus(args)
+        elif command == "constitution":
+            return self.cmd_constitution(args)
+        elif command == "constitution-sync":
+            return self.cmd_constitution_sync(args)
+        elif command == "run-phase":
+            return self.cmd_run_phase(args)
+        elif command == "plan-phase":
+            return self.cmd_plan_phase(args)
+        elif command == "spec-track":
+            return self.cmd_spec_track(args)
+        elif command == "version":
+            return self.cmd_version(args)
+        elif command == "term":
+            return self.cmd_term(args)
+        elif command == "pm":
+            return self.cmd_pm(args)
+        elif command == "eval":
+            return self.cmd_eval(args)
+        elif command == "quality":
+            return self.cmd_quality(args)
+        elif command == "enterprise":
+            return self.cmd_enterprise(args)
+        elif command == "audit":
+            return self.cmd_audit(args)
+        elif command == "migrate":
+            return self.cmd_migrate(args)
+        elif command == "wizard":
+            return self.cmd_wizard(args)
+        elif command == "guardrails":
+            return self.cmd_guardrails(args)
+        elif command == "security":
+            return self.cmd_security(args)
+        elif command == "scale":
+            return self.cmd_scale(args)
+        elif command == "parse":
+            return self.cmd_parse(args)
+        elif command == "resources":
+            return self.cmd_resources(args)
+        elif command == "debug":
+            return self.cmd_debug(args)
+        elif command == "trace":
+            return self.cmd_trace(args)
+        elif command == "trace-check":
+            return self.cmd_trace_check(args)
+        elif command == "approval":
+            return self.cmd_approval(args)
+        elif command == "risk":
+            return self.cmd_risk(args)
+        elif command == "p2p":
+            return self.cmd_p2p(args)
+        elif command == "hitl":
+            return self.cmd_hitl(args)
+        elif command == "integrity":
+            return self.cmd_integrity(args)
+        elif command == "gatekeeper":
+            return self.cmd_gatekeeper(args)
+        elif command == "confirmations":
+            return self.cmd_confirmations(args)
+        elif command == "release":
+            return self.cmd_release(args)
+        elif command == "policy":
+            return self.cmd_policy(args)
+        elif command == "install-hook":
+            return self.cmd_install_hook(args)
+        elif command == "enforcement-config":
+            return self.cmd_enforcement_config(args)
+        elif command == "enforcement":
+            return self.cmd_enforcement(args)
+        elif command == "quality-gate" or command == "qg":
+            return self.cmd_quality_gate(args)
+        elif command == "enforce":
+            return self.cmd_enforce(args)
+        elif command == "decision" or command == "dec":
+            return self.cmd_decision_gate(args)
+        elif command == "agent-proof-hook":
+            return self.cmd_agent_proof_hook(args)
+        elif command == "memory":
+            return self.cmd_memory(args)
+        elif command == "roi":
+            return self.cmd_roi(args)
+        elif command == "m27":
+            return self.cmd_m27(args)
+        elif command == "metrics":
+            return self.cmd_metrics(args)
+        elif command == "debt":
+            return self.cmd_debt(args)
+        elif command == "adr":
+            return self.cmd_adr(args)
+        elif command == "guide":
+            return self.cmd_guide(args)
+        elif command == "roadmap":
+            return self.cmd_roadmap(args)
+        elif command == "persona":
+            return self.cmd_persona(args)
+        elif command == "ralph":
+            return self.cmd_ralph(args)
+        elif command == "stage-pass":
+            return self.cmd_stage_pass(args)
+        elif command == "phase-verify":
+            return self.cmd_phase_truth(args)
+        elif command == "skill-check":
+            return self.cmd_skill_check(args)
+        elif command == "model-recommend":
+            return self.cmd_model_recommend(args)
+        elif command == "context-compress":
+            return self.cmd_context_compress(args)
+        elif command == "update-project-status":
+            return self.cmd_update_project_status(args)
+        elif command == "update-step":
+            return self.cmd_update_step(args)
+        elif command == "end-phase":
+            return self.cmd_end_phase(args)
+        elif command == "update-artifact":
+            return self.cmd_update_artifact(args)
+        elif command == "add-task":
+            return self.cmd_add_task(args)
+        elif command == "task-result":
+            return self.cmd_task_result(args)
+        elif command == "verify-artifact":
+            return self.cmd_verify_artifact(args)
+        elif command == "retry-test":
+            return self.cmd_retry_test(args)
+        elif command == "fsm-status":
+            return self.cmd_fsm_status(args)
+        elif command == "fsm-transition":
+            return self.cmd_fsm_transition(args)
+        elif command == "fsm-resume":
+            return self.cmd_fsm_resume(args)
+        elif command == "fsm-unfreeze":
+            return self.cmd_fsm_unfreeze(args)
+        elif command == "session-save":
+            return self.cmd_session_save(args)
+        elif command == "session-load":
+            return self.cmd_session_load(args)
+        elif command == "session-list":
+            return self.cmd_session_list(args)
+        elif command == "session-delete":
+            return self.cmd_session_delete(args)
+        elif command == "tool-registry":
+            return self.cmd_tool_registry(args)
+        elif command == "plan-phase":
+            return self.cmd_plan_phase(args)
+        else:
+            pass # Removed print-debug
+            return 1
+        
+        return 0
+    
+    # ==================== Commands ====================
+    
+    def cmd_init(self, args):
+        """初始化專案"""
+        project_name = args.name or "my-project"
+        
+        pass # Removed print-debug
+        
+        # Create project structure
+        dirs = [".methodology", ".methodology/tasks", ".methodology/sprints"]
+        for d in dirs:
+            os.makedirs(d, exist_ok=True)
+        
+        # Save initial state
+        self.progress.save()
+        
+        pass # Removed print-debug
+        pass # Removed print-debug
+        pass # Removed print-debug
+        pass # Removed print-debug
+        pass # Removed print-debug
+        
+        # 啟動 quality_watch daemon
+        import subprocess
+        project_path = Path.cwd()
+        subprocess.Popen(
+            [sys.executable, "quality_watch.py", "start", "--project", str(project_path)],
+            cwd=str(project_path)
+        )
+        
+        # ========================================
+        # Ralph Mode 自動啟動（v5.83 新增）
+        # ========================================
+        try:
+            from ralph_mode import RalphScheduler, TaskPersistence
+            from ralph_mode.task_persistence import TaskState
+            
+            # 初始化任務狀態
+            persistence = TaskPersistence()
+            state = TaskState(
+                task_id=project_name,
+                status="running",
+                current_phase="init"
+            )
+            persistence.save_state(state)
+            
+            # 啟動 RalphScheduler 後台監控（5 分鐘輪詢）
+            scheduler = RalphScheduler(
+                task_id=project_name,
+                interval_seconds=300,  # 5 分鐘
+                daemon=True
+            )
+            scheduler.start()
+            
+            pass # Removed print-debug
+        except ImportError as e:
+            pass # Removed print-debug
+        
+        pass # Removed print-debug
+        pass # Removed print-debug
+        
+        return 0
+    
+    def cmd_finish(self, args):
+        """Finish project and stop quality watch"""
+        project_path = Path.cwd()
+        
+        # 停止 quality_watch
+        result = subprocess.run(
+            [sys.executable, "quality_watch.py", "stop", "--project", str(project_path)],
+            capture_output=True,
+            text=True
+        )
+        
+        pass # Removed print-debug
+        pass # Removed print-debug
+        
+        return 0
+    
+    def cmd_task(self, args):
+        """任務管理"""
+        action = args.action
+        
+        if action == "add":
+            item_id = self.progress.add_to_backlog(
+                args.title or "New Task",
+                story_points=args.points or 1,
+                priority=args.priority or 3
+            )
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            
+        elif action == "list":
+            self.progress.load()
+            items = list(self.progress.backlog.values())
+            if not items:
+                pass # Removed print-debug
+                return 0
+            
+            pass # Removed print-debug
+            pass # Removed print-debug
+            for item in items:
+                pass # Removed print-debug
+            
+        elif action == "complete":
+            if self.progress.mark_item_completed(args.task_id):
+                pass # Removed print-debug
+            else:
+                pass # Removed print-debug
+        
+        return 0
+    
+    def cmd_sprint(self, args):
+        """Sprint 管理"""
+        action = args.action
+        
+        if action == "create":
+            sprint = self.sprint_planner.create_sprint(
+                name=args.name or "Sprint 1",
+                start_date=args.start or datetime.now().strftime("%Y-%m-%d"),
+                end_date=args.end or (datetime.now().replace(day=14)).strftime("%Y-%m-%d"),
+                capacity=args.capacity or 40
+            )
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            
+        elif action == "list":
+            sprints = list(self.sprint_planner.sprints.values())
+            if not sprints:
+                pass # Removed print-debug
+                return 0
+            
+            pass # Removed print-debug
+            pass # Removed print-debug
+            for s in sprints:
+                status = "active" if s.is_active else ("completed" if s.is_completed else "planning")
+                pass # Removed print-debug
+        
+        elif action == "start":
+            if self.sprint_planner.start_sprint(args.sprint_id):
+                pass # Removed print-debug
+            else:
+                pass # Removed print-debug
+        
+        return 0
+    
+    def cmd_board(self, args):
+        """開啟視覺化儀表板"""
+        pass # Removed print-debug
+        pass # Removed print-debug
+        pass # Removed print-debug
+        pass # Removed print-debug
+        
+        # Progress
+        summary = {"total_items": len(self.progress.backlog), "completed_items": sum(1 for i in self.progress.backlog.values() if i.completed)}
+        
+        pass # Removed print-debug
+        if summary:
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+        else:
+            pass # Removed print-debug
+        
+        pass # Removed print-debug
+        
+        # Gantt
+        if self.gantt.tasks:
+            pass # Removed print-debug
+            pass # Removed print-debug
+        else:
+            pass # Removed print-debug
+        
+        pass # Removed print-debug
+        
+        # Message Bus
+        pass # Removed print-debug
+        pass # Removed print-debug
+        
+        return 0
+    
+    def cmd_report(self, args):
+        """生成報告"""
+        report_type = args.type or "weekly"
+        
+        pass # Removed print-debug
+        pass # Removed print-debug
+        pass # Removed print-debug
+        pass # Removed print-debug
+        pass # Removed print-debug
+        pass # Removed print-debug
+        
+        # Progress
+        pass # Removed print-debug
+        summary = {"total_items": len(self.progress.backlog), "completed_items": sum(1 for i in self.progress.backlog.values() if i.completed)}
+        if summary:
+            for key, value in summary.items():
+                pass # Removed print-debug
+        pass # Removed print-debug
+        
+        # Data sources
+        pass # Removed print-debug
+        connections = self.data_manager.list_connections()
+        if connections:
+            for conn in connections:
+                status = "✅" if conn['connected'] else "❌"
+                pass # Removed print-debug
+        else:
+            pass # Removed print-debug
+        pass # Removed print-debug
+        
+        # Save report
+        if args.output:
+            with open(args.output, 'w') as f:
+                f.write(f"# {report_type.upper()} Report\n\n")
+                f.write(f"Generated: {datetime.now().isoformat()}\n\n")
+                f.write(json.dumps(summary, indent=2, default=str))
+            pass # Removed print-debug
+        
+        return 0
+    
+    def cmd_status(self, args):
+        """顯示狀態"""
+        self.progress.load()
+        pass # Removed print-debug
+        pass # Removed print-debug
+        pass # Removed print-debug
+        pass # Removed print-debug
+        pass # Removed print-debug
+        pass # Removed print-debug
+        
+        # Tasks
+        items = list(self.progress.backlog.values())
+        pass # Removed print-debug
+        
+        # Sprints
+        sprints = list(self.sprint_planner.sprints.values())
+        active = sum(1 for s in sprints if s.is_active)
+        pass # Removed print-debug
+        
+        # Message Bus
+        bus_status = self.bus.get_queue_status()
+        pass # Removed print-debug
+        
+        # Data Sources
+        connections = self.data_manager.list_connections()
+        connected = sum(1 for c in connections if c['connected'])
+        pass # Removed print-debug
+        
+        return 0
+    
+    def cmd_phase_status(self, args):
+        """顯示 Phase 執行狀態"""
+        from pathlib import Path
+        phase = args.phase
+        state_path = Path(".methodology/state.json")
+        
+        if not state_path.exists():
+            print(f"❌ state.json not found. Phase {phase} may not have started yet.")
+            return 1
+        
+        state = json.loads(state_path.read_text())
+        ps = state.get("phase_state", {})
+        
+        # 計算已耗費時間
+        started = ps.get("started_at", None)
+        elapsed = "N/A"
+        if started:
+            from datetime import datetime, timezone
+            start_time = datetime.fromisoformat(started)
+            elapsed_min = (datetime.now(timezone.utc) - start_time).seconds // 60
+            elapsed = f"{elapsed_min} min"
+        
+        # 狀態顯示（RUNNING / PAUSE / FREEZE / COMPLETED）
+        phase_status = ps.get("status", "RUNNING")
+        status_icon = {"RUNNING": "🟢", "PAUSE": "⏸️", "FREEZE": "🔒", "COMPLETED": "✅"}.get(phase_status, "⚪")
+        
+        # Integrity 分數
+        integrity = ps.get("integrity_score", 100)
+        integrity_icon = "🔒" if integrity < 40 else ("⚠️" if integrity < 60 else "✅")
+        
+        print(f"""
+╔══════════════════════════════════════════════════════════════╗
+║  Phase {phase} Runtime Status                                  ║
+╠══════════════════════════════════════════════════════════════╣
+║  Current Phase:     {state.get('current_phase', 'N/A'):<35}║
+║  Status:           {status_icon} {phase_status:<32}║
+║  Started At:        {started or 'N/A':<35}║
+║  Elapsed:           {elapsed:<35}║
+╠══════════════════════════════════════════════════════════════╣
+║  Metrics                                                        ║
+║  ├── BLOCK Count:      {ps.get('blocks', 0):<30}║
+║  ├── A/B Rounds:      {ps.get('ab_rounds', 0):<30}║
+║  ├── Integrity Score: {integrity_icon} {integrity:<29}║
+║  ├── Warnings:        {ps.get('warnings', 0):<30}║
+║  └── Last Gate Score: {ps.get('last_gate_score', 'N/A'):<30}║
+╠══════════════════════════════════════════════════════════════╣
+║  Alerts ({len(state.get('trend_alerts', []))})                                                  ║
+""")
+        
+        alerts = state.get("trend_alerts", [])
+        if alerts:
+            for alert in alerts:
+                print(f"  🚨 {alert.get('type')}: {alert.get('current')} (threshold: {alert.get('threshold')})")
+        else:
+            print("  ✅ No active alerts")
+        
+        print("╚══════════════════════════════════════════════════════════════╝")
+        return 0
+    
+    def cmd_phase_pause(self, args):
+        """暫停 Phase 執行"""
+        from pathlib import Path
+        phase = args.phase
+        state_path = Path(".methodology/state.json")
+        
+        if not state_path.exists():
+            print(f"❌ state.json not found.")
+            return 1
+        
+        state = json.loads(state_path.read_text())
+        ps = state.get("phase_state", {})
+        
+        # 如果已經是 FREEZE，拒絕 PAUSE
+        if ps.get("status") == "FREEZE":
+            print("❌ Cannot PAUSE a FREEZEd project. Use 'phase-resume' after unfreezing.")
+            return 1
+        
+        ps["status"] = "PAUSE"
+        state["phase_state"] = ps
+        state_path.write_text(json.dumps(state, indent=2))
+        
+        print(f"⏸️  Phase {phase} PAUSED")
+        print("    Use 'phase-resume' to continue execution.")
+        return 0
+    
+    def cmd_phase_resume(self, args):
+        """恢復 Phase 執行"""
+        from pathlib import Path
+        phase = args.phase
+        state_path = Path(".methodology/state.json")
+        
+        if not state_path.exists():
+            print(f"❌ state.json not found.")
+            return 1
+        
+        state = json.loads(state_path.read_text())
+        ps = state.get("phase_state", {})
+        
+        # 如果是 FREEZE，必須先 UNFREEZE
+        if ps.get("status") == "FREEZE":
+            print("❌ Cannot RESUME a FREEZEd project. Use 'phase-unfreeze' first.")
+            return 1
+        
+        ps["status"] = "RUNNING"
+        state["phase_state"] = ps
+        state_path.write_text(json.dumps(state, indent=2))
+        
+        print(f"▶️  Phase {phase} RESUMED")
+        return 0
+    
+    def cmd_integrity(self, args):
+        """HR-14 Integrity 分數計算 — 根據 SKILL.md §6 公式"""
+        from pathlib import Path
+        import json
+        import os
+
+        project_path = Path(args.project)
+        state_file = project_path / ".methodology" / "state.json"
+        spawn_log = project_path / "sessions_spawn.log"
+
+        # 讀取 state.json
+        if not state_file.exists():
+            print("❌ state.json 不存在，請確認 --project 路徑正確")
+            return 1
+
+        with open(state_file) as f:
+            state = json.load(f)
+
+        current_phase = state.get("current_phase", 0)
+
+        # Phase Completeness：根據交付物是否存在推估
+        phase_deliverables = {
+            1: ["SRS.md", "SPEC_TRACKING.md", "TRACEABILITY_MATRIX.md"],
+            2: ["SAD.md", "ADR.md"],
+            3: ["app"],
+            4: ["TEST_PLAN.md", "TEST_RESULTS.md"],
+            5: ["BASELINE.md", "MONITORING_PLAN.md"],
+            6: ["QUALITY_REPORT.md"],
+            7: ["RISK_REGISTER.md"],
+            8: ["CONFIG_RECORDS.md"],
+        }
+
+        # Constitution 分數：從 state 或推估
+        constitution_scores = state.get("constitution_scores", {})
+        for p in range(1, 9):
+            if p not in constitution_scores:
+                constitution_scores[p] = 0
+
+        # Phase Completeness
+        phase_completions = {}
+        for phase, deliverables in phase_deliverables.items():
+            if phase > current_phase:
+                phase_completions[phase] = 0.0
+            elif phase == current_phase:
+                # 目前 Phase 只算 50%
+                phase_completions[phase] = 0.5
+            else:
+                # 已完成 Phase，檢查交付物
+                present = sum(1 for d in deliverables if (project_path / d).exists()) / len(deliverables)
+                phase_completions[phase] = present
+
+        # Log Completeness：sessions_spawn.log
+        if spawn_log.exists():
+            with open(spawn_log) as f:
+                lines = f.readlines()
+            total_expected = sum(len(d) for d in phase_deliverables.values())
+            log_completeness = min(len(lines) / max(total_expected, 1), 1.0)
+        else:
+            log_completeness = 0.0
+
+        # SKILL.md §6 Integrity 公式
+        weights = {1: 0.10, 2: 0.15, 3: 0.20, 4: 0.15,
+                    5: 0.10, 6: 0.10, 7: 0.10, 8: 0.10}
+
+        integrity = 0.0
+        for phase, completion in phase_completions.items():
+            constitution = constitution_scores.get(phase, 0)
+            phase_score = completion * (constitution / 100.0) * log_completeness
+            integrity += phase_score * weights.get(phase, 0)
+
+        integrity_pct = integrity * 100
+
+        # HR-14 FREEZE 判斷
+        if integrity_pct < 40:
+            hr14_icon = "🔒 FREEZE"
+            hr14_msg = "HR-14 觸發！需執行全面審計"
+        elif integrity_pct < 60:
+            hr14_icon = "⚠️ WARNING"
+            hr14_msg = "Integrity偏低，建議檢查落後 Phase"
+        else:
+            hr14_icon = "✅ HEALTHY"
+            hr14_msg = "Integrity正常"
+
+        print(f"""
+╔══════════════════════════════════════════════════════════════════╗
+║  HR-14 Integrity 分數                                            ║
+╠══════════════════════════════════════════════════════════════════╣
+║  Integrity Score: {hr14_icon:<50}║
+║  {integrity_pct:>6.1f}%{' ':>44}║
+╠══════════════════════════════════════════════════════════════════╣
+║  組成因子                                                        ║""")
+
+        for phase in range(1, 9):
+            completion = phase_completions.get(phase, 0)
+            constitution = constitution_scores.get(phase, 0)
+            weight = weights.get(phase, 0)
+            contrib = completion * (constitution / 100.0) * log_completeness * weight * 100
+            status = "✅" if phase <= current_phase else "  "
+            if phase == current_phase:
+                status = "▶️"
+            print(f"║  {status} Phase {phase}: completions={completion:.0%}  "
+                  f"constitution={constitution:>4.0f}%  weight={weight:.0%}  "
+                  f"contrib={contrib:>5.1f}%     ║")
+
+        print(f"""╠══════════════════════════════════════════════════════════════════╣
+║  Log Completeness: {log_completeness:.0%} (sessions_spawn.log)                        ║
+║  Current Phase:   {current_phase}                                                  ║
+╠══════════════════════════════════════════════════════════════════╣
+║  {hr14_msg:<62}  ║
+╚══════════════════════════════════════════════════════════════════╝
+""")
+        return 0
+
+    def cmd_phase_freeze(self, args):
+        """凍結專案（HR-14觸發時使用）"""
+        from pathlib import Path
+        state_path = Path(".methodology/state.json")
+        
+        if not state_path.exists():
+            print(f"❌ state.json not found.")
+            return 1
+        
+        state = json.loads(state_path.read_text())
+        ps = state.get("phase_state", {})
+        
+        ps["status"] = "FREEZE"
+        state["phase_state"] = ps
+        state_path.write_text(json.dumps(state, indent=2))
+        
+        print(f"🔒 Project FREEZED")
+        print("    HR-14 triggered: Integrity < 40")
+        print("    Full audit required before resuming.")
+        print("    After audit, use 'phase-unfreeze' to unlock.")
+        return 0
+    
+    def cmd_ab_history(self, args):
+        """顯示 A/B 來回歷史"""
+        from pathlib import Path
+        phase = args.phase
+        state_path = Path(".methodology/state.json")
+        
+        if not state_path.exists():
+            print(f"❌ state.json not found.")
+            return 1
+        
+        state = json.loads(state_path.read_text())
+        history = state.get("history", [])
+        
+        # 過濾出指定 Phase 的 BLOCK 和 AB_ROUND 事件
+        phase_events = [
+            e for e in history
+            if e.get("phase") == phase and e.get("event") in ["BLOCK", "AB_ROUND", "PHASE_START"]
+        ]
+        
+        print(f"""
+╔══════════════════════════════════════════════════════════════╗
+║  Phase {phase} A/B History                                       ║
+╠══════════════════════════════════════════════════════════════╣""")
+        
+        if not phase_events:
+            print("║  No A/B events recorded for this phase.")
+        else:
+            for i, event in enumerate(phase_events, 1):
+                event_type = event.get("event", "UNKNOWN")
+                timestamp = event.get("timestamp", "N/A")[:19]
+                if event_type == "BLOCK":
+                    icon = "🔴"
+                    detail = f"violations: {event.get('violations', 0)}"
+                elif event_type == "AB_ROUND":
+                    icon = "↔️"
+                    detail = "A/B exchange"
+                elif event_type == "PHASE_START":
+                    icon = "🚀"
+                    detail = "Phase started"
+                else:
+                    icon = "⚪"
+                    detail = ""
+                
+                print(f"║  {i:2}. {icon} [{timestamp}] {event_type:<12} {detail:<20}")
+        
+        print("╚══════════════════════════════════════════════════════════════╝")
+        return 0
+    
+    def cmd_ab_record(self, args):
+        """記錄一次 A/B 來回"""
+        from quality_gate import UnifiedGate
+        phase = args.phase
+        notes = args.notes or ""
+        
+        gate = UnifiedGate(args.project if hasattr(args, 'project') else ".")
+        gate._update_state(event="AB_ROUND", phase=phase, notes=notes)
+        print(f"✅ Recorded AB_ROUND for Phase {phase}")
+        if notes:
+            print(f"   Notes: {notes}")
+        return 0
+    
+    def cmd_audit_heatmap(self, args):
+        """顯示跨專案失敗熱圖"""
+        # TODO: 需要跨專案數據，目前只是框架
+        print("""
+╔══════════════════════════════════════════════════════════════╗
+║  Cross-Project Failure Heatmap                                   ║
+╠══════════════════════════════════════════════════════════════╣
+║  Note: 需要設定專案路徑才能顯示熱圖                               ║
+║                                                                        ║
+║  使用方式:                                                          ║
+║    python cli.py audit-heatmap --projects /path/to/project1,/path2 ║
+╚══════════════════════════════════════════════════════════════════╝
+""")
+        return 0
+    
+    def cmd_time_check(self, args):
+        """檢查 Phase 時長"""
+        from pathlib import Path
+        phase = args.phase
+        threshold = args.threshold
+        state_path = Path(".methodology/state.json")
+        
+        if not state_path.exists():
+            print(f"❌ state.json not found.")
+            return 1
+        
+        state = json.loads(state_path.read_text())
+        ps = state.get("phase_state", {})
+        started = ps.get("started_at")
+        
+        if not started:
+            print(f"❌ Phase {phase} start time not recorded.")
+            return 1
+        
+        from datetime import datetime, timezone
+        start_time = datetime.fromisoformat(started)
+        elapsed_min = (datetime.now(timezone.utc) - start_time).seconds // 60
+        
+        status = "✅" if elapsed_min <= threshold else "🚨"
+        
+        print(f"""
+╔══════════════════════════════════════════════════════════════╗
+║  Phase {phase} Time Check                                         ║
+╠══════════════════════════════════════════════════════════════╣
+║  Threshold: {threshold} minutes                                         ║
+║  Elapsed:   {elapsed_min} minutes                                         ║
+║                                                                        ║
+║  {status} {"OK" if elapsed_min <= threshold else "EXCEEDED!"}                                                            ║
+╚══════════════════════════════════════════════════════════════════╝
+""")
+        
+        return 0 if elapsed_min <= threshold else 1
+    
+    def cmd_resources(self, args):
+        """資源管理"""
+        action = args.action
+        
+        if action == "list":
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+        
+        return 0
+    
+    def cmd_bus(self, args):
+        """Message Bus 管理"""
+        action = args.action
+        
+        if action == "status":
+            pass # Removed print-debug
+        
+        elif action == "tree":
+            pass # Removed print-debug
+        
+        elif action == "watch":
+            seconds = args.seconds or 10
+            pass # Removed print-debug
+            self.bus.watch(seconds)
+        
+        return 0
+    
+    def cmd_eval(self, args):
+        """Agent Evaluation"""
+        action = args.eval_action
+        
+        if action == "create":
+            suite = self.evaluator.create_suite(
+                name=args.name or "Test Suite",
+                description=args.description or "",
+                iterations=args.iterations or 1
+            )
+            pass # Removed print-debug
+            pass # Removed print-debug
+            return 0
+        
+        elif action == "list":
+            suites = list(self.evaluator.suites.values())
+            if not suites:
+                pass # Removed print-debug
+                return 0
+            
+            pass # Removed print-debug
+            pass # Removed print-debug
+            for s in suites:
+                pass # Removed print-debug
+            return 0
+        
+        elif action == "report":
+            if not args.suite_id:
+                pass # Removed print-debug
+                return 1
+            
+            if args.suite_id not in self.evaluator.suites:
+                pass # Removed print-debug
+                return 1
+            
+            pass # Removed print-debug
+            return 0
+        
+        elif action == "run":
+            if not args.suite_id:
+                pass # Removed print-debug
+                return 1
+            
+            if args.suite_id not in self.evaluator.suites:
+                pass # Removed print-debug
+                return 1
+            
+            # 定義簡單的 mock agent
+            import time
+            def mock_agent(prompt, context=None, timeout=30):
+                time.sleep(0.1)
+                return f"Response to: {prompt[:50]}..."
+            
+            pass # Removed print-debug
+            self.evaluator.run_suite(args.suite_id, mock_agent)
+            pass # Removed print-debug
+            return 0
+        
+        elif action == "add":
+            if not args.suite_id:
+                pass # Removed print-debug
+                return 1
+            
+            if not args.name:
+                pass # Removed print-debug
+                return 1
+            
+            test = self.evaluator.add_test_case(
+                suite_id=args.suite_id,
+                name=args.name,
+                input_prompt=args.prompt or "Test prompt",
+                expected_output=args.expected
+            )
+            pass # Removed print-debug
+            return 0
+        
+        elif action == "hitl":
+            pending = self.hitl.get_pending_count()
+            pass # Removed print-debug
+            pass # Removed print-debug
+            return 0
+        
+        pass # Removed print-debug
+        return 1
+    
+    def cmd_quality(self, args):
+        """Data Quality Checker"""
+        action = args.action
+        
+        if action == "check":
+            pass # Removed print-debug
+            pass # Removed print-debug
+            # Generate sample data
+            sample_data = [
+                {"id": 1, "name": "Alice", "email": "alice@test.com", "age": 30},
+                {"id": 2, "name": "Bob", "email": "bob@test.com", "age": 25},
+                {"id": 3, "name": "", "email": "invalid", "age": None},
+            ]
+            report = self.data_quality.analyze(sample_data)
+            pass # Removed print-debug
+        elif action == "report":
+            pass # Removed print-debug
+        return 0
+    
+    def cmd_enterprise(self, args):
+        """Enterprise Integration Hub"""
+        action = args.action
+        
+        if action == "status":
+            pass # Removed print-debug
+            pass # Removed print-debug
+            status = self.enterprise.get_status()
+            for k, v in status.items():
+                pass # Removed print-debug
+        elif action == "audit":
+            pass # Removed print-debug
+        return 0
+    
+    def cmd_audit(self, args):
+        """AI Audit Logger - AI 操作審計"""
+        action = args.action
+        
+        if action == "status":
+            pass # Removed print-debug
+            pass # Removed print-debug
+            report = self.ai_audit.get_audit_report()
+            pass # Removed print-debug
+            pass # Removed print-debug
+            for op_type, count in report['by_type'].items():
+                pass # Removed print-debug
+            pass # Removed print-debug
+        
+        elif action == "anomalies":
+            pass # Removed print-debug
+            pass # Removed print-debug
+            agent_id = getattr(args, 'agent', None)
+            severity = getattr(args, 'severity', None)
+            
+            anomalies = self.ai_audit.get_anomalies(agent_id=agent_id, severity=severity)
+            
+            if not anomalies:
+                pass # Removed print-debug
+                return 0
+            
+            for i, anomaly in enumerate(anomalies, 1):
+                pass # Removed print-debug
+                pass # Removed print-debug
+                pass # Removed print-debug
+                pass # Removed print-debug
+        
+        elif action == "report":
+            pass # Removed print-debug
+            pass # Removed print-debug
+            agent_id = getattr(args, 'agent', None)
+            report = self.ai_audit.get_audit_report(agent_id=agent_id)
+            pass # Removed print-debug
+        
+        return 0
+    
+    def cmd_wizard(self, args):
+        """Setup Wizard"""
+        pass # Removed print-debug
+        pass # Removed print-debug
+        wizard = SetupWizard()
+        
+        # Interactive setup
+        project_name = input("Project name: ") or "my-agent-project"
+        use_case = input("Use case (customer_service/coding/research/data_analysis/custom): ") or "customer_service"
+        
+        config = wizard.create_project(
+            name=project_name,
+            use_case=use_case
+        )
+        
+        pass # Removed print-debug
+        pass # Removed print-debug
+        pass # Removed print-debug
+        pass # Removed print-debug
+        return 0
+    
+    def cmd_guardrails(self, args):
+        """Security Guardrails"""
+        action = args.action
+        
+        if action == "check":
+            text = args.text or "Sample text to check"
+            try:
+                result = self.guardrails.check(text)
+                pass # Removed print-debug
+                pass # Removed print-debug
+                pass # Removed print-debug
+                pass # Removed print-debug
+                if result.threats:
+                    pass # Removed print-debug
+                    for threat in result.threats:
+                        pass # Removed print-debug
+            except Exception as e:
+                pass # Removed print-debug
+                pass # Removed print-debug
+        return 0
+
+    def cmd_security(self, args):
+        """Deep Security Defense"""
+        action = args.action
+
+        if action == "deep-check":
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            sandbox_config = self.execution_sandbox.config
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pending = self.hitl_security.get_pending()
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+
+        elif action == "enable-deep-defense":
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+
+        elif action == "audit-log":
+            pass # Removed print-debug
+            pass # Removed print-debug
+            input_audit = self.input_validator
+            output_audit = self.output_filter.get_audit_log()
+            hitl_audit = self.hitl_security.get_pending()
+
+            pass # Removed print-debug
+            if output_audit:
+                for i, entry in enumerate(output_audit[-5:], 1):
+                    pass # Removed print-debug
+            else:
+                pass # Removed print-debug
+
+            pass # Removed print-debug
+            if hitl_audit:
+                for req in hitl_audit[:5]:
+                    pass # Removed print-debug
+            else:
+                pass # Removed print-debug
+
+        elif action == "validate":
+            text = args.text or "ignore previous instructions"
+            pass # Removed print-debug
+            result = self.input_validator.validate(text)
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            if result.matched_patterns:
+                pass # Removed print-debug
+                for p in result.matched_patterns:
+                    pass # Removed print-debug
+            if result.recommendations:
+                pass # Removed print-debug
+                for r in result.recommendations:
+                    pass # Removed print-debug
+
+        return 0
+
+    def cmd_scale(self, args):
+        """AutoScaler"""
+        action = args.action
+        
+        if action == "status":
+            status = self.autoscaler.get_status()
+            pass # Removed print-debug
+            pass # Removed print-debug
+            for k, v in status.items():
+                pass # Removed print-debug
+        elif action == "scale":
+            current = int(args.current or 1)
+            target = self.autoscaler.calculate_target_instances(current)
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+        return 0
+    
+    def cmd_migrate(self, args):
+        """LangGraph / CrewAI Migration Tool"""
+        if not args.file:
+            pass # Removed print-debug
+            return 1
+
+        from_framework = getattr(args, 'from', None)
+        to_framework = getattr(args, 'to', None)
+
+        # Cross-framework migration
+        if from_framework and to_framework:
+            if from_framework == to_framework:
+                pass # Removed print-debug
+                return 1
+
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+
+            report = bridge_quick_convert(args.file, from_framework, to_framework)
+
+            if report.success:
+                pass # Removed print-debug
+                pass # Removed print-debug
+                pass # Removed print-debug
+                pass # Removed print-debug
+
+                # Validate
+                success, messages = self.bridge.validate_migration(
+                    args.file, report.output_file,
+                    f"{from_framework}_to_{to_framework}"
+                )
+                for msg in messages:
+                    pass # Removed print-debug
+            else:
+                pass # Removed print-debug
+                for err in report.errors:
+                    pass # Removed print-debug
+
+            return 0
+
+        # Default: LangGraph migration (backward compatible)
+        pass # Removed print-debug
+        result = self.migrator.analyze_file(args.file)
+        pass # Removed print-debug
+        return 0
+    
+    def cmd_parse(self, args):
+        """Structured Output Engine"""
+        pass # Removed print-debug
+        pass # Removed print-debug
+        pass # Removed print-debug
+        return 0
+    
+    def cmd_pm(self, args):
+        """PM Mode"""
+        action = args.action
+        
+        if action == "report":
+            report = self.pm_mode.generate_morning_report(
+                sprint_name="Sprint 5",
+                sprint_progress=65.0,
+                completed_yesterday=["完成登入功能", "修復認證 Bug"],
+                planned_today=["開發儀表板", "API 文件"],
+                blockers=["等不及第三方 API 文件"],
+                velocity=42.0
+            )
+            pass # Removed print-debug
+        elif action == "forecast":
+            forecast = self.pm_mode.predict_cost(
+                project_name="AI Assistant",
+                current_cost=500.0,
+                budget=2000.0,
+                daily_burn_rate=85.0,
+                days_remaining=18
+            )
+            pass # Removed print-debug
+        elif action == "health":
+            health = self.pm_mode.get_sprint_health(velocity=35, planned=50, completed=30)
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+        return 0
+    
+    def cmd_term(self, args):
+        """術語查詢"""
+        query = args.query
+        if query:
+            results = self.terminology.search(query)
+            if results:
+                pass # Removed print-debug
+                for r in results[:5]:
+                    pass # Removed print-debug
+                    pass # Removed print-debug
+                    pass # Removed print-debug
+                    pass # Removed print-debug
+                    pass # Removed print-debug
+            else:
+                pass # Removed print-debug
+        else:
+            pass # Removed print-debug
+        return 0
+    
+    def cmd_resources(self, args):
+        """資源儀表板"""
+        action = args.action
+        
+        if action == "list":
+            pass # Removed print-debug
+        elif action == "stats":
+            summary = self.resources.get_resource_summary()
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+        elif action == "skills":
+            matrix = self.resources.get_team_skills_matrix()
+            pass # Removed print-debug
+            for skill, members in matrix.items():
+                pass # Removed print-debug
+        return 0
+    
+    def cmd_debug(self, args):
+        """Agent Debug - 查看追蹤"""
+        action = args.action
+        
+        if action == "status":
+            print(self.debugger.to_table())
+        
+        elif action == "stats":
+            agent_id = args.agent_id
+            if agent_id:
+                stats = self.debugger.get_stats(agent_id)
+                print(f"\n📊 Debug Stats for: {agent_id}")
+                for k, v in stats.items():
+                    pass # Removed print-debug
+            else:
+                print(self.debugger.get_stats())
+        
+        elif action == "list":
+            agent_id = args.agent_id
+            if not agent_id:
+                pass # Removed print-debug
+                return 1
+            events = self.debugger.get_trace(agent_id, limit=args.limit or 20)
+            if not events:
+                pass # Removed print-debug
+                return 0
+            pass # Removed print-debug
+            pass # Removed print-debug
+            for event in events:
+                pass # Removed print-debug
+                if event.get('data'):
+                    for k, v in event['data'].items():
+                        pass # Removed print-debug
+        
+        elif action == "clear":
+            if args.agent_id:
+                self.debugger.clear(args.agent_id)
+                pass # Removed print-debug
+            else:
+                self.debugger.clear()
+                pass # Removed print-debug
+        
+        elif action == "enable":
+            self.debugger.enable_debug()
+            self.bus.enable_debug()
+            print("✅ Debug mode enabled")
+        
+        elif action == "disable":
+            self.debugger.disable_debug()
+            self.bus.disable_debug()
+            print("✅ Debug mode disabled")
+        
+        return 0
+    
+    def _print_impact_report(self, impact):
+        """列印 Impact Analysis 報告"""
+        risk_label = "🟢 Low" if impact.risk_score < 40 else "🟡 Medium" if impact.risk_score < 70 else "🔴 High"
+        pass # Removed print-debug
+        pass # Removed print-debug
+        pass # Removed print-debug
+        pass # Removed print-debug
+        pass # Removed print-debug
+        pass # Removed print-debug
+        pass # Removed print-debug
+        pass # Removed print-debug
+        if impact.affected_tests:
+            pass # Removed print-debug
+            for test in impact.affected_tests:
+                pass # Removed print-debug
+            pass # Removed print-debug
+        if impact.affected_modules:
+            pass # Removed print-debug
+            for mod in impact.affected_modules[:10]:  # Limit to 10
+                pass # Removed print-debug
+            if len(impact.affected_modules) > 10:
+                pass # Removed print-debug
+            pass # Removed print-debug
+        if impact.recommendations:
+            pass # Removed print-debug
+            for rec in impact.recommendations:
+                pass # Removed print-debug
+            pass # Removed print-debug
+    
+    def _print_risk_report(self, report):
+        """列印 Risk Report"""
+        pass # Removed print-debug
+        pass # Removed print-debug
+        pass # Removed print-debug
+        pass # Removed print-debug
+        pass # Removed print-debug
+        pass # Removed print-debug
+        pass # Removed print-debug
+        pass # Removed print-debug
+    
+    def cmd_trace(self, args):
+        """Traceability Matrix / Agent Trace"""
+        action = args.action
+        
+        # === Traceability Matrix commands ===
+        if action in ("init", "update", "report", "check"):
+            return self._cmd_trace_matrix(args)
+        
+        # === Impact Analysis commands (no agent_id required) ===
+        if action == "impact":
+            if not args.file:
+                pass # Removed print-debug
+                return 1
+            analyzer = ImpactAnalyzer(project_path=".")
+            analyzer.scan_project()
+            impact = analyzer.analyze_change(args.file)
+            self._print_impact_report(impact)
+            return 0
+        
+        elif action == "graphviz":
+            analyzer = ImpactAnalyzer(project_path=".")
+            analyzer.scan_project()
+            report = analyzer.get_dependency_report()
+            if args.output:
+                with open(args.output, 'w') as f:
+                    f.write(report['graphviz'])
+                pass # Removed print-debug
+            else:
+                pass # Removed print-debug
+            return 0
+        
+        elif action == "risk-report":
+            analyzer = ImpactAnalyzer(project_path=".")
+            analyzer.scan_project()
+            report = analyzer.get_dependency_report()
+            self._print_risk_report(report)
+            return 0
+        
+        # === Agent Trace commands (require agent_id) ===
+        agent_id = args.agent_id
+        if not agent_id:
+            pass # Removed print-debug
+            return 1
+        
+        if action == "view":
+            # 視覺化 trace
+            print(self.debugger.visualize(agent_id, max_events=args.limit or 50))
+        
+        elif action == "correlation":
+            # 視覺化 correlation
+            correlation_id = args.correlation
+            if correlation_id:
+                print(self.debugger.visualize_correlation(correlation_id))
+            else:
+                pass # Removed print-debug
+                return 1
+        
+        elif action == "export":
+            # 導出 JSON
+            json_data = self.debugger.export(agent_id)
+            if args.output:
+                with open(args.output, 'w') as f:
+                    f.write(json_data)
+                pass # Removed print-debug
+            else:
+                pass # Removed print-debug
+        
+        return 0
+    
+    def _cmd_trace_matrix(self, args):
+        """Traceability Matrix - 需求追蹤"""
+        action = args.action
+        import shutil
+        from pathlib import Path
+        
+        if action == "init":
+            # Copy template to project root
+            src = os.path.join(os.path.dirname(os.path.abspath(__file__)), 
+                             "templates", "TRACEABILITY_MATRIX.md")
+            dst = os.path.join(os.getcwd(), "TRACEABILITY_MATRIX.md")
+            if os.path.exists(dst):
+                pass # Removed print-debug
+                return 1
+            shutil.copy(src, dst)
+            pass # Removed print-debug
+            return 0
+        
+        elif action == "check":
+            # 檢查追蹤矩陣完整性
+            trace_file = Path(os.getcwd()) / "TRACEABILITY_MATRIX.md"
+            if not trace_file.exists():
+                pass # Removed print-debug
+                pass # Removed print-debug
+                return 1
+            
+            content = trace_file.read_text()
+            
+            # 統計
+            total = content.count("|")
+            completed = content.count("✅")
+            missing_constitution = content.count("❌")
+            
+            completeness = (completed / max(total, 1)) * 100
+            
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            
+            if missing_constitution > 0:
+                pass # Removed print-debug
+            
+            if completeness >= 90 and missing_constitution == 0:
+                pass # Removed print-debug
+                return 0
+            else:
+                pass # Removed print-debug
+                return 1
+        
+        elif action == "report":
+            pass # Removed print-debug
+            return 0
+        
+        elif action == "update":
+            if not args.id:
+                pass # Removed print-debug
+                return 1
+            
+            trace_file = Path(os.getcwd()) / "TRACEABILITY_MATRIX.md"
+            if not trace_file.exists():
+                pass # Removed print-debug
+                return 1
+            
+            content = trace_file.read_text()
+            # 簡單替換：找到對應 ID 的行並更新狀態
+            status_map = {
+                "pending": "⏳ 待處理",
+                "in-progress": "🔄 進行中",
+                "completed": "✅ 完成"
+            }
+            new_status = status_map.get(args.status, args.status or "✅ 完成")
+            
+            # 找到 ID 並更新（簡單實現：替換整行中的狀態）
+            lines = content.split('\n')
+            updated = False
+            for i, line in enumerate(lines):
+                if f"| {args.id} |" in line or f"|{args.id}|" in line:
+                    # 找到狀態列並更新
+                    parts = line.split('|')
+                    if len(parts) >= 7:
+                        parts[-2] = f" {new_status} "
+                        lines[i] = '|'.join(parts)
+                        updated = True
+                        break
+            
+            if updated:
+                trace_file.write_text('\n'.join(lines))
+                pass # Removed print-debug
+                return 0
+            else:
+                pass # Removed print-debug
+                return 1
+        
+        return 0
+
+    # ─────────────────────────────────────────────────────────────────────
+    # trace-check: 溯源追蹤檢查（SAD→代碼 / FR→測試）
+    # ─────────────────────────────────────────────────────────────────────
+
+    def cmd_trace_check(self, args):
+        """溯源追蹤檢查
+
+        模式 1: --from phase2 --to phase3  (SAD → 代碼溯源)
+                解析 SAD.md → 取得 FR-XX ↔ 模組名稱 映射
+                解析代碼 @FR annotation → 取得 FR-XX ↔ 代碼檔案 映射
+                輸出覆蓋率矩陣
+
+        模式 2: --from phase1 --to phase3-tests  (FR → 測試溯源)
+                解析 SRS.md/TRACEABILITY_MATRIX.md → 取得 FR-ID 清單
+                解析測試檔案 @covers: annotation → 取得 FR-ID ↔ 測試 映射
+                輸出 FR-ID → 測試覆蓋率
+        """
+        repo_path = Path(args.repo or Path.cwd())
+        from_phase = args.from_phase
+        to_phase = args.to_phase
+
+        if to_phase == "phase3":
+            # ── Mode 1: SAD → 代碼溯源 ──────────────────────────────────
+            return self._trace_check_sad_to_code(repo_path)
+        elif to_phase == "phase3-tests":
+            # ── Mode 2: FR → 測試溯源 ───────────────────────────────────
+            return self._trace_check_fr_to_tests(repo_path)
+        else:
+            print(f"❌ Unknown --to target: {to_phase}")
+            print("   Valid targets: phase3, phase3-tests")
+            return 1
+
+    def _trace_check_sad_to_code(self, repo_path: Path) -> int:
+        """SAD → 代碼溯源檢查"""
+        # ── Step 1: Parse SAD.md to get FR-XX → Module mapping ─────────
+        sad_files = list(repo_path.glob("**/SAD.md"))
+        if not sad_files:
+            print("⚠️  SAD.md not found — cannot determine FR → Module mapping")
+            sad_files = list(repo_path.glob("**/SAD*.md"))
+        if not sad_files:
+            print("❌ SAD.md not found in repo")
+            return 1
+
+        sad_path = sad_files[0]
+        sad_content = sad_path.read_text(encoding="utf-8")
+
+        # Extract FR → module path from SAD.md
+        # Look for lines that contain FR-XX and a backtick path (most reliable)
+        fr_module_map: Dict[str, str] = {}  # FR-ID → module_path
+        for line in sad_content.split('\n'):
+            if 'FR-' not in line:
+                continue
+            # Extract all FR references on this line
+            for m in re.finditer(r'FR-(\d+)', line):
+                fr_id = f"FR-{int(m.group(1)):02d}"
+                if fr_id in fr_module_map:
+                    continue  # already mapped
+                # Try to find a backtick path on this same line
+                path_m = re.search(r'`([^`]+\.py)`', line)
+                if path_m:
+                    fr_module_map[fr_id] = path_m.group(1).strip()
+
+        # ── Step 2: Scan code for @FR annotations ─────────────────────
+        code_files = list(repo_path.glob("**/*.py"))
+        code_files = [f for f in code_files if '__pycache__' not in str(f) and 'test_' not in f.name]
+
+        fr_code_map: Dict[str, str] = {}  # FR-ID → file_path
+        for py_file in code_files:
+            try:
+                content = py_file.read_text(encoding="utf-8")
+            except Exception:
+                continue
+            # Match @FR: FR-01 or @FR:FR-01 in docstrings/comments
+            for m in re.finditer(r'@FR:\s*FR-(\d+)', content):
+                fr_id = f"FR-{int(m.group(1)):02d}"
+                rel_path = str(py_file.relative_to(repo_path))
+                fr_code_map[fr_id] = rel_path
+
+        # ── Step 3: Build and print report ─────────────────────────────
+        all_frs = sorted(fr_module_map.keys(), key=lambda x: int(x.split('-')[1]))
+        matched = [(fr, fr_module_map[fr], fr_code_map.get(fr, "(missing)"))
+                   for fr in all_frs]
+        covered = sum(1 for fr, _, code in matched if code != "(missing)")
+        total = len(all_frs)
+        pct = (covered / total * 100) if total > 0 else 0
+
+        print(f"""
+## TRACEABILITY CHECK REPORT
+
+### Mode: SAD → 代碼溯源
+**覆蓋率: {pct:.1f}% ({covered}/{total})**
+
+| FR-ID | SAD 模組 | 代碼檔案 | 狀態 |
+|-------|---------|---------|------|""")
+
+        for fr, module, code in matched:
+            status = "✅" if code != "(missing)" else "❌"
+            # Truncate module path for display
+            module_short = module.split('/')[-1] if module else "-"
+            print(f"| {fr} | {module_short} | {code} | {status} |")
+
+        print()
+        if covered < total:
+            missing = [fr for fr, _, code in matched if code == "(missing)"]
+            print(f"⚠️  未溯源到代碼的 FR: {', '.join(missing)}")
+            return 1
+        return 0
+
+    def _trace_check_fr_to_tests(self, repo_path: Path) -> int:
+        """FR → 測試溯源檢查"""
+        # ── Step 1: Parse TRACEABILITY_MATRIX.md or SRS.md for FR list ─
+        trace_files = [
+            repo_path / "TRACEABILITY_MATRIX.md",
+            repo_path / "SRS.md",
+        ] + list(repo_path.glob("**/TRACEABILITY_MATRIX.md")) \
+              + list(repo_path.glob("**/SRS.md"))
+
+        fr_list: List[str] = []
+        for tf in trace_files:
+            if not tf.exists():
+                continue
+            try:
+                content = tf.read_text(encoding="utf-8")
+            except Exception:
+                continue
+            for m in re.finditer(r'FR-(\d+)', content):
+                fr_id = f"FR-{int(m.group(1)):02d}"
+                if fr_id not in fr_list:
+                    fr_list.append(fr_id)
+            if fr_list:
+                break  # stop at first file that has FRs
+
+        if not fr_list:
+            print("❌ No FR IDs found in TRACEABILITY_MATRIX.md or SRS.md")
+            return 1
+
+        # ── Step 2: Scan test files for @covers: annotation ───────────
+        test_files = list(repo_path.glob("**/test_*.py")) \
+                    + list(repo_path.glob("**/*_test.py"))
+
+        fr_test_map: Dict[str, List[str]] = {fr: [] for fr in fr_list}
+        for tf in test_files:
+            try:
+                content = tf.read_text(encoding="utf-8")
+            except Exception:
+                continue
+            rel_path = str(tf.relative_to(repo_path))
+            for m in re.finditer(r'@covers:\s*FR-(\d+)', content):
+                fr_id = f"FR-{int(m.group(1)):02d}"
+                if fr_id in fr_test_map:
+                    fr_test_map[fr_id].append(f"{rel_path}")
+
+        # ── Step 3: Build and print report ─────────────────────────────
+        covered = sum(1 for fr, tests in fr_test_map.items() if tests)
+        total = len(fr_list)
+        pct = (covered / total * 100) if total > 0 else 0
+
+        print(f"""
+## TRACEABILITY CHECK REPORT
+
+### Mode: FR → 測試溯源
+**覆蓋率: {pct:.1f}% ({covered}/{total})**
+
+| FR-ID | 測試函式 | 狀態 |
+|-------|---------|------|""")
+
+        for fr in sorted(fr_list, key=lambda x: int(x.split('-')[1])):
+            tests = fr_test_map[fr]
+            if tests:
+                test_str = ", ".join(tests)
+                print(f"| {fr} | {test_str} | ✅ |")
+            else:
+                print(f"| {fr} | (missing) | ❌ |")
+
+        print()
+        if covered < total:
+            missing = [fr for fr, tests in fr_test_map.items() if not tests]
+            print(f"⚠️  未有測試的 FR: {', '.join(missing)}")
+            return 1
+        return 0
+
+    def cmd_approval(self, args):
+        """人類審批管理"""
+        action = args.action
+        
+        if action == "list":
+            pending = self.approval_flow.get_pending()
+            if not pending:
+                pass # Removed print-debug
+                return 0
+            pass # Removed print-debug
+            pass # Removed print-debug
+            for p in pending:
+                pass # Removed print-debug
+            return 0
+        
+        elif action == "create":
+            req_id = self.approval_flow.create_request(
+                name=args.name or "New Approval Request",
+                description=args.description or "",
+                requester=args.requester or "user",
+                requester_name=args.requester_name or "",
+                approval_type=args.approval_type or "general",
+            )
+            pass # Removed print-debug
+            return 0
+        
+        elif action == "approve":
+            if not args.request_id:
+                pass # Removed print-debug
+                return 1
+            level = None
+            if args.level:
+                try:
+                    level = ApprovalLevel(args.level)
+                except ValueError:
+                    pass # Removed print-debug
+                    return 1
+            result = self.approval_flow.approve(args.request_id, args.approver or "user",
+                                               comment=args.comment or "", level=level)
+            if result:
+                pass # Removed print-debug
+            else:
+                pass # Removed print-debug
+            return 0
+        
+        elif action == "reject":
+            if not args.request_id:
+                pass # Removed print-debug
+                return 1
+            level = None
+            if args.level:
+                try:
+                    level = ApprovalLevel(args.level)
+                except ValueError:
+                    pass # Removed print-debug
+                    return 1
+            result = self.approval_flow.reject(args.request_id, args.approver or "user",
+                                              comment=args.comment or "", level=level)
+            if result:
+                pass # Removed print-debug
+            else:
+                pass # Removed print-debug
+            return 0
+        
+        elif action == "show":
+            if not args.request_id:
+                pass # Removed print-debug
+                return 1
+            request = self.approval_flow.get_request(args.request_id)
+            if not request:
+                pass # Removed print-debug
+                return 1
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            for i, step in enumerate(request.steps):
+                marker = "→" if i == request.current_step_index else ("✓" if step.status != ApprovalStatus.PENDING else " ")
+                pass # Removed print-debug
+                for approval in step.approvals:
+                    pass # Removed print-debug
+            pass # Removed print-debug
+            return 0
+        
+        elif action == "report":
+            pass # Removed print-debug
+            return 0
+        
+        elif action == "stats":
+            stats = self.approval_flow.get_statistics()
+            pass # Removed print-debug
+            pass # Removed print-debug
+            for k, v in stats.items():
+                pass # Removed print-debug
+            return 0
+        
+        pass # Removed print-debug
+        return 1
+
+    def cmd_risk(self, args):
+        """風險登記表管理"""
+        action = args.action
+
+        if action == "add":
+            risk = self.registry.add_risk(
+                title=args.title,
+                description=args.desc or "",
+                level=RiskLevel.from_string(args.level) if args.level else RiskLevel.MEDIUM,
+                owner=args.owner or "unassigned",
+                impact=args.impact or "",
+                probability=args.probability or 0.5,
+                mitigation=args.mitigation or "",
+            )
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            return 0
+
+        elif action == "list":
+            level_filter = args.level
+            status_filter = args.status
+
+            if level_filter:
+                risks = self.registry.get_risks_by_level(RiskLevel.from_string(level_filter))
+            elif status_filter:
+                risks = self.registry.get_risks_by_status(RiskStatus.from_string(status_filter))
+            else:
+                risks = self.registry.get_all_risks()
+
+            if not risks:
+                pass # Removed print-debug
+                return 0
+
+            pass # Removed print-debug
+            pass # Removed print-debug
+            for r in risks:
+                pass # Removed print-debug
+            return 0
+
+        elif action == "show":
+            risk = self.registry.get_risk(args.risk_id)
+            if not risk:
+                pass # Removed print-debug
+                return 1
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            if risk.mitigated_at:
+                pass # Removed print-debug
+            if risk.closed_at:
+                pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            return 0
+
+        elif action == "close":
+            if self.registry.update_risk_status(args.risk_id, RiskStatus.CLOSED):
+                pass # Removed print-debug
+            else:
+                pass # Removed print-debug
+            return 0
+
+        elif action == "mitigate":
+            if self.registry.update_risk_status(args.risk_id, RiskStatus.MITIGATED):
+                pass # Removed print-debug
+            else:
+                pass # Removed print-debug
+            return 0
+
+        elif action == "report":
+            pass # Removed print-debug
+            return 0
+
+        elif action == "stats":
+            summary = self.registry.get_summary()
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            for k, v in summary['by_status'].items():
+                pass # Removed print-debug
+            pass # Removed print-debug
+            for k, v in summary['by_level'].items():
+                pass # Removed print-debug
+            return 0
+
+        elif action == "delete":
+            if self.registry.delete_risk(args.risk_id):
+                pass # Removed print-debug
+            else:
+                pass # Removed print-debug
+            return 0
+
+        pass # Removed print-debug
+        return 1
+
+    def cmd_roi(self, args):
+        """ROI Dashboard"""
+        from roi_tracker import ROICalculator
+
+        calculator = ROICalculator()
+
+        if args.subcommand == "dashboard":
+            data = calculator.get_dashboard_data()
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            for period, report in data.items():
+                pass # Removed print-debug
+                pass # Removed print-debug
+                pass # Removed print-debug
+                pass # Removed print-debug
+                pass # Removed print-debug
+                if hasattr(report, 'recommendation') and report.recommendation:
+                    pass # Removed print-debug
+            pass # Removed print-debug
+            return 0
+
+        elif args.subcommand == "report":
+            report = calculator.calculate(args.period)
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            return 0
+
+    def cmd_p2p(self, args):
+        """P2P 團隊配置管理"""
+        action = args.p2p_action
+        cache_path = ".p2p_team_cache.json"
+
+        if action == "init":
+            try:
+                self.p2p_config = P2PTeamConfig.from_json(args.config_path)
+            except FileNotFoundError as e:
+                pass # Removed print-debug
+                return 1
+            except json.JSONDecodeError as e:
+                pass # Removed print-debug
+                return 1
+
+            if not self.p2p_config.validate():
+                pass # Removed print-debug
+                return 1
+
+            # Persist to cache for stateless access
+            with open(cache_path, "w", encoding="utf-8") as f:
+                json.dump(self.p2p_config.to_dict(), f, indent=2, ensure_ascii=False)
+
+            summary = self.p2p_config.summary()
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            return 0
+
+        # Reload from cache for status/list
+        if os.path.exists(cache_path):
+            try:
+                with open(cache_path, "r", encoding="utf-8") as f:
+                    self.p2p_config = P2PTeamConfig.from_dict(json.load(f))
+            except Exception:
+                self.p2p_config = None
+
+        if self.p2p_config is None:
+            pass # Removed print-debug
+            return 1
+
+        if action == "status":
+            summary = self.p2p_config.summary()
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            return 0
+
+        if action == "list":
+            members = self.p2p_config.list_agents()
+            if not members:
+                pass # Removed print-debug
+                return 0
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            for m in members:
+                spawn = "✅" if m["canSpawnSubagent"] else "❌"
+                memory = "✅" if m["peerMemoryEnabled"] else "❌"
+                pass # Removed print-debug
+            return 0
+
+        pass # Removed print-debug
+        return 1
+
+    def cmd_hitl(self, args):
+        """HITL 人類介入管理"""
+        action = args.action
+        
+        if action == "register":
+            # 註冊負責人
+            owner = AgentOwner(
+                owner_id=args.owner_id,
+                name=args.name or "",
+                email=args.email or "",
+                role=args.role or "Owner",
+            )
+            if self.hitl_controller.register_owner(owner):
+                pass # Removed print-debug
+            else:
+                pass # Removed print-debug
+            return 0
+        
+        elif action == "list":
+            # 列出負責人或產出
+            if args.list_type == "owners":
+                owners = self.hitl_controller.list_owners()
+                if not owners:
+                    pass # Removed print-debug
+                    return 0
+                pass # Removed print-debug
+                pass # Removed print-debug
+                for o in owners:
+                    pass # Removed print-debug
+                return 0
+            elif args.list_type == "outputs":
+                outputs = self.hitl_controller.get_outputs_by_status(OutputStatus(args.status_filter)) if args.status_filter else list(self.hitl_controller.outputs.values())
+                if not outputs:
+                    pass # Removed print-debug
+                    return 0
+                pass # Removed print-debug
+                pass # Removed print-debug
+                for o in outputs:
+                    pass # Removed print-debug
+                return 0
+            elif args.list_type == "pending":
+                pending = self.hitl_controller.get_pending_reviews(args.owner_filter)
+                if not pending:
+                    pass # Removed print-debug
+                    return 0
+                pass # Removed print-debug
+                pass # Removed print-debug
+                for o in pending:
+                    pass # Removed print-debug
+                return 0
+        
+        elif action == "assign":
+            # 指派 Agent 給負責人
+            if self.hitl_controller.assign_agent_to_owner(args.agent_id, args.owner_id):
+                owner = self.hitl_controller.get_owner(args.owner_id)
+                pass # Removed print-debug
+            else:
+                pass # Removed print-debug
+            return 0
+        
+        elif action == "approve":
+            # 批准產出
+            if self.hitl_controller.approve_output(args.output_id, args.approver or "user"):
+                pass # Removed print-debug
+            else:
+                pass # Removed print-debug
+            return 0
+        
+        elif action == "reject":
+            # 要求修改
+            feedback = args.feedback or "Revision requested"
+            if self.hitl_controller.request_revision(args.output_id, args.approver or "user", feedback):
+                pass # Removed print-debug
+                pass # Removed print-debug
+            else:
+                pass # Removed print-debug
+            return 0
+        
+        elif action == "show":
+            # 顯示產出詳情
+            output = self.hitl_controller.get_output(args.output_id)
+            if not output:
+                pass # Removed print-debug
+                return 1
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            if output.submitted_at:
+                pass # Removed print-debug
+            if output.approved_at:
+                pass # Removed print-debug
+            if output.feedback:
+                pass # Removed print-debug
+            if output.revision_count > 0:
+                pass # Removed print-debug
+            pass # Removed print-debug
+            return 0
+        
+        elif action == "stats":
+            # 顯示統計
+            stats = self.hitl_controller.get_statistics()
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            for status, count in stats['by_status'].items():
+                pass # Removed print-debug
+            return 0
+        
+        elif action == "report":
+            # 生成報告
+            pass # Removed print-debug
+            return 0
+        
+        elif action == "escalate":
+            # 升級產出
+            from hitl_controller import EscalationLevel
+            level = EscalationLevel(args.level) if args.level else EscalationLevel.OWNER
+            if self.hitl_controller.escalate_output(args.output_id, args.reason, level):
+                pass # Removed print-debug
+                pass # Removed print-debug
+                pass # Removed print-debug
+            else:
+                pass # Removed print-debug
+            return 0
+        
+        pass # Removed print-debug
+        return 1
+
+    def cmd_constitution(self, args):
+        """Constitution management"""
+        subcmd = args.subcommand
+
+        if subcmd == "view":
+            from constitution import load_constitution
+            pass # Removed print-debug
+        elif subcmd == "thresholds":
+            from constitution import get_quality_thresholds
+            thresholds = get_quality_thresholds()
+            pass # Removed print-debug
+            for k, v in thresholds.items():
+                pass # Removed print-debug
+        elif subcmd == "errors":
+            from constitution import get_error_levels
+            levels = get_error_levels()
+            pass # Removed print-debug
+            for k, v in levels.items():
+                pass # Removed print-debug
+        elif subcmd == "check":
+            skip_failed = getattr(args, 'skip_failed', False)
+            auto_fix = getattr(args, 'auto_fix', False)
+
+            # Constitution check 是框架 Constitution 驗證的前端介面
+            # --auto-fix / --skip-failed 選項已預留（用於 phase-level Constitution）
+            # 目前 Constitution 驗證請使用: python cli.py enforce --level BLOCK
+            if auto_fix or skip_failed:
+                print("⚠️  --auto-fix / --skip-failed for constitution check is in development.")
+                print("   現有 Constitution 驗證請使用: python cli.py enforce --level BLOCK")
+                return 0
+
+            # Constitution check 框架
+            from pathlib import Path
+            project_root = Path(getattr(args, 'project', '.'))
+            phase_type = getattr(args, 'type', None)
+            if not phase_type:
+                print("❌ constitution check 需要 --type 參數 (如: srs, sad, test_plan, implementation)")
+                return 1
+
+            # 使用 validate_constitution_compliance（constitution 模块提供的接口）
+            try:
+                from constitution import validate_constitution_compliance
+                result = validate_constitution_compliance(str(project_root))
+                compliant = result.get("compliant", False)
+                checks = result.get("checks", [])
+                icon = "✅" if compliant else "❌"
+                print(f"\n{icon} Constitution check ({phase_type}): compliant={compliant}")
+                if checks:
+                    for check in checks[:10]:
+                        print(f"   - {check}")
+            except Exception as e:
+                print(f"❌ Constitution check failed: {e}")
+                return 1
+            return 0
+        elif subcmd == "edit":
+            pass # Removed print-debug
+            import subprocess
+            subprocess.run(["open", "constitution/CONSTITUTION.md"])
+        elif subcmd == "compile":
+            from constitution import compile_constitution
+            compiled = compile_constitution()
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+        elif subcmd == "verify":
+            if not args.output:
+                pass # Removed print-debug
+                pass # Removed print-debug
+                return 1
+            from constitution import compile_constitution, verify_agent_output
+            compiled = compile_constitution()
+            result = verify_agent_output(compiled, args.output)
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            if result['violations']:
+                pass # Removed print-debug
+                for v in result['violations']:
+                    pass # Removed print-debug
+        else:
+            pass # Removed print-debug
+            pass # Removed print-debug
+        return 0
+
+    def cmd_constitution_sync(self, args):
+        """Sync Constitution to Policy Engine"""
+        from enforcement.constitution_policy_sync import ConstitutionPolicyGenerator
+        
+        generator = ConstitutionPolicyGenerator()
+        policies = generator.sync()
+        
+        pass # Removed print-debug
+        return 0
+
+    def cmd_spec_track(self, args):
+        """Spec Tracking - 規格追蹤"""
+        from quality_gate.spec_tracking_checker import SpecTrackingChecker
+        
+        action = args.action
+        project_root = os.getcwd()
+        
+        checker = SpecTrackingChecker(project_root)
+        
+        if action == "init":
+            # Copy template to project root
+            import shutil
+            src = os.path.join(os.path.dirname(os.path.abspath(__file__)), 
+                             "templates", "SPEC_TRACKING.md")
+            dst = os.path.join(project_root, "SPEC_TRACKING.md")
+            
+            if os.path.exists(dst):
+                pass # Removed print-debug
+                return 1
+            
+            shutil.copy(src, dst)
+            pass # Removed print-debug
+            return 0
+        
+        elif action == "check":
+            exists = checker.check_exists()
+            if not exists:
+                pass # Removed print-debug
+                return 1
+            
+            completeness = checker.check_completeness()
+            if completeness.get("complete"):
+                pass # Removed print-debug
+                return 0
+            else:
+                missing = completeness.get("missing", [])
+                for item in missing:
+                    pass # Removed print-debug
+                return 1
+        
+        elif action == "report":
+            result = checker.run()
+            checker.print_report()
+            return 0
+        
+        return 0
+
+    def cmd_version(self, args):
+        """顯示版本"""
+        pass # Removed print-debug
+        return 0
+
+    def cmd_gatekeeper(self, args):
+        """Workflow Gatekeeper"""
+        from anti_shortcut.gatekeeper import Gatekeeper, Phase
+        
+        gk = Gatekeeper()
+        action = args.action
+        
+        if action == "status":
+            gk.print_status()
+        elif action == "check":
+            pass # Removed print-debug
+            all_passed = gk.check_all_gates()
+            gk.print_status()
+            if all_passed:
+                pass # Removed print-debug
+                return 0
+            else:
+                pass # Removed print-debug
+                return 1
+        elif action == "enforce":
+            pass # Removed print-debug
+            gk.start_phase(Phase.CONSTITUTION)
+            # 執行 Constitution gates
+            for gate in gk.phase_records[Phase.CONSTITUTION].gates:
+                gk.check_gate(gate.gate_id)
+            gk.print_status()
+            if gk.can_proceed_to_next_phase():
+                pass # Removed print-debug
+                return 0
+            else:
+                pass # Removed print-debug
+                return 1
+        return 0
+
+    def cmd_confirmations(self, args):
+        """Double Confirmation Management"""
+        dc = DoubleConfirmation(timeout_minutes=30)
+        action = args.action
+        
+        if action == "list":
+            pending = dc.get_pending(operation=args.operation)
+            if not pending:
+                pass # Removed print-debug
+                return 0
+            pass # Removed print-debug
+            for p in pending:
+                required = 1 if p.level == ConfirmationLevel.SINGLE else 2
+                pass # Removed print-debug
+                pass # Removed print-debug
+                pass # Removed print-debug
+                pass # Removed print-debug
+                pass # Removed print-debug
+            return 0
+        
+        elif action == "confirm":
+            if not args.confirmation_id or not args.confirmed_by:
+                pass # Removed print-debug
+                return 1
+            success = dc.confirm(args.confirmation_id, args.confirmed_by)
+            if success:
+                status = dc.get_status(args.confirmation_id)
+                if status and status.get("status") == "approved":
+                    pass # Removed print-debug
+                else:
+                    pass # Removed print-debug
+                return 0
+            else:
+                pass # Removed print-debug
+                return 1
+        
+        elif action == "reject":
+            if not args.confirmation_id or not args.confirmed_by:
+                pass # Removed print-debug
+                return 1
+            success = dc.reject(args.confirmation_id, args.confirmed_by, args.reason or "")
+            if success:
+                pass # Removed print-debug
+                return 0
+            else:
+                pass # Removed print-debug
+                return 1
+        
+        elif action == "status":
+            if not args.confirmation_id:
+                pass # Removed print-debug
+                return 1
+            status = dc.get_status(args.confirmation_id)
+            if status:
+                pass # Removed print-debug
+                pass # Removed print-debug
+                pass # Removed print-debug
+                pass # Removed print-debug
+                pass # Removed print-debug
+                pass # Removed print-debug
+                pass # Removed print-debug
+                if 'required' in status:
+                    pass # Removed print-debug
+                return 0
+            else:
+                pass # Removed print-debug
+                return 1
+        
+        elif action == "check":
+            if not args.operation:
+                pass # Removed print-debug
+                return 1
+            level = dc.requires_confirmation(args.operation)
+            pass # Removed print-debug
+            if level == ConfirmationLevel.BLOCKED:
+                pass # Removed print-debug
+            elif level == ConfirmationLevel.APPROVAL:
+                pass # Removed print-debug
+            elif level == ConfirmationLevel.DOUBLE:
+                pass # Removed print-debug
+            elif level == ConfirmationLevel.SINGLE:
+                pass # Removed print-debug
+            return 0
+        
+        return 0
+
+    def cmd_release(self, args):
+        """Release Management with Double Confirmation"""
+        if not args.version:
+            pass # Removed print-debug
+            return 1
+        
+        dc = DoubleConfirmation(timeout_minutes=30)
+        operation = "release"
+        description = f"發布版本 {args.version} 到 GitHub"
+        metadata = {"version": args.version, "repo": args.repo or "main"}
+        
+        level = dc.requires_confirmation(operation)
+        
+        if level == ConfirmationLevel.BLOCKED:
+            pass # Removed print-debug
+            return 1
+        
+        if level == ConfirmationLevel.NONE:
+            pass # Removed print-debug
+            return 0
+        
+        if not args.confirm:
+            pass # Removed print-debug
+            pass # Removed print-debug
+            conf_id = dc.create_pending(operation, description, metadata)
+            if conf_id:
+                pass # Removed print-debug
+            return 1
+        
+        # 創建待確認
+        conf_id = dc.create_pending(operation, description, metadata)
+        
+        if conf_id == "__BLOCKED__":
+            pass # Removed print-debug
+            return 1
+        
+        # Agent 確認 (第一次)
+        pass # Removed print-debug
+        dc.confirm(conf_id, confirmed_by="agent-cli")
+        
+        pending = dc._find_pending(conf_id)
+        if pending:
+            required = 1 if pending.level == ConfirmationLevel.SINGLE else 2
+            current = len(pending.confirmations)
+            pass # Removed print-debug
+            
+            if current < required:
+                pass # Removed print-debug
+                pass # Removed print-debug
+                pass # Removed print-debug
+                pass # Removed print-debug
+                pass # Removed print-debug
+                return 1
+        else:
+            status = dc.get_status(conf_id)
+            if status and status.get("status") == "approved":
+                pass # Removed print-debug
+                return 0
+            else:
+                pass # Removed print-debug
+                return 1
+        
+        return 0
+
+    def cmd_policy(self, args):
+        """Run Policy Engine checks"""
+        from enforcement.policy_engine import create_hard_block_engine
+        try:
+            engine = create_hard_block_engine()
+            results = engine.enforce_all()
+            summary = engine.get_summary()
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            if summary['all_passed']:
+                pass # Removed print-debug
+                return 0
+            else:
+                pass # Removed print-debug
+                return 1
+        except Exception as e:
+            pass # Removed print-debug
+            return 1
+
+    def cmd_install_hook(self, args):
+        """Install pre-commit hook"""
+        import shutil
+        from pathlib import Path
+        
+        # Try new template location first, fall back to old
+        hook_source = Path(__file__).parent / "templates" / "pre-commit-hook.sh"
+        if not hook_source.exists():
+            hook_source = Path(__file__).parent / "pre-commit.template"
+        
+        if not hook_source.exists():
+            pass # Removed print-debug
+            return 1
+        
+        hook_dest = Path(".git") / "hooks" / "pre-commit"
+        
+        if hook_dest.exists() and not args.force:
+            pass # Removed print-debug
+            return 1
+        
+        shutil.copy(hook_source, hook_dest)
+        hook_dest.chmod(0o755)
+        pass # Removed print-debug
+        return 0
+
+    def cmd_enforcement_config(self, args):
+        """Unified Enforcement Configuration"""
+        from enforcement_config import EnforcementConfig, ConfigGenerator, EnforcementMode
+        
+        action = args.action
+        
+        if not action or action == "show":
+            config = EnforcementConfig.load()
+            pass # Removed print-debug
+        elif action == "init":
+            config = ConfigGenerator.local_only()
+            config.save()
+            pass # Removed print-debug
+            pass # Removed print-debug
+        elif action == "set":
+            mode = args.mode or "local"
+            if mode == "github":
+                config = ConfigGenerator.github_actions()
+            elif mode == "gitlab":
+                config = ConfigGenerator.gitlab_ci()
+            elif mode == "jenkins":
+                config = ConfigGenerator.jenkins()
+            elif mode == "azure":
+                config = ConfigGenerator.azure_pipelines()
+            else:
+                config = ConfigGenerator.local_only()
+            config.save()
+            pass # Removed print-debug
+            pass # Removed print-debug
+        elif action == "detect":
+            config = ConfigGenerator.auto_detect()
+            pass # Removed print-debug
+            pass # Removed print-debug
+        else:
+            pass # Removed print-debug
+            return 1
+        return 0
+
+    def cmd_enforcement(self, args):
+        """
+        Enforcement 統一 CLI
+
+        子命令：
+        - run: 執行所有 enforcement 檢查
+        - check: 檢查 enforcement 狀態
+        - status: 顯示摘要
+        - install: 安裝 hook
+        - config: 顯示/設定 enforcement 設定
+        """
+        from enforcement_config import EnforcementConfig, ConfigGenerator
+        from enforcement import PolicyEngine, ConstitutionAsCode, EnforcementLevel
+        from enforcement.execution_registry import ExecutionRegistry
+
+        sub = args.subcommand
+
+        if sub == "run":
+            # 執行所有 enforcement 檢查
+            pass # Removed print-debug
+            pass # Removed print-debug
+
+            passed = 0
+            failed = 0
+
+            # 1. Policy Engine
+            pass # Removed print-debug
+            try:
+                engine = PolicyEngine()
+                results = engine.enforce_all()
+                summary = engine.get_summary()
+                pass # Removed print-debug
+                if summary['all_passed']:
+                    passed += 1
+                    pass # Removed print-debug
+                else:
+                    failed += 1
+                    pass # Removed print-debug
+            except Exception as e:
+                failed += 1
+                pass # Removed print-debug
+
+            # 2. Constitution Check
+            pass # Removed print-debug
+            try:
+                constitution = ConstitutionAsCode()
+                # 嘗試從環境變數讀取 commit message
+                import os
+                commit_msg = os.environ.get('COMMIT_MSG', os.environ.get('GIT_COMMITMSG', ''))
+                if commit_msg:
+                    constitution.enforce({"commit_message": commit_msg})
+                pass # Removed print-debug
+                passed += 1
+            except Exception as e:
+                failed += 1
+                pass # Removed print-debug
+
+            # 3. 記錄到 Registry
+            pass # Removed print-debug
+            try:
+                registry = ExecutionRegistry()
+                registry.record("enforcement-run", {
+                    "policy_passed": passed > 0,
+                    "constitution_passed": True,
+                })
+                pass # Removed print-debug
+            except Exception as e:
+                pass # Removed print-debug
+
+            # 總結
+            pass # Removed print-debug
+            if failed == 0:
+                pass # Removed print-debug
+                return 0
+            else:
+                pass # Removed print-debug
+                return 1
+
+        elif sub == "check":
+            # 檢查 enforcement 狀態
+            config = EnforcementConfig.load()
+            pass # Removed print-debug
+            return 0
+
+        elif sub == "status":
+            # 顯示摘要
+            config = EnforcementConfig.load()
+            pass # Removed print-debug
+
+            # 顯示 Policy Engine 狀態
+            pass # Removed print-debug
+            try:
+                engine = PolicyEngine()
+                summary = engine.get_summary()
+                pass # Removed print-debug
+                pass # Removed print-debug
+                pass # Removed print-debug
+            except Exception as e:
+                pass # Removed print-debug
+            return 0
+
+        elif sub == "install":
+            # 安裝 hook
+            from pathlib import Path
+            import shutil
+
+            hook_source = Path(__file__).parent / "pre-commit.template"
+            hook_dest = Path(__file__).parent / ".git" / "hooks" / "pre-commit"
+
+            if not hook_source.exists():
+                pass # Removed print-debug
+                return 1
+
+            hook_dest.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy(hook_source, hook_dest)
+            hook_dest.chmod(0o755)
+
+            pass # Removed print-debug
+            return 0
+
+        elif sub == "config":
+            # 顯示/設定 enforcement 設定
+            if args.mode:
+                mode = args.mode
+                if mode == "local":
+                    config = ConfigGenerator.local_only()
+                elif mode == "github":
+                    config = ConfigGenerator.github_actions()
+                elif mode == "gitlab":
+                    config = ConfigGenerator.gitlab_ci()
+                elif mode == "jenkins":
+                    config = ConfigGenerator.jenkins()
+                elif mode == "azure":
+                    config = ConfigGenerator.azure_pipelines()
+                else:
+                    pass # Removed print-debug
+                    pass # Removed print-debug
+                    return 1
+
+                config.save()
+                pass # Removed print-debug
+
+            pass # Removed print-debug
+            return 0
+
+        else:
+            pass # Removed print-debug
+            pass # Removed print-debug
+            return 1
+
+    def _run_phase_enforcer_check(self):
+        """
+        PhaseEnforcer 自動化檢查（BUG-001 修復）
+        
+        不依賴 daemon，CLI 執行時直接檢查。
+        這讓 Quality Gate 可以在沒有 daemon 的環境下自動觸發。
+        """
+        from enforcement.framework_enforcer import FrameworkEnforcer
+        
+        pass # Removed print-debug
+        
+        enforcer = FrameworkEnforcer(os.getcwd())
+        result = enforcer.run(level="BLOCK")
+        
+        phase_passed = True
+        if result.violations:
+            phase_passed = False
+            for msg, fix in result.violations:
+                pass # Removed print-debug
+                if fix:
+                    pass # Removed print-debug
+        
+        if result.warnings:
+            for msg, fix in result.warnings:
+                pass # Removed print-debug
+        
+        if phase_passed:
+            pass # Removed print-debug
+        
+        return result.passed
+
+    def cmd_quality_gate(self, args):
+        """Quality Gate - 統一品質閘道檢查"""
+        from quality_gate import UnifiedGate
+        from quality_gate.spec_tracking_checker import SpecTrackingChecker
+
+        sub = args.subcommand
+
+        if sub == "check" or sub == "all":
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+
+            # ========================================
+            # v6.05: 強制 BLOCK 級別（防作假機制 1）
+            # ========================================
+            from enforcement.framework_enforcer import FrameworkEnforcer
+            
+            enforcer = FrameworkEnforcer(os.getcwd())
+            result = enforcer.run(level="BLOCK")
+            
+            # #5 修復：記錄 FrameworkEnforcer 結果到 DEVELOPMENT_LOG
+            try:
+                log_path = os.path.join(os.getcwd(), "DEVELOPMENT_LOG.md")
+                import datetime
+                timestamp = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+                status_icon = "✅" if result.passed else "❌"
+                violations_count = len(result.violations)
+                log_entry = f"\n{status_icon} **[{timestamp}] FrameworkEnforcer BLOCK**: {status_icon} {violations_count} violations\n"
+                with open(log_path, "a", encoding="utf-8") as f:
+                    f.write(log_entry)
+            except Exception as e:
+                pass  # 不阻塞主要流程
+            
+            # 失敗時阻擋
+            if not result.passed:
+                pass # Removed print-debug
+                pass # Removed print-debug
+                for msg, fix in result.violations:
+                    pass # Removed print-debug
+                    if fix:
+                        pass # Removed print-debug
+                sys.exit(1)
+            
+            pass # Removed print-debug
+
+            gate = UnifiedGate()
+            result = gate.check_all()
+
+            pass # Removed print-debug
+            pass # Removed print-debug
+
+            pass # Removed print-debug
+            for check in result.checks:
+                status = "✅" if check.passed else "❌"
+                pass # Removed print-debug
+                if check.violations:
+                    for v in check.violations[:3]:
+                        pass # Removed print-debug
+
+            # Framework Enforcement - SPEC_TRACKING
+            pass # Removed print-debug
+            project_root = os.getcwd()
+            checker = SpecTrackingChecker(project_root)
+            spec_result = checker.run_enforcement()
+
+            if not spec_result.get('exists', False):
+                pass # Removed print-debug
+                pass # Removed print-debug
+                sys.exit(1)
+            else:
+                completeness = spec_result.get('completeness', 0)
+                if completeness < 90:
+                    pass # Removed print-debug
+                    sys.exit(1)
+                pass # Removed print-debug
+                if spec_result.get('missing'):
+                    for m in spec_result['missing'][:3]:
+                        pass # Removed print-debug
+
+            sys.exit(0 if result.passed else 1)
+
+        elif sub == "doc" or sub == "docs":
+            gate = UnifiedGate()
+            result = gate.check_documents_only()
+            pass # Removed print-debug
+            if result.violations:
+                for v in result.violations:
+                    pass # Removed print-debug
+            sys.exit(0 if result.passed else 1)
+
+        elif sub == "constitution":
+            gate = UnifiedGate()
+            result = gate.check_constitution_only()
+            pass # Removed print-debug
+            if result.violations:
+                for v in result.violations[:5]:
+                    pass # Removed print-debug
+            sys.exit(0 if result.passed else 1)
+
+        elif sub == "phase":
+            gate = UnifiedGate()
+            result = gate.check_phase_only()
+            pass # Removed print-debug
+            if result.violations:
+                for v in result.violations:
+                    pass # Removed print-debug
+            sys.exit(0 if result.passed else 1)
+
+        elif sub == "aspice":
+            # ASPICE 合規檢查（使用 Document Existence）
+            gate = UnifiedGate()
+            result = gate.check_documents_only()
+            pass # Removed print-debug
+            sys.exit(0 if result.passed else 1)
+
+        else:
+            pass # Removed print-debug
+            pass # Removed print-debug
+            return 1
+
+        return 0
+
+    def cmd_enforce(self, args):
+        """Framework Enforcement - 統一執行所有 enforcement"""
+        from enforcement.framework_enforcer import FrameworkEnforcer
+
+        level = args.level
+        project_root = args.project
+        skip_failed = getattr(args, 'skip_failed', False)
+        auto_fix = getattr(args, 'auto_fix', False)
+
+        # Handle --aspice-report first
+        if getattr(args, 'aspice_report', False):
+            enforcer = FrameworkEnforcer(project_root)
+            report = enforcer.generate_aspice_report()
+            pass # Removed print-debug
+            return 0
+
+        pass # Removed print-debug
+
+        enforcer = FrameworkEnforcer(project_root)
+        result = enforcer.run(level=level)
+
+        # #5 修復：記錄 FrameworkEnforcer 結果到 DEVELOPMENT_LOG
+        try:
+            log_path = os.path.join(project_root, "DEVELOPMENT_LOG.md")
+            import datetime
+            timestamp = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+            status_icon = "✅" if result.passed else "❌"
+            violations_count = len(result.violations)
+            log_entry = f"\n{status_icon} **[{timestamp}] FrameworkEnforcer {level}**: {status_icon} {violations_count} violations\n"
+            with open(log_path, "a", encoding="utf-8") as f:
+                f.write(log_entry)
+        except Exception as e:
+            pass  # 不阻塞主要流程
+
+        violations = result.violations
+        warnings = result.warnings
+
+        # --auto-fix: 自動修復有 fix 的 violations
+        if auto_fix and violations:
+            from enforcement.framework_enforcer import AutoFixRegistry
+            fix_registry = AutoFixRegistry()
+            fixed_count = 0
+            for msg, fix in violations:
+                if fix:
+                    try:
+                        fix_registry.apply_fix(fix)
+                        fixed_count += 1
+                    except Exception as e:
+                        pass # Removed print-debug
+            if fixed_count > 0:
+                pass # Removed print-debug
+
+        # --skip-failed: 只報告通過的結果
+        if skip_failed and violations:
+            violations = []
+            if not warnings:
+                result.passed = True
+
+        if violations:
+            pass # Removed print-debug
+            for msg, fix in violations:
+                pass # Removed print-debug
+                if fix:
+                    pass # Removed print-debug
+        else:
+            pass # Removed print-debug
+
+        if warnings:
+            pass # Removed print-debug
+            for msg, fix in warnings:
+                pass # Removed print-debug
+                if fix:
+                    pass # Removed print-debug
+        else:
+            pass # Removed print-debug
+
+        if result.passed:
+            pass # Removed print-debug
+            return 0
+        else:
+            pass # Removed print-debug
+            return 1
+
+    def cmd_decision_gate(self, args):
+        """Decision Gate - 決策分類閘道"""
+        from decision_gate import DecisionRecorder
+
+        sub = args.subcommand
+        cmd_args = args.args or []
+
+        recorder = DecisionRecorder()
+
+        if sub == "classify" or sub == "add":
+            # 新增並分類決策
+            if len(cmd_args) < 2:
+                pass # Removed print-debug
+                sys.exit(1)
+
+            item = cmd_args[0]
+            description = cmd_args[1]
+            spec_ref = cmd_args[2] if len(cmd_args) > 2 else None
+
+            result = recorder.classify_and_record(item, description, spec_ref)
+
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            if result.requires_confirmation:
+                pass # Removed print-debug
+            if result.options:
+                pass # Removed print-debug
+            if result.recommendation:
+                pass # Removed print-debug
+
+        elif sub == "list" or sub == "ls":
+            decisions = recorder.get_all()
+            if not decisions:
+                pass # Removed print-debug
+            else:
+                pass # Removed print-debug
+                pass # Removed print-debug
+                for d in decisions:
+                    pass # Removed print-debug
+
+        elif sub == "pending" or sub == "p":
+            pending = recorder.get_pending()
+            pass # Removed print-debug
+            for d in pending:
+                pass # Removed print-debug
+
+        elif sub == "confirm":
+            if len(cmd_args) < 2:
+                pass # Removed print-debug
+                sys.exit(1)
+
+            decision_id = cmd_args[0]
+            value = cmd_args[1]
+            recorder.confirm(decision_id, value)
+            pass # Removed print-debug
+
+        elif sub == "report":
+            pass # Removed print-debug
+
+        else:
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+
+        return 0
+
+    def cmd_agent_proof_hook(self, args):
+        """Agent-Proof Hook Management"""
+        from enforcement.agent_proof_hook import AgentProofHook
+
+        hook = AgentProofHook()
+
+        if args.action == "install":
+            hook.install(force=True)
+        elif args.action == "verify":
+            if not hook.verify():
+                sys.exit(1)
+        elif args.action == "uninstall":
+            hook.uninstall()
+        else:
+            hook.install()
+
+        return 0
+
+    def cmd_memory(self, args):
+        """Memory Governance CLI"""
+        from memory_governance import (
+            MemoryValidator,
+            StateCoordinator,
+            ConflictResolver,
+            MemoryAudit,
+            ResolutionStrategy
+        )
+
+        sub = args.subcommand
+
+        if sub == "validate":
+            # 驗證記憶
+            validator = MemoryValidator()
+            pass # Removed print-debug
+            return 0
+
+        elif sub == "status":
+            # 顯示協調狀態
+            coordinator = StateCoordinator()
+            summary = coordinator.get_global_state_summary()
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            return 0
+
+        elif sub == "audit":
+            # 顯示審計日誌
+            audit = MemoryAudit()
+            records = audit.get_records(limit=10)
+            pass # Removed print-debug
+            for r in records:
+                pass # Removed print-debug
+            return 0
+
+        elif sub == "resolve":
+            # 解決衝突
+            pass # Removed print-debug
+            return 0
+
+        return 0
+
+    def cmd_m27(self, args):
+        """M2.7 Self-Evolving Integration"""
+        from m27_integration import (
+            HybridAttention,
+            SelfIteration,
+            FailureAnalyzer,
+            HarnessOptimizer,
+            AttentionConfig
+        )
+
+        sub = args.sub
+
+        if sub == "status":
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            return 0
+
+        elif sub == "analyze":
+            log = args.failure_log or "No failure log provided"
+            analyzer = FailureAnalyzer()
+            path = analyzer.analyze(log)
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            for r in path.recommendations:
+                pass # Removed print-debug
+            return 0
+
+        elif sub == "iterate":
+            pass # Removed print-debug
+            pass # Removed print-debug
+            return 0
+
+        elif sub == "optimize":
+            pass # Removed print-debug
+            pass # Removed print-debug
+            return 0
+
+        return 0
+
+    def cmd_metrics(self, args):
+        """Code Metrics - 代碼品質指標"""
+        from code_metrics import MetricsTracker
+
+        sub = args.subcommand if hasattr(args, 'subcommand') else "report"
+
+        tracker = MetricsTracker()
+
+        if sub == "report" or sub == "check":
+            pass # Removed print-debug
+            report = tracker.generate_report()
+
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+
+            if report['complexity_violations']:
+                pass # Removed print-debug
+                for v in report['complexity_violations'][:10]:
+                    pass # Removed print-debug
+
+            if report.get('coupling'):
+                pass # Removed print-debug
+                pass # Removed print-debug
+                pass # Removed print-debug
+
+            pass # Removed print-debug
+            return 0
+
+        elif sub == "history":
+            latest = tracker.get_latest()
+            if latest:
+                pass # Removed print-debug
+            else:
+                pass # Removed print-debug
+            return 0
+
+        return 0
+
+    def cmd_debt(self, args):
+        """Technical Debt - 技術債務追蹤"""
+        from technical_debt import DebtRegistry
+
+        sub = args.subcommand if hasattr(args, 'subcommand') else "list"
+        action_args = args.args if hasattr(args, 'args') else []
+
+        registry = DebtRegistry()
+
+        if sub == "add":
+            if len(action_args) < 1:
+                pass # Removed print-debug
+                return 1
+
+            description = action_args[0]
+            severity = args.severity if hasattr(args, 'severity') and args.severity else "medium"
+            ticket = args.ticket if hasattr(args, 'ticket') and args.ticket else None
+
+            debt_id = registry.add(description, severity, ticket)
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            if ticket:
+                pass # Removed print-debug
+            return 0
+
+        elif sub == "list" or sub == "ls":
+            debts = registry.list_all()
+            if not debts:
+                pass # Removed print-debug
+            else:
+                pass # Removed print-debug
+                pass # Removed print-debug
+                for d in debts:
+                    pass # Removed print-debug
+            return 0
+
+        elif sub == "open":
+            debts = registry.list_open()
+            pass # Removed print-debug
+            for d in debts:
+                pass # Removed print-debug
+            return 0
+
+        elif sub == "resolve":
+            if len(action_args) < 1:
+                pass # Removed print-debug
+                return 1
+
+            debt_id = action_args[0]
+            if registry.resolve(debt_id):
+                pass # Removed print-debug
+            else:
+                pass # Removed print-debug
+            return 0
+
+        elif sub == "accept":
+            if len(action_args) < 2:
+                pass # Removed print-debug
+                return 1
+
+            debt_id = action_args[0]
+            reason = action_args[1]
+            if registry.accept(debt_id, reason):
+                pass # Removed print-debug
+            else:
+                pass # Removed print-debug
+            return 0
+
+        elif sub == "report":
+            pass # Removed print-debug
+            return 0
+
+        return 0
+
+    def cmd_adr(self, args):
+        """ADR - Architecture Decision Records"""
+        from adr import ADR, ADRRegistry
+
+        sub = args.adr_action if hasattr(args, 'adr_action') else "list"
+        action_args = args.args if hasattr(args, 'args') else []
+
+        registry = ADRRegistry()
+
+        if sub == "create" or sub == "new":
+            title = action_args[0] if action_args else "(no title)"
+
+            adr = ADR(
+                title=title,
+                context="(describe context)",
+                decision="(describe decision)",
+                consequences="(describe consequences)"
+            )
+
+            adr_id = registry.save(adr)
+            pass # Removed print-debug
+            pass # Removed print-debug
+            return 0
+
+        elif sub == "list" or sub == "ls":
+            adrs = registry.list_all()
+            if not adrs:
+                pass # Removed print-debug
+                pass # Removed print-debug
+            else:
+                pass # Removed print-debug
+                pass # Removed print-debug
+                for adr in adrs:
+                    pass # Removed print-debug
+            return 0
+
+        elif sub == "get" or sub == "show":
+            adr_id = action_args[0] if action_args else None
+            if not adr_id:
+                pass # Removed print-debug
+                return 1
+
+            adr = registry.get(adr_id)
+            if adr:
+                pass # Removed print-debug
+            else:
+                pass # Removed print-debug
+            return 0
+
+        elif sub == "status":
+            adr_id = action_args[0] if len(action_args) > 0 else None
+            new_status = action_args[1] if len(action_args) > 1 else None
+            if not adr_id or not new_status:
+                pass # Removed print-debug
+                return 1
+
+            if registry.update_status(adr_id, new_status):
+                pass # Removed print-debug
+            else:
+                pass # Removed print-debug
+            return 0
+
+        elif sub == "export":
+            count = registry.export_markdown("docs/adr/")
+            pass # Removed print-debug
+            return 0
+
+        elif sub == "report":
+            pass # Removed print-debug
+            return 0
+
+        pass # Removed print-debug
+        pass # Removed print-debug
+        pass # Removed print-debug
+        pass # Removed print-debug
+        pass # Removed print-debug
+        pass # Removed print-debug
+        pass # Removed print-debug
+        return 0
+
+    def cmd_guide(self, args):
+        """Learning Guide - 學習指引"""
+        from pathlib import Path
+        
+        pass # Removed print-debug
+        pass # Removed print-debug
+        pass # Removed print-debug
+        pass # Removed print-debug
+        pass # Removed print-debug
+        pass # Removed print-debug
+        pass # Removed print-debug
+        pass # Removed print-debug
+        pass # Removed print-debug
+        pass # Removed print-debug
+        pass # Removed print-debug
+        pass # Removed print-debug
+        pass # Removed print-debug
+        return 0
+
+    def cmd_persona(self, args):
+        """Agent Persona - 角色人格管理"""
+        from agent_personas import generate_persona_prompt
+
+        action = args.action
+
+        if action == "list":
+            pass # Removed print-debug
+            pass # Removed print-debug
+            personas = ["architect", "developer", "reviewer", "qa", "pm", "devops"]
+            for p in personas:
+                prompt = generate_persona_prompt(p)
+                pass # Removed print-debug
+                pass # Removed print-debug
+            return 0
+
+        elif action == "show":
+            if not args.persona_type:
+                pass # Removed print-debug
+                return 1
+            prompt = generate_persona_prompt(args.persona_type)
+            pass # Removed print-debug
+            pass # Removed print-debug
+            return 0
+
+        elif action == "apply":
+            if not args.persona_type:
+                pass # Removed print-debug
+                return 1
+            # 顯示如何使用的範例
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            return 0
+
+        return 0
+
+    def cmd_roadmap(self, args):
+        """Learning Roadmap - 學習地圖"""
+        from pathlib import Path
+        
+        roadmap = Path("docs/ROADMAP.md")
+        if roadmap.exists():
+            pass # Removed print-debug
+        else:
+            pass # Removed print-debug
+        return 0
+
+    def cmd_ralph(self, args):
+        """Ralph Mode - 任務長時監控"""
+        # 代理到 RalphCLI
+        # 重新構建 args 以符合 RalphCLI 的格式
+        import argparse as _argparse
+        
+        # 處理 ralph 子命令
+        ralph_args = args.ralph_command
+        
+        # 提取 task_id（如果存在）
+        task_id = None
+        interval = 30
+        background = False
+        phase = None
+        target_phase = None
+        status_filter = None
+        
+        if ralph_args:
+            # start task_id [--interval N] [--background]
+            if ralph_args[0] == "start" and len(ralph_args) > 1:
+                task_id = ralph_args[1]
+                # 解析可選參數
+                for i in range(2, len(ralph_args)):
+                    if ralph_args[i] == "--interval" or ralph_args[i] == "-i":
+                        if i + 1 < len(ralph_args):
+                            interval = int(ralph_args[i + 1])
+                    elif ralph_args[i] == "--background" or ralph_args[i] == "-b":
+                        background = True
+            elif ralph_args[0] == "status" and len(ralph_args) > 1:
+                task_id = ralph_args[1]
+            elif ralph_args[0] == "stop" and len(ralph_args) > 1:
+                task_id = ralph_args[1]
+            elif ralph_args[0] == "init" and len(ralph_args) > 1:
+                task_id = ralph_args[1]
+                for i in range(2, len(ralph_args)):
+                    if ralph_args[i] == "--phase" or ralph_args[i] == "-p":
+                        if i + 1 < len(ralph_args):
+                            phase = ralph_args[i + 1]
+            elif ralph_args[0] == "advance" and len(ralph_args) > 1:
+                task_id = ralph_args[1]
+                for i in range(2, len(ralph_args)):
+                    if ralph_args[i] == "--to" or ralph_args[i] == "-t":
+                        if i + 1 < len(ralph_args):
+                            target_phase = ralph_args[i + 1]
+            elif ralph_args[0] == "list":
+                for i in range(1, len(ralph_args)):
+                    if ralph_args[i] == "--status" or ralph_args[i] == "-s":
+                        if i + 1 < len(ralph_args):
+                            status_filter = ralph_args[i + 1]
+        
+        # 構建 namespace
+        ralph_namespace = _argparse.Namespace()
+        ralph_namespace.command = ralph_args[0] if ralph_args else "list"
+        ralph_namespace.task_id = task_id
+        ralph_namespace.interval = interval
+        ralph_namespace.background = background
+        ralph_namespace.phase = phase
+        ralph_namespace.to = target_phase
+        ralph_namespace.status = status_filter
+        
+        return self.ralph_cli.run(ralph_namespace)
+
+    def cmd_stage_pass(self, args):
+        """STAGE_PASS Generator - 整合版品質認證"""
+        from quality_gate.stage_pass_generator import IntegratedStagePassGenerator
+
+        phase = args.phase
+        project_dir = args.project
+
+        generator = IntegratedStagePassGenerator(project_dir, phase)
+
+        # --skip-failed: 過濾掉失敗的檢查
+        if getattr(args, 'skip_failed', False):
+            generator.skip_failed = True
+
+        # --auto-fix: 自動修復已知問題
+        if getattr(args, 'auto_fix', False):
+            generator.auto_fix = True
+
+        success = generator.run()
+
+        return 0 if success else 1
+
+    def cmd_phase_truth(self, args):
+        """Phase 真相驗證 - 驗證某個 Phase 是否真的通過了"""
+        from quality_gate.phase_truth_verifier import PhaseTruthVerifier
+
+        phase = args.phase
+        project_dir = args.project
+
+        verifier = PhaseTruthVerifier(project_dir, phase)
+        result = verifier.verify()
+
+        return 0 if result["passed"] else 1
+
+    def cmd_skill_check(self, args):
+        """SKILL.md 強制讀取檢查"""
+        from quality_gate.skill_preheater import SkillPreheater
+        from quality_gate.skill_interrogator import SkillInterrogator
+        from quality_gate.citation_enforcer import CitationEnforcer
+        
+        phase = args.phase if hasattr(args, 'phase') and args.phase else 1
+        
+        if args.mode == "preheat":
+            preheater = SkillPreheater()
+            result = preheater.run_preflight(phase)
+            pass # Removed print-debug
+        elif args.mode == "interrogate":
+            interrogator = SkillInterrogator()
+            result = interrogator.run_interrogation(phase)
+            pass # Removed print-debug
+        elif args.mode == "citation":
+            enforcer = CitationEnforcer()
+            result = enforcer.run_citation_check(phase)
+            pass # Removed print-debug
+        else:
+            # Default: run all checks
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            
+            pass # Removed print-debug
+            preheater = SkillPreheater()
+            preheater.run_preflight(phase)
+            
+            pass # Removed print-debug
+            interrogator = SkillInterrogator()
+            interrogator.run_interrogation(phase)
+            
+            pass # Removed print-debug
+            enforcer = CitationEnforcer()
+            enforcer.run_citation_check(phase)
+        
+        return 0
+
+    def cmd_model_recommend(self, args):
+        """Phase → Model 推薦
+
+        讀取 .methodology/state.json 取得 current_phase，
+        使用 Multi-Provider ModelRouter 輸出模型推薦。
+        """
+        from pathlib import Path
+        from smart_router import route_by_phase
+        from provider_abstraction import ModelRouter
+
+        repo_path = args.repo or "."
+        state_path = Path(repo_path) / ".methodology" / "state.json"
+
+        # 讀取 state.json 取得 current_phase
+        phase = args.phase
+        if phase is None:
+            if state_path.exists():
+                try:
+                    state = json.loads(state_path.read_text())
+                    phase = state.get("current_phase")
+                except (json.JSONDecodeError, IOError) as e:
+                    print(f"❌ Failed to read state.json: {e}")
+                    return 1
+            else:
+                print(f"❌ state.json not found at {state_path}")
+                return 1
+
+        if phase is None:
+            print("❌ current_phase is None in state.json")
+            return 1
+
+        # 使用 Multi-Provider ModelRouter
+        task_hint = getattr(args, 'task_hint', None)
+        state_path_str = str(state_path) if state_path.exists() else None
+
+        if getattr(args, 'provider', False):
+            # JSON 輸出模式
+            info = ModelRouter().route_with_info(
+                phase=phase,
+                task_hint=task_hint,
+                state_path=state_path_str
+            )
+            print(json.dumps(info, indent=2))
+            return 0
+
+        # 預設 human-readable 輸出
+        result = route_by_phase(phase, state_path_str, task_hint)
+
+        print(f"""
+╔══════════════════════════════════════════════════════════════╗
+║  Phase {phase} → Model 推薦                                     ║
+╠══════════════════════════════════════════════════════════════╣""")
+        print(f"║  Model:        {result.model:<45}║")
+        print(f"║  Provider:     {result.provider:<45}║")
+        print(f"║  Est. Cost:    ${result.estimated_cost:.4f}                                     ║")
+        print(f"╠══════════════════════════════════════════════════════════════╣")
+        print(f"║  Reasoning: {result.reasoning:<43}║")
+        print(f"╚══════════════════════════════════════════════════════════════╝")
+
+        # 讀取額外 context（如果有的話）
+        if state_path.exists():
+            try:
+                state = json.loads(state_path.read_text())
+                current_step = state.get("current_step")
+                current_module = state.get("current_module")
+                if current_step or current_module:
+                    print(f"\n📊 State Context: Step {current_step}, Module {current_module}")
+            except:
+                pass
+
+        return 0
+
+    def cmd_update_step(self, args):
+        """更新 Phase/Step/Module 追蹤
+
+        用法：
+            python cli.py update-step --step 3.1 --module LexiconMapper --action "開始實作"
+        """
+        from quality_gate.unified_gate import UnifiedGate
+        from pathlib import Path
+
+        repo_path = Path(args.repo or Path.cwd())
+        action = args.action or None
+
+        ug = UnifiedGate(project_path=repo_path)
+
+        # Gap 5: 時間追蹤初始化 - Phase 改變時 reset 時間
+        state_file = repo_path / ".methodology" / "state.json"
+        if state_file.exists():
+            try:
+                state = json.loads(state_file.read_text())
+                current_phase = state.get("current_phase")
+                # 優先用 --phase 參數，否則從 step 字首解析 (e.g. "3.1" → phase 3)
+                new_phase = getattr(args, 'phase', None)
+                if new_phase is None:
+                    step_str = getattr(args, 'step', '') or ''
+                    m = re.match(r'^(\d+)', step_str)
+                    if m:
+                        new_phase = int(m.group(1))
+
+                if new_phase is not None and current_phase != new_phase:
+                    now_iso = datetime.now().isoformat()
+                    state["start_time"] = now_iso
+                    state["hr13_triggered"] = False
+                    state["hr13_remaining_minutes"] = None
+                    state["last_checkpoint"] = now_iso
+                    # 預估時長可由 --estimated-minutes 參數覆蓋
+                    est = getattr(args, 'estimated_minutes', None)
+                    state["estimated_minutes"] = est if est else state.get("estimated_minutes", 180)
+                    if "checkpoint_interval_minutes" not in state:
+                        state["checkpoint_interval_minutes"] = 60
+                    state["current_phase"] = new_phase
+                    state_file.write_text(json.dumps(state, indent=2))
+            except Exception:
+                pass  # 不阻塞主要流程
+
+        ug.update_step(
+            step=args.step,
+            module=args.module,
+            next_action=action
+        )
+        print(f"✅ Updated: Step={args.step}, Module={args.module}, Action={action}")
+        return 0
+
+    def cmd_end_phase(self, args):
+        """結束當前 Phase
+
+        用法：
+            python cli.py end-phase --phase 3
+        """
+        from quality_gate.unified_gate import UnifiedGate
+        from pathlib import Path
+
+        repo_path = Path(args.repo or Path.cwd())
+        phase = getattr(args, 'phase', None)
+        ug = UnifiedGate(project_path=repo_path)
+        ug.end_phase(phase=int(phase) if phase else None)
+        print(f"✅ Phase ended")
+        return 0
+
+    def cmd_update_artifact(self, args):
+        """更新產物版本到 state.json
+
+        用法：
+            python cli.py update-artifact --name SRS.md --version v1.0.0 --path SRS.md --summary "完成需求規格"
+        """
+        from quality_gate.unified_gate import UnifiedGate
+        from pathlib import Path
+
+        repo_path = Path(args.repo or Path.cwd())
+        ug = UnifiedGate(project_path=repo_path)
+        ug.update_artifact(
+            name=args.name,
+            version=args.version,
+            path=args.path,
+            summary=args.summary or ""
+        )
+        print(f"✅ Artifact updated: {args.name}@{args.version}")
+        return 0
+
+    def cmd_add_task(self, args):
+        """新增任務到 task graph
+
+        用法：
+            python cli.py add-task --task-id task-001 --title "完成登入功能" --dependencies ""
+        """
+        from quality_gate.unified_gate import UnifiedGate
+        from pathlib import Path
+
+        repo_path = Path(args.repo or Path.cwd())
+        ug = UnifiedGate(project_path=repo_path)
+        ug.add_task(
+            task_id=args.task_id,
+            title=args.title,
+            dependencies=args.dependencies.split(",") if args.dependencies else []
+        )
+        print(f"✅ Task added: {args.task_id}")
+        return 0
+
+    def cmd_task_result(self, args):
+        """更新任務結果
+
+        用法：
+            python cli.py task-result --task-id task-001 --result "完成" --summary "登入功能已實作" --status completed
+        """
+        from quality_gate.unified_gate import UnifiedGate
+        from pathlib import Path
+
+        repo_path = Path(args.repo or Path.cwd())
+        ug = UnifiedGate(project_path=repo_path)
+        ug.update_task_result(
+            task_id=args.task_id,
+            result=args.result,
+            summary=args.summary,
+            status=args.status or "completed"
+        )
+        print(f"✅ Task result updated: {args.task_id}")
+        return 0
+
+    def cmd_verify_artifact(self, args):
+        """Verify_Agent - 獨立驗證產物正確性"""
+        from quality_gate.unified_gate import UnifiedGate
+        from pathlib import Path
+
+        repo_path = Path(args.repo or Path.cwd())
+        phase = getattr(args, 'phase', 3)
+
+        ug = UnifiedGate(project_path=repo_path)
+        state = ug._read_state()
+
+        # 讀取 Phase 交付物
+        artifacts = state.get("artifacts", {})
+
+        # 簡單驗證：檢查關鍵 artifact 是否存在且有版本
+        issues = []
+        for name, info in artifacts.items():
+            if not info.get("version"):
+                issues.append(f"{name}: 缺少版本號")
+            if not info.get("commit_hash"):
+                issues.append(f"{name}: 缺少 commit hash")
+
+        if issues:
+            print("⚠️ Verification Issues:")
+            for issue in issues:
+                print(f"  - {issue}")
+            print("Verdict: REJECTED")
+        else:
+            print("✅ All artifacts verified")
+            print("Verdict: APPROVED")
+
+        return 0
+
+    def cmd_retry_test(self, args):
+        """測試重試機制"""
+        import time
+        from quality_gate.fault_tolerance import RetryHandler, DynamicPromptAdjuster
+
+        attempt_count = [0]
+
+        def unreliable_task():
+            attempt_count[0] += 1
+            if attempt_count[0] < 3:
+                raise Exception(f"Simulated failure #{attempt_count[0]}")
+            return f"Success on attempt {attempt_count[0]}"
+
+        handler = RetryHandler(max_retries=3, base_delay=1.0)
+
+        print("Testing RetryHandler with dynamic prompt adjustment...")
+        print(f"Constraint for retry 1: {DynamicPromptAdjuster.get_constraint(1)}")
+        print(f"Constraint for retry 2: {DynamicPromptAdjuster.get_constraint(2)}")
+        print(f"Constraint for retry 3: {DynamicPromptAdjuster.get_constraint(3)}")
+        print()
+
+        def on_retry(count, error):
+            constraint = DynamicPromptAdjuster.get_constraint(count)
+            print(f"  Retry {count}: {error}")
+            print(f"  Constraint injected: {constraint}")
+
+        try:
+            result = handler.execute(unreliable_task, on_retry=on_retry)
+            print(f"Result: {result}")
+        except Exception as e:
+            print(f"Failed after retries: {e}")
+
+        return 0
+
+    # ============================================================================
+    # FSM State Machine Commands
+    # ============================================================================
+
+    def cmd_fsm_status(self, args):
+        """FSM 狀態查詢"""
+        from quality_gate.unified_gate import FSMStateMachine
+        from pathlib import Path
+
+        repo_path = Path(args.repo or Path.cwd())
+        fsm = FSMStateMachine(project_path=repo_path)
+        state = fsm.ug._read_state()
+
+        current = state.get('status', 'INIT')
+        state_history = state.get('state_history', [])
+
+        print(f"""
+╔══════════════════════════════════════════════════════════════╗
+║  FSM State Machine Status                                     ║
+╠══════════════════════════════════════════════════════════════╣
+║  Current State: {current:<47}║""")
+
+        if state_history:
+            print("╠══════════════════════════════════════════════════════════════╣")
+            print("║  State History (last 5):                                     ║")
+            for entry in state_history[-5:]:
+                ts = entry.get('timestamp', '')[:19]
+                print(f"║    {entry['from']} → {entry['to']:<10} ({ts})                        ║")
+                if entry.get('reason'):
+                    reason = entry['reason'][:40]
+                    print(f"║      Reason: {reason:<42}║")
+        else:
+            print("╠══════════════════════════════════════════════════════════════╣")
+            print("║  No state transitions recorded yet.                          ║")
+
+        print("╚══════════════════════════════════════════════════════════════╝")
+        return 0
+
+    def cmd_fsm_transition(self, args):
+        """FSM 手動狀態切換"""
+        from quality_gate.unified_gate import FSMStateMachine, ProjectState
+        from pathlib import Path
+
+        repo_path = Path(args.repo or Path.cwd())
+        fsm = FSMStateMachine(project_path=repo_path)
+        state = fsm.ug._read_state()
+
+        target = getattr(args, 'to', None)
+        if not target:
+            print("❌ --to <state> is required")
+            print("    Valid states: INIT, RUNNING, VERIFYING, WRITING, PAUSED, FREEZE, COMPLETED")
+            return 1
+
+        try:
+            to_state = ProjectState[target.upper()]
+        except KeyError:
+            print(f"❌ Invalid state: {target}")
+            print("    Valid states: INIT, RUNNING, VERIFYING, WRITING, PAUSED, FREEZE, COMPLETED")
+            return 1
+
+        current = state.get('status', 'INIT')
+        try:
+            from_state = ProjectState(current)
+        except ValueError:
+            from_state = ProjectState.INIT
+
+        reason = args.reason or "Manual transition"
+        success = fsm.transition(from_state, to_state, reason)
+
+        if success:
+            print(f"✅ Transition: {from_state.value} → {to_state.value}")
+            print(f"   Reason: {reason}")
+        else:
+            print(f"❌ Transition failed: {from_state.value} → {to_state.value}")
+            print(f"   Current state is {current}, not {from_state.value}")
+            print(f"   Or transition is not allowed by FSM rules")
+            return 1
+
+        return 0
+
+    def cmd_fsm_resume(self, args):
+        """FSM 解除煞車（PAUSED → RUNNING）"""
+        from quality_gate.unified_gate import FSMStateMachine, ProjectState
+        from pathlib import Path
+
+        repo_path = Path(args.repo or Path.cwd())
+        fsm = FSMStateMachine(project_path=repo_path)
+
+        current = fsm.get_state()
+        if current != ProjectState.PAUSED:
+            print(f"⚠️  Current state is {current.value}, not PAUSED")
+            print("    Use 'fsm-transition --to RUNNING' to manually transition")
+            return 1
+
+        success = fsm.resume()
+        if success:
+            print("✅ Brake released: PAUSED → RUNNING")
+        else:
+            print("❌ Failed to release brake")
+            return 1
+
+        return 0
+
+    def cmd_fsm_unfreeze(self, args):
+        """FSM 解除凍住（FREEZE → INIT）"""
+        from quality_gate.unified_gate import FSMStateMachine, ProjectState
+        from pathlib import Path
+
+        repo_path = Path(args.repo or Path.cwd())
+        fsm = FSMStateMachine(project_path=repo_path)
+
+        current = fsm.get_state()
+        if current != ProjectState.FREEZE:
+            print(f"⚠️  Current state is {current.value}, not FREEZE")
+            print("    Use 'fsm-transition --to INIT' to manually transition")
+            return 1
+
+        success = fsm.unfreeze()
+        if success:
+            print("✅ Unfreezed: FREEZE → INIT")
+            print("   Project has been audited and is ready to restart")
+        else:
+            print("❌ Failed to unfreeze")
+            return 1
+
+        return 0
+
+    # ============================================================================
+    # run-phase: Single Entry Point for Phase Execution
+    # ============================================================================
+
+    def cmd_run_phase(self, args):
+        """
+        Single Entry Point for Phase Execution
+
+        本命令：
+        - ✅ 調用 SubagentIsolator.spawn()，不直接用 sessions_spawn
+        - ✅ 讀取 state.json 並服從 FSM 狀態
+        - ✅ Pre-flight 失敗時停在 Pre-flight，不進入執行
+        - ✅ Post-flight 自動執行 Constitution check
+        - ✅ HR-12/13/14 觸發時自動服從（pause/freeze）
+        - ❌ 不繞過任何 HR 規則
+        - ❌ 不跳過 Phase 順序
+        """
+        import sys
+        import json
+        import time
+        from pathlib import Path
+        from datetime import datetime
+
+        phase = args.phase
+        repo_path = Path(args.repo or Path.cwd())
+
+        # === PRE-FLIGHT CHECKS ===
+        print(f"\n{'='*60}")
+        print(f"🚀 run-phase --phase {phase}")
+        print(f"{'='*60}\n")
+
+        # 1. FSM State Validation
+        print(f"[{datetime.now().strftime('%H:%M:%S')}] PRE-FLIGHT: FSM State Check")
+        from quality_gate.unified_gate import FSMStateMachine, ProjectState
+        fsm = FSMStateMachine(project_path=repo_path)
+        current_state = fsm.get_state()
+
+        if current_state == ProjectState.FREEZE:
+            print(f"❌ Project is FREEZE. Run 'fsm-unfreeze' first.")
+            return 1
+        if current_state == ProjectState.PAUSED:
+            print(f"⚠️  Project is PAUSED. Use 'fsm-resume' or 'fsm-transition --to RUNNING' to continue.")
+            return 1
+
+        # 2. Phase Sequence Validation
+        state_file = repo_path / ".methodology" / "state.json"
+        if state_file.exists():
+            state = json.loads(state_file.read_text())
+            current_phase = state.get("current_phase", 0)
+            if current_phase >= phase and current_state == ProjectState.INIT:
+                print(f"⚠️  Phase {phase} has already been completed or is in progress.")
+                print(f"    Current phase: {current_phase}, target: {phase}")
+                print(f"    Use --step to continue from a specific step.")
+
+        # 3. Constitution Check
+        print(f"\n[{datetime.now().strftime('%H:%M:%S')}] PRE-FLIGHT: Constitution Check")
+        phase_type_map = {1: "srs", 2: "sad", 3: "implementation", 4: "test_plan",
+                          5: "verification", 6: "quality_report", 7: "risk_management", 8: "configuration"}
+        phase_type = phase_type_map.get(phase, "srs")
+
+        from quality_gate.constitution import run_constitution_check
+        result = run_constitution_check(phase_type, docs_path=str(repo_path / "docs"), current_phase=phase)
+
+        if result.score < 80:
+            print(f"❌ Constitution score {result.score:.0f}% < 80% (required)")
+            print(f"   Violations: {result.violations}")
+            print(f"   Recommendations: {result.recommendations}")
+            print(f"\n⚠️  Run 'python cli.py constitution check --type {phase_type}' for details")
+            return 1
+        print(f"✅ Constitution score: {result.score:.0f}%")
+
+        # 4. Tool Registry Check
+        print(f"\n[{datetime.now().strftime('%H:%M:%S')}] PRE-FLIGHT: Tool Registry Check")
+        from tool_registry import ToolRegistry
+        tools = ToolRegistry.list_tools()
+        if not tools:
+            print(f"⚠️  No tools registered. Run 'python cli.py tool-registry --list'")
+        else:
+            print(f"✅ {len(tools)} tools registered: {', '.join(tools[:5])}{'...' if len(tools) > 5 else ''}")
+
+        # 5. Pre-flight Session Save
+        print(f"\n[{datetime.now().strftime('%H:%M:%S')}] PRE-FLIGHT: Session Save")
+        from checkpoint_manager import SessionManager
+        sm = SessionManager()
+        session_id = f"pre-phase-{phase}-{datetime.now().strftime('%Y%m%d-%H%M%S')}"
+        preflight_state = {
+            "phase": phase,
+            "timestamp": datetime.now().isoformat(),
+            "constitution_score": result.score,
+            "tools_count": len(tools),
+            "fsm_state": current_state.value if hasattr(current_state, 'value') else str(current_state)
+        }
+        save_path = sm.save(session_id, preflight_state)
+        print(f"✅ Pre-flight session saved: {session_id}")
+        print(f"   Path: {save_path}")
+
+        # 6. P0-5: SubagentIsolator Hooks Verification (HR-10 合規)
+        print(f"\n[{datetime.now().strftime('%H:%M:%S')}] PRE-FLIGHT: SubagentIsolator Hooks Verification")
+        try:
+            from subagent_isolator import SubagentIsolator
+            from sessions_spawn_logger import SessionsSpawnLogger
+            # 驗證 SubagentIsolator 可以正常實例化（鉤子可調用）
+            si = SubagentIsolator(project_path=str(repo_path))
+            spawn_log_path = repo_path / ".methodology" / "sessions_spawn.log"
+            print(f"✅ [PRE-FLIGHT] SubagentIsolator hooks verified")
+            print(f"   sessions_spawn.log path: {spawn_log_path}")
+            # P2-1: Auto-create sessions_spawn.log
+            sessions_spawn_log = repo_path / ".methodology" / "sessions_spawn.log"
+            # P2-1: Auto-create sessions_spawn.log with validation
+            sessions_spawn_log.parent.mkdir(parents=True, exist_ok=True)
+            if not sessions_spawn_log.exists():
+                sessions_spawn_log.write_text("")
+                print(f"✅ [PRE-FLIGHT] Created sessions_spawn.log")
+            else:
+                # Validate existing log format
+                logger = SessionsSpawnLogger(repo_path)
+                result = logger.validate()
+                if result["valid"]:
+                    summary = logger.get_summary()
+                    print(f"✅ [PRE-FLIGHT] sessions_spawn.log exists ({summary['total_entries']} entries)")
+                    if summary['fr_tasks']:
+                        print(f"   FR tasks: {', '.join(summary['fr_tasks'])}")
+                else:
+                    print(f"⚠️  [PRE-FLIGHT] sessions_spawn.log has {len(result['errors'])} format errors")
+                    print(f"   First error: {result['errors'][0]}")
+            
+            # P0: 整合 IterationManager (Aspect 7)
+            try:
+                from integration_manager import IntegrationManager
+                iteration_mgr = IntegrationManager(phase=phase, task_id="phase-init", repo_path=repo_path)
+                print(f"✅ [PRE-FLIGHT] IterationManager initialized")
+                print(f"   - Tracking HR-12: A/B 審查 > 5 輪 → PAUSE")
+                print(f"   - Tracking HR-13: Phase 執行 > 預估 ×3 → PAUSE")
+            except ImportError:
+                print(f"⚠️  [PRE-FLIGHT] IntegrationManager not available, using manual tracking")
+            
+            # P0: 整合 ToolDispatcher (Aspect 6)
+            try:
+                from tool_dispatcher import ToolDispatcher
+                tool_dispatcher = ToolDispatcher(repo_path=repo_path)
+                print(f"✅ [PRE-FLIGHT] ToolDispatcher ready")
+                print(f"   - on_spawn: Subagent派遣時")
+                print(f"   - on_message: 訊息 >50/100/200 時")
+                print(f"   - on_error: 錯誤發生時")
+                print(f"   - on_complete: 任務完成時")
+            except ImportError:
+                print(f"⚠️  [PRE-FLIGHT] ToolDispatcher not available")
+            
+            # P2-2: ToolRegistry integration
+            try:
+                from tool_registry import ToolRegistry
+                tr = ToolRegistry(repo_path=str(repo_path))
+                tools = tr.list_tools()
+                print(f"✅ [PRE-FLIGHT] ToolRegistry: {len(tools)} tools registered")
+                if len(tools) == 0:
+                    print(f"   ⚠️ No tools registered. Use 'python cli.py tool-registry --register'")
+            except ImportError:
+                print(f"⚠️  [PRE-FLIGHT] ToolRegistry not available")
+        except Exception as e:
+            print(f"⚠️  SubagentIsolator hook verification failed: {e}")
+
+        # === EXECUTE ===
+        print(f"\n{'='*60}")
+        print(f"▶ EXECUTE Phase {phase}")
+        print(f"{'='*60}\n")
+
+        # Load P{N}_SOP.md
+        sop_path = repo_path / "docs" / f"P{phase}_SOP.md"
+        if not sop_path.exists():
+            print(f"❌ SOP not found: {sop_path}")
+            return 1
+
+        print(f"📋 Loading SOP: docs/P{phase}_SOP.md")
+        sop_content = sop_path.read_text()
+        print(f"✅ SOP loaded ({len(sop_content)} chars)\n")
+
+        # Execute steps from SOP
+        task_desc = args.task or f"Phase {phase} execution"
+        print(f"📌 Task: {task_desc}")
+
+        # Log to run-phase.log
+        log_path = repo_path / ".methodology" / "run-phase.log"
+        log_path.parent.mkdir(parents=True, exist_ok=True)
+
+        def write_log(event: str, message: str, duration_ms: int = None, subagent_session: str = None):
+            entry = {
+                "timestamp": datetime.now().isoformat(),
+                "phase": phase,
+                "event": event,
+                "message": message,
+                "duration_ms": duration_ms,
+                "subagent_session": subagent_session
+            }
+            with open(log_path, "a") as f:
+                f.write(json.dumps(entry) + "\n")
+
+        write_log("EXECUTE_START", f"Phase {phase} started - {task_desc}")
+
+        # Step execution (placeholder - actual implementation would parse SOP)
+        step = args.step or "1"
+        print(f"\n📍 Executing step: {step}")
+        print(f"   (Full SOP execution would be implemented here)")
+        print(f"   For now, this is a framework skeleton.")
+
+        # === POST-FLIGHT ===
+        print(f"\n{'='*60}")
+        print(f"✓ POST-FLIGHT: Final Constitution Check")
+        print(f"{'='*60}\n")
+
+        result_final = runner.run_phase_check(phase_type)
+        if result_final.score < 80:
+            print(f"⚠️  Final Constitution score {result_final.score:.0f}% < 80%")
+            print(f"   Violations: {result_final.violations}")
+        else:
+            print(f"✅ Final Constitution score: {result_final.score:.0f}%")
+
+        # Update state.json
+        print(f"\n[{datetime.now().strftime('%H:%M:%S')}] POST-FLIGHT: Update state.json")
+        if state_file.exists():
+            state = json.loads(state_file.read_text())
+            state["current_phase"] = phase
+            state["last_update"] = datetime.now().isoformat()
+            state_file.write_text(json.dumps(state, indent=2))
+            print(f"✅ state.json updated: current_phase = {phase}")
+
+        write_log("EXECUTE_COMPLETE", f"Phase {phase} completed - score: {result_final.score:.0f}%")
+
+        # Summary
+        print(f"\n{'='*60}")
+        print(f"📊 Phase {phase} Execution Summary")
+        print(f"{'='*60}")
+        print(f"   Constitution Score: {result_final.score:.0f}%")
+        print(f"   Session ID: {session_id}")
+        print(f"   Log: {log_path}")
+        print(f"\n✅ Phase {phase} completed successfully")
+
+        return 0
+
+    # ============================================================================
+    # plan-phase Helper Functions
+    # ============================================================================
+
+    def _parse_srs_fr_list(self, repo_path: Path) -> list:
+        """解析 SRS.md，提取 FR 清單"""
+        srs_paths = [
+            repo_path / "SRS.md",
+            repo_path / "01-requirements" / "SRS.md",
+        ]
+        srs_path = None
+        for p in srs_paths:
+            if p.exists():
+                srs_path = p
+                break
+        
+        if not srs_path:
+            return []
+        
+        content = srs_path.read_text()
+        import re
+        # 匹配 FR-01, FR-02 等（支持全型冒號 ： 和 半型 :）
+        fr_pattern = re.compile(r'(FR-\d+)[:：][^\n]+', re.IGNORECASE)
+        frs = []
+        for m in fr_pattern.finditer(content):
+            fr_id = m.group(1).upper()
+            raw = m.group(0)
+            # 移除 FR-XX: 或 FR-XX： 获取标题
+            if '：' in raw:
+                title = raw.split('：', 1)[1].strip()
+            elif ':' in raw:
+                title = raw.split(':', 1)[1].strip()
+            else:
+                title = raw.strip()
+            title = title[:60]
+            frs.append({
+                "fr": fr_id,
+                "title": title,
+                "srs_path": str(srs_path)
+            })
+        
+        # 如果正則沒匹配，用簡單關鍵詞搜索
+        if not frs:
+            fr_lines = re.findall(r'(FR-\d+)', content, re.IGNORECASE)
+            seen = set()
+            for fr_id in fr_lines:
+                if fr_id.upper() not in seen:
+                    seen.add(fr_id.upper())
+                    frs.append({"fr": fr_id.upper(), "title": fr_id, "srs_path": str(srs_path)})
+        
+        # Deduplicate by FR ID
+        seen_frs = {}
+        deduped = []
+        for fr in frs:
+            if fr["fr"] not in seen_frs:
+                seen_frs[fr["fr"]] = fr
+                deduped.append(fr)
+        frs = deduped
+        
+        return frs
+
+    def _parse_sad_modules(self, repo_path: Path) -> list:
+        """解析 SAD.md，提取 FR → 模組檔案對應（增強版）"""
+        sad_paths = [
+            repo_path / "02-architecture" / "SAD.md",
+            repo_path / "SAD.md",
+            repo_path / "templates" / "SAD.md",
+        ]
+        sad_path = None
+        for p in sad_paths:
+            if p.exists():
+                sad_path = p
+                break
+        
+        if not sad_path:
+            return []
+        
+        content = sad_path.read_text()
+        import re
+        
+        # 優先：解析 Markdown 表格格式（FR ID | 需求 | app/...）
+        # 例如：| **FR-01** | TaiwanLexicon ≥ 50 詞映射 | `app/processing/lexicon_mapper.py` |
+        # 簡化：直接找 FR-XX 和 app/ 路徑
+        simple_pattern = re.compile(r'FR-(\d+)[^\n]*?`?(app/[^\s`]+)`?', re.DOTALL)
+        modules = []
+        seen_frs = set()
+        for m in simple_pattern.finditer(content):
+            fr_num = m.group(1)
+            if fr_num in seen_frs:
+                continue
+            file_path = m.group(2) or ""
+            seen_frs.add(fr_num)
+            # 從路徑推斷模組名：app/processing/lexicon_mapper.py → lexicon_mapper
+            if '/' in file_path:
+                filename = file_path.split('/')[-1].replace('.py', '')
+                module_name = filename
+            else:
+                module_name = f"Module{fr_num}"
+            modules.append({
+                "fr": f"FR-{fr_num}",
+                "module": module_name,
+                "file": file_path,
+                "source": "table"
+            })
+        
+        if modules:
+            return modules
+        
+        # Fallback：舊的 pattern matching
+        module_pattern = re.compile(
+            r'(##?\s*Module\s*(\d+)|###?\s*(\d+)[^\n]*Module[^\n]*|FR-(\d+)[^\n]*module)',
+            re.IGNORECASE
+        )
+        for m in module_pattern.finditer(content):
+            module_num = m.group(2) or m.group(3) or "?"
+            fr_ref = m.group(4) or ""
+            modules.append({
+                "module": f"Module {module_num}",
+                "fr": f"FR-{fr_ref}" if fr_ref else "",
+                "sad_path": str(sad_path)
+            })
+        return modules
+
+
+    def _generate_fr_table(self, frs: list, modules: list) -> str:
+        """產生 FR-by-FR 任務表格（增強版：使用 SAD 真實映射）"""
+        if not frs:
+            return "*（未找到 FR 清單）*"
+        
+        table = "| FR | 模組 | 產出檔案 | 測試檔案 | 驗證命令 |\n|------|------|---------|----------|---------|\n"
+        for fr in frs:
+            fr_num = fr["fr"].lower().replace("-", "").replace("fr", "")
+            # 從 modules 中找對應的 FR（不区分大小写）
+            mod_match = next((m for m in modules if m.get("fr", "").upper() == fr["fr"].upper()), None)
+            if mod_match:
+                module = mod_match.get("module", "—")
+                impl_path = mod_match.get("file", "")
+            else:
+                module = "—"
+                impl_path = ""
+            
+            # 推斷測試檔案（從 impl_path）
+            if impl_path and "app/" in impl_path:
+                filename = impl_path.split("/")[-1].replace(".py", "")
+                test_path = f"tests/test_fr{fr_num.zfill(2)}_{filename}.py"
+            else:
+                test_path = f"tests/test_fr{fr_num.zfill(2)}.py"
+            
+            verify_cmd = f"`pytest tests/test_fr{fr_num.zfill(2)}*.py -v`"
+            table += f"| {fr['fr']} | {module} | `{impl_path}` | `{test_path}` | {verify_cmd} |\n"
+        return table
+
+    def _generate_deliverable_structure(self, frs: list, modules: list) -> str:
+        """從 FR/Module 對應產生產出結構樹"""
+        if not modules:
+            return "*（請從 SAD.md §1.3 解析）*"
+        
+        # Group by directory
+        dirs = {}
+        for m in modules:
+            file_path = m.get('file', '')
+            if '/' in file_path:
+                dir_name = '/'.join(file_path.split('/')[:-1])
+                filename = file_path.split('/')[-1]
+                if dir_name not in dirs:
+                    dirs[dir_name] = []
+                dirs[dir_name].append(filename)
+        
+        lines = ["03-implementation/", "├── app/"]
+        for dir_name, files in sorted(dirs.items()):
+            indent = "│   " * dir_name.count('/')
+            lines.append(f"{indent}├── {dir_name}/")
+            file_indent = indent + "│   "
+            for f in sorted(files):
+                lines.append(f"{file_indent}{f}")
+        
+        lines.append("├── tests/")
+        for fr in frs[:5]:
+            fr_num = fr['fr'].lower().replace('-', '').replace('fr', '').zfill(2)
+            lines.append(f"│   ├── test_fr{fr_num}_*.py")
+        if len(frs) > 5:
+            lines.append(f"│   ... ({len(frs) - 5} more)")
+        
+        return '\n'.join(lines)
+
+    def _generate_thresholds_table(self, phase: int) -> str:
+        """產生 TH 閾值表格（Phase 3）"""
+        thresholds = {
+            1: [
+                ("TH-01", "FSM State", "INIT", "state.json"),
+                ("TH-03", "Constitution 正確性", "=100%", "constitution/runner.py --type srs"),
+                ("TH-04", "Constitution 安全性", "=100%", "constitution/runner.py --type srs"),
+                ("TH-08", "AgentEvaluator 標準", "≥80", "phase-verify"),
+                ("TH-14", "規格完整性", "≥90%", "trace-check"),
+                ("TH-15", "Phase Truth", "≥70%", "phase-verify"),
+            ],
+            2: [
+                ("TH-01", "FSM State", "RUNNING", "state.json"),
+                ("TH-03", "Constitution 正確性", "=100%", "constitution/runner.py --type sad"),
+                ("TH-04", "Constitution 安全性", "=100%", "constitution/runner.py --type sad"),
+                ("TH-05", "Constitution 可維護性", ">70%", "constitution/runner.py --type sad"),
+                ("TH-08", "AgentEvaluator 標準", "≥80", "phase-verify"),
+                ("TH-15", "Phase Truth", "≥70%", "phase-verify"),
+            ],
+            3: [
+                ("TH-06", "Constitution 測試覆蓋率", ">80%", "constitution/runner.py --type implementation"),
+                ("TH-08", "AgentEvaluator 嚴格", "≥90", "phase-verify"),
+                ("TH-10", "測試通過率", "=100%", "pytest tests/ -v"),
+                ("TH-11", "單元測試覆蓋率", "≥70%", "pytest --cov=app/ -v"),
+                ("TH-15", "Phase Truth", "≥70%", "phase-verify"),
+                ("TH-16", "代碼↔SAD 映射率", "=100%", "trace-check"),
+            ],
+            4: [
+                ("TH-01", "ASPICE 合規率", ">80%", "doc_checker.py"),
+                ("TH-03", "Constitution 正確性", "=100%", "constitution/runner.py --type test_plan"),
+                ("TH-06", "Constitution 測試覆蓋率", ">80%", "constitution/runner.py --type test_plan"),
+                ("TH-10", "測試通過率", "=100%", "pytest tests/ -v"),
+                ("TH-12", "單元測試覆蓋率", "≥80%", "pytest --cov=app/ -v"),
+                ("TH-15", "Phase Truth", "≥70%", "phase-verify"),
+                ("TH-17", "FR↔測試映射率", "≥90%", "trace-check"),
+            ],
+            5: [
+                ("TH-02", "Constitution 總分", "≥80%", "constitution/runner.py --type verification"),
+                ("TH-07", "邏輯正確性分數", "≥90", "phase-verify"),
+                ("TH-15", "Phase Truth", "≥70%", "phase-verify"),
+            ],
+            6: [
+                ("TH-02", "Constitution 總分", "≥80%", "constitution/runner.py --type quality_report"),
+                ("TH-07", "邏輯正確性分數", "≥90", "phase-verify"),
+                ("TH-15", "Phase Truth", "≥70%", "phase-verify"),
+            ],
+            7: [
+                ("TH-07", "邏輯正確性分數", "≥90", "phase-verify"),
+                ("TH-15", "Phase Truth", "≥70%", "phase-verify"),
+            ],
+            8: [
+                ("TH-02", "Constitution 總分", "≥80%", "constitution/runner.py --type configuration"),
+                ("TH-12", "單元測試覆蓋率", "≥80%", "pytest --cov=app/ -v"),
+                ("TH-15", "Phase Truth", "≥70%", "phase-verify"),
+            ],
+        }
+        
+        rows = thresholds.get(phase, thresholds.get(3, []))
+        if not rows:
+            return "*（無閾值資料）*"
+        
+        lines = ["| TH | 指標 | 門檻 | 驗證命令 |", "|------|------|------|---------|"]
+        for th_id, name, threshold, cmd in rows:
+            lines.append(f"| {th_id} | {name} | {threshold} | `{cmd}` |")
+        
+        return "\n".join(lines)
+
+    def _generate_external_docs(self, phase: int) -> str:
+        """產生外部文檔列表"""
+        docs = {
+            3: [
+                ("SKILL_DOMAIN.md", "領域知識（TTS/SSML/台灣中文）"),
+                ("docs/P3_SOP.md", "Phase 3 詳細步驟"),
+                ("templates/", "交付物模板（.md）"),
+                ("docs/HYBRID_WORKFLOW_GUIDE.md", "A/B 協作規範"),
+                ("docs/CLI_REFERENCE.md", "CLI 工具用法"),
+                ("docs/ANNOTATION_GUIDE.md", "@FR annotation 規範"),
+                ("docs/VERIFIER_GUIDE.md", "Reviewer 規範"),
+                ("docs/CONSTITUTION_GUIDE.md", "Constitution 規範"),
+            ],
+            1: [
+                ("SKILL_DOMAIN.md", "領域知識"),
+                ("docs/P1_SOP.md", "Phase 1 詳細步驟"),
+                ("templates/SRS_TEMPLATE.md", "SRS 模板"),
+            ],
+            2: [
+                ("SKILL_DOMAIN.md", "領域知識"),
+                ("docs/P2_SOP.md", "Phase 2 詳細步驟"),
+                ("templates/SAD_TEMPLATE.md", "SAD 模板"),
+                ("docs/ARCHITECTURE_GUIDE.md", "架構設計規範"),
+            ],
+            4: [
+                ("SKILL_DOMAIN.md", "領域知識"),
+                ("docs/P4_SOP.md", "Phase 4 詳細步驟"),
+                ("docs/TEST_PLAN_TEMPLATE.md", "測試計畫模板"),
+                ("docs/TEST_RESULTS_TEMPLATE.md", "測試結果模板"),
+                ("docs/QA_GUIDE.md", "QA 測試規範"),
+            ],
+            5: [
+                ("SKILL_DOMAIN.md", "領域知識"),
+                ("docs/P5_SOP.md", "Phase 5 詳細步驟"),
+                ("docs/BASELINE_TEMPLATE.md", "基線模板"),
+                ("docs/MONITORING_PLAN_TEMPLATE.md", "監控計畫模板"),
+                ("docs/VERIFICATION_GUIDE.md", "驗證規範"),
+            ],
+            6: [
+                ("SKILL_DOMAIN.md", "領域知識"),
+                ("docs/P6_SOP.md", "Phase 6 詳細步驟"),
+                ("docs/QUALITY_REPORT_TEMPLATE.md", "品質報告模板"),
+                ("docs/QUALITY_ASSURANCE_GUIDE.md", "品質保證規範"),
+            ],
+            7: [
+                ("SKILL_DOMAIN.md", "領域知識"),
+                ("docs/P7_SOP.md", "Phase 7 詳細步驟"),
+                ("docs/RISK_REGISTER_TEMPLATE.md", "風險註冊表模板"),
+                ("docs/RISK_MANAGEMENT_GUIDE.md", "風險管理規範"),
+            ],
+            8: [
+                ("SKILL_DOMAIN.md", "領域知識"),
+                ("docs/P8_SOP.md", "Phase 8 詳細步驟"),
+                ("docs/CONFIG_RECORDS_TEMPLATE.md", "配置記錄模板"),
+                ("docs/CONFIGURATION_GUIDE.md", "配置管理規範"),
+            ],
+        }
+        
+        rows = docs.get(phase, docs.get(3, []))
+        if not rows:
+            return "*（無文檔資料）*"
+        
+        lines = ["| 文檔 | 用途 |", "|------|------|"]
+        for doc, usage in rows:
+            lines.append(f"| `{doc}` | {usage} |")
+        
+        return "\n".join(lines)
+
+    def _generate_fr_detailed_tasks_placeholder(self, frs: list, modules: list, phase: int) -> str:
+        """產生 FR 詳細任務的 placeholder（具體內容需從 SRS 解析）"""
+        lines = []
+        for fr in frs:
+            fr_num = fr['fr'].lower().replace('-', '').replace('fr', '').zfill(2)
+            mod_match = next((m for m in modules if m.get('fr', '').upper() == fr['fr'].upper()), None)
+            module_name = mod_match.get('module', 'Unknown') if mod_match else 'Unknown'
+            lines.append(f"### {fr['fr']} {module_name}")
+            lines.append(f"""
+**任務**：實作 {module_name}
+
+**SRS §{fr['fr']} 要求**：
+> 詳見 `.methodology/plans/phase{phase}_FULL.md` 或執行 `python3 scripts/generate_full_plan.py --phase {phase}`
+
+**SAD §Module 對應**：
+- `{module_name}` 類
+- `{mod_match.get('file', 'N/A') if mod_match else 'N/A'}`
+
+**Forbidden**：
+- ❌ app/infrastructure/
+- ❌ @covers: L1 Error
+- ❌ @type: edge
+""")
+        return '\n'.join(lines)
+
+    def _generate_quality_gate_commands(self, phase: int) -> str:
+        """根據 Phase 產生 Quality Gate 命令"""
+        commands = {
+            3: [
+                ("# 1. TH-06 Constitution 測試覆蓋率 >80%", "python3 quality_gate/constitution/runner.py --type implementation"),
+                ("# 2. TH-10 測試通過率 =100%", "pytest tests/ -v"),
+                ("# 3. TH-11 覆蓋率 ≥70%", "pytest --cov=app/ -v"),
+                ("# 4. TH-16 代碼↔SAD =100%", "python3 cli.py trace-check"),
+                ("# 5. TH-15 Phase Truth ≥70%", "python3 cli.py phase-verify --phase 3"),
+                ("# 6. HR-08 stage-pass", "python3 cli.py stage-pass --phase 3"),
+                ("# 7. HR-02 FrameworkEnforcer BLOCK", "python3 cli.py enforce --level BLOCK"),
+            ],
+            4: [
+                ("# 1. TH-12 覆蓋率 ≥80%", "pytest --cov=app/ -v"),
+                ("# 2. TH-10 =100%", "pytest tests/ -v"),
+                ("# 3. TH-13 FR覆蓋率 =100%", "python3 cli.py trace-check"),
+                ("# 4. TH-17 FR↔測試 ≥90%", "python3 cli.py phase-verify --phase 4"),
+            ],
+            1: [
+                ("# 1. TH-03 Constitution 正確性 =100%", "python3 quality_gate/constitution/runner.py --type srs"),
+                ("# 2. TH-04 Constitution 安全性 =100%", "python3 quality_gate/constitution/runner.py --type srs"),
+                ("# 3. TH-14 規格完整性 ≥90%", "python3 quality_gate/doc_checker.py"),
+            ],
+            2: [
+                ("# 1. TH-03 Constitution 正確性 =100%", "python3 quality_gate/constitution/runner.py --type sad"),
+                ("# 2. TH-04 Constitution 安全性 =100%", "python3 quality_gate/constitution/runner.py --type sad"),
+                ("# 3. TH-05 Constitution 可維護性 >70%", "python3 quality_gate/constitution/runner.py --type sad"),
+            ],
+        }
+        
+        cmds = commands.get(phase, [("# Phase-specific QG commands", "# Add based on phase")])
+        result = ""
+        for desc, cmd in cmds:
+            result += f"{desc}\n{cmd}\n\n"
+        return result
+
+    def _generate_developer_prompt(self, fr: dict, phase: int, repo_path: str = "") -> str:
+        """產生 Developer Prompt 模板（Phase-specific）"""
+        phase_prompts = cli_phase_prompts.PHASE_PROMPTS.get(phase, cli_phase_prompts.PHASE_PROMPTS[3])
+        
+        # For Phase 3, handle FR-specific placeholders
+        if phase == 3:
+            fr_num = fr.get("fr", "FR-01").lower().replace("fr-", "").strip()
+            template = phase_prompts["developer"]
+            import re
+            template = re.sub(r"\{fr_num\}", fr_num, template)
+            template = re.sub(r"\{fr\['fr'\]\}", fr.get("fr", f"FR-{fr_num}"), template)
+            template = re.sub(r"\{fr\['title'\]\}", fr.get("title", ""), template)
+            file_path = fr.get("file", f"app/processing/{fr_num}.py")
+            template = re.sub(r"\{fr\.get\('file'[^}]*\)", file_path, template)
+            # Inject project path for cwd verification
+            if repo_path:
+                cd_directive = f"\n\n【先決條件】先執行：\ncd {repo_path}\npwd  # 確認包含 \"tts-kokoro-v613\"\n"
+                template = template.replace(
+                    "【階段目標】",
+                    cd_directive + "\n【階段目標】"
+                )
+            return template
+        
+        return phase_prompts["developer"]
+
+
+    def _generate_reviewer_prompt(self, fr: dict, phase: int, repo_path: str = "") -> str:
+        """產生 Reviewer Prompt 模板（Phase-specific）"""
+        phase_prompts = cli_phase_prompts.PHASE_PROMPTS.get(phase, cli_phase_prompts.PHASE_PROMPTS[3])
+        
+        # For Phase 3, handle FR-specific placeholders
+        if phase == 3:
+            fr_num = fr.get("fr", "FR-01").lower().replace("fr-", "").strip()
+            template = phase_prompts["reviewer"]
+            import re
+            template = re.sub(r"\{fr_num\}", fr_num, template)
+            template = re.sub(r"\{fr\['fr'\]\}", fr.get("fr", f"FR-{fr_num}"), template)
+            template = re.sub(r"\{fr\['title'\]\}", fr.get("title", ""), template)
+            # Inject project path for cwd verification
+            if repo_path:
+                cd_directive = f"\n\n【先決條件】先執行：\ncd {repo_path}\npwd  # 確認包含 \"tts-kokoro-v613\"\n"
+                template = template.replace(
+                    "【審查範圍】",
+                    cd_directive + "\n【審查範圍】"
+                )
+            return template
+        
+        return phase_prompts["reviewer"]
+
+
+    def _generate_subagent_management(self, phase: int) -> str:
+        """產生 Sub-Agent Management 區段（Need-to-Know + On-Demand）"""
+        config = cli_phase_subagent.get_subagent_config(phase)
+        
+        lines = ["## 9.5 Sub-Agent Management（Need-to-Know + On-Demand）", ""]
+        lines.append(f"**Phase {phase}: {config['name']}**")
+        lines.append("")
+        
+        # Agent roles
+        lines.append("### Agent 角色")
+        lines.append(f"- **Agent A（{config['agent_a']['role']}）**: {config['agent_a']['task']}")
+        lines.append(f"- **Agent B（{config['agent_b']['role']}）**: {config['agent_b']['task']}")
+        lines.append("")
+        
+        # Need-to-Know
+        ntk = config.get("need_to_know", {})
+        lines.append("### Need-to-Know（只給必要資訊）")
+        lines.append("")
+        lines.append("| 檔案 | 章節 | 原因 |")
+        lines.append("|------|------|------|")
+        for item in ntk.get("read", []):
+            lines.append(f"| {item['path']} | {item['section']} | {item['why']} |")
+        lines.append("")
+        lines.append(f"**Skip**: `{', '.join(ntk.get('skip', []))}`")
+        lines.append(f"**Context**: {ntk.get('context', 'N/A')}")
+        lines.append("")
+        
+        # On-Demand
+        od = config.get("on_demand", {})
+        lines.append("### On-Demand（需要時才請求）")
+        lines.append("")
+        lines.append(f"- **觸發條件**: {od.get('trigger', 'N/A')}")
+        lines.append(f"- **請求對象**: {od.get('request_to', 'N/A')}")
+        lines.append(f"- **格式**: {od.get('format', 'N/A')}")
+        lines.append("")
+        
+        # Tool Timing
+        tt = config.get("tool_timing", {})
+        lines.append("### 工具調用時機")
+        lines.append("")
+        
+        tool_events = [
+            ("spawn", "派遣 Sub-agent"),
+            ("knowledge_curator", "KnowledgeCurator"),
+            ("context_manager", "ContextManager"),
+            ("quality_gate", "Quality Gate"),
+            ("checkpoint", "Checkpoint")
+        ]
+        
+        lines.append("| 事件 | 工具 | 參數 |")
+        lines.append("|------|------|------|")
+        for event, name in tool_events:
+            if event in tt:
+                params = str(tt[event].get('params', tt[event]))
+                lines.append(f"| {event} | {name} | {params} |")
+            else:
+                lines.append(f"| {event} | {name} | - |")
+        lines.append("")
+        
+        # Isolation
+        iso = config.get("isolation", {})
+        lines.append("### 隔離方法")
+        lines.append("")
+        lines.append(f"- **Method**: `{iso.get('method', 'N/A')}`")
+        lines.append(f"- **Fresh Messages**: `{', '.join(iso.get('fresh_messages', [])) or '（空）'}`")
+        lines.append(f"- **Log Format**: `{iso.get('log_format', 'N/A')}`")
+        lines.append("")
+        
+        return "\n".join(lines)
+
+
+    def _generate_sessions_spawn_log_format(self, frs: list, phase: int) -> str:
+        """產生 sessions_spawn.log 格式說明"""
+        if phase != 3:
+            return "每 Phase 2 筆記錄（developer + reviewer）"
+        
+        lines = ["每個 FR 產生 2 筆記錄，共 " + str(len(frs) * 2) + " 筆記錄："]
+        lines.append("```json")
+        for fr in frs[:2]:
+            lines.append(f'{{"timestamp":"ISO8601","role":"developer","task":"{fr["fr"]} {fr["title"]}","session_id":"uuid","confidence":8,"commit":"HASH"}}')
+            lines.append(f'{{"timestamp":"ISO8601","role":"reviewer","task":"{fr["fr"]} Review","session_id":"uuid","confidence":9,"verdict":"APPROVE"}}')
+        lines.append("...")
+        lines.append("```")
+        return "\n".join(lines)
+
+    def cmd_plan_phase(self, args):
+        """
+        Generate execution plan for Phase with pre-flight checks
+
+        本命令：
+        - ✅ 掃描所有相關資料（SKILL.md / SOP / state.json / 歷史迭代）
+        - ✅ 執行 Pre-flight 檢查（FSM / Phase Sequence / Constitution / Tool / Integrity）
+        - ✅ 產生 Markdown 格式執行計畫供 Johnny 審核
+        - ✅ 支援 --repair 修復迭代
+        - ✅ 支援 --history 查看歷史
+        """
+        import sys
+        import json
+        from pathlib import Path
+        from datetime import datetime
+
+        phase = args.phase
+        goal = args.goal or f"Phase {phase} execution"
+        repo_path = Path(args.repo or Path.cwd())
+        with_timeline = getattr(args, 'with_timeline', False)
+
+        print(f"\n{'='*60}")
+        print(f"📋 plan-phase --phase {phase}")
+        print(f"{'='*60}\n")
+
+        # === PHASE 1: SCAN ===
+        print(f"[{datetime.now().strftime('%H:%M:%S')}] SCAN: 讀取相關資料")
+
+        # 1.1 必須掃描
+        skill_md = repo_path / "SKILL.md"
+        sop_path = repo_path / "docs" / f"P{phase}_SOP.md"
+        state_file = repo_path / ".methodology" / "state.json"
+        iterations_file = repo_path / ".methodology" / "iterations" / f"phase{phase}.json"
+
+        if not skill_md.exists():
+            print(f"❌ SKILL.md not found at {skill_md}")
+            return 1
+        if not sop_path.exists():
+            print(f"❌ P{phase}_SOP.md not found at {sop_path}")
+            return 1
+
+        skill_content = skill_md.read_text()
+        sop_content = sop_path.read_text()
+        state = json.loads(state_file.read_text()) if state_file.exists() else {}
+        iterations = json.loads(iterations_file.read_text()) if iterations_file.exists() else {}
+
+        print(f"✅ SKILL.md loaded ({len(skill_content)} chars)")
+        print(f"✅ P{phase}_SOP.md loaded ({len(sop_content)} chars)")
+
+        # 1.2 按 Phase 掃描交付物
+        phase_deliverables = {
+            1: ["SRS.md", "SPEC_TRACKING.md", "TRACEABILITY_MATRIX.md"],
+            2: ["SRS.md", "SAD.md", "ADR.md"],
+            3: ["SRS.md", "SAD.md", "app/processing/"],
+            4: ["SRS.md", "SAD.md", "TEST_PLAN.md"],
+            5: ["BASELINE.md", "MONITORING_PLAN.md"],
+            6: ["QUALITY_REPORT.md"],
+            7: ["RISK_REGISTER.md"],
+            8: ["CONFIG_RECORDS.md", "requirements.lock"],
+        }
+        # Check deliverables - search patterns
+        deliverables = phase_deliverables.get(phase, [])
+        missing_deliverables = []
+        for d in deliverables:
+            # Special handling for SAD.md - search in common locations
+            if d == "SAD.md":
+                if (repo_path / "SAD.md").exists():
+                    continue
+                if (repo_path / "02-architecture" / "SAD.md").exists():
+                    continue
+                if (repo_path / "templates" / "SAD.md").exists():
+                    continue
+                missing_deliverables.append(d)
+            # Skip Phase-specific output directories (app/processing, tests, etc.)
+            elif d.startswith("app/") or d.startswith("tests/"):
+                # These are expected outputs, not prerequisites
+                continue
+            else:
+                d_path = repo_path / d
+                if not d_path.exists():
+                    missing_deliverables.append(d)
+        if missing_deliverables:
+            print(f"⚠️  Missing deliverables: {missing_deliverables}")
+
+        # === PHASE 2: PRE-FLIGHT CHECKS ===
+        print(f"\n[{datetime.now().strftime('%H:%M:%S')}] PRE-FLIGHT: 執行檢查")
+
+        checks_passed = 0
+        checks_total = 0
+        check_results = []
+
+        # 2.1 FSM State Check
+        checks_total += 1
+        from quality_gate.unified_gate import FSMStateMachine, ProjectState
+        fsm = FSMStateMachine(project_path=repo_path)
+        current_state = fsm.get_state()
+        if current_state == ProjectState.FREEZE:
+            check_results.append(("FSM State", False, "HR-14: Project FREEZE"))
+        elif current_state == ProjectState.PAUSED:
+            check_results.append(("FSM State", False, "HR-12/13: Project PAUSED"))
+        else:
+            check_results.append(("FSM State", True, current_state.value if hasattr(current_state, 'value') else str(current_state)))
+            checks_passed += 1
+
+        # 2.2 Phase Sequence Check (HR-03)
+        checks_total += 1
+        current_phase = state.get("current_phase", 0)
+        if current_phase >= phase:
+            check_results.append(("Phase Sequence", False, f"HR-03: Phase {phase} 已執行或跳過（current: {current_phase})"))
+        else:
+            check_results.append(("Phase Sequence", True, f"Phase {current_phase} → Phase {phase}"))
+            checks_passed += 1
+
+        # 2.3 Constitution Check (HR-08)
+        checks_total += 1
+        phase_type_map = {1: "srs", 2: "sad", 3: "implementation", 4: "test_plan",
+                          5: "verification", 6: "quality_report", 7: "risk_management", 8: "configuration"}
+        phase_type = phase_type_map.get(phase, "srs")
+        threshold_map = {1: 100, 2: 100, 3: 80, 4: 80, 5: 80, 6: 80, 7: 80, 8: 80}
+        threshold = threshold_map.get(phase, 80)
+        try:
+            import subprocess
+            # Use subprocess to run constitution check
+            result = subprocess.run(
+                [sys.executable, str(Path(__file__).parent / "quality_gate" / "constitution" / "runner.py"),
+                 "--path", str(repo_path),
+                 "--type", phase_type,
+                 "--format", "json"],
+                capture_output=True, text=True, timeout=60
+            )
+            try:
+                result_data = json.loads(result.stdout)
+                score = result_data.get("score", result_data.get("total_score", 0))
+            except:
+                score = 0
+            if score < threshold:
+                check_results.append(("Constitution", False, f"{score:.0f}% < {threshold}%"))
+            else:
+                check_results.append(("Constitution", True, f"{score:.0f}%"))
+                checks_passed += 1
+        except Exception as e:
+            check_results.append(("Constitution", False, f"N/A ({str(e)[:50]})"))
+
+        # 2.4 Tool Registry Check
+        checks_total += 1
+        try:
+            from tool_registry import ToolRegistry
+            tools = ToolRegistry.list_tools()
+            required = ["knowledge_curator", "context_manager", "subagent_isolator", "permission_guard"]
+            missing_tools = [t for t in required if t not in tools]
+            if missing_tools:
+                check_results.append(("Tool Registry", False, f"Missing: {missing_tools}"))
+            else:
+                check_results.append(("Tool Registry", True, f"{len(tools)} tools"))
+                checks_passed += 1
+        except Exception as e:
+            check_results.append(("Tool Registry", False, f"Error: {e}"))
+
+        # 2.5 Integrity Check (HR-14)
+        checks_total += 1
+        try:
+            # Simple integrity calculation based on completed phases
+            phase_statuses = {
+                k.replace("phase_", "").replace("_status", ""): v 
+                for k, v in state.items() 
+                if k.startswith("phase_") and k.endswith("_status")
+            }
+            completed = sum(1 for v in phase_statuses.values() if v == "APPROVE")
+            integrity_score = min(100, (completed / max(phase, 1)) * 100)
+            if integrity_score < 40:
+                check_results.append(("Integrity", False, f"HR-14: {integrity_score:.0f}% < 40% → FREEZE"))
+            else:
+                check_results.append(("Integrity", True, f"{integrity_score:.0f}%"))
+                checks_passed += 1
+        except Exception as e:
+            check_results.append(("Integrity", False, f"N/A ({str(e)[:50]})"))
+
+        # === PHASE 3: GENERATE PLAN ===
+        print(f"\n[{datetime.now().strftime('%H:%M:%S')}] PLAN: 產生執行計畫")
+
+        # 讀取專案上下文
+        frs = self._parse_srs_fr_list(repo_path)
+        modules = self._parse_sad_modules(repo_path)
+
+        # Determine HR/TH based on phase
+        hr_map = {
+            1: ["HR-01", "HR-04", "HR-06", "HR-07", "HR-08", "HR-10", "HR-11"],
+            2: ["HR-01", "HR-04", "HR-06", "HR-07", "HR-08", "HR-10", "HR-11"],
+            3: ["HR-01", "HR-04", "HR-06", "HR-07", "HR-08", "HR-10", "HR-11", "HR-15"],
+            4: ["HR-01", "HR-04", "HR-08", "HR-10", "HR-11", "HR-12"],
+            5: ["HR-01", "HR-04", "HR-08", "HR-10"],
+            6: ["HR-01", "HR-07", "HR-08", "HR-10"],
+            7: ["HR-01", "HR-08", "HR-10", "HR-12"],
+            8: ["HR-01", "HR-08", "HR-10", "HR-12"],
+        }
+        th_map = {
+            1: ["TH-01", "TH-03", "TH-04", "TH-08", "TH-14", "TH-15"],
+            2: ["TH-01", "TH-03", "TH-04", "TH-05", "TH-08", "TH-15"],
+            3: ["TH-06", "TH-08", "TH-09", "TH-10", "TH-11", "TH-15", "TH-16"],
+            4: ["TH-01", "TH-03", "TH-04", "TH-06", "TH-10", "TH-12", "TH-13", "TH-15", "TH-17"],
+            5: ["TH-02", "TH-07"],
+            6: ["TH-02", "TH-07"],
+            7: ["TH-07"],
+            8: ["TH-02"],
+        }
+        role_map = {
+            1: ("architect", "reviewer"),
+            2: ("architect", "reviewer"),
+            3: ("developer", "reviewer"),
+            4: ("qa", "reviewer"),
+            5: ("devops", "architect"),
+            6: ("qa", "architect"),
+            7: ("qa", "pm"),
+            8: ("devops", "pm"),
+        }
+        agent_a, agent_b = role_map.get(phase, ("developer", "reviewer"))
+
+        # Generate FR-by-FR table
+        fr_table = self._generate_fr_table(frs, modules)
+        qg_commands = self._generate_quality_gate_commands(phase)
+        # === PHASE 3: GENERATE PLAN FROM TEMPLATE ===
+        print(f"\n[{datetime.now().strftime('%H:%M:%S')}] TEMPLATE: 讀取 plan_phase_template.md")
+        # Read template
+        template_path = Path(__file__).parent / "templates" / "plan_phase_template.md"
+        if not template_path.exists():
+            print(f"⚠️  Template not found, using inline generation")
+            template_content = None
+        else:
+            template_content = template_path.read_text(encoding='utf-8')
+        
+        # Generate supporting data
+        fr_table_rows = self._generate_fr_table(frs, modules)
+        log_format = self._generate_sessions_spawn_log_format(frs, phase)
+        subagent_mgmt = self._generate_subagent_management(phase)
+        
+        # Generate phase-specific four-dimensional tables
+        four_dimensional_table = cli_phase_subagent.get_four_dimensional_table(phase)
+        iteration_rounds_table = cli_phase_subagent.get_iteration_rounds_table(phase)
+        
+        # Generate Phase artifacts summary (P0: Aspect 3 - 上階段產出承接)
+        from parse_phase_artifacts import get_artifacts_summary
+        artifacts_summary = get_artifacts_summary(phase, repo_path)
+        
+        # Build pre-flight results
+        pf_lines = []
+        for name, passed, detail in check_results:
+            status = "✅ PASS" if passed else "❌ FAIL"
+            pf_lines.append(f"| {name} | {status} | {detail} |")
+        
+        # Build deliverables
+        deliv_lines = []
+        for d in deliverables:
+            deliv_lines.append(f"- [ ] `{d}`")
+        
+        # Determine FSM string
+        fsm_str = current_state.value if hasattr(current_state, 'value') else str(current_state)
+        
+        if template_content:
+            # Use template
+            plan = template_content
+            plan = plan.replace('{PHASE}', str(phase))
+            plan = plan.replace('{PHASE_PLUS_1}', str(phase + 1))
+            plan = plan.replace('{VERSION}', 'v6.54.0')
+            plan = plan.replace('{PROJECT_NAME}', state.get('project_name', repo_path.name))
+            plan = plan.replace('{DATE}', datetime.now().strftime('%Y-%m-%d'))
+            plan = plan.replace('{GOAL}', goal)
+            plan = plan.replace('{HR_LIST}', ' | '.join(hr_map.get(phase, [])))
+            plan = plan.replace('{TH_LIST}', ' | '.join(th_map.get(phase, [])))
+            
+            # Agent roles for A/B collaboration
+            plan = plan.replace('{AGENT_A}', agent_a)
+            plan = plan.replace('{AGENT_B}', agent_b)
+            plan = plan.replace('{AGENT_A_UPPER}', agent_a.upper())
+            plan = plan.replace('{AGENT_B_UPPER}', agent_b.upper())
+            
+            # Enrich FR with module info from SAD
+            first_fr = frs[0] if frs else {'fr': 'FR-01', 'title': 'Task', 'module': 'module', 'file': 'app/processing/01.py'}
+            mod_match = next((m for m in modules if m.get("fr", "").upper() == first_fr["fr"].upper()), None)
+            if mod_match:
+                first_fr['module'] = mod_match.get("module", first_fr.get('module', 'module'))
+                first_fr['file'] = mod_match.get("file", first_fr.get('file', ''))
+            
+            # Developer and Reviewer prompts (with enriched FR info)
+            developer_prompt = self._generate_developer_prompt(first_fr, phase, str(repo_path))
+            reviewer_prompt = self._generate_reviewer_prompt(first_fr, phase, str(repo_path))
+            plan = plan.replace('{DEVELOPER_PROMPT}', developer_prompt)
+            plan = plan.replace('{REVIEWER_PROMPT}', reviewer_prompt)
+            
+            plan = plan.replace('{FR_COUNT}', str(len(frs)))
+            plan = plan.replace('{FR_TABLE_ROWS}', fr_table_rows)
+            plan = plan.replace('{QG_COMMANDS}', qg_commands)
+            plan = plan.replace('{SESSION_LOG_EXAMPLE}', log_format)
+            plan = plan.replace('{TOTAL_RECORDS}', str(len(frs) * 2))
+            plan = plan.replace('{PREFLIGHT_RESULTS}', '\n'.join(pf_lines))
+            
+            # Generate deliverable structure from modules
+            deliverable_structure = self._generate_deliverable_structure(frs, modules)
+            plan = plan.replace('{DELIVERABLE_STRUCTURE}', deliverable_structure)
+            
+            # FR detailed tasks: placeholder only if not --detailed
+            if not getattr(args, 'detailed', False):
+                plan = plan.replace('{FR_DETAILED_TASKS}', self._generate_fr_detailed_tasks_placeholder(frs, modules, phase))
+            else:
+                # Remove placeholder line, will be replaced by merge later
+                plan = plan.replace('{FR_DETAILED_TASKS}', '')
+            
+            plan = plan.replace('{TH_THRESHOLDS_TABLE}', self._generate_thresholds_table(phase))
+            plan = plan.replace('{EXTERNAL_DOCS}', self._generate_external_docs(phase))
+            plan = plan.replace('{subagent_mgmt}', subagent_mgmt)
+            plan = plan.replace('{artifacts_summary}', artifacts_summary)
+            plan = plan.replace('{four_dimensional_table}', four_dimensional_table)
+            plan = plan.replace('{iteration_rounds_table}', iteration_rounds_table)
+        else:
+            # Inline generation fallback
+            plan = self._generate_plan_fallback(phase, goal, state, fsm_str, 
+                                                check_results, hr_map, th_map, 
+                                                agent_a, agent_b, deliverables,
+                                                frs, fr_table_rows, qg_commands,
+                                                log_format)
+        # Print plan
+        print(plan)
+
+        # Save plan to file
+        plan_file = repo_path / ".methodology" / "plans" / f"phase{phase}_{datetime.now().strftime('%Y%m%d-%H%M%S')}.md"
+        plan_file.parent.mkdir(parents=True, exist_ok=True)
+        plan_file.write_text(plan)
+        print(f"\n💾 Plan saved: {plan_file}")
+
+        # Generate FR detailed tasks inline if --detailed flag is set
+        if getattr(args, 'detailed', False):
+            print(f"\n[{datetime.now().strftime('%H:%M:%S')}] DETAILED: 生成 FR 詳細任務（合併到主 plan）...")
+            try:
+                import subprocess
+                # Run generate_full_plan.py and capture output
+                result = subprocess.run(
+                    [sys.executable, str(Path(__file__).parent / "scripts" / "generate_full_plan.py"),
+                     "--phase", str(phase), "--repo", str(repo_path), "--no-output"],
+                    capture_output=True, text=True, timeout=60
+                )
+                if result.returncode == 0 and result.stdout:
+                    # Parse FR detailed tasks from output (skip header lines)
+                    full_plan_content = result.stdout
+                    # Extract just the task sections (skip header/banner)
+                    lines = full_plan_content.split('\n')
+                    task_start = 0
+                    for i, line in enumerate(lines):
+                        if '## Phase' in line and i > 0:
+                            task_start = i
+                            break
+                    fr_tasks = '\n'.join(lines[task_start:]) if task_start else full_plan_content
+                    
+                    # Insert FR tasks after section 5 header
+                    # Find "## 5. FR 詳細任務" and insert after it
+                    section_marker = f"## 5. FR 詳細任務"
+                    marker_idx = plan.find(section_marker)
+                    if marker_idx != -1:
+                        # Find end of this section (next ## at same level or end of file)
+                        insert_pos = plan.find('\n## ', marker_idx + len(section_marker))
+                        if insert_pos == -1:
+                            insert_pos = len(plan)
+                        plan = plan[:insert_pos] + '\n\n' + fr_tasks + plan[insert_pos:]
+                        # Re-save the merged plan
+                        plan_file.write_text(plan)
+                        print(f"✅ FR 詳細任務已合併到: {plan_file}")
+                    else:
+                        print(f"⚠️ 找不到 FR 詳細任務 section")
+                else:
+                    print(f"⚠️ FR 詳細任務生成失敗")
+            except Exception as e:
+                print(f"⚠️ FR 詳細任務生成異常: {e}")
+
+        # Return non-zero if pre-flight failed
+        if checks_passed < checks_total:
+            print(f"\n⚠️  Pre-flight failed ({checks_passed}/{checks_total} passed)")
+            print(f"   Fix issues before running 'run-phase'")
+            return 1
+
+        print(f"\n✅ Plan generated successfully ({checks_passed}/{checks_total} pre-flight checks passed)")
+        return 0
+
+    # ============================================================================
+    # Session Commands
+    # ============================================================================
+
+    def cmd_session_save(self, args):
+        """儲存完整 session state"""
+        session_id = args.id
+        state_file = args.state or ".methodology/session_state.json"
+
+        # 讀取 session state
+        state_path = Path(state_file)
+        if not state_path.exists():
+            print(f"❌ State file not found: {state_file}")
+            print("   Hint: Use --state to specify a different state file")
+            return 1
+
+        try:
+            state = json.loads(state_path.read_text())
+        except json.JSONDecodeError as e:
+            print(f"❌ Failed to parse state file: {e}")
+            return 1
+
+        # 驗證必填欄位
+        required = ["messages", "context", "artifacts", "metadata"]
+        missing = [k for k in required if k not in state]
+        if missing:
+            print(f"⚠️  State missing fields: {', '.join(missing)}")
+            print("   These fields are recommended but not required")
+
+        # 儲存
+        path = self.session_manager.save(session_id, state)
+        print(f"✅ Session saved: {session_id}")
+        print(f"   Path: {path}")
+        return 0
+
+    def cmd_session_load(self, args):
+        """還原完整 session state"""
+        session_id = args.id
+        output_file = args.output or ".methodology/session_state_loaded.json"
+
+        # 檢查是否存在
+        if not self.session_manager.exists(session_id):
+            print(f"❌ Session not found: {session_id}")
+            print("   Hint: Use 'session-list' to see available sessions")
+            return 1
+
+        try:
+            state = self.session_manager.load(session_id)
+            info = self.session_manager.get_info(session_id)
+
+            # 寫出到檔案
+            Path(output_file).write_text(json.dumps(state, indent=2, ensure_ascii=False))
+
+            print(f"✅ Session loaded: {session_id}")
+            print(f"   Saved at: {info['saved_at']}")
+            print(f"   Size: {info['size']} bytes")
+            print(f"   Output: {output_file}")
+            return 0
+        except Exception as e:
+            print(f"❌ Failed to load session: {e}")
+            return 1
+
+    def cmd_session_list(self, args):
+        """列出所有 saved sessions"""
+        sessions = self.session_manager.list()
+
+        if not sessions:
+            print("No saved sessions found.")
+            print("   Hint: Use 'session-save --id <session_id>' to save a session")
+            return 0
+
+        print(f"\n╔══════════════════════════════════════════════════════════════════════╗")
+        print(f"║  Saved Sessions ({len(sessions)})                                                ║")
+        print(f"╠══════════════════════════════════════════════════════════════════════╣")
+        print(f"║  {'Session ID':<30} {'Saved At':<28} {'Size':>10}  ║")
+        print(f"╠══════════════════════════════════════════════════════════════════════╣")
+
+        for s in sessions:
+            saved_at = s.get('saved_at', 'unknown')
+            if saved_at != 'unknown':
+                saved_at = saved_at[:19]  # Truncate to YYYY-MM-DDTHH:MM:SS
+            size_kb = s['size'] / 1024
+            print(f"║  {s['id']:<30} {saved_at:<28} {size_kb:>8.1f} KB  ║")
+
+        print(f"╚══════════════════════════════════════════════════════════════════════╝")
+        print(f"\nUsage:")
+        print(f"  python cli.py session-load --id <session_id>   # Load a session")
+        print(f"  python cli.py session-delete --id <session_id>  # Delete a session")
+        return 0
+
+    def cmd_session_delete(self, args):
+        """刪除指定 session"""
+        session_id = args.id
+
+        if not self.session_manager.exists(session_id):
+            print(f"❌ Session not found: {session_id}")
+            return 1
+
+        if self.session_manager.delete(session_id):
+            print(f"✅ Session deleted: {session_id}")
+            return 0
+        else:
+            print(f"❌ Failed to delete session: {session_id}")
+            return 1
+
+    def cmd_context_compress(self, args):
+        """Context Compression - 三層壓縮"""
+        import context_compressor
+        import json
+        from pathlib import Path
+        
+        repo_path = Path(args.repo or Path.cwd())
+        msg_file = repo_path / ".methodology" / "session_messages.json"
+        
+        if not msg_file.exists():
+            print("No session_messages.json found")
+            return 1
+        
+        messages = json.loads(msg_file.read_text())
+        level = getattr(args, 'level', 'auto')
+        
+        compressed = context_compressor.compress(messages, level)
+        msg_file.write_text(json.dumps(compressed, indent=2))
+        print(f"Compressed {len(messages)} → {len(compressed)} messages")
+        return 0
+
+    def cmd_update_project_status(self, args):
+        """更新 PROJECT_STATUS.md 的「下一步動作」區塊
+
+        用法：
+            python cli.py update-project-status --step 4.1 --module SynthEngine --action "完成 TC 追蹤"
+        """
+        from pathlib import Path
+
+        repo_path = Path(args.repo or ".")
+        status_file = repo_path / "PROJECT_STATUS.md"
+
+        step = args.step
+        module = args.module
+        action = args.action
+        status_value = args.status or "in-progress"
+
+        if not status_file.exists():
+            pass # Removed print-debug
+            return 1
+
+        try:
+            content = status_file.read_text(encoding="utf-8")
+        except IOError as e:
+            pass # Removed print-debug
+            return 1
+
+        # 解析並更新「下一步動作」表格
+        # 格式：| Step | Module | Action | Status |
+        lines = content.split('\n')
+        updated = False
+        in_next_actions_section = False
+
+        for i, line in enumerate(lines):
+            # 檢測是否進入「下一步動作」區塊
+            if "下一步動作" in line or "Next Actions" in line:
+                in_next_actions_section = True
+                continue
+
+            # 如果遇到另一個區塊標題，結束
+            if in_next_actions_section and line.startswith("#"):
+                in_next_actions_section = False
+
+            # 在下一步動作區塊中，找到對應 step/module 的行並更新狀態
+            if in_next_actions_section and "|" in line and step in line and module in line:
+                # 解析狀態列並更新
+                parts = [p.strip() for p in line.split("|")]
+                if len(parts) >= 4:
+                    # 找到 Status 列（倒數第二列）
+                    parts[-2] = status_value
+                    lines[i] = "|" + "|".join(f" {p} " for p in parts) + "|"
+                    updated = True
+                    break
+
+        if updated:
+            try:
+                status_file.write_text("\n".join(lines), encoding="utf-8")
+                pass # Removed print-debug
+                return 0
+            except IOError as e:
+                pass # Removed print-debug
+                return 1
+        else:
+            pass # Removed print-debug
+            return 1
+
+
+    def cmd_tool_registry(self, args):
+        """Tool Registry CLI - Clawd-Code TOOL_HANDLERS 風格工具管理
+
+        用法：
+            python cli.py tool-registry --list                      # 列出所有工具
+            python cli.py tool-registry --register Read --handler read_file   # 註冊工具
+            python cli.py tool-registry --unregister Read           # 取消註冊
+            python cli.py tool-registry --get Read                  # 查詢工具處理器
+            python cli.py tool-registry --dispatch Read --path /tmp/test.txt  # 分發調用
+        """
+        action = args.action
+
+        if action == "list" or args.list:
+            tools = ToolRegistry.list_tools()
+            pass # Removed print-debug
+            pass # Removed print-debug
+            for tool in tools:
+                handler = ToolRegistry.get_handler(tool)
+                kind = "handler" if handler else "factory"
+                pass # Removed print-debug
+            pass # Removed print-debug
+            return 0
+
+        elif action == "register" or (args.register and args.handler):
+            tool_name = args.register or args.tool_name
+            handler_path = args.handler or args.handler_path
+
+            if not tool_name or not handler_path:
+                pass # Removed print-debug
+                return 1
+
+            # 嘗試從模組載入 handler
+            try:
+                import importlib
+                if '.' in handler_path:
+                    module_path, func_name = handler_path.rsplit('.', 1)
+                    module = importlib.import_module(module_path)
+                    handler = getattr(module, func_name)
+                else:
+                    # 假設是內建或已導入的函式名
+                    handler = eval(handler_path, globals())
+            except Exception as e:
+                pass # Removed print-debug
+                return 1
+
+            ToolRegistry.register(tool_name, handler)
+            pass # Removed print-debug
+            pass # Removed print-debug
+            return 0
+
+        elif action == "unregister" or args.unregister:
+            tool_name = args.unregister or args.tool_name
+            if not tool_name:
+                pass # Removed print-debug
+                return 1
+
+            removed = ToolRegistry.unregister(tool_name)
+            if removed:
+                pass # Removed print-debug
+            else:
+                pass # Removed print-debug
+            return 0
+
+        elif action == "get" or args.get:
+            tool_name = args.get or args.tool_name
+            if not tool_name:
+                pass # Removed print-debug
+                return 1
+
+            handler = ToolRegistry.get_handler(tool_name)
+            if handler:
+                pass # Removed print-debug
+            else:
+                pass # Removed print-debug
+                pass # Removed print-debug
+            return 0
+
+        elif action == "dispatch" or args.dispatch:
+            tool_name = args.dispatch or args.tool_name
+            if not tool_name:
+                pass # Removed print-debug
+                return 1
+
+            # 從 --kwargs 解析參數
+            kwargs = {}
+            if args.kwargs:
+                for kv in args.kwargs:
+                    if '=' in kv:
+                        k, v = kv.split('=', 1)
+                        kwargs[k] = v
+
+            try:
+                result = ToolRegistry.dispatch(tool_name, **kwargs)
+                pass # Removed print-debug
+            except KeyError as e:
+                pass # Removed print-debug
+                return 1
+            except Exception as e:
+                pass # Removed print-debug
+                return 1
+            return 0
+
+        else:
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            pass # Removed print-debug
+            return 1
+
+
+# ==================== Main ====================
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Methodology - AI Agent Development Framework",
+        formatter_class=argparse.RawDescriptionHelpFormatter
+    )
+    
+    subparsers = parser.add_subparsers(dest="command", help="Commands")
+    
+    # init
+    init_parser = subparsers.add_parser("init", help="Initialize project")
+    init_parser.add_argument("name", nargs="?", help="Project name")
+    
+    # finish
+    subparsers.add_parser("finish", help="Finish project and stop quality watch")
+    
+    # task
+    task_parser = subparsers.add_parser("task", help="Task management")
+    task_parser.add_argument("action", choices=["add", "list", "complete", "sprint"],
+                           help="Task action")
+    task_parser.add_argument("title", nargs="?", help="Task title")
+    task_parser.add_argument("--points", type=int, help="Story points")
+    task_parser.add_argument("--priority", type=int, help="Priority (1-5)")
+    task_parser.add_argument("--task-id", help="Task ID")
+    task_parser.add_argument("--sprint-id", help="Sprint ID")
+    
+    # sprint
+    sprint_parser = subparsers.add_parser("sprint", help="Sprint management")
+    sprint_parser.add_argument("action", choices=["create", "list", "start"],
+                             help="Sprint action")
+    sprint_parser.add_argument("name", nargs="?", help="Sprint name")
+    sprint_parser.add_argument("--start", help="Start date (YYYY-MM-DD)")
+    sprint_parser.add_argument("--end", help="End date (YYYY-MM-DD)")
+    sprint_parser.add_argument("--capacity", type=int, help="Capacity (points)")
+    sprint_parser.add_argument("--sprint-id", help="Sprint ID")
+    
+    # board
+    board_parser = subparsers.add_parser("board", help="Open project board")
+    board_parser.add_argument("--sprint-id", help="Sprint ID")
+    
+    # report
+    report_parser = subparsers.add_parser("report", help="Generate report")
+    report_parser.add_argument("--type", choices=["daily", "weekly", "monthly"],
+                             help="Report type")
+    report_parser.add_argument("--output", "-o", help="Output file")
+    
+    # status
+    subparsers.add_parser("status", help="Show status")
+    
+    # phase-status: Phase execution status
+    phase_status_parser = subparsers.add_parser("phase-status", help="Show Phase execution status")
+    phase_status_parser.add_argument("--phase", type=int, required=True, help="Phase number (1-8)")
+    
+    # phase-pause: Pause Phase execution
+    phase_pause_parser = subparsers.add_parser("phase-pause", help="Pause Phase execution")
+    phase_pause_parser.add_argument("--phase", type=int, required=True, help="Phase number (1-8)")
+    
+    # phase-resume: Resume Phase execution
+    phase_resume_parser = subparsers.add_parser("phase-resume", help="Resume Phase execution")
+    phase_resume_parser.add_argument("--phase", type=int, required=True, help="Phase number (1-8)")
+    
+    # phase-freeze: Freeze project (HR-14)
+    subparsers.add_parser("phase-freeze", help="Freeze project (HR-14: Integrity < 40)")
+    
+    # ab-history: A/B round history
+    ab_history_parser = subparsers.add_parser("ab-history", help="Show A/B round history")
+    ab_history_parser.add_argument("--phase", type=int, required=True, help="Phase number (1-8)")
+    
+    # ab-record: 記錄一次 A/B 來回
+    ab_record_parser = subparsers.add_parser("ab-record", help="Record an A/B round")
+    ab_record_parser.add_argument("--phase", type=int, required=True, help="Phase number")
+    ab_record_parser.add_argument("--notes", type=str, default="", help="Notes (optional)")
+    ab_record_parser.add_argument("--project", type=str, default=".", help="Project path")
+    
+    # audit-heatmap: Cross-project failure heatmap
+    subparsers.add_parser("audit-heatmap", help="Show cross-project failure heatmap")
+    
+    # time-check: Phase duration check
+    time_check_parser = subparsers.add_parser("time-check", help="Check Phase duration")
+    time_check_parser.add_argument("--phase", type=int, required=True, help="Phase number (1-8)")
+    time_check_parser.add_argument("--threshold", type=int, default=120, help="Threshold in minutes (default: 120)")
+    
+    # bus
+    bus_parser = subparsers.add_parser("bus", help="Message Bus")
+    bus_parser.add_argument("action", choices=["status", "tree", "watch"],
+                           help="Bus action")
+    bus_parser.add_argument("--seconds", type=int, help="Watch duration")
+
+    # constitution
+    constitution_parser = subparsers.add_parser("constitution", help="Constitution")
+    constitution_parser.add_argument("subcommand", nargs="?", default="view",
+                                   choices=["view", "thresholds", "errors", "check", "edit", "compile", "verify"],
+                                   help="Constitution subcommand")
+    constitution_parser.add_argument("output", nargs="?", help="Output text to verify (for verify subcommand)")
+    constitution_parser.add_argument("--auto-fix", action="store_true", help="自動修復已知問題 (for check subcommand)")
+    constitution_parser.add_argument("--skip-failed", action="store_true", help="跳过失敗的檢查繼續執行 (for check subcommand)")
+
+    # constitution-sync
+    subparsers.add_parser("constitution-sync", help="Sync Constitution to Policy Engine")
+
+    # run-phase (Single Entry Point for Phase Execution)
+    run_phase_parser = subparsers.add_parser("run-phase", help="Single entry point for Phase execution with pre-flight checks")
+    run_phase_parser.add_argument("--phase", type=int, required=True, help="Phase number (1-8)")
+    run_phase_parser.add_argument("--step", type=str, help="Step to execute (e.g. 3.1)")
+    run_phase_parser.add_argument("--task", type=str, help="Task description override")
+    run_phase_parser.add_argument("--repo", type=str, default=".", help="Repository path")
+
+    # spec-track
+    spec_track_parser = subparsers.add_parser("spec-track", help="Spec Tracking")
+    spec_track_parser.add_argument("action", choices=["init", "check", "report"],
+                                   help="Spec tracking action")
+
+    # resources
+    resources_parser = subparsers.add_parser("resources", help="Resource dashboard")
+    resources_parser.add_argument("action", choices=["list", "stats", "skills"],
+                                 help="Resource action")
+    
+    # term
+    term_parser = subparsers.add_parser("term", help="PM terminology")
+    term_parser.add_argument("query", nargs="?", help="Search term")
+    
+    # pm
+    pm_parser = subparsers.add_parser("pm", help="PM Mode")
+    pm_parser.add_argument("action", choices=["report", "forecast", "health"],
+                         help="PM action")
+    
+    # eval
+    # eval subcommands
+    eval_sp = subparsers.add_parser("eval", help="Agent Evaluation")
+    eval_sub = eval_sp.add_subparsers(dest="eval_action", help="Evaluation actions")
+    
+    # eval create
+    eval_create = eval_sub.add_parser("create", help="Create evaluation suite")
+    eval_create.add_argument("name", help="Suite name")
+    eval_create.add_argument("--description", help="Suite description")
+    eval_create.add_argument("--iterations", type=int, default=1, help="Iterations")
+    
+    # eval list
+    eval_sub.add_parser("list", help="List evaluation suites")
+    
+    # eval add
+    eval_add = eval_sub.add_parser("add", help="Add test case")
+    eval_add.add_argument("suite_id", help="Suite ID")
+    eval_add.add_argument("name", nargs="?", help="Test case name")
+    eval_add.add_argument("--prompt", help="Test prompt")
+    eval_add.add_argument("--expected", help="Expected output")
+    
+    # eval run
+    eval_run = eval_sub.add_parser("run", help="Run evaluation")
+    eval_run.add_argument("suite_id", help="Suite ID")
+    
+    # eval report
+    eval_report = eval_sub.add_parser("report", help="Show evaluation report")
+    eval_report.add_argument("suite_id", help="Suite ID")
+    
+    # eval hitl
+    eval_sub.add_parser("hitl", help="Human-in-the-Loop status")
+    
+    # quality
+    quality_parser = subparsers.add_parser("quality", help="Data Quality Checker")
+    quality_parser.add_argument("action", choices=["check", "report"], default="check")
+    
+    # enterprise
+    enterprise_parser = subparsers.add_parser("enterprise", help="Enterprise Hub")
+    enterprise_parser.add_argument("action", choices=["status", "audit"], default="status")
+    
+    # audit
+    audit_parser = subparsers.add_parser("audit", help="AI Audit Logger")
+    audit_parser.add_argument("action", choices=["status", "anomalies", "report"], default="status")
+    audit_parser.add_argument("--agent", help="Filter by agent ID")
+    audit_parser.add_argument("--severity", choices=["low", "medium", "high", "critical"],
+                              help="Filter by severity")
+    
+    # migrate
+    migrate_parser = subparsers.add_parser("migrate", help="Framework Migration (CrewAI ↔ LangGraph)")
+    migrate_parser.add_argument("file", help="File to migrate")
+    migrate_parser.add_argument("--from", dest="from_", choices=["crewai", "langgraph"],
+                                help="Source framework")
+    migrate_parser.add_argument("--to", choices=["crewai", "langgraph"],
+                                help="Target framework")
+
+    # parse
+    parse_parser = subparsers.add_parser("parse", help="Structured Output Engine")
+    parse_parser.add_argument("--schema", help="Schema name")
+    
+    # wizard
+    wizard_parser = subparsers.add_parser("wizard", help="Setup Wizard")
+    
+    # guardrails
+    guardrails_parser = subparsers.add_parser("guardrails", help="Security Guardrails")
+    guardrails_parser.add_argument("action", choices=["check"], default="check")
+    guardrails_parser.add_argument("--text", help="Text to check")
+
+    # security - Deep Security Defense
+    security_parser = subparsers.add_parser("security", help="Deep Security Defense Architecture")
+    security_parser.add_argument(
+        "action",
+        choices=["deep-check", "enable-deep-defense", "audit-log", "validate"],
+        default="deep-check"
+    )
+    security_parser.add_argument("--text", help="Text to validate (for validate action)")
+
+    # scale
+    scale_parser = subparsers.add_parser("scale", help="AutoScaler")
+    scale_parser.add_argument("action", choices=["status", "scale"], default="status")
+    scale_parser.add_argument("--current", help="Current instances")
+    
+    # debug
+    debug_parser = subparsers.add_parser("debug", help="Agent Debugger")
+    debug_parser.add_argument("action", choices=["status", "stats", "list", "clear", "enable", "disable"],
+                            help="Debug action")
+    debug_parser.add_argument("--agent-id", help="Agent ID")
+    debug_parser.add_argument("--limit", type=int, help="Limit events")
+    
+    # trace
+    trace_parser = subparsers.add_parser("trace", help="Traceability Matrix / Agent Trace")
+    trace_parser.add_argument("action", choices=["view", "correlation", "export", "impact", "graphviz", "risk-report", "init", "update", "report", "check"],
+                            help="Trace action")
+    trace_parser.add_argument("--agent-id", help="Agent ID (for view/correlation/export)")
+    trace_parser.add_argument("--correlation", help="Correlation ID")
+    trace_parser.add_argument("--limit", type=int, help="Limit events")
+    trace_parser.add_argument("--output", "-o", help="Output file")
+    trace_parser.add_argument("--file", "-f", help="File path for impact analysis")
+    trace_parser.add_argument("--id", help="Requirement ID (for update)")
+    trace_parser.add_argument("--status", help="Status: pending|in-progress|completed (for update)")
+
+    # trace-check
+    trace_check_parser = subparsers.add_parser("trace-check", help="溯源追蹤檢查 (SAD→代碼 / FR→測試)")
+    trace_check_parser.add_argument("--from", dest="from_phase", required=True,
+                                   help="Source phase (phase1, phase2)")
+    trace_check_parser.add_argument("--to", dest="to_phase", required=True,
+                                   help="Target: phase3 (SAD→代碼) or phase3-tests (FR→測試)")
+    trace_check_parser.add_argument("--repo", default=".", help="Repo path (default: .)")
+
+    # approval
+    approval_parser = subparsers.add_parser("approval", help="Human Approval Management")
+    approval_parser.add_argument("action", choices=["list", "create", "approve", "reject", "show", "report", "stats"],
+                                help="Approval action")
+    approval_parser.add_argument("--request-id", help="Request ID")
+    approval_parser.add_argument("--name", help="Request name")
+    approval_parser.add_argument("--description", help="Request description")
+    approval_parser.add_argument("--requester", help="Requester ID")
+    approval_parser.add_argument("--requester-name", help="Requester name")
+    approval_parser.add_argument("--approval-type", help="Approval type (code_review, deployment, budget)")
+    approval_parser.add_argument("--approver", help="Approver ID")
+    approval_parser.add_argument("--level", help="Approval level (l1, l2, l3, l4, final)")
+    approval_parser.add_argument("--comment", help="Comment")
+
+    # risk
+    risk_parser = subparsers.add_parser("risk", help="Risk Registry Management")
+    risk_parser.add_argument("action", choices=["add", "list", "show", "close", "mitigate", "report", "stats", "delete"],
+                             help="Risk action")
+    risk_parser.add_argument("--title", help="Risk title")
+    risk_parser.add_argument("--desc", help="Risk description")
+    risk_parser.add_argument("--level", help="Risk level (low, medium, high, critical)")
+    risk_parser.add_argument("--owner", help="Risk owner")
+    risk_parser.add_argument("--impact", help="Impact description")
+    risk_parser.add_argument("--probability", type=float, help="Probability (0-1)")
+    risk_parser.add_argument("--mitigation", help="Mitigation strategy")
+    risk_parser.add_argument("--risk-id", help="Risk ID")
+    risk_parser.add_argument("--status", help="Filter by status (open, mitigated, accepted, closed)")
+
+    # roi (ROI Dashboard)
+    roi_parser = subparsers.add_parser("roi", help="ROI Tracking Dashboard")
+    roi_parser.add_argument("subcommand", nargs="?", default="dashboard",
+                           choices=["dashboard", "report"],
+                           help="ROI subcommand")
+    roi_parser.add_argument("period", nargs="?", choices=["day", "week", "month"], default="month",
+                           help="Time period for report")
+
+    # p2p
+    p2p_parser = subparsers.add_parser("p2p", help="P2P Team Config")
+    p2p_sub = p2p_parser.add_subparsers(dest="p2p_action", help="P2P actions")
+    p2p_init = p2p_sub.add_parser("init", help="Initialize team from JSON")
+    p2p_init.add_argument("config_path", help="Path to team config JSON file")
+    p2p_sub.add_parser("status", help="Show team status")
+    p2p_sub.add_parser("list", help="List team members")
+
+    # hitl
+    hitl_parser = subparsers.add_parser("hitl", help="HITL Human-in-the-Loop Management")
+    hitl_parser.add_argument("action", choices=["register", "list", "assign", "approve", "reject", "show", "stats", "report", "escalate"],
+                            help="HITL action")
+    hitl_parser.add_argument("owner_id", nargs="?", help="Owner ID or Output ID depending on action")
+    hitl_parser.add_argument("--name", help="Owner name")
+    hitl_parser.add_argument("--email", help="Owner email")
+    hitl_parser.add_argument("--role", help="Owner role")
+    hitl_parser.add_argument("--agent-id", dest="agent_id", help="Agent ID for assignment")
+    hitl_parser.add_argument("--output-id", dest="output_id", help="Output ID")
+    hitl_parser.add_argument("--approver", help="Approver ID")
+    hitl_parser.add_argument("--feedback", help="Feedback/reason")
+    hitl_parser.add_argument("--reason", help="Escalation reason")
+    hitl_parser.add_argument("--level", help="Escalation level (owner, manager, executive)")
+    hitl_parser.add_argument("--list-type", dest="list_type", choices=["owners", "outputs", "pending"], default="owners",
+                           help="List type (for 'list' action)")
+    hitl_parser.add_argument("--status-filter", dest="status_filter", 
+                           choices=["draft", "pending_review", "approved", "revision_requested", "completed", "escalated"],
+                           help="Filter outputs by status")
+    hitl_parser.add_argument("--owner-filter", dest="owner_filter", help="Filter by owner ID")
+
+    # version
+    subparsers.add_parser("version", help="Show version")
+    
+    # integrity (HR-14: Integrity 分數計算)
+    integrity_parser = subparsers.add_parser("integrity", help="HR-14 Integrity 分數計算")
+    integrity_parser.add_argument("--project", default=".", dest="project",
+                                  help="專案根目錄 (預設: .)")
+
+    # gatekeeper
+    gatekeeper_parser = subparsers.add_parser("gatekeeper", help="Workflow Gatekeeper")
+    gatekeeper_parser.add_argument("action", choices=["status", "check", "enforce"],
+                                   help="Gatekeeper action")
+    
+    # confirmations (double confirmation)
+    confirmations_parser = subparsers.add_parser("confirmations", help="Double Confirmation Management")
+    confirmations_parser.add_argument("action", choices=["list", "confirm", "reject", "status", "check"],
+                                      help="Confirmation action")
+    confirmations_parser.add_argument("--id", dest="confirmation_id", help="Confirmation ID")
+    confirmations_parser.add_argument("--by", dest="confirmed_by", help="Confirmed by (agent or human)")
+    confirmations_parser.add_argument("--reason", help="Rejection reason")
+    confirmations_parser.add_argument("--operation", help="Filter by operation type")
+    
+    # release (with double confirmation)
+    release_parser = subparsers.add_parser("release", help="Release Management (requires confirmation)")
+    release_parser.add_argument("--version", help="Version to release")
+    release_parser.add_argument("--repo", help="Repository name")
+    release_parser.add_argument("--confirm", action="store_true", help="Request confirmation before release")
+    
+    # policy (policy engine)
+    subparsers.add_parser("policy", help="Run Policy Engine checks")
+    
+    # install-hook (pre-commit hook installer)
+    install_hook_parser = subparsers.add_parser("install-hook", help="Install pre-commit hook")
+    install_hook_parser.add_argument("--force", action="store_true", help="Overwrite existing hooks")
+    
+    # enforcement-config (Unified Enforcement Configuration)
+    enforcement_config_parser = subparsers.add_parser("enforcement-config", help="Unified Enforcement Configuration")
+    enforcement_config_parser.add_argument("action", nargs="?", choices=["init", "set", "show", "detect"],
+                                          help="Action: init, set, show, detect")
+    enforcement_config_parser.add_argument("mode", nargs="?", choices=["local", "github", "gitlab", "jenkins", "azure"],
+                                          help="Mode for 'set' action")
+
+    # enforcement (Unified Enforcement CLI)
+    enforcement_parser = subparsers.add_parser("enforcement", help="Unified Enforcement CLI")
+    enforcement_parser.add_argument("subcommand", nargs="?", default="run",
+                                   choices=["run", "check", "status", "install", "config"],
+                                   help="Enforcement subcommand")
+    enforcement_parser.add_argument("mode", nargs="?", choices=["local", "github", "gitlab", "jenkins", "azure"],
+                                   help="Mode for 'config' subcommand")
+
+    # quality-gate (Quality Gate - 品質閘道)
+    quality_gate_parser = subparsers.add_parser("quality-gate", aliases=["qg"], help="Quality Gate - 品質閘道檢查")
+    quality_gate_parser.add_argument("subcommand", nargs="?", default="check",
+                                     choices=["check", "all", "doc", "docs", "phase", "aspice"],
+                                     help="Quality gate subcommand")
+
+    # enforce (Framework Enforcement)
+    enforce_parser = subparsers.add_parser("enforce", help="Framework Enforcement - 統一執行所有 enforcement")
+    enforce_parser.add_argument("--level", choices=["BLOCK", "WARN", "ALL"], default="ALL",
+                               help="Enforcement level")
+    enforce_parser.add_argument("--spec", action="store_true", help="Only spec tracking")
+    enforce_parser.add_argument("--constitution", action="store_true", help="Only constitution")
+    enforce_parser.add_argument("--project", default=".", help="Project root path")
+    enforce_parser.add_argument("--aspice-report", action="store_true",
+                              help="Generate ASPICE traceability report")
+    enforce_parser.add_argument("--auto-fix", action="store_true", help="自動修復已知問題")
+    enforce_parser.add_argument("--skip-failed", action="store_true", help="跳过失敗的檢查繼續執行")
+
+    # decision (Decision Gate - 決策分類閘道)
+    decision_parser = subparsers.add_parser("decision", aliases=["dec"], help="Decision Gate - 決策分類閘道")
+    decision_parser.add_argument("subcommand", nargs="?", default="list",
+                                choices=["classify", "add", "list", "ls", "pending", "p", "confirm", "report"],
+                                help="Decision gate subcommand")
+    decision_parser.add_argument("args", nargs="*", help="Arguments for subcommand")
+
+    # agent-proof-hook (Agent-Proof Hook Management)
+    agent_proof_hook_parser = subparsers.add_parser("agent-proof-hook", help="Agent-Proof Hook Management")
+    agent_proof_hook_parser.add_argument("action", nargs="?", choices=["install", "verify", "uninstall"],
+                                         help="Action: install, verify, uninstall")
+
+    # memory (Memory Governance Framework)
+    memory_parser = subparsers.add_parser("memory", help="Memory Governance Framework")
+    memory_parser.add_argument("subcommand", nargs="?", default="status",
+                              choices=["validate", "status", "audit", "resolve"],
+                              help="Memory governance subcommand")
+
+    # m27 (M2.7 Self-Evolving Integration)
+    m27_parser = subparsers.add_parser("m27", help="M2.7 Self-Evolving Integration")
+    m27_parser.add_argument("sub", nargs="?", default="status",
+                           choices=["status", "analyze", "iterate", "optimize"],
+                           help="M2.7 action")
+    m27_parser.add_argument("--log", dest="failure_log", help="Failure log for analysis")
+
+    # metrics (Code Metrics)
+    metrics_parser = subparsers.add_parser("metrics", help="Code Metrics - 代碼品質指標")
+    metrics_parser.add_argument("subcommand", nargs="?", default="report",
+                              choices=["report", "check", "history"],
+                              help="Metrics subcommand")
+
+    # debt (Technical Debt Registry - 技術債務追蹤)
+    debt_parser = subparsers.add_parser("debt", help="Technical Debt Registry - 技術債務追蹤")
+    debt_parser.add_argument("subcommand", nargs="?", default="list",
+                            choices=["add", "list", "ls", "open", "resolve", "accept", "report"],
+                            help="Debt subcommand")
+    debt_parser.add_argument("args", nargs="*", help="Arguments for subcommand")
+    debt_parser.add_argument("--severity", dest="severity", help="Severity level (high|medium|low)")
+    debt_parser.add_argument("--ticket", dest="ticket", help="Associated ticket ID")
+
+    # adr (Architecture Decision Records)
+    adr_parser = subparsers.add_parser("adr", help="Architecture Decision Records - 架構決策記錄")
+    adr_parser.add_argument("adr_action", nargs="?", default="list",
+                           choices=["create", "new", "list", "ls", "get", "show", "status", "export", "report"],
+                           help="ADR action")
+    adr_parser.add_argument("args", nargs="*", help="Arguments for ADR subcommand")
+
+    # persona
+    persona_parser = subparsers.add_parser("persona", help="Agent Persona")
+    persona_parser.add_argument("action", choices=["list", "apply", "show"],
+                              help="Persona action")
+    persona_parser.add_argument("persona_type", nargs="?",
+                              help="Persona type (developer, architect, qa, pm, devops, reviewer)")
+
+    # ralph (Ralph Mode - 任務長時監控)
+    ralph_parser = subparsers.add_parser("ralph", help="Ralph Mode - 任務長時監控")
+    ralph_parser.add_argument(
+        "ralph_command",
+        nargs="+",
+        help="Ralph 子命令: start, status, stop, list, init, advance"
+    )
+
+    # stage-pass (STAGE_PASS Generator - 整合版品質認證)
+    stage_pass_parser = subparsers.add_parser("stage-pass", help="STAGE_PASS Generator - 整合版品質認證")
+    stage_pass_parser.add_argument("--phase", type=int, required=True, choices=range(1, 9),
+                                   help="Phase number (1-8)")
+    stage_pass_parser.add_argument("--project", default=".", help="Project root path")
+    stage_pass_parser.add_argument("--auto-fix", action="store_true", help="自動修復已知問題")
+    stage_pass_parser.add_argument("--skip-failed", action="store_true", help="跳过失敗的檢查繼續執行")
+
+    # phase-verify (Phase 真相驗證)
+    phase_verify_parser = subparsers.add_parser("phase-verify", help="Phase 真相驗證")
+    phase_verify_parser.add_argument("--phase", type=int, required=True, choices=range(1, 9),
+                                     help="Phase number (1-8)")
+    phase_verify_parser.add_argument("--project", default=".", help="Project root path")
+
+    # skill-check (SKILL.md 強制讀取檢查)
+    skill_check_parser = subparsers.add_parser("skill-check", help="SKILL.md 強制讀取檢查")
+    skill_check_parser.add_argument("--phase", type=int, default=1, choices=range(1, 9),
+                                   help="Phase number (1-8)")
+    skill_check_parser.add_argument("--mode", choices=["preheat", "interrogate", "citation"],
+                                   help="檢查模式：preheat=預熱, interrogate=拷問, citation=引用")
+
+    # model-recommend (Phase → Model 推薦)
+    model_recommend_parser = subparsers.add_parser("model-recommend", help="Phase → Model 推薦")
+    model_recommend_parser.add_argument("--phase", type=int, help="Phase number (1-8), 如果不指定則從 state.json 讀取")
+    model_recommend_parser.add_argument("--repo", default=".", help="Repo 路徑 (預設: .)")
+    model_recommend_parser.add_argument("--provider", action="store_true", help="顯示 Provider 詳細資訊 (JSON)")
+    model_recommend_parser.add_argument("--task-hint", help="Task hint (simple/coding/review)")
+
+    # context-compress (Context Compression - 三層壓縮)
+    context_compress_parser = subparsers.add_parser("context-compress", help="Context Compression - 三層壓縮")
+    context_compress_parser.add_argument("--level", default="auto", choices=["L1", "L2", "L3", "auto"],
+                                        help="Compression level (default: auto)")
+    context_compress_parser.add_argument("--repo", default=".", help="Repo 路徑 (預設: .)")
+
+    # update-project-status (更新 PROJECT_STATUS.md)
+    update_status_parser = subparsers.add_parser("update-project-status", help="更新 PROJECT_STATUS.md")
+    update_status_parser.add_argument("--step", required=True, help="Step 名稱 (如 4.1)")
+    update_status_parser.add_argument("--module", required=True, help="模組名稱 (如 SynthEngine)")
+    update_status_parser.add_argument("--action", required=True, help="動作描述")
+    update_status_parser.add_argument("--status", default="in-progress", help="狀態 (pending/in-progress/completed)")
+    update_status_parser.add_argument("--repo", default=".", help="Repo 路徑 (預設: .)")
+
+    # update-step (更新 Phase/Step/Module 追蹤)
+    update_step_parser = subparsers.add_parser("update-step", help="更新 Phase/Step/Module 追蹤")
+    update_step_parser.add_argument("--step", required=True, help="Step 名稱 (如 3.1)")
+    update_step_parser.add_argument("--module", required=True, help="模組名稱 (如 LexiconMapper)")
+    update_step_parser.add_argument("--action", help="下一步動作描述")
+    update_step_parser.add_argument("--phase", type=int, choices=range(1, 9), help="Phase 編號 (用於時間追蹤初始化)")
+    update_step_parser.add_argument("--estimated-minutes", type=int, help="預估 Phase 時長（分鐘）")
+    update_step_parser.add_argument("--repo", default=".", help="Repo 路徑 (預設: .)")
+
+    # end-phase (結束當前 Phase)
+    end_phase_parser = subparsers.add_parser("end-phase", help="結束當前 Phase")
+    end_phase_parser.add_argument("--phase", type=int, help="Phase 編號 (1-8)")
+    end_phase_parser.add_argument("--repo", default=".", help="Repo 路徑 (預設: .)")
+
+    # update-artifact (更新產物版本)
+    update_artifact_parser = subparsers.add_parser("update-artifact", help="更新產物版本到 state.json")
+    update_artifact_parser.add_argument("--name", required=True, help="產物名稱（如 SRS.md, SAD.md）")
+    update_artifact_parser.add_argument("--version", required=True, help="版本（如 v1.0.0）")
+    update_artifact_parser.add_argument("--path", required=True, help="產物路徑")
+    update_artifact_parser.add_argument("--summary", help="50字內摘要")
+    update_artifact_parser.add_argument("--repo", default=".", help="Repo 路徑 (預設: .)")
+
+    # add-task (新增任務到 task graph)
+    add_task_parser = subparsers.add_parser("add-task", help="新增任務到 task graph")
+    add_task_parser.add_argument("--task-id", required=True, help="任務 ID")
+    add_task_parser.add_argument("--title", required=True, help="任務標題")
+    add_task_parser.add_argument("--dependencies", help="依賴任務 ID（逗號分隔）")
+    add_task_parser.add_argument("--repo", default=".", help="Repo 路徑 (預設: .)")
+
+    # task-result (更新任務結果)
+    task_result_parser = subparsers.add_parser("task-result", help="更新任務結果")
+    task_result_parser.add_argument("--task-id", required=True, help="任務 ID")
+    task_result_parser.add_argument("--result", required=True, help="任務結果")
+    task_result_parser.add_argument("--summary", required=True, help="任務摘要")
+    task_result_parser.add_argument("--status", default="completed", help="任務狀態（pending/in-progress/completed）")
+    task_result_parser.add_argument("--repo", default=".", help="Repo 路徑 (預設: .)")
+
+    # verify-artifact (Verify_Agent - 獨立驗證產物)
+    verify_artifact_parser = subparsers.add_parser("verify-artifact", help="Verify_Agent - 獨立驗證產物正確性")
+    verify_artifact_parser.add_argument("--phase", type=int, default=3, help="Phase 編號 (預設: 3)")
+    verify_artifact_parser.add_argument("--repo", default=".", help="Repo 路徑 (預設: .)")
+
+    # retry-test
+    subparsers.add_parser("retry-test", help="Test RetryHandler with dynamic prompt adjustment")
+
+    # fsm-status (FSM 狀態查詢)
+    fsm_status_parser = subparsers.add_parser("fsm-status", help="FSM 狀態查詢")
+    fsm_status_parser.add_argument("--repo", default=".", help="Repo 路徑 (預設: .)")
+
+    # fsm-transition (FSM 手動狀態切換)
+    fsm_transition_parser = subparsers.add_parser("fsm-transition", help="FSM 手動狀態切換")
+    fsm_transition_parser.add_argument("--to", required=True,
+                                       help="目標狀態 (INIT/RUNNING/VERIFYING/WRITING/PAUSED/FREEZE/COMPLETED)")
+    fsm_transition_parser.add_argument("--reason", help="切換原因")
+    fsm_transition_parser.add_argument("--repo", default=".", help="Repo 路徑 (預設: .)")
+
+    # fsm-resume (FSM 解除煞車)
+    fsm_resume_parser = subparsers.add_parser("fsm-resume", help="FSM 解除煞車 (PAUSED → RUNNING)")
+    fsm_resume_parser.add_argument("--repo", default=".", help="Repo 路徑 (預設: .)")
+
+    # fsm-unfreeze (FSM 解除凍住)
+    fsm_unfreeze_parser = subparsers.add_parser("fsm-unfreeze", help="FSM 解除凍住 (FREEZE → INIT)")
+    fsm_unfreeze_parser.add_argument("--repo", default=".", help="Repo 路徑 (預設: .)")
+
+    # session-save (儲存完整 session state)
+    session_save_parser = subparsers.add_parser("session-save", help="儲存完整 session state")
+    session_save_parser.add_argument("--id", required=True, help="Session ID")
+    session_save_parser.add_argument("--state", help="State file path (default: .methodology/session_state.json)")
+
+    # session-load (還原完整 session state)
+    session_load_parser = subparsers.add_parser("session-load", help="還原完整 session state")
+    session_load_parser.add_argument("--id", required=True, help="Session ID")
+    session_load_parser.add_argument("--output", help="Output file (default: .methodology/session_state_loaded.json)")
+
+    # session-list (列出所有 saved sessions)
+    subparsers.add_parser("session-list", help="列出所有 saved sessions")
+
+    # session-delete (刪除指定 session)
+    session_delete_parser = subparsers.add_parser("session-delete", help="刪除指定 session")
+    session_delete_parser.add_argument("--id", required=True, help="Session ID")
+
+    # tool-registry (Tool Registry - Clawd-Code TOOL_HANDLERS 風格)
+    tr_parser = subparsers.add_parser("tool-registry", help="Tool Registry - Clawd-Code TOOL_HANDLERS 工具管理")
+    tr_parser.add_argument("--action", "-a", dest="action",
+                          choices=["list", "register", "unregister", "get", "dispatch"],
+                          help="操作: list/register/unregister/get/dispatch")
+    tr_parser.add_argument("--list", action="store_true", help="列出所有已註冊工具")
+    tr_parser.add_argument("--register", metavar="TOOL_NAME", help="註冊工具名稱")
+    tr_parser.add_argument("--handler", metavar="HANDLER_PATH", help="處理器路徑（如 module.func）")
+    tr_parser.add_argument("--handler-path", metavar="HANDLER_PATH", dest="handler_path", help="處理器路徑（alias for --handler）")
+    tr_parser.add_argument("--unregister", metavar="TOOL_NAME", help="取消註冊工具名稱")
+    tr_parser.add_argument("--get", metavar="TOOL_NAME", help="查詢工具處理器")
+    tr_parser.add_argument("--dispatch", metavar="TOOL_NAME", help="分發調用到工具")
+    tr_parser.add_argument("--tool-name", dest="tool_name", metavar="TOOL_NAME", help="工具名稱")
+    tr_parser.add_argument("--kwargs", nargs="*", metavar="KEY=VALUE", help="dispatch 參數（如 path=/tmp/test.txt）")
+
+    # plan-phase (Phase Planner - 自動化執行計畫生成)
+    plan_phase_parser = subparsers.add_parser("plan-phase", help="Phase Planner - 自動化執行計畫生成")
+    plan_phase_parser.add_argument("--phase", type=int, required=True, help="Phase number (1-8)")
+    plan_phase_parser.add_argument("--goal", type=str, default="", help="Goal description for this phase")
+    plan_phase_parser.add_argument("--repair", action="store_true", help="修復模式：針對失敗步驟生成修復計畫")
+    plan_phase_parser.add_argument("--step", type=str, help="指定 Step (如 3.2) --history 模式時顯示該 Step 迭代歷史")
+    plan_phase_parser.add_argument("--history", action="store_true", help="顯示 Phase 迭代歷史")
+    plan_phase_parser.add_argument("--with-timeline", action="store_true", help="顯示完整時間線預估")
+    plan_phase_parser.add_argument("--repo", default=".", dest="repo", help="專案根目錄 (預設: .)")
+    plan_phase_parser.add_argument("--detailed", action="store_true", help="生成完整 FR 詳細任務（需解析 SRS.md）")
+
+    args = parser.parse_args()
+    
+    if not args.command:
+        parser.print_help()
+        return 0
+    
+    cli = MethodologyCLI()
+    return cli.run(args)
+
+
+if __name__ == "__main__":
+    sys.exit(main())

@@ -1,0 +1,4 @@
+# Iterations tracking directory
+# HR-12: A/B 審查 > 5 輪 → PAUSE 通知
+# HR-13: Phase 執行 > 預估 ×3 → PAUSE checkpoint
+# Phase 迭代記錄格式: phase{N}.json

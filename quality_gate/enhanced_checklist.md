@@ -1,0 +1,202 @@
+# Code Review 檢查清單 (Enhanced)
+
+> 基於 TTS 專案問題經驗強化
+
+---
+
+## ⚠️ 關鍵檢查 (Critical) - 必須通過
+
+### 1. 迴圈完整性
+```
+[ ] 迴圈是否處理所有項目（不只是第一筆）？
+[ ] 是否有 break/return 過早導致漏處理？
+[ ] 遍歷陣列時是否檢查空陣列？
+```
+
+**典型錯誤模式**：
+```python
+# ❌ 錯誤：只處理第一個
+shutil.copy(temp_files[0], output_file)
+
+# ✅ 正確：處理所有
+for temp_file in temp_files:
+    final_audio.write(f.read())
+```
+
+### 2. 空值/空陣列防護
+```
+[ ] 是否有 if not list: 的防護？
+[ ] 是否檢查 None/空字串？
+[ ] 預設值是否合理？
+```
+
+### 3. 資源釋放
+```
+[ ] 暫存檔案是否清理？
+[ ] 連線是否正確關閉？
+[ ] 例外情況下是否仍能釋放？
+```
+
+### 4. 錯誤處理完整性
+```
+[ ] 是否有 try-except-pass（隱藏錯誤）？
+[ ] 錯誤日誌是否記錄 Context？
+[ ] 失敗時是否有合理回應？
+```
+
+---
+
+## 📋 標準檢查
+
+### 5. 規格一致性
+```
+[ ] 是否參照規格書實作？
+[ ] 是否有 SPEC_TRACKING.md 對照？
+[ ] 與規格不符時是否有 DECISIONS.md 記錄？
+```
+
+### 6. 語氣控制檢查（PDF P8 建議）
+```
+[ ] 是否有 prosody_manager 或等效模組？
+[ ] 停頓時間是否符合建議值？（逗號200ms、句號500ms、換行1000ms）
+[ ] 是否使用 SSML 或等效機制？
+[ ] CLI 是否提供 --prosody 開關？
+```
+
+### 6. 測試覆蓋
+```
+[ ] 核心路徑是否有單元測試？
+[ ] 邊界條件是否測試？
+[ ] 錯誤路徑是否測試？
+```
+
+### 7. 命名與可讀性
+```
+[ ] 變數名稱是否清楚表達用途？
+[ ] 函數是否單一職責？
+[ ] 是否有適當註解？
+```
+
+### 8. 依賴管理
+```
+[ ] 是否引入不必要的套件？
+[ ] 是否有未使用的匯入？
+[ ] 版本是否相容？
+```
+
+---
+
+## 🔧 語言特定檢查
+
+### Python
+```
+[ ] 是否使用 async/await 正確？
+[ ] 是否有正確的型別提示？
+[ ] 是否遵循 PEP 8？
+[ ] 是否有必要的 typing import？
+```
+
+### JavaScript/TypeScript
+```
+[ ] 是否正確處理 Promise？
+[ ] 是否有記憶體洩漏風險？
+[ ] 型別是否嚴格？
+```
+
+---
+
+## 📊 檢查結果記錄
+
+| 項目 | 結果 | 說明 |
+|------|------|------|
+| 迴圈完整性 | ✅/❌ | |
+| 空值防護 | ✅/❌ | |
+| 資源釋放 | ✅/❌ | |
+| 錯誤處理 | ✅/❌ | |
+| 規格一致 | ✅/❌ | |
+| 測試覆蓋 | ✅/❌ | |
+
+**通過標準**：所有 ⚠️ 關鍵檢查必須通過
+
+---
+
+## 🎯 使用方式
+
+1. **自檢**：提交前對照清單檢查
+2. **Review**：Reviewer 重點檢查 ⚠️ 項目
+3. **自動化**：可整合至 pre-commit hook
+
+---
+
+## 🔗 整合進 methodology-v2（v5.49+）
+
+本檢查清單已整合進 methodology-v2 framework：
+
+### 自動化整合
+
+| 檢查項目 | 自動化工具 | 命令 |
+|----------|-----------|------|
+| 規格追蹤 | `spec_tracking_checker.py` | `python3 cli.py spec-track check` |
+| 決策框架 | `framework_integrator.py` | `python3 decision_gate/framework_integrator.py` |
+| 規格合規 | `verify_spec_compliance.py` | `python3 scripts/verify_spec_compliance.py` |
+
+### Quality Gate 流程整合
+
+當執行 `python3 cli.py quality-gate` 時，自動執行：
+
+1. **SPEC_TRACKING.md 檢查**
+   - 檔案是否存在
+   - 規格對照是否完整
+   - 狀態是否正確標記
+
+2. **意圖分類驗證**
+   - 對照 `spec_intent_classifier.md`
+   - SHOULD 是否被錯誤分類為 MAY
+
+3. **決策框架驗證**
+   - 對照 `DECISION_FRAMEWORK.md`
+   - 檢查 DECISIONS.md 是否存在
+   - 驗證 Q1/Q2/Q3 結構
+
+4. **強化檢查清單**
+   - 使用本增強檢查清單
+   - 特別注意 ⚠️ 關鍵檢查
+
+5. **規格合規驗證**
+   - 執行 `scripts/verify_spec_compliance.py`
+   - 確認所有 MUST/SHOULD 已實現
+
+### CLI 命令
+
+```bash
+# 初始化規格追蹤
+python3 cli.py spec-track init
+
+# 檢查規格追蹤完整性
+python3 cli.py spec-track check
+
+# 生成規格追蹤報告
+python3 cli.py spec-track report
+
+# 決策框架驗證
+python3 decision_gate/framework_integrator.py .
+
+# 規格合規驗證
+python3 scripts/verify_spec_compliance.py .
+```
+
+### 手動審查清單
+
+```
+[ ] SPEC_TRACKING.md 是否存在？
+[ ] 所有 MUST 項目是否已實現？
+[ ] 所有 SHOULD 項目是否已實現？（不實現需記錄在 DECISIONS.md）
+[ ] DECISIONS.md 是否包含 Q1/Q2/Q3 結構？
+[ ] enhanced_checklist.md 的 ⚠️ 項目是否全部通過？
+[ ] verify_spec_compliance.py 是否全部通過？
+```
+
+---
+
+*基於 2026-03-26 TTS 專案問題經驗更新*
+*整合進 methodology-v2 v5.49+*
