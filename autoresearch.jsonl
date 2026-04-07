@@ -4,3 +4,5 @@
 {"run":3,"commit":"57f3376","metric":0,"metrics":{},"status":"discard","description":"Pending pytest from previous session","timestamp":1775582215026,"segment":0,"confidence":null}
 {"run":4,"commit":"78e4c36","metric":1,"metrics":{},"status":"keep","description":"pending_review was not setting failure_reason for AI-assisted case","timestamp":1775582224374,"segment":0,"confidence":null}
 {"run":5,"commit":"78e4c36","metric":0,"metrics":{},"status":"discard","description":"pending prior run","timestamp":1775582225976,"segment":0,"confidence":null}
+{"run":6,"commit":"b564fcf","metric":0,"metrics":{},"status":"keep","description":"All 12 tests pass - store_with_outcome integrated into closure pipeline","timestamp":1775582238553,"segment":0,"confidence":null}
+{"type":"config","name":"Git commit and tag v6.73","metricName":"exit_code","metricUnit":"","bestDirection":"lower"}

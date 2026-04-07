@@ -1,10 +1,10 @@
 # Autoresearch: Session
 
 ## Metrics
-- **Primary**: test_failures (unitless, lower is better)
+- **Primary**: exit_code (unitless, lower is better)
 
 ## How to Run
-`autoresearch.sh` — should emit `METRIC name=number` lines for test_failures.
+`autoresearch.sh` — should emit `METRIC name=number` lines for exit_code.
 
 ## What's Been Tried
 - #1 crash 1 ee04292 — python command not found, crash
@@ -12,9 +12,32 @@
 - #3 discard 0 57f3376 — Pending pytest from previous session
 - #4 keep 1 78e4c36 — pending_review was not setting failure_reason for AI-assisted case
 - #5 discard 0 78e4c36 — pending prior run
+- #6 keep 0 b564fcf — All 12 tests pass - store_with_outcome integrated into closure pipeline
 
 ## Plugin Checkpoint
-- Last updated: 2026-04-07T17:17:08.414Z
+- Last updated: 2026-04-07T17:19:08.035Z
+- Runs tracked: 0 current / 6 total
+- Baseline: n/a
+- Best kept: n/a
+- Confidence: n/a
+- Last logged run: #6 keep b564fcf — All 12 tests pass - store_with_outcome integrated into closure pipeline
+- Pending run awaiting log_experiment: cd /Users/johnny/.openclaw/workspace-musk/projects/methodology-v2 && git add -A && git status --short | head -30 (n/a)
+
+Z
+- Runs tracked: 0 current / 6 total
+- Baseline: n/a
+- Best kept: n/a
+- Confidence: n/a
+- Last logged run: #6 keep b564fcf — All 12 tests pass - store_with_outcome integrated into closure pipeline
+
+Z
+- Runs tracked: 6 current / 6 total
+- Baseline: 1
+- Best kept: 1
+- Confidence: n/a
+- Last logged run: #6 keep b564fcf — All 12 tests pass - store_with_outcome integrated into closure pipeline
+
+Z
 - Runs tracked: 5 current / 5 total
 - Baseline: 1
 - Best kept: 1
