@@ -25,11 +25,14 @@ from typing import Dict, List, Optional
 from dataclasses import dataclass, asdict
 
 # BVS — Behaviour Validation System (P1-1)
+# Note: BVS modules are in the top-level `constitution/` directory,
+# not in quality_gate/constitution/. Use absolute import.
 try:
-    from .bvs_runner import BVSRunner
+    from constitution.bvs_runner import BVSRunner
     BVS_AVAILABLE = True
 except ImportError:
     BVS_AVAILABLE = False
+    _bvs_import_error = str(e)
 
 # Constitution 原則閾值（2026-03-27 調整 - 對標第三方審計目標）
 CONSTITUTION_THRESHOLDS = {
