@@ -1,3 +1,31 @@
+## v6.64 (2026-04-07)
+
+### 新增功能
+
+#### IMPROVEMENT_P1-3: AI Test Suite (P0 + P1 + P2)
+
+##### P0: Enhanced Test Generator (test_generator.py)
+- Real edge case values (INT_MAX, MIN_INT, unicode, nan, etc.)
+- Cyclomatic complexity calculation
+- Error type extraction from try/except
+- Return analysis
+- Actual parameterized test generation (982 lines, fully operational)
+
+##### P1: LLM Test Generator (quality_gate/ai_test_suite/)
+- `llm_test_generator.py`: AI-powered test generation
+  - analyze_code_structure() with LLM
+  - extract_invariants() for property-based testing
+  - generate_test_suite() with HR-17 compliance
+  - All AI-generated tests marked with `# AI-GENERATED - REVIEW REQUIRED`
+- `edge_case_generator.py`: Shared edge case generation
+
+##### P2: Integration
+- `cli.py`: CLI interface for test generation
+  - `python -m quality_gate.ai_test_suite.cli --target src/ --context SRS.md SAD.md`
+- `pytest_result_checker.py`: New `check_ai_generated_tests()` method for HR-17 compliance
+
+---
+
 ## v6.62 (2026-04-07)
 
 ### 新增功能
