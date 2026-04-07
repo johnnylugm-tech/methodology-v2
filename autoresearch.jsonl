@@ -6,3 +6,4 @@
 {"run":5,"commit":"78e4c36","metric":0,"metrics":{},"status":"discard","description":"pending prior run","timestamp":1775582225976,"segment":0,"confidence":null}
 {"run":6,"commit":"b564fcf","metric":0,"metrics":{},"status":"keep","description":"All 12 tests pass - store_with_outcome integrated into closure pipeline","timestamp":1775582238553,"segment":0,"confidence":null}
 {"type":"config","name":"Git commit and tag v6.73","metricName":"exit_code","metricUnit":"","bestDirection":"lower"}
+{"run":1,"commit":"5536636","metric":0,"metrics":{},"status":"keep","description":"Stage all changes","timestamp":1775582365067,"segment":1,"confidence":null}
