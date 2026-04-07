@@ -146,15 +146,17 @@ class ClosureWithSelfCorrection:
 
         # Step 3: Store learning outcome (if feedback exists)
         if feedback is not None:
+            outcome = correction_result.verification_status
+            failure_reason = None
+            if correction_result.verification_status in ("failed", "manual_required"):
+                failure_reason = correction_result.correction_log[-1].get("result", "unknown")
+            elif correction_result.verification_status == "pending_review":
+                failure_reason = "AI-assisted, needs human review"
             self.correction_library.store_with_outcome(
                 feedback=feedback,
                 result=correction_result,
-                outcome=correction_result.verification_status,
-                failure_reason=(
-                    correction_result.correction_log[-1].get("result", "unknown")
-                    if correction_result.verification_status in ("failed", "manual_required")
-                    else None
-                ),
+                outcome=outcome,
+                failure_reason=failure_reason,
             )
 
         # Step 4: If no patch was produced, route to human

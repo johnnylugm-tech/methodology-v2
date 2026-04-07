@@ -432,5 +432,61 @@
     "tags": [],
     "outcome": "manual_required",
     "failure_reason": "skipped"
+  },
+  {
+    "error_signature": "a8f0374030e6d02fb57feb5d61e706f1",
+    "source": "linter",
+    "source_detail": "src/app.py",
+    "category": "syntax",
+    "error_description": "Missing colon",
+    "patched_code": "",
+    "confidence": 0.0,
+    "success": false,
+    "timestamp": "2026-04-07T17:16:42.810806+00:00",
+    "tags": [],
+    "outcome": "manual_required",
+    "failure_reason": "skipped"
+  },
+  {
+    "error_signature": "1205108302b834bd5444d691836f5e73",
+    "source": "security",
+    "source_detail": "CVE-2024-9999",
+    "category": "cve",
+    "error_description": "Manual fix required",
+    "patched_code": "",
+    "confidence": 0.0,
+    "success": false,
+    "timestamp": "2026-04-07T17:16:42.812865+00:00",
+    "tags": [],
+    "outcome": "manual_required",
+    "failure_reason": "skipped"
+  },
+  {
+    "error_signature": "a8f0374030e6d02fb57feb5d61e706f1",
+    "source": "linter",
+    "source_detail": "src/app.py",
+    "category": "syntax",
+    "error_description": "Missing colon",
+    "patched_code": "",
+    "confidence": 0.0,
+    "success": false,
+    "timestamp": "2026-04-07T17:16:42.814815+00:00",
+    "tags": [],
+    "outcome": "manual_required",
+    "failure_reason": "skipped"
+  },
+  {
+    "error_signature": "a8f0374030e6d02fb57feb5d61e706f1",
+    "source": "linter",
+    "source_detail": "src/app.py",
+    "category": "syntax",
+    "error_description": "Missing colon",
+    "patched_code": "",
+    "confidence": 0.0,
+    "success": false,
+    "timestamp": "2026-04-07T17:16:42.816827+00:00",
+    "tags": [],
+    "outcome": "manual_required",
+    "failure_reason": "skipped"
   }
 ]
