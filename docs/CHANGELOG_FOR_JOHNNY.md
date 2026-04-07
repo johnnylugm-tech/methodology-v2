@@ -1,6 +1,6 @@
-# Johnny 使用者更新摘要（v6.45 → v6.61）
+# Johnny 使用者更新摘要（v6.45 → v6.65）
 
-> **適用版本**: v6.61
+> **適用版本**: v6.65
 > **更新日期**: 2026-04-07
 > **給**: Johnny (呂小麟)
 
@@ -10,7 +10,7 @@
 
 | 版本 | 主要改善 |
 |------|---------|
-| v6.61 | **CQG+SAB 系統：linter/complexity/coverage/fitness/baseline/SAB drift** |
+| v6.65 | **CQG+SAB 系統：linter/complexity/coverage/fitness/baseline/SAB drift** |
 | v6.54 | **HR-05/09 檢查 + 自動化** |
 | v6.48 | **8 個 Phase 都有專屬提示** |
 | v6.49 | **子代理管理（Need-to-Know + On-Demand）** |
@@ -22,7 +22,7 @@
 
 ## 對你有影響的改變
 
-### 1. CQG — Computational Quality Gate（v6.61）
+### 1. CQG — Computational Quality Gate（v6.65）
 
 **以前**: Quality Gate 只靠人工審查，無自動度量
 **現在**: 一套度量驅動的 Quality Gate 工具，全部自動化

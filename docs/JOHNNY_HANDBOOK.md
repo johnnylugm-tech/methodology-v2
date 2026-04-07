@@ -1,6 +1,6 @@
-# Johnny 使用手冊 v6.54
+# Johnny 使用手冊 v6.65
 
-> **版本**: v6.54
+> **版本**: v6.65
 > **對象**: Johnny（Human-in-the-Loop）
 > **用途**: 快速上手 methodology-v2
 
@@ -8,7 +8,7 @@
 
 ## 1. methodology-v2 今天長什麼樣？
 
-### v6.32 ~ v6.54 帶來的改善
+### v6.32 ~ v6.65 帶來的改善
 
 | 版本 | 改善內容 |
 |------|----------|
@@ -23,8 +23,8 @@
 | v6.43 | On Demand restrictions + Tool Usage Timing section |
 | v6.44 | Pre-flight deliverable check fix |
 | v6.45 | OUTPUT path from SAD parsing + Forbidden clarification |
-| v6.54 | Version consistency audit fix |
-| **v6.54** | **Audit fixes + version consistency** |
+| v6.65 | Version consistency audit fix |
+| **v6.65** | **Audit fixes + version consistency** |
 
 ### 三層文件架構
 
@@ -335,7 +335,7 @@ FORBIDDEN:
 ---
 
 
-## 8.5 Sub-Agent Management（v6.54+）
+## 8.5 Sub-Agent Management（v6.65+）
 
 ### 核心原則
 
@@ -426,7 +426,7 @@ FORBIDDEN:
 
 ---
 
-## 10. 新工具速查（v6.32-v6.54）
+## 10. 新工具速查（v6.32-v6.65）
 
 ### 六大工具
 
@@ -613,15 +613,15 @@ python cli.py phase-status
 
 | Component | Version | Status |
 |-----------|---------|--------|
-| cli.py | v6.54.0 | ✅ |
+| cli.py | v6.65.0 | ✅ |
 | generate_full_plan.py | v6.39.0 | ✅ |
 | SKILL.md | v6.32.0 | ⚠️ |
-| JOHNNY_HANDBOOK.md | v6.54 | ✅ |
-| 執行計畫輸出 | v6.54.0 | ✅ |
+| JOHNNY_HANDBOOK.md | v6.65 | ✅ |
+| 執行計畫輸出 | v6.65.0 | ✅ |
 
 > ⚠️ SKILL.md 版本落後（v6.32.0），建議在下次 release 時同步更新。
 
 ---
 
-*此手冊基於 methodology-v2 v6.54*
+*此手冊基於 methodology-v2 v6.65*
 *最後更新: 2026-04-04*
