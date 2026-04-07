@@ -26,11 +26,12 @@
   - Reusability: 耦合+內聚的衍生指標
 
 #### SAB: Software Architecture Baseline
-- `sab_spec.py` — SabSpec dataclass (結構化 SAB 格式)
-- `sab_parser.py` — 從 SAD.md 解析生成 SabSpec
+- `quality_gate/sab_spec.py` — SabSpec dataclass (結構化 SAB 格式)
+- `quality_gate/sab_parser.py` — 從 SAD.md 解析生成 SabSpec
 - Drift Detection 鏈:
   - Phase 2: `_check_sab()` → 建立 sab-phase2.json
   - Phase 3+: `_check_fitness()` → 讀 SAB → 計算 drift
+  - Phase 3+: `_check_baseline_drift()` → BaselineManager drift detection
 
 #### 整合變更
 - `quality_gate/unified_gate.py` — 新增 5 個 CQG 檢查方法
