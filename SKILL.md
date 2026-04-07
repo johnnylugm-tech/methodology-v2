@@ -1,4 +1,4 @@
-# methodology-v2 v6.54
+# methodology-v2 v6.64
 > Agent Executable Spec. Phase detail → Lazy Load `docs/P{N}_SOP.md`
 
 ## 0. 執行協議
@@ -126,7 +126,7 @@ def calculate_integrity(
 
 ---
 
-## 附錄：CQG — Computational Quality Gate (v6.61)
+## 附錄：CQG — Computational Quality Gate (v6.64)
 
 CQG 是一組度量驅動的 Quality Gate 工具，自動偵測程式碼品質問題。
 
@@ -161,7 +161,7 @@ pip3 install --break-system-packages -r requirements-cqg.txt
 
 ---
 
-### BVS — Behaviour Validation System (v6.62)
+### BVS — Behaviour Validation System (v6.64)
 
 BVS 驗證 AI Agent 的實際行為是否符合 Constitution HR 規則，補足 CQG 只測量代碼靜態品質的缺口。
 
@@ -212,4 +212,4 @@ python constitution/bvs_runner.py --project-path /path --all
 
 ---
 
-*methodology-v2 v6.62 | Agent Executable Specification | Last Updated: 2026-04-07*
+*methodology-v2 v6.64 | Agent Executable Specification | Last Updated: 2026-04-07*
