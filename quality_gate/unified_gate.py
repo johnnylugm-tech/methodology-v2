@@ -1122,7 +1122,7 @@ class UnifiedGate:
                     details={}
                 )
 
-            result = run_constitution_check("all", str(docs_path))
+            result = run_constitution_check("all", str(docs_path), current_phase=getattr(self, 'phase', None))
 
             violations = []
             for v in result.violations:
