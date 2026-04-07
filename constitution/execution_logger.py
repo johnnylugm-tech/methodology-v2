@@ -125,13 +125,55 @@ class ExecutionLogger:
 
     def get_phase_context(self, phase: int) -> Dict[str, Any]:
         """取得指定 Phase 的執行上下文"""
-        return {
+        context = {
             "phase": phase,
             "max_allowed_phase": phase,
             "parent_session_id": None,
             "review_iterations": 0,
             "estimated_duration": 3600,  # 預設 1 小時
         }
+        # 載入 artifact_contents（用於 HR-09 Claims 驗證）
+        context["artifact_contents"] = self._load_artifacts_for_phase(phase)
+        return context
+
+    def _load_artifacts_for_phase(self, phase: int) -> Dict[str, str]:
+        """
+        根據 Phase 載入對應的 artifact 內容
+
+        Phase 1: SRS.md
+        Phase 2: SAD.md
+        Phase 3-8: SRS.md + SAD.md + TEST_PLAN.md
+        """
+        artifacts = {}
+
+        # 根據 Phase 決定要載入哪些 artifacts
+        artifact_map = {
+            1: ["01-requirements/SRS.md", "SRS.md"],
+            2: ["02-architecture/SAD.md", "SAD.md"],
+        }
+
+        # Phase 3+ 載入更多 artifacts
+        phase_artifacts = artifact_map.get(phase, [])
+        if phase >= 3:
+            phase_artifacts = [
+                "01-requirements/SRS.md",
+                "SRS.md",
+                "02-architecture/SAD.md",
+                "SAD.md",
+                "03-test/TEST_PLAN.md",
+                "TEST_PLAN.md",
+            ]
+
+        for artifact_path in phase_artifacts:
+            full_path = self.project_path / artifact_path
+            if full_path.exists() and full_path.is_file():
+                try:
+                    content = full_path.read_text(encoding="utf-8")
+                    artifacts[artifact_path] = content[:10000]  # 限制大小避免記憶體問題
+                except Exception:
+                    continue
+
+        return artifacts
 
 
 # ─── CLI ───────────────────────────────────────────────────────────────────────
