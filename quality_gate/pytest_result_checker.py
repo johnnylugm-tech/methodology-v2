@@ -17,6 +17,7 @@ import re
 import sys
 from pathlib import Path
 from typing import Dict, List
+from pathlib import Path as PathLib
 
 
 class PytestResultChecker:
@@ -117,6 +118,42 @@ class PytestResultChecker:
             'skipped': skipped,
             'source': 'pytest' if 'pytest' in content.lower() else 'unknown'
         }
+
+    def check_ai_generated_tests(self, test_dir: str = "tests/ai_generated") -> Dict:
+        """
+        檢查 AI 生成的測試檔案
+        
+        HR-17 合規檢查：
+        1. 所有 AI 生成測試必須有 '# AI-GENERATED - REVIEW REQUIRED'
+        2. 測試必須經過人工審查才能啟用（標記為 skip 或註解）
+        """
+        results = {"total": 0, "compliant": 0, "violations": []}
+        
+        test_path = PathLib(test_dir)
+        if not test_path.exists():
+            return results
+        
+        for test_file in test_path.rglob("test_*.py"):
+            results["total"] += 1
+            content = test_file.read_text(encoding="utf-8")
+            
+            if "AI-GENERATED" in content:
+                # 檢查是否有 REVIEW REQUIRED 標記
+                if "REVIEW REQUIRED" not in content:
+                    results["violations"].append({
+                        "file": str(test_file),
+                        "issue": "Missing '# AI-GENERATED - REVIEW REQUIRED' marker"
+                    })
+                # 檢查是否被 skip 或註解（表示未審查）
+                elif "# AI-GENERATED - REVIEW REQUIRED" in content and \
+                     "pytest.mark.skip" not in content and \
+                     "# skip" not in content.lower():
+                    results["compliant"] += 1
+            else:
+                # 非 AI 生成，無需標記
+                results["compliant"] += 1
+        
+        return results
 
 
 def main():
