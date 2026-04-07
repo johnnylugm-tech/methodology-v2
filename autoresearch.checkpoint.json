@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": 1775582423848,
+  "updatedAt": 1775582477632,
   "sessionStartCommit": "b564fcf",
   "session": {
     "name": "Git commit and tag v6.73",
@@ -8,35 +8,24 @@
     "metricUnit": "",
     "bestDirection": "lower",
     "currentSegment": 1,
-    "currentRunCount": 2,
-    "totalRunCount": 8,
+    "currentRunCount": 3,
+    "totalRunCount": 9,
     "currentBaselineMetric": 0,
     "currentBestMetric": null,
     "confidence": null
   },
   "lastLoggedRun": {
-    "run": 2,
-    "commit": "592c0fa",
+    "run": 3,
+    "commit": "cca976d",
     "metric": 0,
     "metrics": {},
     "status": "keep",
-    "description": "Check staged files",
-    "timestamp": 1775582414199,
+    "description": "Pending experiment discard",
+    "timestamp": 1775582477546,
     "segment": 1,
     "confidence": null
   },
   "recentLoggedRuns": [
-    {
-      "run": 1,
-      "commit": "ee04292",
-      "metric": 1,
-      "metrics": {},
-      "status": "crash",
-      "description": "python command not found, crash",
-      "timestamp": 1775582095007,
-      "segment": 0,
-      "confidence": null
-    },
     {
       "run": 2,
       "commit": "57f3376",
@@ -113,18 +102,18 @@
       "timestamp": 1775582414199,
       "segment": 1,
       "confidence": null
+    },
+    {
+      "run": 3,
+      "commit": "cca976d",
+      "metric": 0,
+      "metrics": {},
+      "status": "keep",
+      "description": "Pending experiment discard",
+      "timestamp": 1775582477546,
+      "segment": 1,
+      "confidence": null
     }
   ],
-  "pendingRun": {
-    "command": "bash -c 'cd /Users/johnny/.openclaw/workspace-musk/projects/methodology-v2 && git log --oneline -3 && echo \"---\" && git tag -l \"v6*\" 2>/dev/null || echo \"no tags\"'",
-    "commit": "592c0fa",
-    "primaryMetric": null,
-    "metrics": {},
-    "durationSeconds": 0.054,
-    "exitCode": 0,
-    "passed": true,
-    "timedOut": false,
-    "tailOutput": "v6.01.0\nv6.02.0\nv6.03.0\nv6.04.0\nv6.05.0\nv6.06.0\nv6.07.0\nv6.08.0\nv6.09.0\nv6.10.0\nv6.11.0\nv6.12.0\nv6.13.0\nv6.13.1\nv6.14.0\nv6.14.1\nv6.14.2\nv6.14.3\nv6.14.4\nv6.15.0\nv6.16.0\nv6.17.0\nv6.18.0\nv6.19.0\nv6.20.0\nv6.21.0\nv6.21.1\nv6.22.0\nv6.23.0\nv6.24.0\nv6.25.0\nv6.26.0\nv6.27.0\nv6.28.0\nv6.30.0\nv6.31.0\nv6.32.0\nv6.33.0\nv6.34.0\nv6.35.0\nv6.36.0\nv6.37.0\nv6.38.0\nv6.39.0\nv6.42.0\nv6.44.0\nv6.45.0\nv6.46.0\nv6.47.0\nv6.48.0\nv6.49.0\nv6.49.1\nv6.49.2\nv6.49.3\nv6.49.4\nv6.49.5\nv6.49.6\nv6.50.0\nv6.51.0\nv6.51.1\nv6.52.0\nv6.53.0\nv6.54.0\nv6.55.0\nv6.56.0\nv6.58.0\nv6.59.0\nv6.60\nv6.61\nv6.62\nv6.63\nv6.64\nv6.65\nv6.66.0\nv6.67\nv6.68\nv6.69\nv6.70\nv6.71\nv6.72",
-    "capturedAt": 1775582423848
-  }
+  "pendingRun": null
 }

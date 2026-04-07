@@ -7,7 +7,6 @@
 `autoresearch.sh` — should emit `METRIC name=number` lines for exit_code.
 
 ## What's Been Tried
-- #1 crash 1 ee04292 — python command not found, crash
 - #2 keep 4 57f3376 — 4 test failures: library pollution from persisted state, None feedback crash
 - #3 discard 0 57f3376 — Pending pytest from previous session
 - #4 keep 1 78e4c36 — pending_review was not setting failure_reason for AI-assisted case
@@ -15,9 +14,17 @@
 - #6 keep 0 b564fcf — All 12 tests pass - store_with_outcome integrated into closure pipeline
 - #1 keep 0 5536636 — Stage all changes
 - #2 keep 0 592c0fa — Check staged files
+- #3 keep 0 cca976d — Pending experiment discard
 
 ## Plugin Checkpoint
-- Last updated: 2026-04-07T17:20:23.848Z
+- Last updated: 2026-04-07T17:21:17.632Z
+- Runs tracked: 3 current / 9 total
+- Baseline: 0
+- Best kept: n/a
+- Confidence: n/a
+- Last logged run: #3 keep cca976d — Pending experiment discard
+
+Z
 - Runs tracked: 2 current / 8 total
 - Baseline: 0
 - Best kept: n/a
