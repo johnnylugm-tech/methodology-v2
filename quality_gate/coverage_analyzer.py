@@ -221,10 +221,27 @@ class CoverageAnalyzer:
 def main():
     parser = argparse.ArgumentParser(description="Coverage Gap Analyzer")
     parser.add_argument("--path", required=True, help="Project path")
+    parser.add_argument("--json", action="store_true", help="JSON output")
     args = parser.parse_args()
     
     analyzer = CoverageAnalyzer(args.path)
     result = analyzer.run()
+    
+    if args.json:
+        import dataclasses
+        output = {
+            "coverage_rate": result.coverage_rate,
+            "total_functions": result.total_functions,
+            "covered_functions": result.covered_functions,
+            "uncovered_functions": result.uncovered_functions,
+            "score": result.score,
+            "critical_gaps": [(g.function, g.file, g.references) for g in result.critical_gaps],
+            "high_gaps": [(g.function, g.file, g.references) for g in result.high_gaps],
+            "medium_gaps": [(g.function, g.file, g.references) for g in result.medium_gaps],
+        }
+        import json
+        print(json.dumps(output, indent=2, ensure_ascii=False))
+        return
     
     print(f"=== Coverage Analysis ===")
     print(f"Coverage Rate: {result.coverage_rate:.1f}%")

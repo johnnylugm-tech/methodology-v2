@@ -26,7 +26,7 @@ from dataclasses import dataclass, asdict
 
 # BVS — Behaviour Validation System (P1-1)
 try:
-    from constitution.bvs_runner import BVSRunner
+    from .bvs_runner import BVSRunner
     BVS_AVAILABLE = True
 except ImportError:
     BVS_AVAILABLE = False
