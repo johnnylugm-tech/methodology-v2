@@ -729,10 +729,10 @@ class TestGenerator:
         lines.append(f'    ids=[{parametrize_args}]')
         lines.append(f")")
         lines.append(f"def test_{func_name}_parametrized(test_name, params):")
-        lines.append('    ' + '"""')  # docstring start
+        lines.append('    ' + chr(34) * 3)  # docstring start
         lines.append(f'    參數化測試：根據 test_name 執行不同案例')
         lines.append(f'    生成時間: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}')
-        lines.append('    ' + '"""')  # docstring end
+        lines.append('    ' + chr(34) * 3)  # docstring end
         lines.append(f'    # 解包參數')
         
         for p in params:
