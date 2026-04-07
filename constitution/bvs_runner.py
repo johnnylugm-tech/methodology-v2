@@ -101,39 +101,32 @@ class BVSRunner:
         report["logs_analyzed"] = len(phase_logs)
         report["phase"] = self.phase
 
-        # === Auto-submit violations to FeedbackStore ===
+        # === Auto-submit violations to FeedbackStore via UnifiedAlert ===
         if self.feedback_store and report.get("violations"):
             try:
-                from core.feedback import StandardFeedback, route_and_assign
-                from datetime import datetime, timezone
-                import uuid
+                from core.feedback.alert import UnifiedAlert
+                from core.feedback.router import route_and_assign
 
                 for v in report["violations"]:
-                    fb = StandardFeedback(
-                        id=f"bvs-{uuid.uuid4().hex[:12]}",
+                    severity_str = v.get("severity", "medium").lower()
+                    alert = UnifiedAlert(
                         source="bvs",
-                        source_detail=v.get("name", "unknown"),
-                        type="violation",
+                        source_detail=v.get("name", "invariant"),
                         category="quality",
-                        severity=self._invariant_severity_to_feedback_severity(v.get("severity", "MEDIUM")),
+                        severity={"critical": "critical", "high": "high", "medium": "medium", "low": "low"}.get(severity_str, "medium"),
                         title=f"BVS Violation: {v.get('name', 'unknown')}",
-                        description=v.get("message", ""),
+                        message=v.get("message", ""),
                         context={"phase": self.phase, "invariant": v},
-                        timestamp=datetime.now(timezone.utc).isoformat(),
-                        sla_deadline=None,
-                        status="pending",
-                        assignee=None,
-                        resolution=None,
-                        verified_at=None,
-                        related_feedbacks=[],
-                        recurrence_count=0,
-                        confidence=0.95,
-                        tags=["bvs", "invariant", v.get("name", "unknown")],
+                        recommended_action="Review and fix invariant violation",
+                        auto_fixable=False,
+                        sla_hours={"critical": 4, "high": 24, "medium": 72, "low": 168}.get(severity_str, 24),
                     )
+                    fb = alert.to_feedback()
                     self.feedback_store.add(fb)
+                    # Route and assign to populate assignee + sla_deadline
                     team, deadline = route_and_assign(fb, store=self.feedback_store)
-                    fb.assignee = team
-                    fb.sla_deadline = deadline
+                    fb["assignee"] = team
+                    fb["sla_deadline"] = deadline
             except Exception:
                 # Don't let feedback failures break the BVS run
                 pass

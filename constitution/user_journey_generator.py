@@ -174,7 +174,107 @@ class UserJourneyGenerator:
                     "hr_rules": ["HR-01"],
                 },
             ],
-            # 4-8 可以繼續擴展
+            4: [
+                {
+                    "name": "fr_test_coverage_mismatch",
+                    "description": "FR 覆蓋率 < 90%",
+                    "steps": [
+                        "Run test generation",
+                        "Check FR coverage",
+                        "If FR coverage < 90%: trigger TH-17 violation",
+                    ],
+                    "expected": "TH-17: FR↔test ≥ 90%",
+                    "hr_rules": ["TH-17", "HR-11"],
+                },
+                {
+                    "name": "test_environment_mismatch",
+                    "description": "Test 在 dev 環境通過但 staging 失敗",
+                    "steps": [
+                        "Run tests in staging environment",
+                        "Compare results with dev",
+                    ],
+                    "expected": "HR-15: artifact 追蹤完整性問題",
+                    "hr_rules": ["HR-15"],
+                },
+            ],
+            5: [
+                {
+                    "name": "verification_method_invalid",
+                    "description": "驗證方法不是 specification 中的方法",
+                    "steps": [
+                        "Check TEST_RESULTS against TEST_PLAN",
+                        "Compare verification methods",
+                    ],
+                    "expected": "HR-09: claims not verified by correct method",
+                    "hr_rules": ["HR-09", "TH-02"],
+                },
+                {
+                    "name": "test_evidence_insufficient",
+                    "description": "Evidence 不夠嚴謹（截圖未標記時間戳）",
+                    "steps": [
+                        "Review evidence in TEST_RESULTS",
+                        "Check timestamp and traceability",
+                    ],
+                    "expected": "Constitution verification fails",
+                    "hr_rules": ["TH-02", "HR-04"],
+                },
+            ],
+            6: [
+                {
+                    "name": "quality_metrics_below_threshold",
+                    "description": "Maintainability < 70% or Security < 100%",
+                    "steps": [
+                        "Run quality_report generation",
+                        "Check metrics against thresholds",
+                    ],
+                    "expected": "TH-02: Constitution ≥ 80% fails",
+                    "hr_rules": ["TH-02", "HR-04"],
+                },
+            ],
+            7: [
+                {
+                    "name": "risk_not_mitigated",
+                    "description": "Risk register 有項目狀態仍為 Open",
+                    "steps": [
+                        "Review RISK_REGISTER",
+                        "Check all risks have mitigation",
+                    ],
+                    "expected": "HR-15: artifact completeness issue",
+                    "hr_rules": ["HR-15", "HR-05"],
+                },
+                {
+                    "name": "risk_threshold_breached",
+                    "description": "Risk impact > threshold 但未更新狀態",
+                    "steps": [
+                        "Compare risk impact vs threshold",
+                        "Check status update timestamp",
+                    ],
+                    "expected": "HR-13: Phase timeout risk",
+                    "hr_rules": ["HR-13", "HR-05"],
+                },
+            ],
+            8: [
+                {
+                    "name": "config_drift",
+                    "description": "配置文件與 SPEC.md 不一致",
+                    "steps": [
+                        "Compare CONFIG_RECORDS with SPEC.md",
+                        "Check version alignment",
+                    ],
+                    "expected": "HR-16: config vs implementation mismatch",
+                    "hr_rules": ["HR-16", "HR-15"],
+                },
+                {
+                    "name": "deployment_procedure_unverified",
+                    "description": "部署步驟未經實際驗證",
+                    "steps": [
+                        "Check deployment documentation",
+                        "Verify against CONFIG_RECORDS",
+                    ],
+                    "expected": "TH-08: deployment procedure incomplete",
+                    "hr_rules": ["TH-08", "HR-08"],
+                },
+            ],
         }
 
     def _get_universal_edge_cases(self, phase: int) -> List[UserJourneyTest]:

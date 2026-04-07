@@ -24,6 +24,14 @@ from pathlib import Path
 from typing import Dict, List, Optional
 from dataclasses import dataclass, asdict
 
+# HR-09 InferentialSensor checker
+try:
+    from quality_gate.constitution.hr09_checker import HR09Checker
+    HR09_CHECKER_AVAILABLE = True
+except ImportError as e:
+    HR09_CHECKER_AVAILABLE = False
+    _hr09_import_error = e
+
 # BVS — Behaviour Validation System (P1-1)
 # Note: BVS modules are in the top-level `constitution/` directory,
 # not in quality_gate/constitution/. Use absolute import.
@@ -252,6 +260,28 @@ def run_constitution_check(
                 result = run_constitution_check(ct, docs_path, current_phase=None, feedback_store=None)  # Don't re-submit in recursive calls
             results.append(result)
         
+        # === Run HR-09 (InferentialSensor) check and merge violations ===
+        if HR09_CHECKER_AVAILABLE:
+            try:
+                hr09_checker = HR09Checker()
+                hr09_result = hr09_checker.check(docs_path)
+                hr09_violations = hr09_result.get("violations", [])
+                if hr09_violations:
+                    all_violations.extend(hr09_violations)
+                    # HR-09 failures affect overall pass
+                    if not hr09_result.get("passed", True):
+                        overall_passed = False
+                    # Add HR-09 summary to details
+                    details_hr09 = {
+                        "hr09_score": hr09_result.get("score", 0),
+                        "hr09_total_claims": hr09_result.get("total_claims", 0),
+                        "hr09_passed_claims": hr09_result.get("passed_claims", 0),
+                    }
+                    if "hr09" not in all_result.details:
+                        all_result.details["hr09"] = details_hr09
+            except Exception:
+                pass  # Don't let HR-09 failures break the check
+
         # 合併結果 - 使用平均分數判斷通過與否
         # Bug Fix: 2026-03-27 - 不應該要求所有 phase 都 passed，只要平均分數 > maintainability threshold 就通過
         avg_score = sum(r.score for r in results) / len(results)
@@ -286,16 +316,32 @@ def run_constitution_check(
             recommendations=all_recommendations
         )
 
-        # === Auto-submit violations to FeedbackStore ===
+        # === Auto-submit violations to FeedbackStore via UnifiedAlert ===
         if feedback_store is not None and all_violations:
             try:
-                from core.feedback.constitution_adapter import ConstitutionFeedbackAdapter
-                adapter = ConstitutionFeedbackAdapter(feedback_store)
-                adapter.on_constitution_check_complete(
-                    constitution_result={"violations": all_violations, "score": avg_score},
-                    phase=current_phase,
-                    artifacts={"docs_path": docs_path, "phases_checked": len(results)}
-                )
+                from core.feedback.alert import UnifiedAlert
+
+                for v in all_violations:
+                    severity_str = v.get("severity", "MEDIUM").upper()
+                    alert = UnifiedAlert(
+                        source="constitution",
+                        source_detail=v.get("rule_id", "unknown"),
+                        category="quality",
+                        severity={"CRITICAL": "critical", "HIGH": "high", "MEDIUM": "medium", "LOW": "low"}.get(severity_str, "medium"),
+                        title=f"Constitution violation: {v.get('rule_id', 'unknown')}",
+                        message=v.get("message", ""),
+                        context={"phase": current_phase, "violation": v},
+                        recommended_action=f"Fix {v.get('rule_id')} violation",
+                        auto_fixable=False,
+                        sla_hours={"CRITICAL": 4, "HIGH": 24, "MEDIUM": 72, "LOW": 168}.get(severity_str, 24),
+                    )
+                    fb = alert.to_feedback()
+                    feedback_store.add(fb)
+                    # Route and assign to populate assignee + sla_deadline
+                    from core.feedback.router import route_and_assign
+                    team, deadline = route_and_assign(fb, store=feedback_store)
+                    fb["assignee"] = team
+                    fb["sla_deadline"] = deadline
             except Exception:
                 # Don't let feedback failures break the check
                 pass
@@ -319,16 +365,51 @@ def run_constitution_check(
             recommendations=[f"Valid check types: {', '.join(type_mapping.keys())}, all"]
         )
 
-    # === Auto-submit violations to FeedbackStore ===
+    # === Run HR-09 (InferentialSensor) check and merge violations ===
+    # HR-09 is run for all check types as a cross-cutting concern
+    if HR09_CHECKER_AVAILABLE and check_type != "all":
+        try:
+            hr09_checker = HR09Checker()
+            hr09_result = hr09_checker.check(docs_path)
+            hr09_violations = hr09_result.get("violations", [])
+            if hr09_violations:
+                result.violations.extend(hr09_violations)
+                if not hr09_result.get("passed", True):
+                    result.passed = False
+                result.details["hr09"] = {
+                    "score": hr09_result.get("score", 0),
+                    "total_claims": hr09_result.get("total_claims", 0),
+                    "passed_claims": hr09_result.get("passed_claims", 0),
+                }
+        except Exception:
+            pass  # Don't let HR-09 failures break the check
+
+    # === Auto-submit violations to FeedbackStore via UnifiedAlert ===
     if feedback_store is not None and result.violations:
         try:
-            from core.feedback.constitution_adapter import ConstitutionFeedbackAdapter
-            adapter = ConstitutionFeedbackAdapter(feedback_store)
-            adapter.on_constitution_check_complete(
-                constitution_result={"violations": result.violations, "score": result.score},
-                phase=current_phase,
-                artifacts={"docs_path": docs_path}
-            )
+            from core.feedback.alert import UnifiedAlert
+
+            for v in result.violations:
+                severity_str = v.get("severity", "MEDIUM").upper()
+                alert = UnifiedAlert(
+                    source="constitution",
+                    source_detail=v.get("rule_id", "unknown"),
+                    category="quality",
+                    severity={"CRITICAL": "critical", "HIGH": "high", "MEDIUM": "medium", "LOW": "low"}.get(severity_str, "medium"),
+                    title=f"Constitution violation: {v.get('rule_id', 'unknown')}",
+                    message=v.get("message", ""),
+                    context={"phase": current_phase, "violation": v},
+                    recommended_action=f"Fix {v.get('rule_id')} violation",
+                    auto_fixable=False,
+                    sla_hours={"CRITICAL": 4, "HIGH": 24, "MEDIUM": 72, "LOW": 168}.get(severity_str, 24),
+                )
+                fb = alert.to_feedback()
+                feedback_store.add(fb)
+                # Route and assign to populate assignee + sla_deadline
+                from core.feedback.router import route_and_assign
+                team, deadline = route_and_assign(fb, store=feedback_store)
+                fb["assignee"] = team
+                fb["sla_deadline"] = deadline
         except Exception:
             # Don't let feedback failures break the check
             pass

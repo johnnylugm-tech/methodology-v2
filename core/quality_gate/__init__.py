@@ -323,15 +323,32 @@ class AutoQualityGate:
             "check_results": check_results,
         }
 
-        # === Auto-submit violations to FeedbackStore ===
-        adapter = self._get_feedback_adapter()
-        if adapter and all_violations:
+        # === Auto-submit violations to FeedbackStore via UnifiedAlert ===
+        if self._feedback_store and all_violations:
             try:
-                adapter.on_quality_gate_complete(
-                    gate_result=result,
-                    phase=phase,
-                    artifacts=artifacts,
-                )
+                from core.feedback.alert import UnifiedAlert
+                from core.feedback.router import route_and_assign
+
+                for v in all_violations:
+                    sev = v.get("severity", "medium")
+                    alert = UnifiedAlert(
+                        source="quality_gate",
+                        source_detail=f"{v.get('check_type', 'unknown')}/{v.get('rule_id', 'unknown')}",
+                        category="code_quality",
+                        severity={"error": "high", "warning": "medium", "convention": "low", "info": "low"}.get(sev, "medium"),
+                        title=f"Quality Gate: {v.get('check_type', 'check')} {sev}",
+                        message=v.get("message", ""),
+                        context={"phase": phase, "violation": v},
+                        recommended_action=f"Fix {v.get('check_type')} issue",
+                        auto_fixable=sev in ["error", "warning"],
+                        sla_hours={"error": 4, "warning": 24, "convention": 72, "info": 168}.get(sev, 24),
+                    )
+                    fb = alert.to_feedback()
+                    self._feedback_store.add(fb)
+                    # Route and assign to populate assignee + sla_deadline
+                    team, deadline = route_and_assign(fb, store=self._feedback_store)
+                    fb["assignee"] = team
+                    fb["sla_deadline"] = deadline
             except Exception:
                 # Don't let feedback failures break the gate
                 pass
