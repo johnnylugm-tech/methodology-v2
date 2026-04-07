@@ -170,6 +170,7 @@ except ImportError:
 try:
     from .sab_parser import parse_sad
     from .sab_spec import SabSpec
+    from .baseline_manager import BaselineManager
     SAB_AVAILABLE = True
 except ImportError as _sab_e:
     SAB_AVAILABLE = False
@@ -574,6 +575,7 @@ class UnifiedGate:
             checks.append(self._check_complexity())
             checks.append(self._check_coverage_analyzer())
             checks.append(self._check_fitness())
+            checks.append(self._check_baseline_drift())
 
         # 2. Document Existence Check (Phase 1-4)
         if phase_filter is None or 1 in phase_filter or "all" in phase_filter:
@@ -912,6 +914,88 @@ class UnifiedGate:
         except Exception as e:
             return CheckResult(
                 name="CQG: Fitness Functions",
+                passed=False,
+                score=0,
+                violations=[],
+                details={"status": "error", "reason": str(e)}
+            )
+
+    def _check_baseline_drift(self) -> CheckResult:
+        """CQG-P1: Baseline Drift Detection via BaselineManager (Phase 3+)"""
+        current_phase = getattr(self, 'phase', None)
+        if current_phase is not None and current_phase < 3:
+            return CheckResult(
+                name="CQG: Baseline Drift",
+                passed=True,
+                score=100,
+                violations=[],
+                details={"status": "skipped", "reason": f"Only runs Phase 3+ (current: Phase {current_phase})"}
+            )
+
+        if not SAB_AVAILABLE:
+            return CheckResult(
+                name="CQG: Baseline Drift",
+                passed=True,
+                score=100,
+                violations=[],
+                details={"status": "skipped", "reason": "BaselineManager not available"}
+            )
+
+        try:
+            from .baseline_manager import BaselineManager
+            bm = BaselineManager(str(self.project_path))
+
+            # 收集當前 metrics
+            current_metrics = {}
+            if getattr(self, 'cqg_available', False) and self.fitness is not None:
+                try:
+                    fr = self.fitness.evaluate()
+                    current_metrics["fitness_overall"] = fr.overall_score
+                    current_metrics["fitness_coupling"] = fr.coupling_score
+                    current_metrics["fitness_cohesion"] = fr.cohesion_score
+                except Exception:
+                    pass
+
+            if not current_metrics:
+                return CheckResult(
+                    name="CQG: Baseline Drift",
+                    passed=True,
+                    score=100,
+                    violations=[],
+                    details={"status": "skipped", "reason": "No metrics available for comparison"}
+                )
+
+            # 執行 drift detection
+            drift_result = bm.check_drift(current_metrics)
+
+            # 計算 drift severity score
+            drift_count = len(drift_result.drift) if drift_result.drift else 0
+            if drift_count == 0:
+                drift_score = 100
+            elif drift_count <= 2:
+                drift_score = 80
+            elif drift_count <= 5:
+                drift_score = 60
+            else:
+                drift_score = 40
+
+            return CheckResult(
+                name="CQG: Baseline Drift",
+                passed=drift_count <= 3,
+                score=drift_score,
+                violations=[{"type": k, **v} for k, v in (drift_result.drift or {}).items()],
+                details={
+                    "baseline_tag": drift_result.tag,
+                    "baseline_timestamp": drift_result.baseline_timestamp,
+                    "current_timestamp": drift_result.current_timestamp,
+                    "drift_count": drift_count,
+                    "drift_summary": drift_result.summary,
+                    "drift": drift_result.drift or {}
+                }
+            )
+        except Exception as e:
+            return CheckResult(
+                name="CQG: Baseline Drift",
                 passed=False,
                 score=0,
                 violations=[],
@@ -2021,6 +2105,20 @@ class UnifiedGate:
             sab = parse_sad(sad_path)
             errors = sab.validate()
 
+            # 如果有 validation errors，不儲存直接返回
+            if errors:
+                return CheckResult(
+                    name="SAB Establishment (Phase 2)",
+                    passed=False,
+                    score=0,
+                    violations=errors,
+                    details={
+                        "status": "validation_errors",
+                        "errors": errors,
+                        "sab_path": None
+                    }
+                )
+
             # 同時執行 fitness 檢查並附上分數到 SAB
             fitness_score = None
             if getattr(self, 'cqg_available', False) and self.fitness is not None:
@@ -2047,21 +2145,6 @@ class UnifiedGate:
             # 更新 latest.json
             latest_path = sab_dir / "latest.json"
             latest_path.write_text(json.dumps(sab_dict, ensure_ascii=False, indent=2))
-
-            if errors:
-                return CheckResult(
-                    name="SAB Establishment (Phase 2)",
-                    passed=False,
-                    score=50,
-                    violations=errors,
-                    details={
-                        "status": "validation_errors",
-                        "modules": list(sab.modules.keys()),
-                        "layers": [l["name"] for l in sab.layers],
-                        "rules": len(sab.architecture_rules),
-                        "fitness_score": fitness_score
-                    }
-                )
 
             return CheckResult(
                 name="SAB Establishment (Phase 2)",
