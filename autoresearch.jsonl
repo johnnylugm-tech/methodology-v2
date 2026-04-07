@@ -1,0 +1,2 @@
+{"type":"config","name":"Test closure_with_self_correction store_with_outcome","metricName":"test_failures","metricUnit":"","bestDirection":"lower"}
+{"run":1,"commit":"ee04292","metric":1,"metrics":{},"status":"crash","description":"python command not found, crash","timestamp":1775582095007,"segment":0,"confidence":null}

@@ -1,0 +1,24 @@
+# Drift Monitor Cron Job
+# 將以下內容加入 crontab：crontab -e
+
+# 每小時執行一次 drift 監控（第 0 分鐘）
+0 * * * * /Users/johnny/.openclaw/workspace-musk/projects/methodology-v2/.venv/bin/python /Users/johnny/.openclaw/workspace-musk/projects/methodology-v2/scripts/cron_drift_monitor.py >> /Users/johnny/.openclaw/workspace-musk/logs/drift_monitor.log 2>&1
+
+# ============================================================
+# Setup Instructions:
+# ============================================================
+# 1. Copy this file content to your crontab:
+#    crontab -e
+#
+# 2. Or install via cron script:
+#    crontab scripts/drift_crontab.example
+#
+# 3. Ensure the logs directory exists:
+#    mkdir -p /Users/johnny/.openclaw/workspace-musk/logs
+#
+# 4. Test the script manually first:
+#    /Users/johnny/.openclaw/workspace-musk/projects/methodology-v2/.venv/bin/python \
+#      /Users/johnny/.openclaw/workspace-musk/projects/methodology-v2/scripts/cron_drift_monitor.py
+#
+# 5. Check logs:
+#    tail -f /Users/johnny/.openclaw/workspace-musk/logs/drift_monitor.log

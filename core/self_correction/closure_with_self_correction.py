@@ -13,6 +13,7 @@ from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any
 
 from .self_correction_engine import SelfCorrectionEngine, CorrectionResult
+from .correction_library import CorrectionLibrary
 from .metrics import SelfCorrectionMetrics
 
 if TYPE_CHECKING:
@@ -58,6 +59,7 @@ class ClosureWithSelfCorrection:
         feedback_store: FeedbackStore,
         self_correction_engine: SelfCorrectionEngine,
         constitution_verifier: Any = None,  # ConstitutionClosureVerifier
+        correction_library: CorrectionLibrary | None = None,
     ) -> None:
         """
         Initialize the closure-with-self-correction pipeline.
@@ -67,10 +69,13 @@ class ClosureWithSelfCorrection:
             self_correction_engine: The SelfCorrectionEngine to use.
             constitution_verifier: Optional ConstitutionClosureVerifier
                                    for constitution-sourced feedback.
+            correction_library: Optional CorrectionLibrary for learning.
+                                 If not provided, a new one is created.
         """
         self.store = feedback_store
         self.engine = self_correction_engine
         self.verifier = constitution_verifier
+        self.correction_library = correction_library or CorrectionLibrary()
         self._metrics = SelfCorrectionMetrics(
             total_corrections=0,
             auto_fixable_count=0,
@@ -136,7 +141,23 @@ class ClosureWithSelfCorrection:
 
         self._update_metrics_on_close(correction_result)
 
-        # Step 3: If no patch was produced, route to human
+        # Fetch feedback for learning record
+        feedback = self.store.get(feedback_id)
+
+        # Step 3: Store learning outcome (if feedback exists)
+        if feedback is not None:
+            self.correction_library.store_with_outcome(
+                feedback=feedback,
+                result=correction_result,
+                outcome=correction_result.verification_status,
+                failure_reason=(
+                    correction_result.correction_log[-1].get("result", "unknown")
+                    if correction_result.verification_status in ("failed", "manual_required")
+                    else None
+                ),
+            )
+
+        # Step 4: If no patch was produced, route to human
         if not correction_result.patched_code:
             return ClosureWithSelfCorrectionResult(
                 feedback_id=feedback_id,
@@ -155,7 +176,6 @@ class ClosureWithSelfCorrection:
 
         # Step 4: Patch produced — try to apply and re-verify
         patched_code = correction_result.patched_code
-        feedback = self.store.get(feedback_id)
 
         if feedback is None:
             return ClosureWithSelfCorrectionResult(

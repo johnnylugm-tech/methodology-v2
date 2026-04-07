@@ -9,7 +9,9 @@
     "confidence": 0.8075,
     "success": true,
     "timestamp": "2026-04-07T14:38:05.999246+00:00",
-    "tags": []
+    "tags": [],
+    "outcome": "success",
+    "failure_reason": null
   },
   {
     "error_signature": "dfd674c6fd90ee74cb7172d5fd0162db",
@@ -21,7 +23,9 @@
     "confidence": 0.0,
     "success": false,
     "timestamp": "2026-04-07T14:38:06.009672+00:00",
-    "tags": []
+    "tags": [],
+    "outcome": "success",
+    "failure_reason": null
   },
   {
     "error_signature": "e943c788164f664ede879662d95169d6",
@@ -33,7 +37,9 @@
     "confidence": 0.75,
     "success": false,
     "timestamp": "2026-04-07T14:38:06.010324+00:00",
-    "tags": []
+    "tags": [],
+    "outcome": "success",
+    "failure_reason": null
   },
   {
     "error_signature": "1205108302b834bd5444d691836f5e73",
@@ -45,7 +51,9 @@
     "confidence": 0.0,
     "success": false,
     "timestamp": "2026-04-07T14:38:06.010837+00:00",
-    "tags": []
+    "tags": [],
+    "outcome": "success",
+    "failure_reason": null
   },
   {
     "error_signature": "903c1880d7a107780fcc2cb289aa5b0b",
@@ -57,7 +65,9 @@
     "confidence": 0.765,
     "success": true,
     "timestamp": "2026-04-07T14:38:06.011469+00:00",
-    "tags": []
+    "tags": [],
+    "outcome": "success",
+    "failure_reason": null
   },
   {
     "error_signature": "e943c788164f664ede879662d95169d6",
@@ -69,7 +79,9 @@
     "confidence": 0.75,
     "success": false,
     "timestamp": "2026-04-07T14:38:06.011975+00:00",
-    "tags": []
+    "tags": [],
+    "outcome": "success",
+    "failure_reason": null
   },
   {
     "error_signature": "e943c788164f664ede879662d95169d6",
@@ -81,7 +93,9 @@
     "confidence": 0.75,
     "success": false,
     "timestamp": "2026-04-07T14:38:06.012480+00:00",
-    "tags": []
+    "tags": [],
+    "outcome": "success",
+    "failure_reason": null
   },
   {
     "error_signature": "205f59c9e7f8a6950e1d659c9e3558ee",
@@ -93,7 +107,9 @@
     "confidence": 0.0,
     "success": false,
     "timestamp": "2026-04-07T14:38:06.014500+00:00",
-    "tags": []
+    "tags": [],
+    "outcome": "success",
+    "failure_reason": null
   },
   {
     "error_signature": "a8f0374030e6d02fb57feb5d61e706f1",
@@ -105,7 +121,9 @@
     "confidence": 0.0,
     "success": false,
     "timestamp": "2026-04-07T14:40:02.618971+00:00",
-    "tags": []
+    "tags": [],
+    "outcome": "success",
+    "failure_reason": null
   },
   {
     "error_signature": "1205108302b834bd5444d691836f5e73",
@@ -117,7 +135,9 @@
     "confidence": 0.0,
     "success": false,
     "timestamp": "2026-04-07T14:40:02.619748+00:00",
-    "tags": []
+    "tags": [],
+    "outcome": "success",
+    "failure_reason": null
   },
   {
     "error_signature": "a8f0374030e6d02fb57feb5d61e706f1",
@@ -129,7 +149,9 @@
     "confidence": 0.0,
     "success": false,
     "timestamp": "2026-04-07T14:40:02.620445+00:00",
-    "tags": []
+    "tags": [],
+    "outcome": "success",
+    "failure_reason": null
   },
   {
     "error_signature": "a8f0374030e6d02fb57feb5d61e706f1",
@@ -141,7 +163,9 @@
     "confidence": 0.0,
     "success": false,
     "timestamp": "2026-04-07T14:40:02.621102+00:00",
-    "tags": []
+    "tags": [],
+    "outcome": "success",
+    "failure_reason": null
   },
   {
     "error_signature": "a8f0374030e6d02fb57feb5d61e706f1",
@@ -153,7 +177,9 @@
     "confidence": 0.0,
     "success": false,
     "timestamp": "2026-04-07T14:40:02.693798+00:00",
-    "tags": []
+    "tags": [],
+    "outcome": "success",
+    "failure_reason": null
   },
   {
     "error_signature": "1205108302b834bd5444d691836f5e73",
@@ -165,7 +191,9 @@
     "confidence": 0.0,
     "success": false,
     "timestamp": "2026-04-07T14:40:02.694571+00:00",
-    "tags": []
+    "tags": [],
+    "outcome": "success",
+    "failure_reason": null
   },
   {
     "error_signature": "a8f0374030e6d02fb57feb5d61e706f1",
@@ -177,7 +205,9 @@
     "confidence": 0.0,
     "success": false,
     "timestamp": "2026-04-07T14:40:02.695299+00:00",
-    "tags": []
+    "tags": [],
+    "outcome": "success",
+    "failure_reason": null
   },
   {
     "error_signature": "a8f0374030e6d02fb57feb5d61e706f1",
@@ -189,7 +219,9 @@
     "confidence": 0.0,
     "success": false,
     "timestamp": "2026-04-07T14:40:02.695986+00:00",
-    "tags": []
+    "tags": [],
+    "outcome": "success",
+    "failure_reason": null
   },
   {
     "error_signature": "bea60ee4a600065b5bc89291fc29073e",
@@ -201,7 +233,9 @@
     "confidence": 0.8075,
     "success": true,
     "timestamp": "2026-04-07T14:40:02.710857+00:00",
-    "tags": []
+    "tags": [],
+    "outcome": "success",
+    "failure_reason": null
   },
   {
     "error_signature": "dfd674c6fd90ee74cb7172d5fd0162db",
@@ -213,7 +247,9 @@
     "confidence": 0.0,
     "success": false,
     "timestamp": "2026-04-07T14:40:02.720507+00:00",
-    "tags": []
+    "tags": [],
+    "outcome": "success",
+    "failure_reason": null
   },
   {
     "error_signature": "e943c788164f664ede879662d95169d6",
@@ -225,7 +261,9 @@
     "confidence": 0.75,
     "success": false,
     "timestamp": "2026-04-07T14:40:02.721296+00:00",
-    "tags": []
+    "tags": [],
+    "outcome": "success",
+    "failure_reason": null
   },
   {
     "error_signature": "1205108302b834bd5444d691836f5e73",
@@ -237,7 +275,9 @@
     "confidence": 0.0,
     "success": false,
     "timestamp": "2026-04-07T14:40:02.721975+00:00",
-    "tags": []
+    "tags": [],
+    "outcome": "success",
+    "failure_reason": null
   },
   {
     "error_signature": "903c1880d7a107780fcc2cb289aa5b0b",
@@ -249,7 +289,9 @@
     "confidence": 0.765,
     "success": true,
     "timestamp": "2026-04-07T14:40:02.722763+00:00",
-    "tags": []
+    "tags": [],
+    "outcome": "success",
+    "failure_reason": null
   },
   {
     "error_signature": "e943c788164f664ede879662d95169d6",
@@ -261,7 +303,9 @@
     "confidence": 0.75,
     "success": false,
     "timestamp": "2026-04-07T14:40:02.723829+00:00",
-    "tags": []
+    "tags": [],
+    "outcome": "success",
+    "failure_reason": null
   },
   {
     "error_signature": "e943c788164f664ede879662d95169d6",
@@ -273,7 +317,9 @@
     "confidence": 0.75,
     "success": false,
     "timestamp": "2026-04-07T14:40:02.724476+00:00",
-    "tags": []
+    "tags": [],
+    "outcome": "success",
+    "failure_reason": null
   },
   {
     "error_signature": "205f59c9e7f8a6950e1d659c9e3558ee",
@@ -285,6 +331,106 @@
     "confidence": 0.0,
     "success": false,
     "timestamp": "2026-04-07T14:40:02.726661+00:00",
-    "tags": []
+    "tags": [],
+    "outcome": "success",
+    "failure_reason": null
+  },
+  {
+    "error_signature": "a8f0374030e6d02fb57feb5d61e706f1",
+    "source": "linter",
+    "source_detail": "src/app.py",
+    "category": "syntax",
+    "error_description": "Missing colon",
+    "patched_code": "# fixed",
+    "confidence": 0.9,
+    "success": true,
+    "timestamp": "2026-04-07T17:14:59.656188+00:00",
+    "tags": [],
+    "outcome": "success",
+    "failure_reason": null
+  },
+  {
+    "error_signature": "a8f0374030e6d02fb57feb5d61e706f1",
+    "source": "linter",
+    "source_detail": "src/app.py",
+    "category": "syntax",
+    "error_description": "Missing colon",
+    "patched_code": "",
+    "confidence": 0.3,
+    "success": false,
+    "timestamp": "2026-04-07T17:14:59.670134+00:00",
+    "tags": [],
+    "outcome": "failed",
+    "failure_reason": "strategy_not_applicable"
+  },
+  {
+    "error_signature": "a8f0374030e6d02fb57feb5d61e706f1",
+    "source": "linter",
+    "source_detail": "src/app.py",
+    "category": "syntax",
+    "error_description": "Missing colon",
+    "patched_code": "# fixed",
+    "confidence": 0.6,
+    "success": false,
+    "timestamp": "2026-04-07T17:14:59.673745+00:00",
+    "tags": [],
+    "outcome": "pending_review",
+    "failure_reason": null
+  },
+  {
+    "error_signature": "a8f0374030e6d02fb57feb5d61e706f1",
+    "source": "linter",
+    "source_detail": "src/app.py",
+    "category": "syntax",
+    "error_description": "Missing colon",
+    "patched_code": "",
+    "confidence": 0.0,
+    "success": false,
+    "timestamp": "2026-04-07T17:14:59.689858+00:00",
+    "tags": [],
+    "outcome": "manual_required",
+    "failure_reason": "skipped"
+  },
+  {
+    "error_signature": "1205108302b834bd5444d691836f5e73",
+    "source": "security",
+    "source_detail": "CVE-2024-9999",
+    "category": "cve",
+    "error_description": "Manual fix required",
+    "patched_code": "",
+    "confidence": 0.0,
+    "success": false,
+    "timestamp": "2026-04-07T17:14:59.691696+00:00",
+    "tags": [],
+    "outcome": "manual_required",
+    "failure_reason": "skipped"
+  },
+  {
+    "error_signature": "a8f0374030e6d02fb57feb5d61e706f1",
+    "source": "linter",
+    "source_detail": "src/app.py",
+    "category": "syntax",
+    "error_description": "Missing colon",
+    "patched_code": "",
+    "confidence": 0.0,
+    "success": false,
+    "timestamp": "2026-04-07T17:14:59.693558+00:00",
+    "tags": [],
+    "outcome": "manual_required",
+    "failure_reason": "skipped"
+  },
+  {
+    "error_signature": "a8f0374030e6d02fb57feb5d61e706f1",
+    "source": "linter",
+    "source_detail": "src/app.py",
+    "category": "syntax",
+    "error_description": "Missing colon",
+    "patched_code": "",
+    "confidence": 0.0,
+    "success": false,
+    "timestamp": "2026-04-07T17:14:59.695428+00:00",
+    "tags": [],
+    "outcome": "manual_required",
+    "failure_reason": "skipped"
   }
 ]

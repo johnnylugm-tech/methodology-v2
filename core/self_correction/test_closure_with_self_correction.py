@@ -75,6 +75,148 @@ def sample_feedback(store):
     return fb
 
 
+class TestStoreWithOutcome:
+    """Tests for store_with_outcome integration in closure."""
+
+    def test_store_with_outcome_called_on_success(self, closure_pipeline, store, tmp_path):
+        """correction 成功時，store_with_outcome 被調用且 outcome='success'."""
+        # Use isolated library with tmp_path to avoid cross-test pollution
+        from self_correction.correction_library import CorrectionLibrary
+        closure_pipeline.correction_library = CorrectionLibrary(
+            storage_path=str(tmp_path / "test_success.json")
+        )
+
+        fb = StandardFeedback(
+            id="fb-success",
+            source="linter",
+            source_detail="src/app.py",
+            type="error",
+            category="syntax",
+            severity="high",
+            title="Syntax error",
+            description="Missing colon",
+            context={"file_path": "src/app.py"},
+            timestamp="2024-01-01T00:00:00Z",
+            sla_deadline="2024-01-02T00:00:00Z",
+            status="in_progress",
+        )
+        store.add(fb)
+
+        with patch("feedback.closure.verify_and_close") as mock_verify:
+            mock_verify.return_value = MagicMock(success=False, message="Verification failed")
+            with patch.object(closure_pipeline.engine, "correct") as mock_correct:
+                mock_correct.return_value = MagicMock(
+                    patched_code="# fixed",
+                    confidence=0.9,
+                    strategy="patch_syntax",
+                    verification_status="success",
+                    correction_log=[{"result": "success"}],
+                )
+                result = closure_pipeline.close_with_correction("fb-success")
+
+        assert result.correction_result is not None
+        library = closure_pipeline.correction_library
+        assert len(library.library) == 1
+        entry = library.library[-1]
+        assert entry.outcome == "success"
+        assert entry.source == "linter"
+        assert entry.source_detail == "src/app.py"
+
+    def test_store_with_outcome_called_on_failure(self, closure_pipeline, store, tmp_path):
+        """correction 失敗時，store_with_outcome 被調用且 outcome='failed'."""
+        from self_correction.correction_library import CorrectionLibrary
+        closure_pipeline.correction_library = CorrectionLibrary(
+            storage_path=str(tmp_path / "test_failure.json")
+        )
+
+        fb = StandardFeedback(
+            id="fb-fail",
+            source="linter",
+            source_detail="src/app.py",
+            type="error",
+            category="syntax",
+            severity="high",
+            title="Syntax error",
+            description="Missing colon",
+            context={"file_path": "src/app.py"},
+            timestamp="2024-01-01T00:00:00Z",
+            sla_deadline="2024-01-02T00:00:00Z",
+            status="in_progress",
+        )
+        store.add(fb)
+
+        with patch("feedback.closure.verify_and_close") as mock_verify:
+            mock_verify.return_value = MagicMock(success=False, message="Verification failed")
+            with patch.object(closure_pipeline.engine, "correct") as mock_correct:
+                mock_correct.return_value = MagicMock(
+                    patched_code=None,
+                    confidence=0.3,
+                    strategy=None,
+                    verification_status="failed",
+                    correction_log=[{"result": "strategy_not_applicable"}],
+                )
+                result = closure_pipeline.close_with_correction("fb-fail")
+
+        assert result.required_manual_review is True
+        library = closure_pipeline.correction_library
+        assert len(library.library) == 1
+        entry = library.library[-1]
+        assert entry.outcome == "failed"
+        assert entry.failure_reason == "strategy_not_applicable"
+
+    def test_store_with_outcome_called_on_pending_review(self, closure_pipeline, store, tmp_path):
+        """correction 需要人工review時，store_with_outcome 被調用且 outcome='pending_review'."""
+        from self_correction.correction_library import CorrectionLibrary
+        closure_pipeline.correction_library = CorrectionLibrary(
+            storage_path=str(tmp_path / "test_pending.json")
+        )
+
+        fb = StandardFeedback(
+            id="fb-review",
+            source="linter",
+            source_detail="src/app.py",
+            type="error",
+            category="syntax",
+            severity="high",
+            title="Syntax error",
+            description="Missing colon",
+            context={"file_path": "src/app.py"},
+            timestamp="2024-01-01T00:00:00Z",
+            sla_deadline="2024-01-02T00:00:00Z",
+            status="in_progress",
+        )
+        store.add(fb)
+
+        with patch("feedback.closure.verify_and_close") as mock_verify:
+            mock_verify.return_value = MagicMock(success=False, message="Verification failed")
+            with patch.object(closure_pipeline.engine, "correct") as mock_correct:
+                mock_correct.return_value = MagicMock(
+                    patched_code="# fixed",
+                    confidence=0.6,
+                    strategy="ai_assisted",
+                    verification_status="pending_review",
+                    correction_log=[{"result": "ai_correction_accepted"}],
+                )
+                result = closure_pipeline.close_with_correction("fb-review")
+
+        assert result.required_manual_review is True
+        library = closure_pipeline.correction_library
+        assert len(library.library) == 1
+        entry = library.library[-1]
+        assert entry.outcome == "pending_review"
+        assert entry.failure_reason == "AI-assisted, needs human review"
+
+    def test_library_stored_in_orchestration(self, tmp_path):
+        """工廠函數建立 CorrectionLibrary."""
+        from self_correction.correction_library import CorrectionLibrary
+        from orchestration import create_self_correcting_closure
+
+        closure = create_self_correcting_closure()
+        assert hasattr(closure, "correction_library")
+        assert isinstance(closure.correction_library, CorrectionLibrary)
+
+
+
 class TestCloseWithCorrection:
     """Tests for the close_with_correction() main entry point."""
 

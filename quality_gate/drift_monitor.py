@@ -11,6 +11,7 @@ from typing import Optional, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from quality_gate.baseline_manager import BaselineManager
+    from quality_gate.drift_notifier import DriftNotifier
 
 
 class DriftAlert:
@@ -93,10 +94,12 @@ class DriftMonitor:
         project_path: str,
         feedback_store=None,
         baseline_manager: "BaselineManager | None" = None,
+        notifier: "DriftNotifier | None" = None,
     ):
         self.project_path = project_path
         self.feedback_store = feedback_store
         self.baseline_manager = baseline_manager
+        self.notifier = notifier
 
     def run_and_alert(self) -> DriftAlert | None:
         """
@@ -124,6 +127,10 @@ class DriftMonitor:
         if self.feedback_store is not None:
             fb = alert.to_feedback()
             self.feedback_store.add(fb)
+
+        # 發送通知（如果有的話）
+        if self.notifier is not None:
+            self.notifier.notify(alert)
 
         return alert
 

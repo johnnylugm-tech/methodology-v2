@@ -118,14 +118,21 @@ def create_self_correcting_closure(
 
     verify_and_close() 在 verification 失敗時自動觸發 Self-Correction Engine.
     """
-    from self_correction import ClosureWithSelfCorrection
+    from self_correction import ClosureWithSelfCorrection, SelfCorrectionEngine
+    from self_correction.correction_library import CorrectionLibrary
 
     # Use explicit None check — FeedbackStore is falsy when empty (len=0)
     if feedback_store is None:
         feedback_store = create_feedback_store()
     if self_correction_engine is None:
         self_correction_engine = create_self_correction_engine(feedback_store)
-    return ClosureWithSelfCorrection(feedback_store, self_correction_engine)
+
+    correction_library = CorrectionLibrary()
+    return ClosureWithSelfCorrection(
+        feedback_store,
+        self_correction_engine,
+        correction_library=correction_library,
+    )
 
 
 def create_full_pipeline(
