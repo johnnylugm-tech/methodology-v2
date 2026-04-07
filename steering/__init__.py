@@ -15,6 +15,7 @@ from .integrations import (
     SteeringBVSIntegrator,
     SteeringConstitutionIntegrator,
     SteeringCQGIntegrator,
+    SteeringIntegrator,
     HR12Resolution,
 )
 
@@ -28,5 +29,6 @@ __all__ = [
     "SteeringBVSIntegrator",
     "SteeringConstitutionIntegrator",
     "SteeringCQGIntegrator",
+    "SteeringIntegrator",
     "HR12Resolution",
 ]

@@ -421,11 +421,11 @@ class HR12Resolution:
 
 # ─── 統一整合入口 ──────────────────────────────────────────────────────────────
 
-class Steering集成器:
+class SteeringIntegrator:
     """
-    統一的 Steering 整合器
+    Unified Steering Integrator
 
-    整合所有系統：SteeringLoop + BVS + Constitution + CQG + HR-12
+    Integrates: SteeringLoop + BVS + Constitution + CQG + HR-12
     """
 
     def __init__(

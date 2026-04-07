@@ -1,4 +1,4 @@
-# methodology-v2 v6.64
+# methodology-v2 v6.65
 > Agent Executable Spec. Phase detail → Lazy Load `docs/P{N}_SOP.md`
 
 ## 0. 執行協議

@@ -53,6 +53,28 @@
 
 ---
 
+## [v6.63] - 2026-04-07
+
+### 🚀 Added
+
+#### HR-09 Claims Verifier System (IMPROVEMENT_P1-2)
+HR-09: "Claims must be verified" — claim 內容必須被 citations 實際支持
+
+##### New Files
+- `constitution/claim_extractor.py` — 從 result text 提取 claims (keywords: should/must/will/is designed to)
+- `constitution/citation_parser.py` — 解析 citation 格式 (SRS.md#L45, SAD.md#§3.2, etc.)
+- `constitution/claim_verifier.py` — 交叉驗證 claim vs citations
+
+##### BVS Integration
+- `invariant_engine.py` 新增 HR-09 invariant
+- HR-09 invariants now in BVS check list: HR-03/07/09/10/12/13/15 + TH-07
+
+##### Key Distinction
+- HR-07: citations 是否存在 (presence check)
+- HR-09: citations 是否真的支持 claim 內容 (inferential check)
+
+---
+
 ## v6.62 (2026-04-07)
 
 ### 新增功能
