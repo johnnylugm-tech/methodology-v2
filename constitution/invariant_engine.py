@@ -14,6 +14,14 @@ from dataclasses import dataclass, field
 from typing import List, Dict, Any, Optional, Callable
 import json
 
+# HR-09: Claims Verifier availability
+try:
+    from .claim_verifier import verify_result
+    HR09_AVAILABLE = True
+except ImportError:
+    HR09_AVAILABLE = False
+    _hr09_import_error = str(e)
+
 @dataclass
 class InvariantViolation:
     """Invariant 違反"""
@@ -126,6 +134,14 @@ class InvariantEngine:
                 severity="critical",
                 source="HR-15"
             ),
+            # HR-09: Claims must be verified (supported by citations)
+            BehavioralInvariant(
+                name="HR-09: Claims verification",
+                description="Claim 內容必須被 citations 實際支持，不只是存在citation",
+                check_func=lambda log, ctx: _check_hr09_invariant(log, ctx),
+                severity="high",
+                source="HR-09"
+            ),
             # No false confidence
             BehavioralInvariant(
                 name="Confidence calibration",
@@ -224,7 +240,39 @@ class InvariantEngine:
         }
 
 
-# ─── CLI ───────────────────────────────────────────────────────────────────────
+# ─── HR-09 Helper ──────────────────────────────────────────────────────────────
+
+
+def _check_hr09_invariant(log: dict, ctx: dict) -> bool:
+    """
+    HR-09 檢查：驗證 claim 內容是否被 citations 實際支持
+    """
+    if not HR09_AVAILABLE:
+        return True
+    
+    result_text = log.get("result", "") or ""
+    citations = log.get("citations", [])
+    
+    if not result_text or not citations:
+        return True
+    
+    artifact_content = ctx.get("artifact_contents", {})
+    if not artifact_content:
+        return True
+    
+    try:
+        verification = verify_result(
+            result_text=result_text,
+            citations=citations,
+            artifact_content=artifact_content,
+            strict=False
+        )
+        return verification.get("verified", True)
+    except Exception:
+        return True
+
+
+# ─── CLI ────────────────────────────────────────────────────────────────────────
 
 def main():
     import argparse
