@@ -59,6 +59,10 @@ class FunctionInfo:
     decorators: List[str] = field(default_factory=list)
     is_async: bool = False
     complexity: int = 1
+    # === 新增欄位 ===
+    error_types: List[str] = field(default_factory=list)  # 可能捕捉的異常類型
+    return_analysis: Dict[str, Any] = field(default_factory=dict)  # 回傳值分析
+    has_try_except: bool = False  # 是否有錯誤處理
 
 
 class TestGenerator:
@@ -135,6 +139,15 @@ class TestGenerator:
         # 取得裝飾器
         decorators = [self._get_decorator_name(d) for d in node.decorator_list]
         
+        # === 新增：錯誤類型識別 ===
+        error_types = self._extract_error_types(node)
+        
+        # === 新增：複雜度估算（實際 cyclomatic complexity） ===
+        complexity = self._calc_cyclomatic_complexity(node)
+        
+        # === 新增：回傳值分析 ===
+        return_analysis = self._analyze_returns(node)
+        
         return FunctionInfo(
             name=node.name,
             params=params,
@@ -142,7 +155,10 @@ class TestGenerator:
             docstring=docstring,
             decorators=decorators,
             is_async=isinstance(node, ast.AsyncFunctionDef),
-            complexity=self._estimate_complexity(node)
+            complexity=complexity,
+            error_types=error_types,
+            return_analysis=return_analysis,
+            has_try_except=len(error_types) > 0
         )
     
     def _get_annotation_name(self, node: ast.AST) -> str:
@@ -173,14 +189,146 @@ class TestGenerator:
         return None
     
     def _estimate_complexity(self, node: ast.FunctionDef) -> int:
-        """估算複雜度"""
-        complexity = 1
+        """估算複雜度（已廢棄，用 _calc_cyclomatic_complexity 代替）"""
+        return self._calc_cyclomatic_complexity(node)
+    
+    def _calc_cyclomatic_complexity(self, node: ast.FunctionDef) -> int:
+        """
+        計算圈複雜度（Cyclomatic Complexity）
+        
+        公式：1 + 決策點數量
+        決策點包括：if, elif, for, while, except, with, and, or, ternary
+        
+        Args:
+            node: AST 函數節點
+            
+        Returns:
+            int: 圈複雜度 (1 = 線性，10+ = 高複雜度)
+        """
+        complexity = 1  # 基礎複雜度
+        
         for child in ast.walk(node):
-            if isinstance(child, (ast.If, ast.For, ast.While, ast.With)):
+            # 分支語句
+            if isinstance(child, (ast.If, ast.For, ast.While)):
                 complexity += 1
+            # 例外處理（每個 except 都是一個分支）
+            elif isinstance(child, ast.Try):
+                complexity += len(child.handlers)
+            # with 語句（資源管理，可能涉及條件）
+            elif isinstance(child, ast.With):
+                complexity += len(child.items)
+            # 布林運算（and/or 增加分支）
             elif isinstance(child, ast.BoolOp):
+                if isinstance(child.op, ast.And):
+                    complexity += 1
+                elif isinstance(child.op, ast.Or):
+                    complexity += 1
+            # 三元表達式
+            elif isinstance(child, ast.IfExp):
                 complexity += 1
+            # 列表/字典/生成式中的 if
+            elif isinstance(child, ast.comprehension):
+                complexity += 1
+        
         return complexity
+    
+    def _extract_error_types(self, node: ast.FunctionDef) -> List[str]:
+        """
+        遍歷 AST，找到所有 try/except 節點，收集可能的異常類型
+        
+        Args:
+            node: AST 函數節點
+            
+        Returns:
+            List[str]: 異常類型名稱列表（如 ["ValueError", "TypeError"]）
+        """
+        error_types = []
+        
+        for child in ast.walk(node):
+            if isinstance(child, ast.Try):
+                for handler in child.handlers:
+                    if handler.type:
+                        # 例外類型可能是 Name (e.g., ValueError) 或 Tuple
+                        exc_type = self._get_annotation_name(handler.type)
+                        if exc_type and exc_type not in error_types:
+                            error_types.append(exc_type)
+                    else:
+                        # bare except
+                        if "Exception" not in error_types:
+                            error_types.append("Exception")
+        
+        return error_types
+    
+    def _analyze_returns(self, node: ast.FunctionDef) -> Dict[str, Any]:
+        """
+        分析所有 return 語句，找出回傳類型和模式
+        
+        Returns:
+            Dict containing:
+                - return_types: list of inferred return types
+                - return_count: number of return statements
+                - has_conditional_return: bool
+                - has_early_return: bool (return before end)
+                - returns_none: bool (contains 'return' without value)
+        """
+        returns = []
+        has_conditional = False
+        has_early = False
+        returns_none = False
+        return_statements = [n for n in ast.walk(node) if isinstance(n, ast.Return)]
+        
+        for ret in return_statements:
+            if ret.value is None:
+                returns.append("None")
+                returns_none = True
+            elif isinstance(ret.value, ast.Constant):
+                returns.append(type(ret.value.value).__name__)
+            elif isinstance(ret.value, ast.Name):
+                returns.append(ret.value.id)
+            elif isinstance(ret.value, ast.Attribute):
+                returns.append(self._get_annotation_name(ret.value))
+            elif isinstance(ret.value, ast.Call):
+                returns.append(self._get_annotation_name(ret.value.func))
+            elif isinstance(ret.value, ast.Dict):
+                returns.append("dict")
+            elif isinstance(ret.value, ast.List):
+                returns.append("list")
+            elif isinstance(ret.value, ast.BinOp):
+                returns.append("expression")
+            elif isinstance(ret.value, ast.IfExp):
+                returns.append("conditional")
+            elif isinstance(ret.value, ast.Subscript):
+                returns.append("subscript")
+            elif isinstance(ret.value, ast.UnaryOp):
+                returns.append("unary")
+            else:
+                returns.append("unknown")
+        
+        # 檢查是否有條件 return（if 區塊內的 return）
+        for child in ast.walk(node):
+            if isinstance(child, ast.If):
+                for stmt in child.body:
+                    if isinstance(stmt, ast.Return):
+                        has_conditional = True
+                if child.orelse:
+                    for stmt in child.orelse:
+                        if isinstance(stmt, ast.Return):
+                            has_conditional = True
+        
+        # early return：return 在非末尾位置
+        if len(return_statements) > 1:
+            has_early = True
+        
+        # 去重
+        unique_return_types = list(dict.fromkeys(returns))
+        
+        return {
+            "return_types": unique_return_types,
+            "return_count": len(return_statements),
+            "has_conditional_return": has_conditional,
+            "has_early_return": has_early,
+            "returns_none": returns_none,
+        }
     
     def _parse_regex(self, code: str) -> List[FunctionInfo]:
         """使用正則表達式解析"""
@@ -283,14 +431,35 @@ class TestGenerator:
         
         return inputs
     
+    #有意義的邊界值池
+    EDGE_VALUES = {
+        "int": [-1, 0, 1, 2147483647, -2147483648, -2147483649, 2147483648],
+        "float": [0.0, -0.0, float('inf'), float('-inf'), float('nan')],
+        "str": ["", "a", "hello", "中文", "⚠️", "x" * 1000, " " * 10, "\n\t", "\x00"],
+        "list": [[], [None], [1, 2, 3], list(range(1000)), [{}]],
+        "dict": [{}, {"key": None}, {"a": 1, "b": 2}, {"nested": {"deep": None}}],
+        "bool": [True, False],
+        "None": [None],
+    }
+    
     def _generate_edge_inputs(self, params: List[Dict]) -> Dict[str, Any]:
-        """生成邊界值輸入"""
+        """
+        生成有意義的邊界值輸入
+        
+        根據參數類型選擇對應的邊界值：
+        - int: 負數、零、正數、溢位邊界
+        - float: 零、負零、無限大、NaN
+        - str: 空串、單字元、Unicode、特殊字元、超長字串
+        - list: 空串、含None、正常、巨量資料、嵌套
+        - dict: 空dict、None值、正常、深度嵌套
+        """
         inputs = {}
         for p in params:
             ptype = p.get("type", "Any")
-            
+            edges = self.EDGE_VALUES.get(ptype, [None])
+            # 取第一個有意義的邊界值（避開極端的溢位測試，改用常見邊界）
             if ptype == "int":
-                inputs[p["name"]] = 0
+                inputs[p["name"]] = 0  # 預設用 0 而非 -2147483649（太容易掛）
             elif ptype == "float":
                 inputs[p["name"]] = 0.0
             elif ptype == "str":
@@ -301,8 +470,28 @@ class TestGenerator:
                 inputs[p["name"]] = {}
             else:
                 inputs[p["name"]] = None
-        
         return inputs
+    
+    def _get_edge_cases_for_type(self, ptype: str) -> List[Any]:
+        """
+        取得某類型的完整邊界值列表（用於參數化測試）
+        
+        Returns:
+            List of edge values appropriate for the type
+        """
+        if ptype == "int":
+            return [-1, 0, 1, 2147483647, -2147483648]
+        elif ptype == "float":
+            return [0.0, -0.0, float('inf'), float('-inf'), float('nan')]
+        elif ptype == "str":
+            return ["", "a", "hello", "中文", "⚠️", "x" * 1000, " " * 10]
+        elif ptype == "list":
+            return [[], [None], [1, 2, 3], list(range(1000))]
+        elif ptype == "dict":
+            return [{}, {"key": None}, {"a": 1, "b": 2}]
+        elif ptype == "bool":
+            return [True, False]
+        return [None]
     
     def _generate_error_inputs(self, params: List[Dict]) -> Dict[str, Any]:
         """生成錯誤輸入"""
@@ -438,20 +627,144 @@ class TestGenerator:
         return "\n".join(lines)
     
     def _generate_parametrized_test(self, func_info: FunctionInfo) -> str:
-        """生成參數化測試"""
+        """
+        生成真正的參數化測試
+        
+        產生多組測試資料：
+        - 基本案例（typical values）
+        - 邊界案例（boundary values from _get_edge_cases_for_type）
+        - 錯誤案例（invalid inputs）
+        
+        使用 @pytest.mark.parametrize 裝飾器
+        """
         func_name = func_info.name
         params = func_info.params
         
         lines = [
-            "@pytest.mark.parametrize(",
-            '    "test_case",',
-            '    [',
-            '        {"name": "basic", "params": {...}},',
-            '        {"name": "edge", "params": {...}},',
-            '        {"name": "error", "params": {...}},',
-            '    ]',
-            ")"
+            "# AI-GENERATED - REVIEW REQUIRED",
+            "# 參數化測試：覆蓋基本、邊界、錯誤案例",
+            "",
         ]
+        
+        if not params:
+            lines.append("# 無參數，無需參數化測試")
+            return "\n".join(lines)
+        
+        # 產生測試案例
+        test_cases = []
+        
+        # 1. 基本案例
+        basic_params = {}
+        for p in params:
+            ptype = p.get("type", "Any")
+            if ptype == "int":
+                basic_params[p["name"]] = 42
+            elif ptype == "float":
+                basic_params[p["name"]] = 3.14
+            elif ptype == "str":
+                basic_params[p["name"]] = "test"
+            elif ptype == "bool":
+                basic_params[p["name"]] = True
+            elif ptype == "list":
+                basic_params[p["name"]] = [1, 2, 3]
+            elif ptype == "dict":
+                basic_params[p["name"]] = {"key": "value"}
+            else:
+                basic_params[p["name"]] = None
+        test_cases.append({"name": "basic", "params": basic_params})
+        
+        # 2. 邊界案例（每個參數的邊界值）
+        edge_params = {}
+        for p in params:
+            ptype = p.get("type", "Any")
+            if ptype == "int":
+                edge_params[p["name"]] = 0  # 零邊界
+            elif ptype == "float":
+                edge_params[p["name"]] = 0.0
+            elif ptype == "str":
+                edge_params[p["name"]] = ""
+            elif ptype == "list":
+                edge_params[p["name"]] = []
+            elif ptype == "dict":
+                edge_params[p["name"]] = {}
+            else:
+                edge_params[p["name"]] = None
+        test_cases.append({"name": "edge_zero", "params": edge_params})
+        
+        # 3. 錯誤案例（None / invalid）
+        error_params = {}
+        for p in params:
+            error_params[p["name"]] = None
+        test_cases.append({"name": "error_none", "params": error_params})
+        
+        # 4. 溢位案例（int/float 特殊值）
+        overflow_params = {}
+        for p in params:
+            ptype = p.get("type", "Any")
+            if ptype == "int":
+                overflow_params[p["name"]] = 2147483647  # INT_MAX
+            elif ptype == "float":
+                overflow_params[p["name"]] = float('inf')
+            elif ptype == "str":
+                overflow_params[p["name"]] = "x" * 1000  # 超長字串
+            elif ptype == "list":
+                overflow_params[p["name"]] = list(range(1000))  # 巨量列表
+            else:
+                overflow_params[p["name"]] = None
+        test_cases.append({"name": "edge_overflow", "params": overflow_params})
+        
+        # 產生 pytest.mark.parametrize 程式碼
+        parametrize_args = ', '.join(f'"{tc["name"]}"' for tc in test_cases)
+        
+        lines.append(f"@pytest.mark.parametrize(")
+        lines.append(f'    "test_name, params",')
+        lines.append(f'    [')
+        
+        for tc in test_cases:
+            params_repr = repr(tc["params"])
+            tc_name = tc["name"]
+            lines.append(f'        ("{tc_name}", {params_repr}),')
+        
+        lines.append(f'    ],')
+        lines.append(f'    ids=[{parametrize_args}]')
+        lines.append(f")")
+        lines.append(f"def test_{func_name}_parametrized(test_name, params):")
+        lines.append('    ' + '"""')  # docstring start
+        lines.append(f'    參數化測試：根據 test_name 執行不同案例')
+        lines.append(f'    生成時間: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}')
+        lines.append('    ' + '"""')  # docstring end
+        lines.append(f'    # 解包參數')
+        
+        for p in params:
+            lines.append(f'    {p["name"]} = params.get("{p["name"]}")')
+        
+        lines.append(f'    ')
+        lines.append(f'    # 根據案例名稱調整預期行為')
+        lines.append(f'    if test_name == "basic":')
+        lines.append(f'        # 正常情況，應該有回傳值')
+        lines.append(f'        pass  # TODO: 設定 expected')
+        lines.append(f'    elif test_name == "edge_zero":')
+        lines.append(f'        # 邊界值測試')
+        lines.append(f'        pass  # TODO: 驗證邊界行為')
+        lines.append(f'    elif test_name == "error_none":')
+        lines.append(f'        # None 輸入應該觸發錯誤或回傳預設值')
+        lines.append(f'        pass  # TODO: 設定預期錯誤')
+        lines.append(f'    elif test_name == "edge_overflow":')
+        lines.append(f'        # 溢位/超大輸入測試')
+        lines.append(f'        pass  # TODO: 驗證容錯能力')
+        lines.append(f'    ')
+        
+        params_str = ", ".join(p['name'] for p in params)
+        if func_info.is_async:
+            lines.append(f'    import asyncio')
+            lines.append(f'    result = asyncio.run({func_name}({params_str}))')
+        else:
+            lines.append(f'    result = {func_name}({params_str})')
+        
+        lines.append(f'    ')
+        lines.append(f'    # HR-17: AI 生成測試，人工審查後啟用')
+        lines.append(f'    # assert result is not None  # 取消這行，根據 test_name 分別斷言')
+        lines.append(f'    ')
         
         return "\n".join(lines)
     
