@@ -92,9 +92,9 @@ Self-Correction Engine 是 **Feedback Loop 的 Closure Action**，當 verificati
 
 ---
 
-## v6.29.0 (2026-04-07)
+## v6.66 (2026-04-07)
 
-### feat: Feedback Loop — Standardized Quality Signal Collection & Closure
+### feat: Feedback Loop — Standardized Quality Signal Collection & Closure (IMPROVEMENT_P2-2)
 
 **Feedback Loop** 是一個統一框架，用於收集、分類、優先排序和追蹤開發生命週期中所有來源的品質信號。
 

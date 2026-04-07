@@ -29,12 +29,21 @@ import sys
 from pathlib import Path
 from typing import Any, TYPE_CHECKING
 
-# Ensure core/ is in sys.path so we can import feedback.X, quality_gate.X, etc.
-# This is needed because `core` is not a package (no __init__.py)
-# but core/feedback/, core/quality_gate/, etc. are packages.
+# Ensure both project root AND core/ are in sys.path.
+# This is needed because:
+# - `quality_gate.constitution` lives at project_root/quality_gate/constitution/__init__.py
+# - `core.feedback` lives at project_root/core/feedback/__init__.py
+# Both need to be findable.
+_project_root = str(Path(__file__).parent)
 _core_dir = str(Path(__file__).parent / "core")
+
+# Add project root first (for quality_gate.X imports)
+if _project_root not in sys.path:
+    sys.path.insert(0, _project_root)
+# Then add core/ (for core.feedback.X imports)
+# IMPORTANT: append to end to avoid shadowing project-root quality_gate
 if _core_dir not in sys.path:
-    sys.path.insert(0, _core_dir)
+    sys.path.append(_core_dir)
 
 if TYPE_CHECKING:
     pass
@@ -56,8 +65,12 @@ def create_self_correction_engine(
     """建立 Self-Correction Engine."""
     from self_correction import SelfCorrectionEngine
 
-    store = feedback_store or create_feedback_store()
-    return SelfCorrectionEngine(store)
+    # Use explicit None check — FeedbackStore is falsy when empty (len=0),
+    # so `or` would incorrectly create a new instance.
+    if feedback_store is None:
+        feedback_store = create_feedback_store()
+    return SelfCorrectionEngine(feedback_store)
+
 
 def create_integrated_gate(
     feedback_store: "FeedbackStore | None" = None,
@@ -67,10 +80,13 @@ def create_integrated_gate(
 
     AutoQualityGate 在每次 check() 後自動將 violations 提交到 FeedbackStore.
     """
-    from quality_gate import AutoQualityGate
+    from core.quality_gate import AutoQualityGate
 
-    store = feedback_store or create_feedback_store()
-    return AutoQualityGate(feedback_store=store)
+    # Use explicit None check — FeedbackStore is falsy when empty (len=0),
+    # so `or` would incorrectly create a new instance.
+    if feedback_store is None:
+        feedback_store = create_feedback_store()
+    return AutoQualityGate(feedback_store=feedback_store)
 
 
 def create_bvs_runner(
@@ -86,8 +102,11 @@ def create_bvs_runner(
     # Import locally to avoid circular import at module level
     from constitution.bvs_runner import BVSRunner
 
-    store = feedback_store or create_feedback_store()
-    return BVSRunner(project_path=project_path, phase=phase, feedback_store=store)
+    # Use explicit None check — FeedbackStore is falsy when empty (len=0),
+    # so `or` would incorrectly create a new instance.
+    if feedback_store is None:
+        feedback_store = create_feedback_store()
+    return BVSRunner(project_path=project_path, phase=phase, feedback_store=feedback_store)
 
 
 def create_self_correcting_closure(
@@ -101,9 +120,12 @@ def create_self_correcting_closure(
     """
     from self_correction import ClosureWithSelfCorrection
 
-    store = feedback_store or create_feedback_store()
-    engine = self_correction_engine or create_self_correction_engine(store)
-    return ClosureWithSelfCorrection(store, engine)
+    # Use explicit None check — FeedbackStore is falsy when empty (len=0)
+    if feedback_store is None:
+        feedback_store = create_feedback_store()
+    if self_correction_engine is None:
+        self_correction_engine = create_self_correction_engine(feedback_store)
+    return ClosureWithSelfCorrection(feedback_store, self_correction_engine)
 
 
 def create_full_pipeline(
@@ -191,33 +213,14 @@ def run_constitution_check_with_feedback(
     """
     from quality_gate.constitution import run_constitution_check as _run
 
-    store = feedback_store or create_feedback_store()
+    # Use explicit None check
+    if feedback_store is None:
+        feedback_store = create_feedback_store()
     return _run(
         check_type=check_type,
         docs_path=docs_path,
         current_phase=current_phase,
-        feedback_store=store,
-    )
-
-def run_constitution_check_with_feedback(
-    check_type: str,
-    docs_path: str = "docs",
-    current_phase: int = None,
-    feedback_store: "FeedbackStore | None" = None,
-):
-    """
-    執行 Constitution check 並自動提交 violations 到 FeedbackStore.
-
-    這是 run_constitution_check 的 wrapper，自動處理 feedback_store 參數。
-    """
-    from quality_gate.constitution import run_constitution_check as _run
-
-    store = feedback_store or create_feedback_store()
-    return _run(
-        check_type=check_type,
-        docs_path=docs_path,
-        current_phase=current_phase,
-        feedback_store=store,
+        feedback_store=feedback_store,
     )
 
 

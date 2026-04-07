@@ -87,7 +87,7 @@ class TestQualityGateFeedbackIntegration:
     """Test AutoQualityGate with FeedbackStore integration."""
 
     def test_gate_auto_submits_violations(self):
-        from orchestration import create_integrated_gate
+        from orchestration import create_integrated_gate, create_feedback_store
 
         store = create_feedback_store()
         gate = create_integrated_gate(store)
@@ -111,7 +111,7 @@ class TestQualityGateFeedbackIntegration:
         assert result["passed"] is True  # warning doesn't fail
 
     def test_gate_submits_error_violations(self):
-        from orchestration import create_integrated_gate
+        from orchestration import create_integrated_gate, create_feedback_store
 
         store = create_feedback_store()
         gate = create_integrated_gate(store)

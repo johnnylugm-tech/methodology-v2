@@ -4,8 +4,17 @@ Regenerate Import Strategy.
 When test failure is an import error, regenerate the import statement.
 """
 
+import sys
+from pathlib import Path
+
+# Ensure core/ is in sys.path so we can import feedback.X
+# core/ is not a package but core/feedback/ is
+_core_dir = str(Path(__file__).parent.parent.parent)
+if _core_dir not in sys.path:
+    sys.path.insert(0, _core_dir)
+
 from .base import BaseStrategy, PatchResult
-from core.feedback import StandardFeedback
+from feedback import StandardFeedback
 
 
 class RegenerateImportStrategy(BaseStrategy):

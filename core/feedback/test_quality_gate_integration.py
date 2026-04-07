@@ -19,7 +19,7 @@ import unittest
 
 from feedback.feedback import FeedbackStore
 from feedback.severity import calculate_severity
-from quality_gate import AutoQualityGate, Violation
+from core.quality_gate import AutoQualityGate, Violation
 from quality_gate.feedback_hook import AutoQualityGateWithFeedback
 from feedback.quality_gate_adapter import QualityGateFeedbackAdapter
 
