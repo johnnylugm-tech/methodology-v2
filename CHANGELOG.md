@@ -1,3 +1,44 @@
+## v6.29.0 (2026-04-07)
+
+### feat: Feedback Loop — Standardized Quality Signal Collection & Closure
+
+**Feedback Loop** 是一個統一框架，用於收集、分類、優先排序和追蹤開發生命週期中所有來源的品質信號。
+
+#### 核心模組 (`core/feedback/`)
+- `sources_schema.py` — 定義 9 種 feedback 來源
+- `feedback.py` — StandardFeedback + FeedbackStore
+- `severity.py` — 5×5 Severity Matrix（impact × urgency 交互）
+- `router.py` — SLA + Routing Engine
+- `closure.py` — Source-specific closure verification
+- `constitution_adapter.py` — Constitution → Feedback 整合
+- `constitution_closure.py` — Constitution closure verifier
+- `quality_gate_adapter.py` — Quality Gate → Feedback 整合
+- `quality_gate_hook.py` — AutoQualityGate with feedback hook
+- `metrics.py` — DashboardMetrics
+- `dashboard.py` — ASCII Dashboard
+- `export.py` — JSON / Prometheus export
+- `test_*.py` — 240 tests total
+
+#### 整合對象
+| Source | Integration | Auto-Submit |
+|--------|-------------|------------|
+| Constitution HR-01~HR-15 | `ConstitutionFeedbackAdapter` | ✅ |
+| Quality Gate violations | `AutoQualityGateWithFeedback` | ✅ |
+| Linter errors | `QualityGateFeedbackAdapter` | ✅ |
+| Complexity alerts | `QualityGateFeedbackAdapter` | ✅ |
+| Test failures | Via Quality Gate | ✅ |
+| Architecture drift | Via CQG-P2 | ✅ |
+
+#### SLA Configuration
+| Severity | Response | Resolution | Escalation |
+|----------|----------|------------|------------|
+| Critical | 15 min | 4 hours | Immediate |
+| High | 1 hour | 24 hours | 1 hour |
+| Medium | 4 hours | 3 days | Daily |
+| Low | 1 day | Next sprint | Weekly |
+
+---
+
 ## v6.65 (2026-04-07)
 
 ### 新增功能
