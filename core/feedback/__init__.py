@@ -12,19 +12,19 @@ Exports:
     - get_metrics
 """
 
-from feedback.sources_schema import FEEDBACK_SOURCES, FeedbackSource
-from feedback.feedback import (
+from .sources_schema import FEEDBACK_SOURCES, FeedbackSource
+from .feedback import (
     StandardFeedback,
     FeedbackStore,
     FeedbackCreate,
     FeedbackUpdate,
 )
-from feedback.severity import (
+from .severity import (
     SEVERITY_MATRIX,
     SeverityMatrix,
     calculate_severity,
 )
-from feedback.router import (
+from .router import (
     SLA_CONFIG,
     ROUTING_RULES,
     SLAConfig,
@@ -32,7 +32,7 @@ from feedback.router import (
     route_and_assign,
     get_pending_by_sla,
 )
-from feedback.closure import (
+from .closure import (
     VerificationResult,
     ClosureResult,
     verify_and_close,

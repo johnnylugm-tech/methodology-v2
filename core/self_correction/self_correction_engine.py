@@ -210,43 +210,42 @@ class SelfCorrectionEngine:
         Args:
             feedback: The feedback item to classify.
 
+
         Returns:
             One of "auto_fixable", "ai_assisted", "manual_required".
         """
-        key = (feedback.source, feedback.category)
+        key = (feedback.source, feedback.source_detail)
 
+        # 1. Check MANUAL_REQUIRED (exact match)
         if key in self.MANUAL_REQUIRED:
             return "manual_required"
+
+        # 2. Check AUTO_FIX_RULES (exact match on source_detail)
         if key in self.AUTO_FIX_RULES:
             return "auto_fixable"
+
+        # 3. Check if source matches any AUTO_FIX source with "__any__" detail
+        # (如果某些 source 有通用的 auto-fix)
+        for (src, detail), (strategy, conf) in self.AUTO_FIX_RULES.items():
+            if src == feedback.source and detail == "__any__":
+                return "auto_fixable"
+
+        # 4. Check AI_ASSISTED_RULES (exact match)
         if key in self.AI_ASSISTED_RULES:
             return "ai_assisted"
 
-        # Fallback: check by source only
-        auto_keys = {(s, c) for (s, c), _ in self.AUTO_FIX_RULES.keys()}
-        ai_keys = {(s, c) for (s, c), _ in self.AI_ASSISTED_RULES.keys()}
-        manual_keys = self.MANUAL_REQUIRED
-
-        if (feedback.source, "__any__") in auto_keys:
-            return "auto_fixable"
-        if (feedback.source, "__any__") in ai_keys:
+        # 5. Fallback: check correction library for similar successful corrections
+        if self._has_successful_history(feedback):
             return "ai_assisted"
-        if (feedback.source, "__any__") in manual_keys:
-            return "manual_required"
 
-        # Check source-only variants
-        for (s, c), _ in self.AUTO_FIX_RULES.keys():
-            if s == feedback.source and c == "__any__":
-                return "auto_fixable"
-        for (s, c), _ in self.AI_ASSISTED_RULES.keys():
-            if s == feedback.source and c == "__any__":
-                return "ai_assisted"
-        for (s, c) in self.MANUAL_REQUIRED:
-            if s == feedback.source and c == "__any__":
-                return "manual_required"
+        return "manual_required"
 
-        # Default to ai_assisted for unknown combinations
-        return "ai_assisted"
+    def _has_successful_history(self, feedback: StandardFeedback) -> bool:
+        """Check if similar feedback was successfully corrected before."""
+        for result in self.correction_history:
+            if result.feedback_id == feedback.id and result.verification_status == "success":
+                return True
+        return False
 
     def _auto_fix(self, feedback: StandardFeedback, log: list[dict]) -> CorrectionResult:
         """
@@ -259,7 +258,7 @@ class SelfCorrectionEngine:
         Returns:
             CorrectionResult with the patch.
         """
-        key = (feedback.source, feedback.category)
+        key = (feedback.source, feedback.source_detail)
         strategy_info = self.AUTO_FIX_RULES.get(key)
         if strategy_info is None:
             return CorrectionResult(

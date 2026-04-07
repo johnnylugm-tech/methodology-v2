@@ -9,6 +9,7 @@ from .remove_unused import RemoveUnusedStrategy
 from .ruff_format import RuffFormatStrategy
 from .extract_function import ExtractFunctionStrategy
 from .add_test_stub import AddTestStubStrategy
+from .regenerate_import import RegenerateImportStrategy
 
 __all__ = [
     "BaseStrategy",
@@ -19,4 +20,5 @@ __all__ = [
     "RuffFormatStrategy",
     "ExtractFunctionStrategy",
     "AddTestStubStrategy",
+    "RegenerateImportStrategy",
 ]
