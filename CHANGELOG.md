@@ -1,3 +1,30 @@
+## v6.65 (2026-04-07)
+
+### 新增功能
+
+#### IMPROVEMENT_P2-1: Steering Loop - AB Workflow 方向控制
+
+##### 核心組件
+- `steering/steering_loop.py`: SteeringLoop 方向控制引擎
+  - `LLMJudgeScorer`: LLM 裁判評分（替代假評分）
+  - `SteeringConfig`: 可配置迭代參數
+  - `IterationStage`: 三階段迭代（Exploration/Competition/Convergence）
+  - 歷史持久化（跨 session 累積）
+
+##### 整合組件
+- `steering/integrations.py`: 與現有系統整合
+  - `SteeringBVSIntegrator`: BVS 行為驗證整合
+  - `SteeringConstitutionIntegrator`: HR-07/09/15 整合
+  - `SteeringCQGIntegrator`: CQG 代碼品質整合
+  - `HR12Resolution`: HR-12 矛盾解決方案
+
+##### 三大修正
+- 評分機制：假評分 → LLM 裁判
+- Efficiency：token越少越好 → quality/tokens
+- Convergence：delta大就停 → delta小才停
+
+---
+
 ## v6.64 (2026-04-07)
 
 ### 新增功能
