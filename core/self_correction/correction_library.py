@@ -35,6 +35,8 @@ class CorrectionEntry:
         success: Whether the correction was successful.
         timestamp: ISO 8601 timestamp of when the correction was made.
         tags: Arbitrary tags for categorization.
+        outcome: Outcome result ('success' / 'partial' / 'failed').
+        failure_reason: Reason for failure if outcome='failed'.
     """
 
     error_signature: str
@@ -47,6 +49,8 @@ class CorrectionEntry:
     success: bool
     timestamp: str
     tags: list[str]
+    outcome: str = "success"
+    failure_reason: str | None = None
 
 
 class CorrectionLibrary:
@@ -99,6 +103,120 @@ class CorrectionLibrary:
 
         self.library.append(entry)
         self._save()
+
+    def store_with_outcome(
+        self,
+        feedback: StandardFeedback,
+        result: "CorrectionResult",
+        outcome: str,  # "success" / "partial" / "failed"
+        failure_reason: str | None = None,
+    ) -> None:
+        """
+        Store a correction experience with explicit outcome tracking.
+
+        This method extends store() by recording the actual result,
+        enabling weighted retrieval based on historical success rates.
+
+        Args:
+            feedback: The feedback item that was corrected.
+            result: The correction result.
+            outcome: "success" / "partial" / "failed"
+            failure_reason: Reason for failure (only used if outcome="failed").
+        """
+        entry = CorrectionEntry(
+            error_signature=self._make_signature(feedback),
+            source=feedback.source,
+            source_detail=feedback.source_detail,
+            category=feedback.category,
+            error_description=feedback.description,
+            patched_code=result.patched_code or "",
+            confidence=result.confidence,
+            success=(outcome == "success"),
+            timestamp=datetime.now(timezone.utc).isoformat(),
+            tags=feedback.tags,
+            outcome=outcome,
+            failure_reason=failure_reason,
+        )
+
+        self.library.append(entry)
+        self._save()
+
+    def retrieve_weighted(
+        self,
+        source: str,
+        source_detail: str,
+        category: str,
+        limit: int = 5,
+    ) -> list[CorrectionEntry]:
+        """
+        Retrieve similar past correction experiences, weighted by success rate.
+
+        Relevance Score = (Similarity × 0.4) + (Success Rate × 0.3) + (Confidence × 0.3)
+
+        Args:
+            source: Feedback source to match.
+            source_detail: Specific detail to match.
+            category: Category to match.
+            limit: Maximum number of entries to return.
+
+        Returns:
+            List of matching correction entries, ordered by relevance score.
+        """
+        # Try exact match (source + source_detail)
+        candidates = [
+            e for e in self.library
+            if e.source == source and e.source_detail == source_detail
+        ]
+
+        # Fall back to category match if no exact match
+        if not candidates:
+            candidates = [
+                e for e in self.library
+                if e.source == source and e.category == category
+            ]
+
+        # Calculate relevance scores
+        scored = []
+        for c in candidates:
+            # Similarity: exact source_detail match scores higher
+            similarity = 1.0 if c.source_detail == source_detail else 0.5
+
+            # Success rate weight
+            success_rate = self._get_success_rate(c.source, c.source_detail)
+
+            # Confidence weight: penalize failed corrections
+            confidence_weight = c.confidence if c.success else c.confidence * 0.3
+
+            relevance = (similarity * 0.4) + (success_rate * 0.3) + (confidence_weight * 0.3)
+            scored.append((c, relevance))
+
+        # Sort by relevance descending
+        scored.sort(key=lambda x: x[1], reverse=True)
+        return [c for c, _ in scored[:limit]]
+
+    def _get_success_rate(self, source: str, source_detail: str) -> float:
+        """
+        Calculate the success rate for a given source/source_detail combination.
+
+        Args:
+            source: Feedback source.
+            source_detail: Feedback source_detail.
+
+        Returns:
+            Success rate between 0.0 and 1.0, default 0.5 if no history.
+        """
+        matches = [
+            e for e in self.library
+            if e.source == source and e.source_detail == source_detail
+        ]
+        if not matches:
+            return 0.5
+
+        successes = sum(
+            1 for e in matches
+            if getattr(e, "outcome", "success") == "success"
+        )
+        return successes / len(matches)
 
     def retrieve(
         self,
@@ -215,6 +333,9 @@ class CorrectionLibrary:
     @staticmethod
     def _dict_to_entry(data: dict) -> CorrectionEntry:
         """Reconstruct a CorrectionEntry from a plain dict."""
+        # Handle backward compatibility for entries without outcome/failure_reason
+        data.setdefault("outcome", "success")
+        data.setdefault("failure_reason", None)
         return CorrectionEntry(**data)
 
 
