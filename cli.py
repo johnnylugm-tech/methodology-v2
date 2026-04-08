@@ -4277,8 +4277,7 @@ class MethodologyCLI:
             # P2-2: ToolRegistry integration
             try:
                 from tool_registry import ToolRegistry
-                tr = ToolRegistry(repo_path=str(repo_path))
-                tools = tr.list_tools()
+                tools = ToolRegistry.list_tools()
                 print(f"✅ [PRE-FLIGHT] ToolRegistry: {len(tools)} tools registered")
                 if len(tools) == 0:
                     print(f"   ⚠️ No tools registered. Use 'python cli.py tool-registry --register'")
