@@ -1,3 +1,12 @@
+## v6.95 (2026-04-09)
+
+### fix: review_status init in sessions_spawn exception handler (v6.95)
+
+- Root cause: When sessions_spawn throws exception, review_status never assigned in except block
+- Fix: Initialize review_status = None in except block before SubagentResult creation
+
+---
+
 ## v6.94 (2026-04-09)
 
 ### fix: review_status init + FSM state only on success (v6.94)
