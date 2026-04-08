@@ -42,6 +42,8 @@ def parse_srs_fr_sections(srs_path: Path) -> List[Dict]:
     content = srs_path.read_text(encoding='utf-8')
     
     # Also read SAD.md for complete FR list
+    # repo_path = srs_path.parent.parent (01-requirements -> project root)
+    repo_path = srs_path.parent.parent
     sad_path = repo_path / "02-architecture" / "SAD.md"
     if sad_path.exists():
         sad_content = sad_path.read_text(encoding='utf-8')
