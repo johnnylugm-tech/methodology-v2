@@ -1,3 +1,12 @@
+## v6.97 (2026-04-09)
+
+### fix: Mock Reviewer returns APPROVE by default (v6.97)
+
+- Mock mode Reviewer now returns review_status = "APPROVE" by default
+- This allows FR execution loop to proceed during testing
+
+---
+
 ## v6.96 (2026-04-09)
 
 ### fix: review_status in mock mode else block (v6.96)

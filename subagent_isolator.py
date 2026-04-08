@@ -394,6 +394,11 @@ HR-15 強制：
             confidence = 7
             citations = []
             review_status = None  # v6.96 fix: must initialize in else block
+            
+            # v6.97: Mock Reviewer should return APPROVE by default
+            if role == AgentRole.REVIEWER:
+                review_status = "APPROVE"  # Mock reviewer approves everything
+            
             error = None
         
         duration = (datetime.now() - start_time).total_seconds()
