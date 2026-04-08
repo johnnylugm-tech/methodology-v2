@@ -141,13 +141,15 @@ class SubagentResult:
     """Subagent 執行結果"""
     session_key: str
     role: AgentRole
-    status: str  # success/error/timeout
+    status: str  # success/error/timeout (subagent execution result)
     result: Any
     confidence: int
     citations: List[str] = field(default_factory=list)
     summary: str = ""
     error: Optional[str] = None
     duration_seconds: float = 0
+    # v6.93: For Reviewer role, stores APPROVE/REJECT
+    review_status: Optional[str] = None  # APPROVE/REJECT (only for Reviewer)
 
 
 class SubagentIsolator:
@@ -374,6 +376,8 @@ HR-15 強制：
                 result = response.get("result", str(response) if not isinstance(response, dict) else "")
                 confidence = response.get("confidence", 5)
                 citations = response.get("citations", [])
+                # v6.93: 提取 review_status（用於 Reviewer role）
+                review_status = response.get("review_status", None)
                 error = None
                 
             except Exception as e:
@@ -401,7 +405,8 @@ HR-15 強制：
             citations=citations,
             summary=self._generate_summary(result, 50),
             error=error,
-            duration_seconds=duration
+            duration_seconds=duration,
+            review_status=review_status  # v6.93
         )
         
         # ─── HR-15: 驗證 artifact 是否真的被讀取（v6.92: 放寬）───────

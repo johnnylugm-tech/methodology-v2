@@ -4461,7 +4461,8 @@ Project Root: {repo_path}
    - 是否有任何違規？
    - 代碼是否達到可上線標準？
 
-Output JSON: {{"status": "APPROVE"|"REJECT", "reason": "...", "confidence": 1-10, "citations": ["FR-01", "SRS.md#L23"], "summary": "..."}}
+Output JSON（注意：subagent 執行成功與否看 status 欄位，code review 結果看 review_status 欄位）：
+{{"status": "success", "review_status": "APPROVE"|"REJECT", "reason": "...", "confidence": 1-10, "citations": ["FR-01", "SRS.md#L23"], "summary": "..."}}
 """
             
             # Spawn Reviewer
@@ -4472,15 +4473,16 @@ Output JSON: {{"status": "APPROVE"|"REJECT", "reason": "...", "confidence": 1-10
                     artifact_paths=artifact_paths,
                     timeout=180
                 )
-                print(f"   ✅ Reviewer completed: {getattr(rev_result, 'status', 'unknown')}")
+                print(f"   ✅ Reviewer completed: status={rev_result.status}, review_status={getattr(rev_result, 'review_status', 'N/A')}")
             except Exception as e:
                 print(f"   ❌ Reviewer error: {e}")
-                rev_result = type('obj', (object,), {'status': 'error', 'result': str(e), 'confidence': 0})()
+                rev_result = type('obj', (object,), {'status': 'error', 'result': str(e), 'confidence': 0, 'review_status': 'UNKNOWN'})()
             
             # --- HR-12: Check review iterations ---
-            status = getattr(rev_result, 'status', 'UNKNOWN')
+            # v6.93 fix: Use review_status for APPROVE/REJECT, not status (which is success/error)
+            review_status = getattr(rev_result, 'review_status', 'UNKNOWN')
             
-            if status == "REJECT":
+            if review_status == "REJECT":
                 review_iterations[fr] = review_iterations.get(fr, 0) + 1
                 current_iter = review_iterations[fr]
                 
@@ -4502,13 +4504,13 @@ Output JSON: {{"status": "APPROVE"|"REJECT", "reason": "...", "confidence": 1-10
                 # Re-loop: continue to next iteration of same FR
                 continue
             
-            elif status == "APPROVE":
+            elif review_status == "APPROVE":
                 print(f"\n   ✅ APPROVE - {fr} completed")
                 fr_results.append({"fr": fr, "status": "APPROVE", "confidence": getattr(rev_result, 'confidence', 10)})
             
             else:
-                print(f"\n   ⚠️  Unexpected review status: {status}")
-                fr_results.append({"fr": fr, "status": status, "confidence": 0})
+                print(f"\n   ⚠️  Unexpected review_status: {review_status} (expected APPROVE or REJECT)")
+                fr_results.append({"fr": fr, "status": review_status, "confidence": 0})
         
         # --- Execution Summary ---
         approved = sum(1 for r in fr_results if r.get("status") == "APPROVE")
