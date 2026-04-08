@@ -4466,6 +4466,7 @@ Output JSON（注意：subagent 執行成功與否看 status 欄位，code revie
 """
             
             # Spawn Reviewer
+            rev_result = None  # v6.94: Initialize to avoid unbound variable
             try:
                 rev_result = si.spawn(
                     role=AgentRole.REVIEWER,
@@ -4480,7 +4481,8 @@ Output JSON（注意：subagent 執行成功與否看 status 欄位，code revie
             
             # --- HR-12: Check review iterations ---
             # v6.93 fix: Use review_status for APPROVE/REJECT, not status (which is success/error)
-            review_status = getattr(rev_result, 'review_status', 'UNKNOWN')
+            # v6.94 fix: Initialize review_status before use
+            review_status = getattr(rev_result, 'review_status', 'UNKNOWN') if rev_result is not None else 'UNKNOWN'
             
             if review_status == "REJECT":
                 review_iterations[fr] = review_iterations.get(fr, 0) + 1
@@ -4532,27 +4534,37 @@ Output JSON（注意：subagent 執行成功與否看 status 欄位，code revie
         else:
             print(f"✅ Final Constitution score: {result_final.score:.0f}%")
 
-        # Update state.json
-        print(f"\n[{datetime.now().strftime('%H:%M:%S')}] POST-FLIGHT: Update state.json")
-        if state_file.exists():
-            state = json.loads(state_file.read_text())
-            state["current_phase"] = phase
-            state["last_update"] = datetime.now().isoformat()
-            state_file.write_text(json.dumps(state, indent=2))
-            print(f"✅ state.json updated: current_phase = {phase}")
+        # Update state.json (v6.94 fix: only on success)
+        # v6.94: Only update state.json if phase succeeded
+        if approved >= total and result_final.score >= 80:
+            print(f"\n[{datetime.now().strftime('%H:%M:%S')}] POST-FLIGHT: Update state.json (SUCCESS)")
+            if state_file.exists():
+                state = json.loads(state_file.read_text())
+                state["current_phase"] = phase
+                state["last_update"] = datetime.now().isoformat()
+                state_file.write_text(json.dumps(state, indent=2))
+                print(f"✅ state.json updated: current_phase = {phase}")
+        else:
+            print(f"\n[{datetime.now().strftime('%H:%M:%S')}] POST-FLIGHT: NOT updating state.json (phase failed)")
+            print(f"   approved: {approved}/{total}, constitution: {result_final.score:.0f}%")
 
         write_log("EXECUTE_COMPLETE", f"Phase {phase} completed - score: {result_final.score:.0f}%")
 
         # Summary
+        success = (approved >= total and result_final.score >= 80)
         print(f"\n{'='*60}")
         print(f"📊 Phase {phase} Execution Summary")
         print(f"{'='*60}")
+        print(f"   FRs Approved: {approved}/{total}")
         print(f"   Constitution Score: {result_final.score:.0f}%")
         print(f"   Session ID: {session_id}")
         print(f"   Log: {log_path}")
-        print(f"\n✅ Phase {phase} completed successfully")
-
-        return 0
+        if success:
+            print(f"\n✅ Phase {phase} completed successfully")
+            return 0
+        else:
+            print(f"\n❌ Phase {phase} completed with failures")
+            return 1  # v6.94: Return error code on failure
 
     # ============================================================================
     # plan-phase Helper Functions
