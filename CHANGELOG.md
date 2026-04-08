@@ -1,3 +1,23 @@
+## v6.81 (2026-04-08)
+
+### fix: 16 Low Priority Code Review Issues (Gemini Code Review)
+
+- **Low #19** (`quality_gate/ai_test_suite/llm_test_generator.py`): `_type_to_default_value` now returns `"''"` instead of `'\\"\\"'` for strings, producing valid Python default values
+- **Low #20** (`quality_gate/ai_test_suite/cli.py`): Added `try/except` around all `.py` file and artifact reads to handle `UnicodeDecodeError`, `PermissionError`, and `OSError` gracefully with warnings
+- **Low #21** (`test_generator.py`): Replaced `eval()` with `ast.literal_eval()` in `_generate_inputs` and `_generate_expected` to eliminate SAST flagging
+- **Low #22** (`test_generator.py`): `_get_annotation_name` now handles `ast.Tuple` nodes for `except (ValueError, TypeError):` multi-exception syntax
+- **Low #23** (`core/self_correction/correction_library.py`): Pre-compute success rates before the candidate loop in `retrieve_weighted` to eliminate O(N²) scanning; uses local cache dict
+- **Low #24** (`core/self_correction/correction_library.py`): Default storage path changed from relative `"correction_library.json"` to `~/.methodology/correction_library.json`; `_save()` now creates parent directories with `os.makedirs`
+- **Low #25** (`constitution/invariant_engine.py`): Replaced silent `except Exception: pass` with `logging.warning` and adds the exception as a violation to the result
+- **Low #26** (`constitution/bvs_runner.py`): Replaced silent `except Exception: pass` in feedback auto-submission with `logging.warning(exc_info=True)`
+- **Low #27** (`steering/steering_loop.py`): `iterate()` parameter type hints changed from `Dict[str, Any]` to `Union[Dict[str, Any], str]` to match `_extract_text` accepting both types
+- **Low #28** (`core/feedback/feedback.py`): `StandardFeedback` and `FeedbackUpdate` type annotations updated to use `FeedbackCategory` and `FeedbackStatus` enum types instead of plain `str`
+- **Low #29** (`tools/scenario_model/scenario_model.py`): Removed erroneous `* team_size["value"]` multiplier from `hours_min`/`hours_max` calculation; hours saved are now correctly per-engineer per-issue
+- **Low #30** (`cli.py`): `MethodologyCLI.__init__` replaced with lazy-loading `_FACTORIES` dict + `__getattr__` pattern; subsystems are created on first access instead of all 20+ at startup
+- **Low #31** (`constitution/bvs_runner.py`): `run()` docstring updated to document all possible return fields including `low`, `status`, and `phase`
+
+---
+
 ## v6.80 (2026-04-08)
 
 ### fix: 15 Medium Priority Code Review Issues (Gemini Code Review)
