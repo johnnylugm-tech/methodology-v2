@@ -320,9 +320,13 @@ class CorrectionLibrary:
         try:
             with open(self.storage_path) as f:
                 raw = json.load(f)
-            self.library = [self._dict_to_entry(d) for d in raw]
+            entries = [self._dict_to_entry(d) for d in raw]
+            # Filter out None entries (incompatible schema entries)
+            self.library = [e for e in entries if e is not None]
         except (json.JSONDecodeError, KeyError, TypeError):
-            # Corrupt file — start fresh
+            # Corrupt file — start fresh (but log what went wrong)
+            import logging
+            logging.warning(f"[CorrectionLibrary] Corrupt storage file, starting fresh: {self.storage_path}")
             self.library = []
 
     @staticmethod
@@ -336,7 +340,13 @@ class CorrectionLibrary:
         # Handle backward compatibility for entries without outcome/failure_reason
         data.setdefault("outcome", "success")
         data.setdefault("failure_reason", None)
-        return CorrectionEntry(**data)
+        try:
+            return CorrectionEntry(**data)
+        except TypeError as e:
+            # Schema mismatch — log and skip this entry instead of wiping library
+            import logging
+            logging.warning(f"[CorrectionLibrary] Skipping incompatible entry: {e}")
+            return None
 
 
 

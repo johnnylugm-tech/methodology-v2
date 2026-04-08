@@ -162,7 +162,7 @@ try:
     from .coverage_analyzer import CoverageAnalyzer
     from .fitness_functions import FitnessFunctions
     CQG_AVAILABLE = True
-except ImportError:
+except ImportError as e:
     CQG_AVAILABLE = False
     _cqg_import_error = str(e)
 
@@ -170,7 +170,7 @@ except ImportError:
 try:
     from .sensors.sensors import ComputationalSensors
     SENSORS_AVAILABLE = True
-except ImportError:
+except ImportError as e:
     SENSORS_AVAILABLE = False
     _sensors_import_error = str(e)
 

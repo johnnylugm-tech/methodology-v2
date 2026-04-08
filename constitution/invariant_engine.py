@@ -18,7 +18,7 @@ import json
 try:
     from .claim_verifier import verify_result
     HR09_AVAILABLE = True
-except ImportError:
+except ImportError as e:
     HR09_AVAILABLE = False
     _hr09_import_error = str(e)
 

@@ -15,6 +15,7 @@ import sys
 import os
 import argparse
 import json
+import subprocess
 from datetime import datetime
 import re
 from pathlib import Path
@@ -64,19 +65,24 @@ from security_defense import (
 from code_metrics import MetricsTracker
 from checkpoint_manager import SessionManager
 
-# Ralph Mode
-from ralph_mode.cli import (
-    RalphCLI,
-    TaskState,
-)
-from ralph_mode.task_persistence import TaskPersistence
-from ralph_mode.scheduler import (
-    RalphScheduler,
-    SchedulerConfig,
-    SchedulerManager,
-)
-from ralph_mode.progress_tracker import RalphProgressTracker
-from ralph_mode.state_machine import PhaseStateMachine
+# Ralph Mode (optional - CLI still works if ralph_mode is unavailable)
+try:
+    from ralph_mode.cli import (
+        RalphCLI,
+        TaskState,
+    )
+    from ralph_mode.task_persistence import TaskPersistence
+    from ralph_mode.scheduler import (
+        RalphScheduler,
+        SchedulerConfig,
+        SchedulerManager,
+    )
+    from ralph_mode.progress_tracker import RalphProgressTracker
+    from ralph_mode.state_machine import PhaseStateMachine
+    RALPH_MODE_AVAILABLE = True
+except ImportError:
+    RALPH_MODE_AVAILABLE = False
+
 from tool_registry import ToolRegistry, TOOL_HANDLERS
 
 # Steering Loop
@@ -399,9 +405,11 @@ class MethodologyCLI:
             text=True
         )
         
-        pass # Removed print-debug
-        pass # Removed print-debug
+        if result.returncode != 0:
+            print(f"❌ Failed to stop quality_watch: {result.stderr.strip()}")
+            return result.returncode
         
+        print("✅ Project finished, quality_watch stopped")
         return 0
     
     def cmd_task(self, args):
