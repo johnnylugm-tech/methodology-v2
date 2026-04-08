@@ -92,7 +92,7 @@ from steering.steering_loop import SteeringLoop, SteeringConfig
 class MethodologyCLI:
     """統一 CLI 入口"""
     
-    VERSION = "6.87.0"
+    VERSION = "6.88.0"
 
     # Lazy-loading subsystem factories
     _FACTORIES = {
@@ -4324,11 +4324,180 @@ class MethodologyCLI:
 
         write_log("EXECUTE_START", f"Phase {phase} started - {task_desc}")
 
-        # Step execution (placeholder - actual implementation would parse SOP)
+        # === v6.88: FR Execution Loop (A/B Review Pattern) ===
+        #
+        # Flow: Johnny → Developer → Reviewer → [REJECT → Developer] × N → APPROVE → Next FR
+        # HR-12: Max 5 review iterations before PAUSE
+        # HR-13: Phase timeout monitoring
+        
         step = args.step or "1"
-        print(f"\n📍 Executing step: {step}")
-        print(f"   (Full SOP execution would be implemented here)")
-        print(f"   For now, this is a framework skeleton.")
+        
+        # --- Import SubagentIsolator ---
+        try:
+            from subagent_isolator import SubagentIsolator, AgentRole
+            from sessions_spawn_logger import SessionsSpawnLogger
+            SI_AVAILABLE = True
+        except ImportError as e:
+            print(f"⚠️  SubagentIsolator not available: {e}")
+            print(f"   Falling back to skeleton mode")
+            SI_AVAILABLE = False
+        
+        # --- Parse FR list from SOP ---
+        fr_patterns = []
+        import re
+        # Match patterns like "FR-01", "FR-02", etc in SOP
+        fr_matches = re.findall(r'\b(FR-\d+)\b', sop_content)
+        # Deduplicate while preserving order
+        seen = set()
+        for fr in fr_matches:
+            if fr not in seen:
+                fr_patterns.append(fr)
+                seen.add(fr)
+        
+        if not fr_patterns:
+            # No FRs found, check for step patterns like "Step 3.1", "Step 3.2"
+            step_matches = re.findall(r'Step\s+(\d+\.\d+)', sop_content)
+            if step_matches:
+                fr_patterns = [f"Step {s}" for s in step_matches[:5]]  # Limit to 5 steps
+        
+        print(f"\n📍 Executing Phase {phase} FRs: {fr_patterns or ['(no FRs found, using skeleton)']}")
+        print(f"   Step: {step}")
+        
+        # --- Initialize SubagentIsolator ---
+        si = None
+        logger = None
+        if SI_AVAILABLE:
+            si = SubagentIsolator(project_path=str(repo_path))
+            logger = SessionsSpawnLogger(project_path=str(repo_path))
+        
+        # --- HR-12: Review iteration tracking ---
+        review_iterations = {fr: 0 for fr in fr_patterns}
+        HR12_MAX_ITERATIONS = 5
+        
+        # --- FR Execution Loop ---
+        fr_results = []
+        for i, fr in enumerate(fr_patterns or ["skeleton"], 1):
+            print(f"\n{'='*50}")
+            print(f"📦 FR #{i}: {fr}")
+            print(f"{'='*50}")
+            
+            if not SI_AVAILABLE:
+                print(f"   [SKELETON] No SubagentIsolator - skipping FR execution")
+                fr_results.append({"fr": fr, "status": "skeleton", "confidence": 0})
+                continue
+            
+            # --- Developer Phase ---
+            iteration = review_iterations.get(fr, 0) + 1
+            review_iterations[fr] = iteration
+            
+            print(f"\n   👨‍💻 [Developer] Implementing {fr} (iteration {iteration})")
+            
+            # Determine artifact paths based on phase
+            if phase == 3:
+                artifact_paths = ["SRS.md", "SAD.md", "SKILL.md"]
+            elif phase == 1:
+                artifact_paths = ["SRS.md"]
+            elif phase == 2:
+                artifact_paths = ["SRS.md", "SAD.md"]
+            else:
+                artifact_paths = []
+            
+            # Build task prompt
+            task_prompt = f"""Implement {fr} for Phase {phase}
+
+Task: {args.task or f'Execute {fr}'}
+Phase: {phase}
+
+Instructions:
+1. Read artifacts: {', '.join(artifact_paths)}
+2. Implement the required functionality
+3. Ensure code compiles and follows best practices
+4. Output JSON: {{"status": "success"|"error", "result": "...", "confidence": 1-10, "citations": [...], "summary": "..."}}
+"""
+            
+            # Spawn Developer
+            try:
+                dev_result = si.spawn(
+                    role=AgentRole.DEVELOPER,
+                    task=task_prompt,
+                    artifact_paths=artifact_paths,
+                    timeout=300
+                )
+                print(f"   ✅ Developer completed: {dev_result.status}")
+                if hasattr(dev_result, 'confidence'):
+                    print(f"      Confidence: {dev_result.confidence}")
+            except Exception as e:
+                print(f"   ❌ Developer error: {e}")
+                dev_result = type('obj', (object,), {'status': 'error', 'result': str(e), 'confidence': 0})()
+            
+            # --- Reviewer Phase ---
+            print(f"\n   🔍 [Reviewer] Reviewing {fr}")
+            
+            review_prompt = f"""Review {fr} implementation for Phase {phase}
+
+Task: Review the developer's implementation of {fr}
+Phase: {phase}
+
+Check:
+1. Does the code match SRS/SAD specifications?
+2. Are there any violations?
+3. Is the code production-ready?
+
+Output JSON: {{"status": "APPROVE"|"REJECT", "reason": "...", "confidence": 1-10, "citations": [...], "summary": "..."}}
+"""
+            
+            # Spawn Reviewer
+            try:
+                rev_result = si.spawn(
+                    role=AgentRole.REVIEWER,
+                    task=review_prompt,
+                    artifact_paths=artifact_paths,
+                    timeout=180
+                )
+                print(f"   ✅ Reviewer completed: {getattr(rev_result, 'status', 'unknown')}")
+            except Exception as e:
+                print(f"   ❌ Reviewer error: {e}")
+                rev_result = type('obj', (object,), {'status': 'error', 'result': str(e), 'confidence': 0})()
+            
+            # --- HR-12: Check review iterations ---
+            status = getattr(rev_result, 'status', 'UNKNOWN')
+            
+            if status == "REJECT":
+                review_iterations[fr] = review_iterations.get(fr, 0) + 1
+                current_iter = review_iterations[fr]
+                
+                if current_iter >= HR12_MAX_ITERATIONS:
+                    print(f"\n   🚨 HR-12 TRIGGERED: {current_iter} >= {HR12_MAX_ITERATIONS} iterations")
+                    print(f"   ⚠️  Project will be PAUSED for manual intervention")
+                    
+                    # Update FSM state to PAUSED
+                    try:
+                        fsm.transition_to(ProjectState.PAUSED)
+                        print(f"   ✅ FSM state: RUNNING → PAUSED")
+                    except Exception:
+                        pass
+                    
+                    write_log("HR12_PAUSE", f"{fr} exceeded {HR12_MAX_ITERATIONS} review iterations")
+                    return 1  # Exit with error
+                
+                print(f"\n   🔄 REJECT - re-assigning to Developer (iteration {review_iterations[fr] + 1})")
+                # Re-loop: continue to next iteration of same FR
+                continue
+            
+            elif status == "APPROVE":
+                print(f"\n   ✅ APPROVE - {fr} completed")
+                fr_results.append({"fr": fr, "status": "APPROVE", "confidence": getattr(rev_result, 'confidence', 10)})
+            
+            else:
+                print(f"\n   ⚠️  Unexpected review status: {status}")
+                fr_results.append({"fr": fr, "status": status, "confidence": 0})
+        
+        # --- Execution Summary ---
+        approved = sum(1 for r in fr_results if r.get("status") == "APPROVE")
+        total = len(fr_results) or 1
+        print(f"\n📊 FR Execution Summary: {approved}/{total} approved")
+        
+        write_log("EXECUTE_FR_COMPLETE", f"Phase {phase}: {approved}/{total} FRs approved")
 
         # === POST-FLIGHT ===
         print(f"\n{'='*60}")

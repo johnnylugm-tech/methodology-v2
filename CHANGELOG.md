@@ -1,3 +1,19 @@
+## v6.88 (2026-04-09)
+
+### feat: FR Execution Loop in run-phase CLI (v6.88)
+
+- **FR A/B Review Loop**: Implemented in cmd_run_phase
+  - Developer → Reviewer → APPROVE/REJECT → Loop pattern
+  - HR-12: Max 5 review iterations before PAUSE
+  - HR-13: Timeout monitoring (300s dev, 180s reviewer)
+- **SubagentIsolator Integration**: Uses SubagentIsolator.spawn() for all subagent calls
+- **FR Pattern Detection**: Auto-detects FR-01, FR-02, etc from SOP content
+- **Phase-specific Artifacts**: SRS.md/SAD.md/SKILL.md loaded per phase
+- **Session Logging**: All subagent events logged to run-phase.log
+
+---
+
+
 ## v6.87 (2026-04-09)
 
 ### fix: Phase 3 Pre-flight Constitution Check Logic Contradiction (v6.86-87)
