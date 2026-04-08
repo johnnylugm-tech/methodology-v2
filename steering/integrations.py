@@ -181,6 +181,19 @@ class SteeringConstitutionIntegrator:
         warnings = []
         metrics = {}
 
+        # Type check — output must be dict; convert string if needed
+        if not isinstance(output, dict):
+            if isinstance(output, str):
+                output = {"text": output}
+            else:
+                return IntegrationResult(
+                    hr_compliant=False,
+                    violations=["TypeError: output must be dict or str"],
+                    warnings=warnings,
+                    metrics={},
+                    details={"output_type": type(output).__name__}
+                )
+
         # 提取文字
         text = self._extract_text(output)
 

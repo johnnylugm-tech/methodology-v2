@@ -146,6 +146,12 @@ class ClaimVerifier:
                 verified = len(supporting) > 0
                 reason = f"Keywords found in {len(supporting)} artifacts" if verified else f"No keywords found: {missing_keywords}"
 
+            # 評估推理鏈品質
+            reasoning_score = self._assess_reasoning_chain(
+                {"text": claim_text, "keywords": keywords},
+                [{"text": artifact_content.get(parsed_cite.artifact, ""), "line": 1} for parsed_cite in parsed_citations]
+            )
+
             verified_claims.append(VerifiedClaim(
                 id=claim_id,
                 text=claim_text,
@@ -154,7 +160,8 @@ class ClaimVerifier:
                 verified=verified,
                 supporting_citations=supporting,
                 supporting_count=len(supporting),
-                reason=reason
+                reason=reason,
+                reasoning_chain_score=reasoning_score
             ))
 
         return verified_claims

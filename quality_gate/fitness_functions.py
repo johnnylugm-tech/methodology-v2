@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Dict, List, Any, Optional, Set
 import ast
 import json
+import logging
 
 # ─── Data Classes ───────────────────────────────────────────────────────────────
 
@@ -141,7 +142,8 @@ class FitnessFunctions:
                             imports.add(node.module.split('.')[0])
 
                 self.dependencies[module_name] = sorted(imports)
-            except Exception:
+            except Exception as e:
+                logging.warning(f"Failed to parse {py_file}: {e}")
                 self.dependencies[module_name] = []
 
     def _get_module_name(self, py_file: Path) -> Optional[str]:
@@ -221,8 +223,8 @@ class FitnessFunctions:
                             self.modules[module_name].cohesion = lcom2
                         else:
                             self.modules[module_name].cohesion = (existing + lcom2) / 2
-            except Exception:
-                pass
+            except Exception as e:
+                logging.warning(f"Failed to parse class in {py_file}: {e}")
 
     def _calc_lcom2(self, cls_node: ast.ClassDef) -> float:
         """

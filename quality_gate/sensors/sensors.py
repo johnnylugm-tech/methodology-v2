@@ -263,7 +263,7 @@ class ComputationalSensors:
         for py_file in self.project_path.rglob("*.py"):
             try:
                 import ast
-                tree = ast.parse(py_file.read_text())
+                tree = ast.parse(py_file.read_text(encoding="utf-8", errors="ignore"))
                 cc = self._count_cyclomatic_complexity(tree)
                 complexity_results.append(cc)
             except Exception:

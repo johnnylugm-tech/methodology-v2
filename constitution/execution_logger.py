@@ -169,7 +169,7 @@ class ExecutionLogger:
             if full_path.exists() and full_path.is_file():
                 try:
                     content = full_path.read_text(encoding="utf-8")
-                    artifacts[artifact_path] = content[:10000]  # 限制大小避免記憶體問題
+                    artifacts[artifact_path] = content[:100000]  # 限制大小避免記憶體問題
                 except Exception:
                     continue
 

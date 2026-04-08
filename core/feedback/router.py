@@ -137,10 +137,7 @@ def route_and_assign(
         feedback.id,
         FeedbackUpdate(assignee=rule.default_assignee if rule else None),
     )
-    # Also patch the sla_deadline directly (store.update doesn't touch it)
-    if fb_updated:
-        fb_updated.sla_deadline = deadline
-
+    # Return deadline; avoid direct mutation of the stored object
     return team, deadline
 
 

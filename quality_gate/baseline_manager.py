@@ -5,8 +5,9 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict, List, Any, Optional
 import json
+import logging
 import argparse
-from datetime import datetime
+from datetime import datetime, timezone
 
 
 @dataclass
@@ -68,7 +69,7 @@ class BaselineManager:
         
         baseline = Baseline(
             tag=tag or f"phase-{phase}",
-            timestamp=datetime.now().isoformat(),
+            timestamp=datetime.now(timezone.utc).isoformat(),
             phase=phase,
             metrics=metrics,
             structure=structure
@@ -76,23 +77,29 @@ class BaselineManager:
         
         # 儲存
         path = self.baseline_dir / f"{baseline.tag}.json"
-        path.write_text(json.dumps({
-            "tag": baseline.tag,
-            "timestamp": baseline.timestamp,
-            "phase": baseline.phase,
-            "metrics": baseline.metrics,
-            "structure": baseline.structure
-        }, ensure_ascii=False, indent=2))
-        
+        try:
+            path.write_text(json.dumps({
+                "tag": baseline.tag,
+                "timestamp": baseline.timestamp,
+                "phase": baseline.phase,
+                "metrics": baseline.metrics,
+                "structure": baseline.structure
+            }, ensure_ascii=False, indent=2))
+        except Exception as e:
+            logging.error(f"Failed to write baseline {baseline.tag}: {e}")
+
         # 更新 latest
         latest_path = self.baseline_dir / "latest.json"
-        latest_path.write_text(json.dumps({
-            "tag": baseline.tag,
-            "timestamp": baseline.timestamp,
-            "phase": baseline.phase,
-            "metrics": baseline.metrics,
-            "structure": baseline.structure
-        }, ensure_ascii=False, indent=2))
+        try:
+            latest_path.write_text(json.dumps({
+                "tag": baseline.tag,
+                "timestamp": baseline.timestamp,
+                "phase": baseline.phase,
+                "metrics": baseline.metrics,
+                "structure": baseline.structure
+            }, ensure_ascii=False, indent=2))
+        except Exception as e:
+            logging.error(f"Failed to write latest.json: {e}")
         
         return baseline
     
@@ -110,13 +117,23 @@ class BaselineManager:
             return DriftResult(
                 tag="none",
                 baseline_timestamp="none",
-                current_timestamp=datetime.now().isoformat(),
+                current_timestamp=datetime.now(timezone.utc).isoformat(),
                 drift={},
                 summary="No baseline found — first run"
             )
         
-        with open(latest_path) as f:
-            latest = json.load(f)
+        try:
+            with open(latest_path) as f:
+                latest = json.load(f)
+        except (json.JSONDecodeError, IOError) as e:
+            logging.error(f"Failed to read latest.json: {e}")
+            return DriftResult(
+                tag="error",
+                baseline_timestamp="none",
+                current_timestamp=datetime.now(timezone.utc).isoformat(),
+                drift={},
+                summary=f"Failed to read baseline: {e}"
+            )
         
         drift = {}
         for key, current_val in current_metrics.items():

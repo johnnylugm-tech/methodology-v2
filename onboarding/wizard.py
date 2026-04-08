@@ -14,6 +14,7 @@ import os
 import sys
 import json
 import subprocess
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
 
@@ -42,7 +43,7 @@ def load_progress(project_path: Path) -> dict:
 
 def save_progress(project_path: Path, progress: dict) -> None:
     """Save progress to .methodology/onboarding_progress.json"""
-    progress["last_updated"] = str(Path(__file__).stat().st_mtime)
+    progress["last_updated"] = datetime.now(timezone.utc).isoformat()
     progress_file = project_path / PROGRESS_FILE
     progress_file.parent.mkdir(parents=True, exist_ok=True)
     with open(progress_file, "w") as f:

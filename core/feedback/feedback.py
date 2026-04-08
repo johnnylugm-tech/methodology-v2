@@ -201,6 +201,10 @@ class FeedbackStore:
         if update.status is not None:
             fb.status = update.status
         if update.assignee is not None:
+            # Remove from old assignee index
+            if fb.assignee and fb.assignee in self._by_assignee:
+                if feedback_id in self._by_assignee[fb.assignee]:
+                    self._by_assignee[fb.assignee].remove(feedback_id)
             fb.assignee = update.assignee
         if update.severity is not None:
             fb.severity = update.severity
@@ -216,6 +220,13 @@ class FeedbackStore:
             self._by_status[fb.status] = []
         if feedback_id not in self._by_status[fb.status]:
             self._by_status[fb.status].append(feedback_id)
+
+        # Re-index by new assignee
+        if fb.assignee:
+            if fb.assignee not in self._by_assignee:
+                self._by_assignee[fb.assignee] = []
+            if feedback_id not in self._by_assignee[fb.assignee]:
+                self._by_assignee[fb.assignee].append(feedback_id)
 
         return fb
 

@@ -281,15 +281,23 @@ def verify_and_close(
                 resolution=resolution_proof.get("resolution_summary", ""),
             ),
         )
-        fb = store.get(feedback_id)
-        if fb:
-            fb.verified_at = now_iso
-
+        # Create a new dict with verified_at set, instead of mutating the object
+        closed_fb = store.get(feedback_id)
+        if closed_fb:
+            from dataclasses import asdict
+            fb_dict = asdict(closed_fb)
+            fb_dict["verified_at"] = now_iso
+            return ClosureResult(
+                success=True,
+                feedback_id=feedback_id,
+                verification_result=verification_result,
+                message=f"Feedback '{feedback_id}' closed and verified.",
+            )
         return ClosureResult(
             success=True,
             feedback_id=feedback_id,
             verification_result=verification_result,
-            message=f"Feedback '{feedback_id}' closed and verified.",
+            message=f"Feedback '{feedback_id}' closed.",
         )
     else:
         # Verification failed — try self-correction if engine provided
@@ -305,9 +313,12 @@ def verify_and_close(
                     feedback_id,
                     FeedbackUpdate(status="verified"),
                 )
-                fb = store.get(feedback_id)
-                if fb:
-                    fb.verified_at = now_iso
+                # Create a new dict with verified_at set, instead of mutating the object
+                verified_fb = store.get(feedback_id)
+                if verified_fb:
+                    from dataclasses import asdict
+                    fb_dict = asdict(verified_fb)
+                    fb_dict["verified_at"] = now_iso
 
                 return ClosureResult(
                     success=True,
@@ -381,11 +392,20 @@ def _reopen_feedback(
 
     from .feedback import FeedbackUpdate
 
-    fb.recurrence_count += 1
-    store.update(feedback_id, FeedbackUpdate(status="in_progress"))
+    # Build updated data instead of mutating the object
+    updated_recurrence = fb.recurrence_count + 1
+    store.update(feedback_id, FeedbackUpdate(status="in_progress", related_feedbacks=fb.related_feedbacks))
 
-    fb = store.get(feedback_id)
-    return fb
+    # Return a copy, not the mutated object
+    updated = store.get(feedback_id)
+    if updated:
+        # Create a new instance with incremented recurrence_count
+        from .feedback import StandardFeedback
+        from dataclasses import asdict
+        updated_dict = asdict(updated)
+        updated_dict["recurrence_count"] = updated_recurrence
+        return StandardFeedback(**updated_dict)
+    return None
 
 
 def reopen_feedback(

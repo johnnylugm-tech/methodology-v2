@@ -6,6 +6,7 @@ DriftMonitor — Architecture Drift 持續監控
 """
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
+import logging
 import uuid
 from typing import Optional, TYPE_CHECKING
 
@@ -150,8 +151,8 @@ class DriftMonitor:
 
         try:
             result = self.baseline_manager.check_drift(current_metrics)
-        except Exception:
-            return {"has_drift": False}
+        except Exception as e:
+            return {"has_drift": False, "error": str(e)}
 
         # DriftResult dataclass → dict (handles both real dataclass and plain dict)
         drift_dict = self._result_to_dict(result)
