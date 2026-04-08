@@ -385,6 +385,7 @@ HR-15 強制：
                 result = None
                 confidence = 0
                 citations = []
+                review_status = None  # v6.95 fix: must initialize in except block
                 error = str(e)
         else:
             # Mock 模式（用於測試）
