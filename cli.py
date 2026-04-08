@@ -4368,7 +4368,7 @@ class MethodologyCLI:
         logger = None
         if SI_AVAILABLE:
             si = SubagentIsolator(project_path=str(repo_path))
-            logger = SessionsSpawnLogger(project_path=str(repo_path))
+            logger = SessionsSpawnLogger(repo_path=repo_path)
         
         # --- HR-12: Review iteration tracking ---
         review_iterations = {fr: 0 for fr in fr_patterns}
