@@ -146,7 +146,7 @@ def load_constitution_documents(docs_path: str) -> Dict[str, Optional[str]]:
     return documents
 
 
-def _check_behaviour(phase: int) -> dict:
+def _check_behaviour(phase: int, docs_path: str = "docs") -> dict:
     """
     BVS Behaviour 檢查
     
@@ -171,10 +171,18 @@ def _check_behaviour(phase: int) -> dict:
         return {"passed": True, "status": "skipped", "reason": f"Only Phase 3+ (current: {phase})"}
     
     try:
-        # 假設 project path 為 docs 的 parent
+        # Calculate project root from docs_path
         from pathlib import Path
-        docs_path = Path("docs") if Path("docs").exists() else Path(".")
-        project_path = str(docs_path.parent) if not docs_path.is_absolute() else str(docs_path)
+        docs_path_obj = Path(docs_path)
+        # If docs_path is a file path, get parent; if it's a dir, use as-is
+        if docs_path_obj.is_file():
+            project_path_obj = docs_path_obj.parent
+        else:
+            project_path_obj = docs_path_obj
+        # If path is relative and looks like a docs dir, go up one level
+        if not docs_path_obj.is_absolute() and docs_path_obj.name == "docs":
+            project_path_obj = docs_path_obj.parent
+        project_path = str(project_path_obj)
         
         runner = BVSRunner(project_path, phase=phase)
         report = runner.run()
@@ -285,6 +293,12 @@ def run_constitution_check(
                 result = run_constitution_check(ct, docs_path, current_phase=None, feedback_store=None, check_mode=check_mode)  # Pass check_mode
             results.append(result)
         
+        # === Initialize accumulators FIRST (fix NameError bug) ===
+        all_violations = []
+        all_recommendations = []
+        hr09_failed = False  # Track HR-09 failure separately
+        hr09_details = {}
+        
         # === Run HR-09 (InferentialSensor) check and merge violations ===
         if HR09_CHECKER_AVAILABLE:
             try:
@@ -293,38 +307,31 @@ def run_constitution_check(
                 hr09_violations = hr09_result.get("violations", [])
                 if hr09_violations:
                     all_violations.extend(hr09_violations)
-                    # HR-09 failures affect overall pass
-                    if not hr09_result.get("passed", True):
-                        overall_passed = False
-                    # Add HR-09 summary to details
-                    details_hr09 = {
-                        "hr09_score": hr09_result.get("score", 0),
-                        "hr09_total_claims": hr09_result.get("total_claims", 0),
-                        "hr09_passed_claims": hr09_result.get("passed_claims", 0),
-                    }
-                    if "hr09" not in all_result.details:
-                        all_result.details["hr09"] = details_hr09
+                # Track HR-09 failure (but don't set overall_passed yet)
+                if not hr09_result.get("passed", True):
+                    hr09_failed = True
+                # Add HR-09 summary to details
+                hr09_details = {
+                    "hr09_score": hr09_result.get("score", 0),
+                    "hr09_total_claims": hr09_result.get("total_claims", 0),
+                    "hr09_passed_claims": hr09_result.get("passed_claims", 0),
+                }
             except Exception:
                 pass  # Don't let HR-09 failures break the check
 
-        # 合併結果 - 使用平均分數判斷通過與否
-        # Bug Fix: 2026-03-27 - 不應該要求所有 phase 都 passed，只要平均分數 > maintainability threshold 就通過
-        avg_score = sum(r.score for r in results) / len(results)
-        overall_passed = avg_score >= CONSTITUTION_THRESHOLDS["maintainability"]
-        
-        all_violations = []
-        all_recommendations = []
-        
+        # === Merge results from all phase checks ===
         for r in results:
             all_violations.extend(r.violations)
             all_recommendations.extend(r.recommendations)
         
+        # 計算平均分數
+        avg_score = sum(r.score for r in results) / len(results) if results else 0
+        
         # BVS Behaviour Check (Phase 3+)
         behaviour_result = None
         if current_phase is not None and current_phase >= 3:
-            behaviour_result = _check_behaviour(current_phase)
+            behaviour_result = _check_behaviour(current_phase, docs_path)
             if not behaviour_result.get("passed", True):
-                overall_passed = False
                 for v in behaviour_result.get("violations", []):
                     all_violations.append({
                         "type": "behaviour_violation",
@@ -332,12 +339,20 @@ def run_constitution_check(
                         "message": v.get("message", str(v))
                     })
         
+        # === Determine overall pass (consider ALL failure modes) ===
+        # Bug Fix: 2026-03-27 + v6.56 - consider avg_score AND HR-09 AND BVS
+        overall_passed = avg_score >= CONSTITUTION_THRESHOLDS["maintainability"]
+        if hr09_failed:
+            overall_passed = False
+        if behaviour_result and not behaviour_result.get("passed", True):
+            overall_passed = False
+        
         all_result = ConstitutionCheckResult(
             check_type="all",
             passed=overall_passed,
             score=avg_score,
             violations=all_violations,
-            details={"phases_checked": len(results), "behaviour_check": behaviour_result},
+            details={"phases_checked": len(results), "behaviour_check": behaviour_result, "hr09": hr09_details},
             recommendations=all_recommendations
         )
 

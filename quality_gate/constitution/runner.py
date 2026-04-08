@@ -108,7 +108,7 @@ def main():
     )
     parser.add_argument(
         "--type", "-t",
-        choices=["srs", "sad", "test_plan", "all"],
+        choices=["srs", "sad", "test_plan", "implementation", "verification", "quality_report", "risk_management", "configuration", "all"],
         default="all",
         help="Type of check to run"
     )
