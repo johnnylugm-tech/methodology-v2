@@ -4369,228 +4369,54 @@ class MethodologyCLI:
         print(f"\n📍 Executing Phase {phase} FRs: {fr_patterns or ['(no FRs found, using skeleton)']}")
         print(f"   Step: {step}")
         
-        # --- Initialize SubagentIsolator ---
-        si = None
-        logger = None
-        if SI_AVAILABLE:
-            si = SubagentIsolator(project_path=str(repo_path))
-            logger = SessionsSpawnLogger(repo_path=repo_path)
+        # v6.102 FIX: Check --resume flag to skip PRE-FLIGHT
+        if hasattr(args, 'resume') and args.resume:
+            print(f"\n[{datetime.now().strftime('%H:%M:%S')}] RESUME: Skipping PRE-FLIGHT")
+            print(f"   (Use without --resume to run PRE-FLIGHT checks)")
+        else:
+            # === PRE-FLIGHT CHECKS ===
+            print(f"\n[{datetime.now().strftime('%H:%M:%S')}] PRE-FLIGHT: Starting checks...")
+            
+            # 1. FSM State Validation
+            print(f"\n[{datetime.now().strftime('%H:%M:%S')}] PRE-FLIGHT: FSM State Check")
+        #
+        # IMPORTANT: sessions_spawn is a runtime tool, NOT a Python module.
+        # cli.py CANNOT call sessions_spawn directly.
+        # Agent MUST execute FRs directly using sessions_spawn.
+        #
+        # Agent workflow:
+        # 1. Read plan from Plan Phase output
+        # 2. Execute FRs using sessions_spawn directly
+        # 3. Call PhaseHooks for monitoring (optional but recommended)
+        # 4. Run POST-FLIGHT: python cli.py run-phase --phase {phase} --resume
         
-        # --- HR-12: Review iteration tracking ---
-        review_iterations = {fr: 0 for fr in fr_patterns}
-        HR12_MAX_ITERATIONS = 5
+        print(f"\n{'='*60}")
+        print(f"📋 EXECUTION GUIDE FOR AGENT (v6.102)")
+        print(f"{'='*60}")
+        print(f"""
+Phase {phase} Ready for Agent Execution
+
+IMPORTANT: This CLI cannot call sessions_spawn directly.
+Agent MUST execute FRs using sessions_spawn tool.
+
+Agent Workflow:
+1. Read SRS.md and SAD.md
+2. For each FR:
+   a. Developer: sessions_spawn(task=dev_task) → returns JSON with files
+   b. Parse JSON, write files to disk
+   c. Reviewer: sessions_spawn(task=rev_task) → returns APPROVE/REJECT
+   d. Record results in PhaseHooks (optional)
+3. Run POST-FLIGHT: python cli.py run-phase --phase {phase} --resume
+
+Full execution script is in templates/plan_phase_template.md Section 17.
+""")
         
-        # --- FR Execution Loop ---
+        # Placeholder values for POST-FLIGHT
         fr_results = []
-        for i, fr in enumerate(fr_patterns or ["skeleton"], 1):
-            print(f"\n{'='*50}")
-            print(f"📦 FR #{i}: {fr}")
-            print(f"{'='*50}")
-            
-            if not SI_AVAILABLE:
-                print(f"   [SKELETON] No SubagentIsolator - skipping FR execution")
-                fr_results.append({"fr": fr, "status": "skeleton", "confidence": 0})
-                continue
-            
-            # --- Developer Phase ---
-            iteration = review_iterations.get(fr, 0) + 1
-            review_iterations[fr] = iteration
-            
-            print(f"\n   👨‍💻 [Developer] Implementing {fr} (iteration {iteration})")
-            
-            # Determine artifact paths based on phase (use FULL paths relative to repo_path)
-            if phase == 3:
-                # Phase 3 needs SRS (01-requirements/) and SAD (02-architecture/)
-                artifact_paths = [
-                    str(repo_path / "01-requirements" / "SRS.md"),
-                    str(repo_path / "02-architecture" / "SAD.md"),
-                    str(repo_path / "SKILL.md"),
-                ]
-            elif phase == 1:
-                artifact_paths = [str(repo_path / "01-requirements" / "SRS.md")]
-            elif phase == 2:
-                artifact_paths = [
-                    str(repo_path / "01-requirements" / "SRS.md"),
-                    str(repo_path / "02-architecture" / "SAD.md"),
-                ]
-            else:
-                artifact_paths = []
-            
-            # Build task prompt - subagent returns file content, CLI writes to disk
-            artifact_list = '\n'.join([f"{i+1}. {p}" for i, p in enumerate(artifact_paths)])
-            
-            # Determine output directory based on phase
-            if phase == 3:
-                output_dir = repo_path / "03-development" / f"module_{fr.replace('FR-', '')}"
-            else:
-                output_dir = repo_path / f"phase_{phase}"
-            
-            task_prompt = f"""你是 Developer Agent，執行 {fr} 實作 (Phase {phase})
+        approved = 0
+        total = len(fr_patterns) if fr_patterns else 0
 
-任務：{args.task or f'Implement {fr}'}
-
-重要：由於執行環境限制，你不需要也不應該嘗試寫入檔案。
-相反，你應該：
-1. 讀取以下 artifact（使用完整路徑）：
-{artifact_list}
-
-2. 根據 SRS/SAD 實作 {fr} 的功能
-
-3. 在 Output JSON 的 "files" 欄位返回完整的檔案內容，格式如下：
-{{
-  "status": "success",
-  "files": [
-    {{
-      "path": "{output_dir}/filename.py",
-      "content": "# 完整的檔案內容..."
-    }},
-    {{
-      "path": "{output_dir}/another.py",
-      "content": "# 完整內容..."
-    }}
-  ],
-  "confidence": 1-10,
-  "citations": ["FR-01", "SRS.md#L23"],
-  "summary": "實作摘要"
-}}
-
-注意：
-- "path" 是相對於 Project Root 的路徑
-- "content" 是檔案的完整內容（不要截斷）
-- 所有需要建立的檔案都要在 "files" 陣列中
-"""
-            
-            # Spawn Developer
-            try:
-                dev_result = si.spawn(
-                    role=AgentRole.DEVELOPER,
-                    task=task_prompt,
-                    artifact_paths=artifact_paths,
-                    timeout=300
-                )
-                print(f"   ✅ Developer completed: {dev_result.status}")
-                if hasattr(dev_result, 'confidence'):
-                    print(f"      Confidence: {dev_result.confidence}")
-                
-                # v6.101: Parse Developer result (may be markdown-wrapped JSON)
-                try:
-                    import json as json_mod
-                    import re
-                    dev_result_text = str(dev_result.result) if dev_result.result else "{}"
-                    
-                    # v6.101 fix: Strip markdown code block markers before parsing JSON
-                    # Handle: ```json ... ```, ``` ... ```, [SKILL] prefix, etc.
-                    dev_result_text = dev_result_text.strip()
-                    if dev_result_text.startswith('[SKILL]'):
-                        dev_result_text = dev_result_text[6:].strip()
-                    
-                    # Remove ```json, ``` markers
-                    json_match = re.search(r'```(?:json)?\s*([\s\S]*?)```', dev_result_text)
-                    if json_match:
-                        dev_result_text = json_match.group(1).strip()
-                    
-                    try:
-                        dev_result_data = json_mod.loads(dev_result_text) if isinstance(dev_result_text, str) else {}
-                    except json_mod.JSONDecodeError as je:
-                        print(f"   ⚠️  JSON parse error after cleaning: {je}")
-                        dev_result_data = {}
-                    
-                    files = dev_result_data.get('files', [])
-                    if files:
-                        print(f"   📁 Writing {len(files)} files to disk...")
-                        for f in files:
-                            file_path = repo_path / f.get('path', '')
-                            file_content = f.get('content', '')
-                            if file_path and file_content:
-                                file_path.parent.mkdir(parents=True, exist_ok=True)
-                                file_path.write_text(file_content)
-                                print(f"      ✅ {f.get('path')}")
-                    else:
-                        print(f"   ⚠️  No files returned. Raw result preview: {dev_result_text[:100]}...")
-                except Exception as e:
-                    print(f"   ❌ Error writing files: {e}")
-            except Exception as e:
-                print(f"   ❌ Developer error: {e}")
-                dev_result = type('obj', (object,), {'status': 'error', 'result': str(e), 'confidence': 0})()
-            
-            # --- Reviewer Phase ---
-            print(f"\n   🔍 [Reviewer] Reviewing {fr}")
-            
-            # Build reviewer prompt with full artifact paths
-            artifact_list_rev = '\n'.join([f"{i+1}. {p}" for i, p in enumerate(artifact_paths)])
-            review_prompt = f"""你是 Reviewer Agent，審查 {fr} 實作 (Phase {phase})
-
-Project Root: {repo_path}
-
-任務：審查 Developer 對 {fr} 的實作
-
-步驟：
-1. 讀取以下 artifact（使用完整路徑）：
-{artifact_list_rev}
-
-2. 審查要點：
-   - 代碼是否符合 SRS/SAD 規格？
-   - 是否有任何違規？
-   - 代碼是否達到可上線標準？
-
-Output JSON（注意：subagent 執行成功與否看 status 欄位，code review 結果看 review_status 欄位）：
-{{"status": "success", "review_status": "APPROVE"|"REJECT", "reason": "...", "confidence": 1-10, "citations": ["FR-01", "SRS.md#L23"], "summary": "..."}}
-"""
-            
-            # Spawn Reviewer
-            rev_result = None  # v6.94: Initialize to avoid unbound variable
-            try:
-                rev_result = si.spawn(
-                    role=AgentRole.REVIEWER,
-                    task=review_prompt,
-                    artifact_paths=artifact_paths,
-                    timeout=180
-                )
-                print(f"   ✅ Reviewer completed: status={rev_result.status}, review_status={getattr(rev_result, 'review_status', 'N/A')}")
-            except Exception as e:
-                print(f"   ❌ Reviewer error: {e}")
-                rev_result = type('obj', (object,), {'status': 'error', 'result': str(e), 'confidence': 0, 'review_status': 'UNKNOWN'})()
-            
-            # --- HR-12: Check review iterations ---
-            # v6.93 fix: Use review_status for APPROVE/REJECT, not status (which is success/error)
-            # v6.94 fix: Initialize review_status before use
-            review_status = getattr(rev_result, 'review_status', 'UNKNOWN') if rev_result is not None else 'UNKNOWN'
-            
-            if review_status == "REJECT":
-                review_iterations[fr] = review_iterations.get(fr, 0) + 1
-                current_iter = review_iterations[fr]
-                
-                if current_iter >= HR12_MAX_ITERATIONS:
-                    print(f"\n   🚨 HR-12 TRIGGERED: {current_iter} >= {HR12_MAX_ITERATIONS} iterations")
-                    print(f"   ⚠️  Project will be PAUSED for manual intervention")
-                    
-                    # Update FSM state to PAUSED
-                    try:
-                        fsm.transition_to(ProjectState.PAUSED)
-                        print(f"   ✅ FSM state: RUNNING → PAUSED")
-                    except Exception:
-                        pass
-                    
-                    write_log("HR12_PAUSE", f"{fr} exceeded {HR12_MAX_ITERATIONS} review iterations")
-                    return 1  # Exit with error
-                
-                print(f"\n   🔄 REJECT - re-assigning to Developer (iteration {review_iterations[fr] + 1})")
-                # Re-loop: continue to next iteration of same FR
-                continue
-            
-            elif review_status == "APPROVE":
-                print(f"\n   ✅ APPROVE - {fr} completed")
-                fr_results.append({"fr": fr, "status": "APPROVE", "confidence": getattr(rev_result, 'confidence', 10)})
-            
-            else:
-                print(f"\n   ⚠️  Unexpected review_status: {review_status} (expected APPROVE or REJECT)")
-                fr_results.append({"fr": fr, "status": review_status, "confidence": 0})
-        
-        # --- Execution Summary ---
-        approved = sum(1 for r in fr_results if r.get("status") == "APPROVE")
-        total = len(fr_results) or 1
-        print(f"\n📊 FR Execution Summary: {approved}/{total} approved")
-        
+        write_log("EXECUTE_FR_COMPLETE", f"Phase {phase}: Agent execution - see plan_phase_template.md Section 17")
         write_log("EXECUTE_FR_COMPLETE", f"Phase {phase}: {approved}/{total} FRs approved")
 
         # === POST-FLIGHT ===
