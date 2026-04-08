@@ -1,3 +1,14 @@
+## v6.94 (2026-04-09)
+
+### fix: review_status init + FSM state only on success (v6.94)
+
+- Initialize rev_result/review_status before try/except to avoid unbound variable
+- FSM state.json: only update on success (approved >= total AND score >= 80%)
+- Return error code 1 on phase failure
+- Better summary output
+
+---
+
 ## v6.88 (2026-04-09)
 
 ### feat: FR Execution Loop in run-phase CLI (v6.88)
