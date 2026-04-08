@@ -229,7 +229,7 @@ class ABQualityGate:
                 diff = (t2 - t1).total_seconds()
                 if diff < self.MIN_TIME_BETWEEN_REVIEWS:
                     violations.append(f"Phase {phase}: 交換審查時間間隔不足")
-            except:
+            except Exception:
                 violations.append(f"Phase {phase}: 時間格式錯誤")
         
         if violations:

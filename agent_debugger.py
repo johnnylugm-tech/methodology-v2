@@ -17,6 +17,9 @@ from enum import Enum
 from collections import defaultdict
 import threading
 import time
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class EventType(Enum):
@@ -197,8 +200,8 @@ class AgentDebugger:
             for callback in self._subscribers:
                 try:
                     callback(event)
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.debug(f"Subscriber callback failed: {e}")
             
             return event.id
     
@@ -227,8 +230,8 @@ class AgentDebugger:
             for callback in self._subscribers:
                 try:
                     callback(event)
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.debug(f"Subscriber callback failed: {e}")
             
             return event.id
     

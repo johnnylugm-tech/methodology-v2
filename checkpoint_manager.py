@@ -19,6 +19,9 @@ import json
 import uuid
 import os
 from pathlib import Path
+import logging
+
+logger = logging.getLogger(__name__)
 
 class CheckpointStatus(Enum):
     """快照狀態"""
@@ -97,8 +100,8 @@ class CheckpointManager:
                     cp = self._deserialize_checkpoint(data)
                     self.checkpoints[cp.checkpoint_id] = cp
                     self._update_index(cp)
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.debug(f"Failed to load checkpoint from {path}: {e}")
     
     def _update_index(self, checkpoint: Checkpoint):
         """更新索引"""
@@ -196,7 +199,8 @@ class CheckpointManager:
                         data = json.load(f)
                     checkpoint = self._deserialize_checkpoint(data)
                     self.checkpoints[checkpoint_id] = checkpoint
-                except Exception:
+                except Exception as e:
+                    logger.debug(f"Failed to load checkpoint {checkpoint_id}: {e}")
                     return None
         
         return checkpoint.state if checkpoint else None
@@ -269,7 +273,8 @@ class CheckpointManager:
             with open(path, 'w', encoding='utf-8') as f:
                 json.dump(self._serialize_checkpoint(checkpoint), f, ensure_ascii=False, indent=2)
             return checkpoint.checkpoint_id
-        except Exception:
+        except Exception as e:
+            logger.debug(f"Failed to save checkpoint: {e}")
             return None
 
 
@@ -342,7 +347,8 @@ class SessionManager:
                     "size": p.stat().st_size,
                     "saved_at": data.get("saved_at", "unknown")
                 })
-            except Exception:
+            except Exception as e:
+                logger.debug(f"Failed to read session file {p}: {e}")
                 sessions.append({
                     "id": p.stem,
                     "path": str(p),
@@ -389,7 +395,8 @@ class SessionManager:
                 "has_artifacts": "artifacts" in data,
                 "has_metadata": "metadata" in data,
             }
-        except Exception:
+        except Exception as e:
+            logger.debug(f"Failed to get session info for {session_id}: {e}")
             return {
                 "id": session_id,
                 "path": str(path),

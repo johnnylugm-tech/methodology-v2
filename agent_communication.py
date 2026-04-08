@@ -12,6 +12,9 @@ from datetime import datetime, timedelta
 from enum import Enum
 from collections import defaultdict
 import uuid
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class MessageType(Enum):
@@ -457,8 +460,8 @@ class AgentCommunication:
         if agent_id in self.listeners:
             try:
                 self.listeners[agent_id](message)
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"Listener callback failed for agent {agent_id}: {e}")
     
     def get_pending_approvals(self, agent_id: str) -> List[Dict]:
         """取得待審批"""

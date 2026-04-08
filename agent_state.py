@@ -12,6 +12,9 @@ from datetime import datetime
 from enum import Enum
 from collections import defaultdict
 import threading
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class TaskStatus(Enum):
@@ -367,8 +370,8 @@ class StateManager:
         for listener in self.listeners:
             try:
                 listener(self.state)
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"Listener callback failed: {e}")
     
     def register_listener(self, listener: Callable):
         """註冊監聽器"""
@@ -485,7 +488,7 @@ class StateManager:
             "version": self.state.version,
         }
         
-        with open(path, 'w') as f:
+        with open(path, 'w', encoding='utf-8') as f:
             json.dump(data, f, indent=2)
     
     def load(self, path: str = "~/.methodology/agent_state.json") -> bool:
@@ -497,7 +500,7 @@ class StateManager:
         if not os.path.exists(path):
             return False
         
-        with open(path, 'r') as f:
+        with open(path, 'r', encoding='utf-8') as f:
             data = json.load(f)
         
         # 恢復 tasks

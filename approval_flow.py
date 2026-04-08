@@ -12,6 +12,9 @@ from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from enum import Enum
 from collections import defaultdict
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class ApprovalStatus(Enum):
@@ -451,8 +454,8 @@ class ApprovalFlow:
         for callback in self.listeners.get(event, []):
             try:
                 callback(data)
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"Listener callback failed for event {event}: {e}")
     
     def _update_indices(self, request: ApprovalRequest):
         """更新索引"""

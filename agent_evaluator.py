@@ -519,7 +519,8 @@ class HumanEvaluator:
     """人類評估器 (HITL)"""
     
     def __init__(self):
-        self.pending_reviews: List[EvaluationResult] = []
+        # Dict[review_id, EvaluationResult] for O(1) lookup by review_id
+        self.pending_reviews: Dict[str, EvaluationResult] = {}
         self.completed_reviews: List[Dict] = []
     
     def submit_for_review(self, result: EvaluationResult) -> str:
@@ -528,7 +529,7 @@ class HumanEvaluator:
             f"{result.test_case_id}{time.time()}".encode()
         ).hexdigest()[:8]
         
-        self.pending_reviews.append(result)
+        self.pending_reviews[review_id] = result
         
         return review_id
     
@@ -539,10 +540,10 @@ class HumanEvaluator:
         feedback: str = ""
     ) -> bool:
         """批准結果"""
-        if not self.pending_reviews:
+        if review_id not in self.pending_reviews:
             return False
         
-        result = self.pending_reviews.pop(0)
+        result = self.pending_reviews.pop(review_id)
         
         self.completed_reviews.append({
             "review_id": review_id,
@@ -562,10 +563,10 @@ class HumanEvaluator:
         reason: str
     ) -> bool:
         """拒絕結果"""
-        if not self.pending_reviews:
+        if review_id not in self.pending_reviews:
             return False
         
-        result = self.pending_reviews.pop(0)
+        result = self.pending_reviews.pop(review_id)
         
         self.completed_reviews.append({
             "review_id": review_id,

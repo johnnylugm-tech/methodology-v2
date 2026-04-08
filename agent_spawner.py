@@ -456,7 +456,7 @@ def spawn_with_persona(
     }
     
     log_path = Path(log_file)
-    with open(log_path, "a") as f:
+    with open(log_path, "a", encoding="utf-8") as f:
         f.write(json.dumps(log_entry) + "\n")
     
     return session_key

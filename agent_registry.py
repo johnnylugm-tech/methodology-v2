@@ -11,6 +11,9 @@ from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from enum import Enum
 import threading
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class AgentStatus(Enum):
@@ -337,8 +340,8 @@ class AgentRegistry:
         for callback in self.subscribers.get(event, []):
             try:
                 callback(data)
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"Subscriber callback failed: {e}")
     
     def _update_indices(self, registration: AgentRegistration):
         """更新索引"""
