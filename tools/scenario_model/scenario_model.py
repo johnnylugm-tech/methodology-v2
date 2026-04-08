@@ -260,10 +260,10 @@ class ScenarioModel:
             cost_max = None
             cost_source = self.ASSUMPTION
 
-        # Hours saved range
-        if base_issues is not None and team_size["value"] is not None:
-            hours_min = base_issues * reduction_min * time_savings_min * team_size["value"]
-            hours_max = base_issues * reduction_max * time_savings_max * team_size["value"]
+        # Hours saved range (per-engineer per-issue, not team-total)
+        if base_issues is not None:
+            hours_min = base_issues * reduction_min * time_savings_min
+            hours_max = base_issues * reduction_max * time_savings_max
             hours_source = issues_source
         else:
             hours_min = None

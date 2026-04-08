@@ -13,6 +13,7 @@ BVS Runner — Behaviour Validation System 整合器
 from pathlib import Path
 from typing import Dict, Any, List, Optional
 import json
+import logging
 import sys
 
 # Handle relative imports when run as script
@@ -67,8 +68,11 @@ class BVSRunner:
                 "critical": int,
                 "high": int,
                 "medium": int,
+                "low": int,
                 "violations": [...],
-                "logs_analyzed": int
+                "logs_analyzed": int,
+                "phase": int,
+                "status": "no_logs_for_phase" | None,
             }
         """
         # 1. 收集 logs
@@ -128,8 +132,7 @@ class BVSRunner:
                     fb["assignee"] = team
                     fb["sla_deadline"] = deadline
             except Exception:
-                # Don't let feedback failures break the BVS run
-                pass
+                logging.warning("[BVSRunner] Failed to auto-submit violation to FeedbackStore", exc_info=True)
 
         return report
 

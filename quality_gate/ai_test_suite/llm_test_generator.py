@@ -464,7 +464,7 @@ def test_error_{self._sanitize_name(eh.condition)}():
         elif "float" in type_hint:
             return "0.0"
         elif "str" in type_hint:
-            return '\\"\\"'
+            return "''"
         elif "bool" in type_hint:
             return "False"
         elif "list" in type_hint or "array" in type_hint:

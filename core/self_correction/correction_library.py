@@ -9,9 +9,11 @@ from __future__ import annotations
 
 import hashlib
 import json
-from dataclasses import dataclass, asdict
+import logging
+import os
+import os.path
+from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
-from os.path import exists
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
@@ -63,15 +65,19 @@ class CorrectionLibrary:
     The library is persisted to a JSON file at the specified path.
     """
 
-    def __init__(self, storage_path: str = "correction_library.json") -> None:
+    def __init__(self, storage_path: str | None = None) -> None:
         """
         Initialize the correction library.
 
         Args:
             storage_path: Path to the JSON file for persistence.
+                        Defaults to ~/.methodology/correction_library.json.
         """
+        if storage_path is None:
+            storage_path = str(Path.home() / ".methodology" / "correction_library.json")
         self.storage_path = storage_path
         self.library: list[CorrectionEntry] = []
+        self._success_rate_cache: dict[tuple[str, str], float] = {}
         self._load()
 
     def store(
@@ -175,14 +181,22 @@ class CorrectionLibrary:
                 if e.source == source and e.category == category
             ]
 
+        # Pre-compute success rates for all unique (source, source_detail) pairs
+        # to avoid O(N²) scanning inside the loop
+        success_rate_cache: dict[tuple[str, str], float] = {}
+        for c in candidates:
+            key = (c.source, c.source_detail)
+            if key not in success_rate_cache:
+                success_rate_cache[key] = self._get_success_rate(c.source, c.source_detail)
+
         # Calculate relevance scores
         scored = []
         for c in candidates:
             # Similarity: exact source_detail match scores higher
             similarity = 1.0 if c.source_detail == source_detail else 0.5
 
-            # Success rate weight
-            success_rate = self._get_success_rate(c.source, c.source_detail)
+            # Success rate weight (cached)
+            success_rate = success_rate_cache[(c.source, c.source_detail)]
 
             # Confidence weight: penalize failed corrections
             confidence_weight = c.confidence if c.success else c.confidence * 0.3
@@ -309,12 +323,16 @@ class CorrectionLibrary:
 
     def _save(self) -> None:
         """Persist the library to the JSON storage file."""
+        # Ensure directory exists
+        dir_path = os.path.dirname(self.storage_path)
+        if dir_path:
+            os.makedirs(dir_path, exist_ok=True)
         with open(self.storage_path, "w") as f:
             json.dump([self._entry_to_dict(e) for e in self.library], f, indent=2)
 
     def _load(self) -> None:
         """Load the library from the JSON storage file."""
-        if not exists(self.storage_path):
+        if not os.path.exists(self.storage_path):
             return
 
         try:
@@ -324,8 +342,6 @@ class CorrectionLibrary:
             # Filter out None entries (incompatible schema entries)
             self.library = [e for e in entries if e is not None]
         except (json.JSONDecodeError, KeyError, TypeError):
-            # Corrupt file — start fresh (but log what went wrong)
-            import logging
             logging.warning(f"[CorrectionLibrary] Corrupt storage file, starting fresh: {self.storage_path}")
             self.library = []
 
@@ -343,8 +359,6 @@ class CorrectionLibrary:
         try:
             return CorrectionEntry(**data)
         except TypeError as e:
-            # Schema mismatch — log and skip this entry instead of wiping library
-            import logging
             logging.warning(f"[CorrectionLibrary] Skipping incompatible entry: {e}")
             return None
 

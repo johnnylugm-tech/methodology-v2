@@ -25,14 +25,22 @@ def main():
     # 讀取 target
     target = Path(args.target)
     if target.is_file():
-        source_code = target.read_text(encoding="utf-8")
+        try:
+            source_code = target.read_text(encoding="utf-8")
+        except (UnicodeDecodeError, PermissionError, OSError) as e:
+            print(f"⚠️  無法讀取 {target}: {e}", file=sys.stderr)
+            source_code = ""
     else:
         # 讀取所有 .py 檔案
         source_code = ""
         for py_file in target.rglob("*.py"):
             if "__pycache__" not in str(py_file):
-                source_code += f"\n\n# File: {py_file}\n"
-                source_code += py_file.read_text(encoding="utf-8")
+                try:
+                    source_code += f"\n\n# File: {py_file}\n"
+                    source_code += py_file.read_text(encoding="utf-8")
+                except (UnicodeDecodeError, PermissionError, OSError) as e:
+                    print(f"⚠️  跳過無法讀取的檔案 {py_file}: {e}", file=sys.stderr)
+                    continue
 
     # 讀取 context artifacts
     artifacts = {}
@@ -40,7 +48,10 @@ def main():
         for ctx_file in args.context:
             path = Path(ctx_file)
             if path.exists():
-                artifacts[path.name] = path.read_text(encoding="utf-8")
+                try:
+                    artifacts[path.name] = path.read_text(encoding="utf-8")
+                except (UnicodeDecodeError, PermissionError, OSError) as e:
+                    print(f"⚠️  無法讀取 artifact {path}: {e}", file=sys.stderr)
 
     # 初始化 LLM Generator
     router = ModelRouter()

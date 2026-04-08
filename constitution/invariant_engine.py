@@ -13,6 +13,7 @@ Invariant Engine — 行為不變量檢查
 from dataclasses import dataclass, field
 from typing import List, Dict, Any, Optional, Callable
 import json
+import logging
 
 # HR-09: Claims Verifier availability
 try:
@@ -188,8 +189,18 @@ class InvariantEngine:
                         }
                     ))
             except Exception as e:
-                # check_func 執行失敗，不算 violation
-                pass
+                logging.warning(
+                    f"[InvariantEngine] check_func failed for invariant '{invariant.name}': {e}"
+                )
+                violations.append(InvariantViolation(
+                    invariant_name=invariant.name,
+                    severity=invariant.severity,
+                    phase=phase,
+                    session_id=execution_log.get("session_id", "unknown"),
+                    task=execution_log.get("task", "unknown"),
+                    message=f"Invariant check raised exception: {e}",
+                    evidence={"error": str(e), "log": execution_log, "context": context}
+                ))
 
         return violations
 

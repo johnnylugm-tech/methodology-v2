@@ -5,14 +5,14 @@ Test Generator - 測試自動生成 v2
 增強版：支援 Mock、Fixtures、Parameterized Tests、Coverage 分析
 """
 
+import ast
 import os
 import re
-import ast
-from typing import List, Dict, Optional, Any, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 from dataclasses import dataclass, field
 from datetime import datetime
-from pathlib import Path
 from enum import Enum
+from pathlib import Path
 
 
 class TestFramework(Enum):
@@ -171,6 +171,9 @@ class TestGenerator:
             return f"{self._get_annotation_name(node.value)}[{self._get_annotation_name(node.slice)}]"
         elif isinstance(node, ast.Constant):
             return repr(node.value)
+        elif isinstance(node, ast.Tuple):
+            # Handle `except (ValueError, TypeError):` tuple syntax
+            return "(" + ", ".join(self._get_annotation_name(elt) for elt in node.elts) + ")"
         return "Any"
     
     def _get_decorator_name(self, node: ast.AST) -> str:
@@ -423,8 +426,8 @@ class TestGenerator:
                 inputs[p["name"]] = default
             elif ptype in self.TYPE_MAPPING:
                 try:
-                    inputs[p["name"]] = eval(self.TYPE_MAPPING[ptype])
-                except:
+                    inputs[p["name"]] = ast.literal_eval(self.TYPE_MAPPING[ptype])
+                except (ValueError, SyntaxError):
                     inputs[p["name"]] = None
             else:
                 inputs[p["name"]] = None
@@ -504,8 +507,8 @@ class TestGenerator:
         """生成預期輸出"""
         if return_type and return_type in self.TYPE_MAPPING:
             try:
-                return eval(self.TYPE_MAPPING[return_type])
-            except:
+                return ast.literal_eval(self.TYPE_MAPPING[return_type])
+            except (ValueError, SyntaxError):
                 pass
         return None
     

@@ -93,43 +93,53 @@ class MethodologyCLI:
     """統一 CLI 入口"""
     
     VERSION = "6.30.0"
-    
+
+    # Lazy-loading subsystem factories
+    _FACTORIES = {
+        "progress": ProgressDashboard,
+        "gantt": GanttChart,
+        "bus": MessageBus,
+        "sprint_planner": SprintPlanner,
+        "terminology": PMTerminologyMapper,
+        "pm_mode": PMMode,
+        "evaluator": AgentEvaluator,
+        "hitl": HumanEvaluator,
+        "structured": StructuredOutputEngine,
+        "data_quality": DataQualityChecker,
+        "enterprise": EnterpriseHub,
+        "migrator": LangGraphMigrationTool,
+        "bridge": FrameworkBridge,
+        "wizard": SetupWizard,
+        "guardrails": Guard,
+        "autoscaler": AutoScaler,
+        "resources": ResourceDashboard,
+        "data_manager": DataSourceManager,
+        "debugger": AgentDebugger,
+        "approval_flow": ApprovalFlow,
+        "registry": RiskRegistry,
+        "hitl_controller": HITLController,
+        "blacklist": CommandBlacklist,
+        "ai_audit": AIAuditLogger,
+        "input_validator": InputValidator,
+        "execution_sandbox": lambda: ExecutionSandbox(SandboxConfig(level=SandboxLevel.STRICT)),
+        "output_filter": OutputFilter,
+        "hitl_security": HumanInTheLoop,
+        "ralph_cli": RalphCLI,
+        "ralph_persistence": TaskPersistence,
+        "ralph_scheduler_manager": SchedulerManager,
+        "session_manager": SessionManager,
+    }
+
     def __init__(self):
-        self.progress = ProgressDashboard()
-        self.gantt = GanttChart()
-        self.bus = MessageBus()
-        self.sprint_planner = SprintPlanner()
-        self.terminology = PMTerminologyMapper()
-        self.pm_mode = PMMode()
-        self.evaluator = AgentEvaluator()
-        self.hitl = HumanEvaluator()
-        self.structured = StructuredOutputEngine()
-        self.data_quality = DataQualityChecker()
-        self.enterprise = EnterpriseHub()
-        self.migrator = LangGraphMigrationTool()
-        self.bridge = FrameworkBridge()
-        self.wizard = SetupWizard()
-        self.guardrails = Guard()
-        self.autoscaler = AutoScaler()
-        self.resources = ResourceDashboard()
-        self.data_manager = DataSourceManager()
-        self.debugger = AgentDebugger()
-        self.approval_flow = ApprovalFlow()
-        self.registry = RiskRegistry()
+        self._cache: dict = {}
         self.p2p_config: P2PTeamConfig = None
-        self.hitl_controller = HITLController()
-        self.blacklist = CommandBlacklist()  # 危險操作黑名單
-        self.ai_audit = AIAuditLogger()  # AI 操作審計日誌
-        # Deep Security Defense
-        self.input_validator = InputValidator()
-        self.execution_sandbox = ExecutionSandbox(SandboxConfig(level=SandboxLevel.STRICT))
-        self.output_filter = OutputFilter()
-        self.hitl_security = HumanInTheLoop()
-        # Ralph Mode - 任務長時監控
-        self.ralph_cli = RalphCLI()
-        self.ralph_persistence = TaskPersistence()
-        self.ralph_scheduler_manager = SchedulerManager()
-        self.session_manager = SessionManager()
+
+    def __getattr__(self, name: str):
+        if name in self._FACTORIES:
+            obj = self._FACTORIES[name]()
+            self._cache[name] = obj
+            return obj
+        raise AttributeError(f"'{type(self).__name__}' has no attribute '{name}'")
     
     def _check_command(self, command: str) -> bool:
         """檢查命令是否危險"""

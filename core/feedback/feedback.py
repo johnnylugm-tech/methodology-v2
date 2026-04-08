@@ -69,14 +69,14 @@ class StandardFeedback:
     source: str
     source_detail: str
     type: str
-    category: str
+    category: FeedbackCategory
     severity: str
     title: str
     description: str
     context: dict[str, Any]
     timestamp: str
     sla_deadline: str
-    status: str = "pending"
+    status: FeedbackStatus = FeedbackStatus.PENDING
     assignee: str | None = None
     resolution: str | None = None
     verified_at: str | None = None
@@ -138,7 +138,7 @@ class FeedbackCreate:
 class FeedbackUpdate:
     """Fields that can be updated on existing feedback."""
 
-    status: str | None = None
+    status: FeedbackStatus | None = None
     assignee: str | None = None
     severity: str | None = None
     resolution: str | None = None

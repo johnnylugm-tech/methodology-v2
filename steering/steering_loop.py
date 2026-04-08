@@ -16,7 +16,7 @@ Steering Loop — AB Workflow 方向控制引擎
 """
 
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Tuple, Any
+from typing import Any, Dict, List, Optional, Tuple, Union
 from enum import Enum
 import json
 import os
@@ -221,7 +221,7 @@ class SteeringLoop:
         self.best_output: Optional[ScoredOutput] = None
         self.stage = IterationStage.EXPLORATION
 
-    def iterate(self, output_a: Dict[str, Any], output_b: Dict[str, Any]) -> IterationResult:
+    def iterate(self, output_a: Union[Dict[str, Any], str], output_b: Union[Dict[str, Any], str]) -> IterationResult:
         """
         執行單輪迭代
 
