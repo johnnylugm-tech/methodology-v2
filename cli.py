@@ -39,6 +39,7 @@ from enterprise_hub import EnterpriseHub
 from langgraph_migrator import LangGraphMigrationTool
 from crewai_bridge import FrameworkBridge, bridge_quick_convert
 from wizard.wizard import SetupWizard, TEMPLATES
+from onboarding.wizard import run_phase, load_progress
 from guardrails.guardrails import Guard
 from autoscaler.autoscaler import AutoScaler
 from data_connector import DataSourceManager
@@ -314,6 +315,8 @@ class MethodologyCLI:
             return self.cmd_tool_registry(args)
         elif command == "plan-phase":
             return self.cmd_plan_phase(args)
+        elif command == "onboarding":
+            return self.cmd_onboarding(args)
         elif command == "steering":
             return self.cmd_steering(args)
         else:
@@ -5541,6 +5544,47 @@ class MethodologyCLI:
             pass # Removed print-debug
             return 1
 
+    def cmd_onboarding(self, args):
+        """Interactive Onboarding Wizard — Phase-gate workflow guide (P3-3)"""
+        from pathlib import Path
+        import sys
+
+        project_path = Path(args.project)
+        phase = args.phase
+        resume = args.resume
+        list_phases = args.list_phases
+
+        # List phases mode
+        if list_phases:
+            import yaml
+            checkpoints_dir = Path(__file__).parent / "onboarding" / "checkpoints"
+            for p in [1, 2, 3]:
+                cp_file = checkpoints_dir / f"phase{p}.yaml"
+                if cp_file.exists():
+                    with open(cp_file) as f:
+                        data = yaml.safe_load(f)
+                    click.echo(f"\nPhase {p}: {data.get('name', 'Unknown')}")
+                    for cp in data.get("checkpoints", []):
+                        click.echo(f"  • {cp['title']}")
+                else:
+                    click.echo(f"\nPhase {p}: (no checkpoint file)")
+            return 0
+
+        # Validate phase range
+        if phase not in (1, 2, 3):
+            click.echo("❌ Only phases 1, 2, and 3 are currently supported.")
+            return 1
+
+        # Show context
+        click.echo(f"\n🚀 Onboarding Wizard — Phase {phase}")
+        click.echo(f"   Project: {project_path.absolute()}")
+        if resume:
+            click.echo(f"   Mode: RESUME (picking up from last checkpoint)")
+
+        # Run the wizard
+        result = run_phase(phase, project_path, resume=resume)
+        return result
+
     def cmd_steering(self, args):
         """Steering Loop - AB Workflow 方向控制引擎 CLI"""
         action = args.steering_action
@@ -5871,7 +5915,14 @@ def main():
     
     # wizard
     wizard_parser = subparsers.add_parser("wizard", help="Setup Wizard")
-    
+
+    # onboarding (P3-3: Interactive Onboarding Wizard)
+    onboarding_parser = subparsers.add_parser("onboarding", help="Interactive Onboarding Wizard - Phase-gate workflow guide")
+    onboarding_parser.add_argument("--project", "-p", default=".", help="Project directory (default: current directory)")
+    onboarding_parser.add_argument("--phase", type=int, default=1, help="Phase to onboard (1, 2, or 3)")
+    onboarding_parser.add_argument("--resume", action="store_true", help="Resume from last interrupted checkpoint")
+    onboarding_parser.add_argument("--list-phases", action="store_true", help="List available phases and exit")
+
     # guardrails
     guardrails_parser = subparsers.add_parser("guardrails", help="Security Guardrails")
     guardrails_parser.add_argument("action", choices=["check"], default="check")

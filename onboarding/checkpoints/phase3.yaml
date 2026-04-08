@@ -1,0 +1,41 @@
+# Phase 3 Checkpoints — Implementation
+phase: 3
+name: "Implementation"
+
+checkpoints:
+  - id: cp3_app_structure
+    title: "Application Structure"
+    description: "Verify application directory structure exists"
+    command: "board"
+    args: []
+    artifacts:
+      - path: "app/"
+        description: "Application source code directory"
+    hint: |
+      Create your application structure:
+      mkdir -p app && touch app/__init__.py
+
+  - id: cp3_constitution_enforce
+    title: "Constitution Enforcement"
+    description: "Verify constitution rules are being enforced"
+    command: "enforce"
+    args: ["run"]
+    artifacts:
+      - path: ".methodology/enforcement/"
+        description: "Enforcement records"
+    hint: |
+      Run: python cli.py enforce run
+      This checks all policy blocks and constitution compliance.
+
+  - id: cp3_tdd_setup
+    title: "TDD Framework Setup"
+    description: "Verify TDD runner is configured"
+    command: "quality-gate"
+    args: ["status"]
+    artifacts:
+      - path: "tests/"
+        description: "Test directory with test files"
+    hint: |
+      Verify TDD setup:
+      python cli.py quality-gate status
+      Create tests: mkdir -p tests && touch tests/__init__.py

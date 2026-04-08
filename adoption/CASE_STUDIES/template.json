@@ -1,0 +1,124 @@
+{
+  "case_study_template": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "Quality Gate Case Study",
+    "description": "Template for documenting real quality gate adoption results. Fill in actual numbers after adoption.",
+    "type": "object",
+    "properties": {
+      "case_study": {
+        "type": "object",
+        "properties": {
+          "org": {
+            "type": "string",
+            "description": "Team/org name (anonymized if needed)"
+          },
+          "integration_date": {
+            "type": "string",
+            "format": "date",
+            "description": "When quality gate was first integrated"
+          },
+          "before": {
+            "type": "object",
+            "properties": {
+              "metric": {
+                "type": "string",
+                "description": "What you measured"
+              },
+              "measurement_method": {
+                "type": "string",
+                "description": "How you measured it (tool, query, manual count)"
+              },
+              "value": {
+                "type": ["null", "number", "string"],
+                "description": "Real value before adoption (null = to be filled)"
+              },
+              "unit": {
+                "type": "string",
+                "description": "Unit of measurement (hours, incidents/month, %, etc.)"
+              }
+            },
+            "required": ["metric", "measurement_method"],
+            "additionalProperties": false
+          },
+          "after": {
+            "type": "object",
+            "properties": {
+              "value": {
+                "type": ["null", "number", "string"],
+                "description": "Real value after adoption (null = to be filled)"
+              },
+              "data_source": {
+                "type": "string",
+                "description": "Where this data comes from (Jira, GitHub, Datadog, manual log)"
+              },
+              "measurement_date": {
+                "type": "string",
+                "format": "date",
+                "description": "When this was measured"
+              }
+            },
+            "required": ["data_source"],
+            "additionalProperties": false
+          }
+        },
+        "required": ["before", "after"],
+        "additionalProperties": false
+      }
+    },
+    "required": ["case_study"],
+    "additionalProperties": false
+  },
+  "examples": {
+    "late_detection_time_savings": {
+      "case_study": {
+        "org": "Example Team A",
+        "integration_date": "2026-01-15",
+        "before": {
+          "metric": "Average debug session time for late-detected requirement gaps",
+          "measurement_method": "Manual tracking in Jira post-mortem tickets over 3 months",
+          "value": null,
+          "unit": "hours"
+        },
+        "after": {
+          "value": null,
+          "data_source": "Jira epic 'Post-mortems' — filter label: requirement-gap",
+          "measurement_date": "2026-04-08"
+        }
+      }
+    },
+    "production_bugs_prevented": {
+      "case_study": {
+        "org": "Example Team B",
+        "integration_date": "2026-02-01",
+        "before": {
+          "metric": "P1 production bugs caused by AI output misalignment",
+          "measurement_method": "GitHub issues with label: ai-induced-prod-bug",
+          "value": null,
+          "unit": "incidents/quarter"
+        },
+        "after": {
+          "value": null,
+          "data_source": "GitHub issue tracker — label: ai-induced-prod-bug, date range: Q1 2026",
+          "measurement_date": "2026-04-08"
+        }
+      }
+    },
+    "requirement_drift_incidents": {
+      "case_study": {
+        "org": "Example Team C",
+        "integration_date": "2026-01-20",
+        "before": {
+          "metric": "Sprint re-work caused by unreported requirement drift",
+          "measurement_method": "Sprint retrospective notes tagged: drift-related",
+          "value": null,
+          "unit": "story_points/sprint"
+        },
+        "after": {
+          "value": null,
+          "data_source": "Retrospective documents in Confluence, filtered by 'drift-related' tag",
+          "measurement_date": "2026-04-08"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,59 @@
+# Phase 1 Checkpoints — Project Initialization & Requirements
+phase: 1
+name: "Init & Requirements"
+
+checkpoints:
+  - id: cp1_init
+    title: "Project Initialization"
+    description: "Initialize project structure and workspace"
+    command: "init"
+    args: []
+    artifacts:
+      - path: ".methodology"
+        description: "Methodology workspace directory"
+      - path: ".methodology/state.json"
+        description: "Project state file"
+    hint: |
+      Run: python cli.py init "your-project-name"
+      Make sure you're in the project directory.
+
+  - id: cp1_quality_gate
+    title: "Quality Gate Setup"
+    description: "Initialize quality gate sensors and configuration"
+    command: "quality-gate"
+    args: ["init"]
+    artifacts:
+      - path: ".methodology/quality_gate/"
+        description: "Quality gate configuration"
+    hint: |
+      Run: python cli.py quality-gate init
+      If quality_watch is not running, start it with:
+      python quality_watch.py start --project .
+
+  - id: cp1_srs
+    title: "SRS.md Creation"
+    description: "Create Software Requirements Specification document"
+    command: "spec-track"
+    args: ["init"]
+    artifacts:
+      - path: "SRS.md"
+        description: "Software Requirements Specification"
+      - path: "SPEC_TRACKING.md"
+        description: "Specification tracking matrix"
+    hint: |
+      Run: python cli.py spec-track init
+      Then edit SRS.md with your requirements.
+      Template: projects/methodology-v2/templates/SRS.md
+
+  - id: cp1_constitution
+    title: "Constitution Setup"
+    description: "Initialize project constitution and quality thresholds"
+    command: "constitution"
+    args: ["thresholds"]
+    artifacts:
+      - path: "constitution/CONSTITUTION.md"
+        description: "Project constitution"
+    hint: |
+      Run: python cli.py constitution view
+      If constitution directory doesn't exist, create it with:
+      mkdir -p constitution && cp templates/CONSTITUTION.md constitution/

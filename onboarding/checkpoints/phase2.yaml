@@ -1,0 +1,42 @@
+# Phase 2 Checkpoints — Architecture Design
+phase: 2
+name: "Architecture Design"
+
+checkpoints:
+  - id: cp2_sad
+    title: "SAD Creation"
+    description: "Create Software Architecture Document"
+    command: "spec-track"
+    args: ["check"]
+    artifacts:
+      - path: "SAD.md"
+        description: "Software Architecture Document"
+    hint: |
+      Run: python cli.py spec-track check
+      If SAD.md doesn't exist, create it from:
+      cp templates/SAD.md ./SAD.md
+
+  - id: cp2_trace
+    title: "Traceability Matrix Init"
+    description: "Initialize traceability matrix"
+    command: "trace"
+    args: ["init"]
+    artifacts:
+      - path: "TRACEABILITY_MATRIX.md"
+        description: "Requirements traceability matrix"
+    hint: |
+      Run: python cli.py trace init
+      Copy template from: templates/TRACEABILITY_MATRIX.md
+
+  - id: cp2_adr
+    title: "ADR Documentation"
+    description: "Document architectural decisions"
+    command: "adr"
+    args: ["list"]
+    artifacts:
+      - path: "ADR.md"
+        description: "Architecture Decision Records"
+    hint: |
+      Run: python cli.py adr list
+      If ADR.md doesn't exist, run:
+      python cli.py adr new "Your decision title"

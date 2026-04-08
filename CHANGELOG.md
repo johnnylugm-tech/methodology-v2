@@ -1,3 +1,110 @@
+## v6.77 (2026-04-08)
+
+### feat: P3-1 Technical Adoption Kit — 工程師視角的價值主張工具包
+
+在 `adoption/` 建立以工程師為中心的 Adoption Kit，取代原本 HR 視角的 Change Management 文件。
+
+- **新增目錄結構**:
+  - `adoption/VALUE_PROPOSITION.md` — 30秒技術價值主張，工程師視角（節省時間，不是組織變革）
+  - `adoption/QUICK_WINS.md` — 今天就能做的3件事，每個有具體指令
+  - `adoption/INTEGRATION_GUIDE.md` — 接入現有工具鏈（GitHub Actions / Slack / Jira）
+  - `adoption/CASE_STUDIES/template.json` — 案例模板（不虛構數字）
+- **核心約束**:
+  - 無 HR 語言（無 Change Management / Stakeholder / Champion 等術語）
+  - 受眾是工程師，不是管理層
+  - 所有整合代碼可實際運作（≤10行 YAML/JSON）
+
+---
+
+## v6.76 (2026-04-08)
+
+### feat: P3-2 Scenario Model — 情境模擬器（取代 TCO Calculator）
+
+在 `tools/scenario_model/` 建立情境模擬器，取代原本會產生虛構 ROI 數字的 TCO Calculator。
+
+- **目錄結構**:
+  - `tools/scenario_model/__init__.py`
+  - `tools/scenario_model/scenario_model.py` — 主要類別 ScenarioModel
+  - `tools/scenario_model/data_sources.py` — 對接 FeedbackStore 和 Git history
+  - `tools/scenario_model/templates/scenario_report.md` — 輸出格式模板
+- **核心設計**:
+  - **Source Tagging 系統**：每個數字標記來源 (`historical_data` / `user_input` / `assumption`)
+  - **無虛構數字**：移除所有 hardcoded 假設 (如 `bugs_per_month = 10`)
+  - **輸出區間**：每個 scenario 輸出成本區間 (min/max)，不是單一數字
+  - **移除 ROI 計算**：不再產生假的 ROI 數字
+- **Confidence Score**：根據 assumption 比例計算信心指數 (0-100%)
+- **generate_report() 輸出**：每個數字後面標明 source tag，包含 disclaimer
+- **data_sources.py 函式**:
+  - `get_historical_defects()` — 從 FeedbackStore 讀取真實 defect 數據
+  - `get_phase_completion_times()` — 從 Git history 計算 Phase 完成時間
+  - `get_team_velocity()` — 計算團隊每週關閉 feedback 的速度
+  - 數據不足時回傳 `None` 並標記為 `assumption`
+
+使用範例：
+```python
+from tools.scenario_model import ScenarioModel
+from core.feedback.feedback import FeedbackStore
+
+store = FeedbackStore()
+model = ScenarioModel("/path/to/project", feedback_store=store)
+
+results = model.calculate(
+    user_inputs={"team_size": 5, "hourly_rate": 100, "problem_count": 50},
+    scenarios={
+        "conservative": {"defect_reduction_min": 0.1, "defect_reduction_max": 0.2},
+        "moderate": {"defect_reduction_min": 0.2, "defect_reduction_max": 0.4},
+        "aggressive": {"defect_reduction_min": 0.4, "defect_reduction_max": 0.6},
+    }
+)
+
+report = model.generate_report(results)
+print(report)
+```
+
+**重要約束**：
+- ❌ 絕對不能有虛構數字
+- ✅ 每個數字必須有 source tag
+- ✅ 輸出必須自帶 warning/disclaimer
+
+---
+
+## v6.75 (2026-04-08)
+
+### feat: P3-3 Interactive Onboarding Wizard
+
+新增互動式 Onboarding Wizard，讓工程師 30 分鐘內完成第一個 Phase-gate workflow。
+
+- **新目錄**: `onboarding/`
+  - `wizard.py` — click CLI 主程式
+  - `checkpoints/phase{1,2,3}.yaml` — 各 Phase checkpoint 定義
+  - `resources/QUICK_START.md` — 真正的 5 分鐘快速開始指南（含常見錯誤解決）
+  - `progress/` — 運行時進度狀態（`.methodology/onboarding_progress.json`）
+- **新增 CLI 指令**:
+  - `python cli.py onboarding --project . --phase 1` — 啟動 Phase 1 向導
+  - `python cli.py onboarding --list-phases` — 列出所有可用 phases
+  - `python cli.py onboarding --project . --phase 1 --resume` — 從中斷處繼續
+- **Phase 1 Checkpoints**:
+  1. `cp1_init` — 專案初始化（呼叫 `init` CLI）
+  2. `cp1_quality_gate` — Quality Gate 設定（呼叫 `quality-gate init`）
+  3. `cp1_srs` — SRS.md 建立（呼叫 `spec-track init`）
+  4. `cp1_constitution` — Constitution 設定（呼叫 `constitution thresholds`）
+- **每個 checkpoint** 呼叫真實 CLI 工具，失敗時顯示 hint
+- **進度持久化** 到 `.methodology/onboarding_progress.json`，支援 `--resume`
+
+使用範例：
+```bash
+# 列出所有 phases
+python cli.py onboarding --list-phases
+
+# 開始 Phase 1 向導
+python cli.py onboarding --project . --phase 1
+
+# 中斷後繼續
+python cli.py onboarding --project . --phase 1 --resume
+```
+
+---
+
 ## v6.74 (2026-04-08)
 
 ### feat: P2-1 Steering Loop 整合進 CLI
