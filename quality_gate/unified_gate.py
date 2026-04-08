@@ -166,6 +166,14 @@ except ImportError:
     CQG_AVAILABLE = False
     _cqg_import_error = str(e)
 
+# 匯入 Computational Sensors（P0-1 新增）
+try:
+    from .sensors.sensors import ComputationalSensors
+    SENSORS_AVAILABLE = True
+except ImportError:
+    SENSORS_AVAILABLE = False
+    _sensors_import_error = str(e)
+
 # 匯入 SAB Tools（v6.60+ 新增：用於 Phase 2 SAB 建立）
 try:
     from .sab_parser import parse_sad
@@ -575,6 +583,7 @@ class UnifiedGate:
             checks.append(self._check_complexity())
             checks.append(self._check_coverage_analyzer())
             checks.append(self._check_fitness())
+            checks.append(self._check_sensors())
             checks.append(self._check_baseline_drift())
 
         # 2. Document Existence Check (Phase 1-4)
@@ -914,6 +923,53 @@ class UnifiedGate:
         except Exception as e:
             return CheckResult(
                 name="CQG: Fitness Functions",
+                passed=False,
+                score=0,
+                violations=[],
+                details={"status": "error", "reason": str(e)}
+            )
+
+    def _check_sensors(self) -> CheckResult:
+        """CQG-P0: Computational Sensors Scan (complexity, coupling, coverage, maintainability)"""
+        if not SENSORS_AVAILABLE:
+            return CheckResult(
+                name="CQG: Computational Sensors",
+                passed=True,
+                score=100,
+                violations=[],
+                details={"status": "skipped", "reason": "ComputationalSensors not available"}
+            )
+        try:
+            sensors = ComputationalSensors(str(self.project_path))
+            report = sensors.scan()
+
+            # 收集 violations
+            violations = []
+            for name, result in report.sensors.items():
+                for v in result.violations:
+                    violations.append({"sensor": name, **v})
+
+            return CheckResult(
+                name="CQG: Computational Sensors",
+                passed=report.passed,
+                score=report.weighted_score * 100,
+                violations=violations,
+                details={
+                    "weighted_score": report.weighted_score,
+                    "total_violations": report.total_violations,
+                    "sensors": {
+                        name: {
+                            "score": r.score,
+                            "passed": r.passed,
+                            "details": r.details
+                        }
+                        for name, r in report.sensors.items()
+                    }
+                }
+            )
+        except Exception as e:
+            return CheckResult(
+                name="CQG: Computational Sensors",
                 passed=False,
                 score=0,
                 violations=[],

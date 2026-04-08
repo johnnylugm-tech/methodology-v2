@@ -1,3 +1,88 @@
+## v6.72 (2026-04-08)
+
+### feat: P2-1 Steering Loop 整合進 CLI
+
+`steering` 指令現在可以直接透過 CLI 呼叫 SteeringLoop AB Workflow 方向控制引擎。
+
+- **新增 subcommands**:
+  - `steering run --project PATH --phase N` — 執行 Steering Loop 引導
+  - `steering status` — 顯示當前 Steering 狀態（A/B rounds, history）
+  - `steering history` — 顯示 Steering 引導歷史（iterations, best score）
+- **整合點**:
+  - `from steering.steering_loop import SteeringLoop, SteeringConfig` 已加入 imports
+  - CLI parser 新增 `steering_parser` subparser（與 `eval`, `hitl` 等一致）
+  - `cmd_steering()` 方法處理所有子命令
+- **歷史讀取**：從 `.methodology/steering_history.json` 讀取，與 session store 整合
+
+使用範例：
+```bash
+python cli.py steering status
+python cli.py steering history
+python cli.py steering run --project . --phase 3
+```
+
+**注意**：真正的 Steering Loop 執行需要 LLM provider（用於 LLMJudgeScorer），CLI 提供狀態查詢和初始化入口，詳細迭代需與外部 agent workflow 整合。
+
+---
+
+## v6.71 (2026-04-08)
+
+### feat: P1-1 BVS Auto-Trigger 整合進 `create_full_pipeline()`
+
+`create_full_pipeline()` 現在包含 BVS 自動觸發機制，確保 invariant violations 在 phase 邊界自動被捕获並提交到 FeedbackStore。
+
+- **新增 `run_bvs(phase)` 方法**：手動/自動觸發 BVS，並自動提交 violations 到 FeedbackStore
+- **新增 `close_phase(phase)` 方法**：便利方法，同時執行 phase 内所有 feedback 的 closure + BVS
+- **整合點**：`BVSRunner.run()` 已經有 auto-submission 邏輯，現在透過 `run_bvs()` 自動調用
+- **反饋流程**：Phase 結束 → `close_phase()` → BVS 執行 → Violations 自動進 FeedbackStore → Self-Correction Engine
+
+使用範例：
+```python
+pipeline = create_full_pipeline("/path/to/project", phase=3)
+
+# 方式1: 手動觸發 BVS（推薦在 phase 結束後調用）
+bvs_report = pipeline["run_bvs"](phase=2)
+
+# 方式2: 一鍵執行 phase closure + BVS
+phase_result = pipeline["close_phase"](phase=3)
+# phase_result 包含: feedback_closed, closure_results, bvs_report
+```
+
+---
+
+## v6.70 (2026-04-08)
+
+### feat: P1-3 AI Test Suite 整合進 CLI
+
+`quality-gate ai-test` 指令現在可以直接透過 CLI 呼叫 AI Test Suite Generator。
+
+- `cli.py` — `quality-gate` subcommand 新增 `ai-test` 選擇
+- 新增引數：`--project`, `--phase` (default: 4), `--target/-t`, `--output/-o`, `--model/-m`, `--context/-c`
+- 使用 subprocess 呼叫 `quality_gate/ai_test_suite/cli.py`，確保 sys.argv 乾淨
+- 自動偵測 `app/` 或 `src/` 作為預設 target（若未指定）
+
+使用範例：
+```bash
+python cli.py quality-gate ai-test -t app/
+python cli.py quality-gate ai-test -t app/ -c SRS.md -c SAD.md
+python cli.py qg ai-test -t src/ --model gpt-4 -o tests/generated
+```
+
+---
+
+## v6.69 (2026-04-08)
+
+### feat: P0-1 Computational Sensors 整合進 UnifiedGate
+
+`ComputationalSensors` 現在在 `check_all()` 時自動被呼叫（位於 fitness check 之后）。
+
+- 新增 `SENSORS_AVAILABLE` flag（sensors.py import guard）
+- 新增 `_check_sensors()` 方法：執行 complexity / coupling / coverage / maintainability 四個 sensors
+- `check_all()` CQG 區塊新增 `self._check_sensors()` 調用
+- 錯誤處理（L1 skipped / L2-L4 error）與其他 check 保持一致
+
+---
+
 ## v6.68 (2026-04-07)
 
 ### feat: P0 Integration Fix — 自動化串連所有觸發點

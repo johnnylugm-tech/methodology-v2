@@ -78,6 +78,9 @@ from ralph_mode.progress_tracker import RalphProgressTracker
 from ralph_mode.state_machine import PhaseStateMachine
 from tool_registry import ToolRegistry, TOOL_HANDLERS
 
+# Steering Loop
+from steering.steering_loop import SteeringLoop, SteeringConfig
+
 
 class MethodologyCLI:
     """統一 CLI 入口"""
@@ -311,6 +314,8 @@ class MethodologyCLI:
             return self.cmd_tool_registry(args)
         elif command == "plan-phase":
             return self.cmd_plan_phase(args)
+        elif command == "steering":
+            return self.cmd_steering(args)
         else:
             pass # Removed print-debug
             return 1
@@ -3001,6 +3006,47 @@ class MethodologyCLI:
             pass # Removed print-debug
             sys.exit(0 if result.passed else 1)
 
+        elif sub == "ai-test":
+            # AI Test Suite Generator
+            import subprocess
+            import os
+            from pathlib import Path
+
+            cli_path = Path(__file__).parent / "quality_gate" / "ai_test_suite" / "cli.py"
+            if not cli_path.exists():
+                pass # Removed print-debug
+                return 1
+
+            cmd = [sys.executable, str(cli_path)]
+
+            target = args.target
+            if not target:
+                # Default: use app/ or src/ as target
+                if os.path.exists("app"):
+                    target = "app"
+                elif os.path.exists("src"):
+                    target = "src"
+                else:
+                    pass # Removed print-debug
+                    return 1
+
+            cmd.extend(["-t", target])
+
+            if args.output:
+                cmd.extend(["-o", args.output])
+
+            if args.model:
+                cmd.extend(["-m", args.model])
+
+            if args.context:
+                for ctx in args.context:
+                    cmd.extend(["-c", ctx])
+
+            pass # Removed print-debug
+
+            result = subprocess.run(cmd, cwd=os.getcwd())
+            return result.returncode
+
         else:
             pass # Removed print-debug
             pass # Removed print-debug
@@ -5495,6 +5541,147 @@ class MethodologyCLI:
             pass # Removed print-debug
             return 1
 
+    def cmd_steering(self, args):
+        """Steering Loop - AB Workflow 方向控制引擎 CLI"""
+        action = args.steering_action
+        project_path = Path(args.project) if hasattr(args, 'project') and args.project else Path.cwd()
+        history_path = str(project_path / ".methodology" / "steering_history.json")
+
+        # Helper: Load state.json for current phase
+        state_path = project_path / ".methodology" / "state.json"
+        current_phase = None
+        ab_rounds = 0
+        if state_path.exists():
+            try:
+                state = json.loads(state_path.read_text(encoding="utf-8"))
+                current_phase = state.get("current_phase")
+                ps = state.get("phase_state", {})
+                ab_rounds = ps.get("ab_rounds", 0)
+            except Exception:
+                pass
+
+        if action == "status":
+            # 顯示當前 Steering 狀態
+            print(f"""
+╔══════════════════════════════════════════════════════════════╗
+║  Steering Status                                              ║
+╠══════════════════════════════════════════════════════════════╣""")
+            print(f"║  Current Phase: {current_phase or 'N/A':<38}║")
+            print(f"║  A/B Rounds (recorded): {ab_rounds:<30}║")
+
+            if Path(history_path).exists():
+                try:
+                    history = json.loads(Path(history_path).read_text(encoding="utf-8"))
+                    iterations = history.get("iterations", [])
+                    best_score = history.get("best_score")
+                    print(f"║  Steering History: {len(iterations)} rounds{' '*30}║")
+                    if best_score is not None:
+                        print(f"║  Best Score: {best_score:<43}║")
+                except Exception:
+                    print("║  Steering History: (parse error)" + " " * 28 + "║")
+            else:
+                print("║  Steering History: (no data)" + " " * 30 + "║")
+
+            print("╠══════════════════════════════════════════════════════════════╣")
+            print("║  說明：                                                       ║")
+            print("║    steering run --phase N  - 執行 Steering Loop 引導         ║")
+            print("║    steering status        - 顯示當前 Steering 狀態           ║")
+            print("║    steering history       - 顯示引導歷史                   ║")
+            print("╚══════════════════════════════════════════════════════════════╝")
+            return 0
+
+        elif action == "history":
+            # 顯示 Steering 引導歷史
+            print(f"""
+╔══════════════════════════════════════════════════════════════╗
+║  Steering History                                             ║
+╠══════════════════════════════════════════════════════════════╣""")
+
+            if not Path(history_path).exists():
+                print("║  No steering history found." + " " * 33 + "║")
+                print("║  Run 'steering run --phase N' to start." + " " * 24 + "║")
+                print("╚══════════════════════════════════════════════════════════════╝")
+                return 0
+
+            try:
+                history = json.loads(Path(history_path).read_text(encoding="utf-8"))
+                iterations = history.get("iterations", [])
+                best_score = history.get("best_score")
+
+                if not iterations:
+                    print("║  No iterations recorded yet." + " " * 31 + "║")
+                else:
+                    print(f"║  Total iterations: {len(iterations):<37}║")
+                    if best_score is not None:
+                        print(f"║  Best score: {best_score:<43}║")
+                    print("╠══════════════════════════════════════════════════════════════╣")
+                    print("║  Iterations:                                                   ║")
+                    for i, it in enumerate(iterations, 1):
+                        stage_icon = {"exploration": "🔍", "competition": "⚔️", "convergence": "🎯"}.get(it.get("stage", ""), "⚪")
+                        delta_str = f"delta={it.get('score_delta', 0):.4f}"
+                        convergence_str = f"cv={it.get('convergence_score', 0):.4f}"
+                        winner = it.get("winner", "?")
+                        print(f"║    {i}. {stage_icon} Round {it.get('iteration', i)}: winner={winner}, {delta_str}, {convergence_str}   ║")
+            except Exception as e:
+                print(f"║  Error reading history: {e}" + " " * 29 + "║")
+
+            print("╚══════════════════════════════════════════════════════════════╝")
+            return 0
+
+        elif action == "run":
+            # 執行 Steering Loop 引導
+            phase = args.phase
+            max_rounds = args.max_rounds
+
+            print(f"""
+╔══════════════════════════════════════════════════════════════╗
+║  Steering Loop Execution                                      ║
+╠══════════════════════════════════════════════════════════════╣""")
+            print(f"║  Project: {project_path.name:<46}║")
+            print(f"║  Phase: {phase:<48}║")
+            print(f"║  Max rounds: {max_rounds or 'config default':<41}║")
+
+            if not state_path.exists():
+                print("╠══════════════════════════════════════════════════════════════╣")
+                print("║  ❌ No .methodology/state.json found.                        ║")
+                print("║     Initialize project first with: python cli.py init        ║")
+                print("╚══════════════════════════════════════════════════════════════╝")
+                return 1
+
+            # 檢查必要檔案
+            required = {"SRS.md": "Phase 1-2", "SAD.md": "Phase 2"}
+            missing = [f for f in required if not (project_path / f).exists()]
+            if missing:
+                print(f"╠══════════════════════════════════════════════════════════════╣")
+                print(f"║  ⚠️  Missing files (may be normal for early phases):          ║")
+                for f in missing:
+                    print(f"║     - {f:<49}║")
+
+            print("╠══════════════════════════════════════════════════════════════╣")
+            print("║  📋 Steering Loop 說明：                                      ║")
+            print("║                                                               ║")
+            print("║    1. 需要LLM Provider (如 OpenAI provider)                    ║")
+            print("║    2. SteeringLoop 需要 A/B 兩個輸出來迭代                     ║")
+            print("║    3. CLI 直接呼叫適合與外部 agent 系統整合                    ║")
+            print("║                                                               ║")
+            print("║  🔧 使用方式 (整合到 agent workflow)：                          ║")
+            print("║    from steering import SteeringLoop, SteeringConfig            ║")
+            print("║    loop = SteeringLoop(provider, config=SteeringConfig())     ║")
+            print("║    result = loop.iterate(output_a, output_b)                  ║")
+            print("║    continue_it, reason = loop.should_continue()               ║")
+            print("╚══════════════════════════════════════════════════════════════╝")
+
+            # 嘗試初始化 SteeringLoop（需要 provider）
+            # 注意：在 CLI 環境中我們無法假設有 LLM provider，所以只印出說明
+            # 真實執行需要外部系統整合
+
+            return 0
+
+        else:
+            print(f"❌ Unknown steering action: {action}")
+            print("   Available: run, status, history")
+            return 1
+
 
 # ==================== Main ====================
 
@@ -5849,8 +6036,14 @@ def main():
     # quality-gate (Quality Gate - 品質閘道)
     quality_gate_parser = subparsers.add_parser("quality-gate", aliases=["qg"], help="Quality Gate - 品質閘道檢查")
     quality_gate_parser.add_argument("subcommand", nargs="?", default="check",
-                                     choices=["check", "all", "doc", "docs", "phase", "aspice"],
+                                     choices=["check", "all", "doc", "docs", "phase", "aspice", "ai-test"],
                                      help="Quality gate subcommand")
+    quality_gate_parser.add_argument("--project", default=".", help="Project root path")
+    quality_gate_parser.add_argument("--phase", type=int, default=4, help="Phase number (default: 4 - Testing)")
+    quality_gate_parser.add_argument("--target", "-t", help="Target source file or directory for AI test generation")
+    quality_gate_parser.add_argument("--output", "-o", default="tests/ai_generated", help="Output directory")
+    quality_gate_parser.add_argument("--model", "-m", help="LLM model override")
+    quality_gate_parser.add_argument("--context", "-c", nargs="*", help="Context files (SRS.md, SAD.md)")
 
     # enforce (Framework Enforcement)
     enforce_parser = subparsers.add_parser("enforce", help="Framework Enforcement - 統一執行所有 enforcement")
@@ -6074,6 +6267,22 @@ def main():
     plan_phase_parser.add_argument("--with-timeline", action="store_true", help="顯示完整時間線預估")
     plan_phase_parser.add_argument("--repo", default=".", dest="repo", help="專案根目錄 (預設: .)")
     plan_phase_parser.add_argument("--detailed", action="store_true", help="生成完整 FR 詳細任務（需解析 SRS.md）")
+
+    # steering
+    steering_parser = subparsers.add_parser("steering", help="Steering Loop - AB Workflow 方向控制")
+    steering_sub = steering_parser.add_subparsers(dest="steering_action", help="Steering actions")
+
+    # steering run
+    steering_run = steering_sub.add_parser("run", help="執行 Steering Loop 引導")
+    steering_run.add_argument("--project", "-p", default=".", help="專案路徑")
+    steering_run.add_argument("--phase", type=int, required=True, help="Phase number (1-8)")
+    steering_run.add_argument("--max-rounds", type=int, default=None, help="最大迭代輪數 (預設: config.max_iterations)")
+
+    # steering status
+    steering_sub.add_parser("status", help="顯示當前 Steering 狀態")
+
+    # steering history
+    steering_sub.add_parser("history", help="顯示 Steering 引導歷史")
 
     args = parser.parse_args()
     

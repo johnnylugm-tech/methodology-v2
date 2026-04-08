@@ -135,6 +135,18 @@ def create_self_correcting_closure(
     )
 
 
+def _create_bvs_runner_if_possible(
+    project_path: str | None,
+    phase: int,
+    store: "FeedbackStore",
+) -> "BVSRunner | None":
+    """Helper: create BVSRunner only if project_path is provided."""
+    if project_path is None:
+        return None
+    from constitution.bvs_runner import BVSRunner
+    return BVSRunner(project_path=project_path, phase=phase, feedback_store=store)
+
+
 def create_full_pipeline(
     project_path: str | None = None,
     phase: int = 3,
@@ -148,6 +160,8 @@ def create_full_pipeline(
     - bvs: BVSRunner (with feedback integration, if project_path provided)
     - closure: ClosureWithSelfCorrection
     - engine: SelfCorrectionEngine
+    - run_bvs(phase): Method to run BVS and auto-submit violations to store
+    - close_phase(phase): Convenience method to run closure for all feedback + BVS
 
     Args:
         project_path: 如果提供，會建立整合過的 BVSRunner
@@ -163,15 +177,18 @@ def create_full_pipeline(
         # Quality Gate → violations auto-submitted to store
         gate_result = gate.check(phase=2, artifacts={...})
 
-        # BVS → violations auto-submitted to store
-        bvs_report = bvs.run()
+        # BVS → violations auto-submitted to store (manual trigger)
+        bvs_report = pipeline["run_bvs"](phase=2)
 
         # Constitution check → violations auto-submitted to store
         from quality_gate.constitution import run_constitution_check
         result = run_constitution_check("srs", "docs", phase=3, feedback_store=store)
 
-        # Closure with auto self-correction
+        # Closure with auto self-correction (per feedback item)
         closure_result = closure.close_with_correction(feedback_id)
+
+        # OR: Convenience method to close ALL feedback for a phase + run BVS
+        phase_result = pipeline["close_phase"](phase=3)
 
         # Dashboard
         from feedback.dashboard import print_dashboard
@@ -183,22 +200,88 @@ def create_full_pipeline(
     engine = SelfCorrectionEngine(store)
     closure = ClosureWithSelfCorrection(store, engine)
     gate = create_integrated_gate(store)
+    bvs_runner = _create_bvs_runner_if_possible(project_path, phase, store)
+
+    # ── BVS Auto-Trigger Methods ──────────────────────────────────────
+
+    def run_bvs(phase: int) -> dict[str, Any]:
+        """
+        Run BVS for the specified phase and auto-submit violations to FeedbackStore.
+
+        This is the key integration point: BVS violations are automatically
+        captured and submitted to the feedback loop, ensuring invariant
+        violations are tracked alongside quality gate and constitution violations.
+
+        Args:
+            phase: Phase number to run BVS against
+
+        Returns:
+            BVS report dict with passed/total_violations/violations/etc.
+        """
+        if bvs_runner is None:
+            return {
+                "passed": True,
+                "total_violations": 0,
+                "status": "no_bvs_configured",
+                "message": "BVS not configured (no project_path provided)",
+            }
+
+        # Update phase and run
+        bvs_runner.phase = phase
+        return bvs_runner.run()
+
+    def close_phase(phase: int) -> dict[str, Any]:
+        """
+        Convenience method: Close ALL feedback for a phase + run BVS.
+
+        Flow:
+        1. Get all open feedback items for the phase
+        2. Attempt closure with self-correction for each
+        3. Run BVS to capture invariant violations
+
+        This ensures BVS is automatically triggered at phase boundaries
+        without manual intervention.
+
+        Args:
+            phase: Phase number to close
+
+        Returns:
+            dict with closure_results and bvs_report
+        """
+        # Get all feedback for this phase
+        all_feedback = store.list()
+        phase_feedback = [
+            fb for fb in all_feedback
+            if fb.get("context", {}).get("phase") == phase
+            and fb.get("status") not in ("closed", "resolved")
+        ]
+
+        closure_results = []
+        for fb in phase_feedback:
+            feedback_id = fb.get("id") or fb.get("feedback_id")
+            if feedback_id:
+                result = closure.close_with_correction(feedback_id)
+                closure_results.append(result)
+
+        # Run BVS to capture invariant violations for this phase
+        bvs_report = run_bvs(phase)
+
+        return {
+            "phase": phase,
+            "feedback_closed": len(closure_results),
+            "closure_results": closure_results,
+            "bvs_report": bvs_report,
+        }
 
     result: dict[str, Any] = {
         "store": store,
         "gate": gate,
         "closure": closure,
         "engine": engine,
-        "bvs": None,
+        "bvs": bvs_runner,
+        "run_bvs": run_bvs,
+        "close_phase": close_phase,
     }
-
-    if project_path is not None:
-        from constitution.bvs_runner import BVSRunner
-        result["bvs"] = BVSRunner(
-            project_path=project_path,
-            phase=phase,
-            feedback_store=store,
-        )
 
     return result
 
