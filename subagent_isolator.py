@@ -372,12 +372,29 @@ HR-15 強制：
                     print(f"[DEBUG] response content (truncated): {str(response)[:200]}", file=sys.stderr)
                 
                 # v6.92: 尊重 sessions_spawn 返回的 status（如果有的話）
-                status = response.get("status", "success")  # 預設 success 但尊重實際返回
-                result = response.get("result", str(response) if not isinstance(response, dict) else "")
-                confidence = response.get("confidence", 5)
-                citations = response.get("citations", [])
-                # v6.93: 提取 review_status（用於 Reviewer role）
-                review_status = response.get("review_status", None)
+                # v6.98 fix: 確保 response 是 dict，否則解析 JSON
+                if isinstance(response, dict):
+                    status = response.get("status", "success")
+                    result = response.get("result", str(response) if not isinstance(response, dict) else "")
+                    confidence = response.get("confidence", 5)
+                    citations = response.get("citations", [])
+                    # v6.93: 提取 review_status（用於 Reviewer role）
+                    review_status = response.get("review_status", None)
+                else:
+                    # response 可能是一個字串，需要解析 JSON
+                    try:
+                        parsed = json.loads(response) if isinstance(response, str) else {}
+                        status = parsed.get("status", "success")
+                        result = parsed.get("result", str(response))
+                        confidence = parsed.get("confidence", 5)
+                        citations = parsed.get("citations", [])
+                        review_status = parsed.get("review_status", None)
+                    except (json.JSONDecodeError, TypeError):
+                        status = "success"
+                        result = str(response)
+                        confidence = 5
+                        citations = []
+                        review_status = None
                 error = None
                 
             except Exception as e:

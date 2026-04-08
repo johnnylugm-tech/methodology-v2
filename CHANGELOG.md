@@ -1,3 +1,13 @@
+## v6.98 (2026-04-09)
+
+### fix: sessions_spawn response parsing (v6.98)
+
+- Root cause: sessions_spawn may return JSON string, not parsed dict
+- Fix: Check if response is dict, otherwise parse JSON before extracting fields
+- This ensures review_status is correctly extracted from real subagent responses
+
+---
+
 ## v6.97 (2026-04-09)
 
 ### fix: Mock Reviewer returns APPROVE by default (v6.97)

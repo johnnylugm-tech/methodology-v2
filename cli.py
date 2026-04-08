@@ -92,7 +92,7 @@ from steering.steering_loop import SteeringLoop, SteeringConfig
 class MethodologyCLI:
     """統一 CLI 入口"""
     
-    VERSION = "6.97.0"
+    VERSION = "6.98.0"
 
     # Lazy-loading subsystem factories
     _FACTORIES = {
