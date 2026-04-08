@@ -92,7 +92,7 @@ from steering.steering_loop import SteeringLoop, SteeringConfig
 class MethodologyCLI:
     """統一 CLI 入口"""
     
-    VERSION = "6.98.0"
+    VERSION = "6.99.0"
 
     # Lazy-loading subsystem factories
     _FACTORIES = {
@@ -4409,11 +4409,19 @@ class MethodologyCLI:
             else:
                 artifact_paths = []
             
-            # Build task prompt - include full paths so subagent knows WHERE to read files
+            # Build task prompt - include full paths so subagent knows WHERE to read/write
             artifact_list = '\n'.join([f"{i+1}. {p}" for i, p in enumerate(artifact_paths)])
+            
+            # Determine output directory based on phase
+            if phase == 3:
+                output_dir = repo_path / "03-development" / f"module_{fr.replace('FR-', '')}"
+            else:
+                output_dir = repo_path / f"phase_{phase}"
+            
             task_prompt = f"""你是 Developer Agent，執行 {fr} 實作 (Phase {phase})
 
 Project Root: {repo_path}
+Output Directory: {output_dir}
 
 任務：{args.task or f'Implement {fr}'}
 
@@ -4422,8 +4430,11 @@ Project Root: {repo_path}
 {artifact_list}
 
 2. 根據 SRS/SAD 實作 {fr} 的功能
-3. 確保代碼可編譯並遵循最佳實踐
-4. Output JSON: {{"status": "success"|"error"|"unable_to_proceed", "result": "...", "confidence": 1-10, "citations": ["FR-01", "SRS.md#L23"], "summary": "..."}}
+3. 在磁碟上建立代碼檔案（寫入到：{output_dir}/）
+   - 建立必要的目錄結構
+   - 寫入 Python/JS/其他代碼檔案
+4. 確保代碼可編譯並遵循最佳實踐
+5. Output JSON: {{"status": "success"|"error"|"unable_to_proceed", "result": "wrote files to {output_dir}", "confidence": 1-10, "citations": ["FR-01", "SRS.md#L23"], "summary": "..."}}
 """
             
             # Spawn Developer

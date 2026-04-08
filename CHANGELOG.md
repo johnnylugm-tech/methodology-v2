@@ -1,3 +1,13 @@
+## v6.99 (2026-04-09)
+
+### fix: Developer task prompt to write files to disk (v6.99)
+
+- Root cause: Developer prompt didn't tell agent to write files to disk
+- Fix: Explicit instruction to write code to {output_dir}/
+- Added output directory path in prompt (03-development/module_FR-XX/)
+
+---
+
 ## v6.98 (2026-04-09)
 
 ### fix: sessions_spawn response parsing (v6.98)
