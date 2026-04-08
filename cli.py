@@ -4335,7 +4335,8 @@ class MethodologyCLI:
         print(f"✓ POST-FLIGHT: Final Constitution Check")
         print(f"{'='*60}\n")
 
-        result_final = runner.run_phase_check(phase_type)
+        # === v6.86 fix: use run_constitution_check directly (runner was never defined) ===
+        result_final = run_constitution_check(phase_type, docs_path=str(repo_path / "docs"), current_phase=phase, check_mode="postflight")
         if result_final.score < 80:
             print(f"⚠️  Final Constitution score {result_final.score:.0f}% < 80%")
             print(f"   Violations: {result_final.violations}")
