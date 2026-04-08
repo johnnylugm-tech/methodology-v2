@@ -37,7 +37,15 @@ def parse_srs_fr_sections(srs_path: Path) -> List[Dict]:
     if not srs_path.exists():
         return []
     
+    # v6.103 fix: Read FRs from both SRS.md and SAD.md
+    # SRS.md may not have all FRs (e.g., FR-09 exists in SAD but not SRS)
     content = srs_path.read_text(encoding='utf-8')
+    
+    # Also read SAD.md for complete FR list
+    sad_path = repo_path / "02-architecture" / "SAD.md"
+    if sad_path.exists():
+        sad_content = sad_path.read_text(encoding='utf-8')
+        content += "\n" + sad_content
     
     # Find all FR sections (FR-01 to FR-99)
     fr_pattern = re.compile(r'(### FR-(\d+)：[^\n]+\n\n)(.*?)(?=\n---\n|\n### FR-\d+|$)', re.DOTALL)
