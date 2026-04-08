@@ -92,7 +92,7 @@ from steering.steering_loop import SteeringLoop, SteeringConfig
 class MethodologyCLI:
     """統一 CLI 入口"""
     
-    VERSION = "6.101.0"
+    VERSION = "6.102.0"
 
     # Lazy-loading subsystem factories
     _FACTORIES = {
@@ -4187,6 +4187,13 @@ class MethodologyCLI:
         phase_type = phase_type_map.get(phase, "srs")
 
         from quality_gate.constitution import run_constitution_check
+        
+        # v6.102: Import PhaseHooks for monitoring
+        try:
+            from phase_hooks import PhaseHooks
+            HOOKS_AVAILABLE = True
+        except ImportError:
+            HOOKS_AVAILABLE = False
         result = run_constitution_check(phase_type, docs_path=str(repo_path / "docs"), current_phase=phase)
 
         if result.score < 80:
@@ -6127,6 +6134,7 @@ def main():
     run_phase_parser.add_argument("--step", type=str, help="Step to execute (e.g. 3.1)")
     run_phase_parser.add_argument("--task", type=str, help="Task description override")
     run_phase_parser.add_argument("--repo", type=str, default=".", help="Repository path")
+    run_phase_parser.add_argument("--resume", action="store_true", help="Skip to POST-FLIGHT checks")
 
     # spec-track
     spec_track_parser = subparsers.add_parser("spec-track", help="Spec Tracking")

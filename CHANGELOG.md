@@ -1,3 +1,31 @@
+## v6.102 (2026-04-09)
+
+### refactor: PhaseHooks framework + new Agent workflow (v6.102)
+
+**ARCHITECTURAL CHANGE:**
+- cli.py NO LONGER calls sessions_spawn directly (architecture limitation)
+- sessions_spawn is a runtime tool, not a Python module
+- Agent calls sessions_spawn directly; CLI provides PhaseHooks for monitoring
+
+**NEW: phase_hooks.py**
+- Standalone hooks framework for Agent to call
+- PRE-FLIGHT hooks: FSM check, Constitution check, Tool Registry
+- MONITORING hooks: before/after dev/rev
+- POST-FLIGHT hooks: Constitution, State update, Summary
+
+**NEW: --resume flag**
+- Skip to POST-FLIGHT when resuming
+
+**Agent Workflow:**
+1. Agent: `python cli.py run-phase --phase 3`
+2. PRE-FLIGHT checks run
+3. Agent executes FRs with sessions_spawn directly
+4. Agent calls PhaseHooks for monitoring
+5. Agent: `python cli.py run-phase --phase 3 --resume`
+6. POST-FLIGHT checks run
+
+---
+
 ## v6.101 (2026-04-09)
 
 ### fix: Parse markdown-wrapped JSON from Developer result (v6.101)
