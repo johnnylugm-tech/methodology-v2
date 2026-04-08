@@ -222,7 +222,7 @@ python cli.py steering history
 
 ## P2-2：Feedback Loop｜品質信號收集與閉環框架
 
-**版本**：v6.66 | **整合位置**：`core/orchestration.py`、`core/feedback/` | **啟動時機**：透過 orchestration 統一觸發，Feedback 自動入庫
+**版本**：v6.66 | **整合位置**：`orchestration.py`、`core/feedback/` | **啟動時機**：透過 orchestration 統一觸發，Feedback 自動入庫
 
 ### 方法
 
@@ -247,7 +247,7 @@ Feedback Loop 是所有品質信號的中央集線器，將來自不同來源的
 ### 觸發時機
 
 ```python
-from core.orchestration import create_full_pipeline
+from orchestration import create_full_pipeline
 
 pipeline = create_full_pipeline("/path/to/project", phase=3)
 store = pipeline["store"]  # FeedbackStore 實例
@@ -267,7 +267,7 @@ store = pipeline["store"]  # FeedbackStore 實例
 
 ## P2-3：Self-Correction Engine｜自動修正與學習
 
-**版本**：v6.67 | **整合位置**：`core/orchestration.py`、`core/self_correction/` | **啟動時機**：Feedback verification 失敗時自動觸發
+**版本**：v6.67 | **整合位置**：`orchestration.py`、`core/self_correction/` | **啟動時機**：Feedback verification 失敗時自動觸發
 
 ### 方法
 
@@ -289,7 +289,7 @@ Self-Correction Engine 是 Feedback Loop 的 Closure Action。當 `verify_and_cl
 
 ```python
 # Feedback Loop verification 失敗時自動觸發
-from core.orchestration import create_self_correcting_closure
+from orchestration import create_self_correcting_closure
 
 closure = create_self_correcting_closure(feedback_store)
 result = closure.verify_and_close(feedback_id)

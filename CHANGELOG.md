@@ -227,10 +227,10 @@ python cli.py qg ai-test -t src/ --model gpt-4 -o tests/generated
 - verification 失敗時自動觸發 Self-Correction Engine
 - 成功 → status 改為 `verified`；需要 review → `pending_human_review`；失敗 → `manual_required`
 
-#### Fix 5: 統一工廠函數 `core/orchestration.py`
-新建 `core/orchestration.py`，提供統一的初始化入口：
+#### Fix 5: 統一工廠函數 `orchestration.py`
+新建 `orchestration.py`，提供統一的初始化入口：
 ```python
-from core.orchestration import (
+from orchestration import (
     create_integrated_gate,    # Quality Gate + Feedback
     create_bvs_runner,          # BVS + Feedback
     create_self_correcting_closure,  # Closure + Self-Correction
@@ -240,7 +240,7 @@ from core.orchestration import (
 
 #### 驗證方式
 ```python
-from core.orchestration import create_full_pipeline
+from orchestration import create_full_pipeline
 
 pipeline = create_full_pipeline("/path/to/project", phase=3)
 store = pipeline["store"]
