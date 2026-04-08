@@ -38,7 +38,7 @@ except ImportError as e:
 try:
     from constitution.bvs_runner import BVSRunner
     BVS_AVAILABLE = True
-except ImportError:
+except ImportError as e:
     BVS_AVAILABLE = False
     _bvs_import_error = str(e)
 
@@ -154,6 +154,7 @@ def _check_behaviour(phase: int, docs_path: str = "docs") -> dict:
     
     Args:
         phase: 當前 Phase (1-8)
+        docs_path: docs 目錄路徑
         
     Returns:
         {
@@ -172,7 +173,6 @@ def _check_behaviour(phase: int, docs_path: str = "docs") -> dict:
     
     try:
         # Calculate project root from docs_path
-        from pathlib import Path
         docs_path_obj = Path(docs_path)
         # If docs_path is a file path, get parent; if it's a dir, use as-is
         if docs_path_obj.is_file():
@@ -207,6 +207,7 @@ def run_constitution_check(
     current_phase: int = None,
     feedback_store=None,  # Optional FeedbackStore for auto-submission
     check_mode: str = "preflight",  # "preflight" or "postflight" (v6.56 fix)
+    skip_hr09: bool = False,       # v6.56 optimization
 ) -> ConstitutionCheckResult:
     """執行 Constitution 檢查
     
@@ -216,6 +217,7 @@ def run_constitution_check(
         current_phase: 只檢查到指定 Phase (1-8)。例如 current_phase=3 只檢查 Phase 1-3
         feedback_store: Optional FeedbackStore — if provided, violations are auto-submitted
         check_mode: "preflight" (進入前檢查前提條件) 或 "postflight" (完成後檢查產出品質)
+        skip_hr09: 是否跳過 HR-09 檢查 (避免遞迴調用時重複執行)
                    
     Returns:
         ConstitutionCheckResult
@@ -288,9 +290,11 @@ def run_constitution_check(
             # For implementation check, use project root (parent of docs)
             if ct == "implementation":
                 impl_path = Path(docs_path).parent
-                result = run_constitution_check(ct, str(impl_path), current_phase=None, feedback_store=None, check_mode=check_mode)  # Pass check_mode for allow_missing
+                # v6.56 optimization: skip_hr09=True for sub-checks
+                result = run_constitution_check(ct, str(impl_path), current_phase=None, feedback_store=None, check_mode=check_mode, skip_hr09=True)
             else:
-                result = run_constitution_check(ct, docs_path, current_phase=None, feedback_store=None, check_mode=check_mode)  # Pass check_mode
+                # v6.56 optimization: skip_hr09=True for sub-checks
+                result = run_constitution_check(ct, docs_path, current_phase=None, feedback_store=None, check_mode=check_mode, skip_hr09=True)
             results.append(result)
         
         # === Initialize accumulators FIRST (fix NameError bug) ===
@@ -413,7 +417,7 @@ def run_constitution_check(
 
     # === Run HR-09 (InferentialSensor) check and merge violations ===
     # HR-09 is run for all check types as a cross-cutting concern
-    if HR09_CHECKER_AVAILABLE and check_type != "all":
+    if HR09_CHECKER_AVAILABLE and check_type != "all" and not skip_hr09:
         try:
             hr09_checker = HR09Checker()
             hr09_result = hr09_checker.check(docs_path)
@@ -429,6 +433,21 @@ def run_constitution_check(
                 }
         except Exception:
             pass  # Don't let HR-09 failures break the check
+
+    # === v6.56 optimization: Cross-cutting HR-05 check ===
+    if not skip_hr09: # Re-use skip_hr09 for general cross-cutting checks
+        try:
+            documents = load_constitution_documents(docs_path)
+            hr05_result = check_hr05_methodology_priority(documents)["HR-05"]
+            if not hr05_result["passed"]:
+                # Only add if not already there
+                if not any(v.get("rule") == "HR-05" for v in result.violations):
+                    result.violations.extend(hr05_result["violations"])
+                    # HR-05 is medium severity, don't necessarily fail the whole check
+                    # unless score is very low
+                    result.score = (result.score + hr05_result["score"]) / 2
+        except Exception:
+            pass
 
     # === Auto-submit violations to FeedbackStore via UnifiedAlert ===
     if feedback_store is not None and result.violations:

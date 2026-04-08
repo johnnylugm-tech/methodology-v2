@@ -9,7 +9,7 @@ Phase 3: 實作與整合
 原則檢查:
 1. 正確性 100% - 代碼符合 SAD、模組職責清晰
 2. 安全性 100% - 安全實踐到位
-3. 可維護性 > 70% - 代碼可讀、文件完整
+3. 可維護性 > 80% - 代碼可讀、文件完整
 
 Usage:
     from implementation_constitution_checker import check_implementation_constitution
