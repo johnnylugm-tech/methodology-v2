@@ -4391,27 +4391,39 @@ class MethodologyCLI:
             
             print(f"\n   👨‍💻 [Developer] Implementing {fr} (iteration {iteration})")
             
-            # Determine artifact paths based on phase
+            # Determine artifact paths based on phase (use FULL paths relative to repo_path)
             if phase == 3:
-                artifact_paths = ["SRS.md", "SAD.md", "SKILL.md"]
+                # Phase 3 needs SRS (01-requirements/) and SAD (02-architecture/)
+                artifact_paths = [
+                    str(repo_path / "01-requirements" / "SRS.md"),
+                    str(repo_path / "02-architecture" / "SAD.md"),
+                    str(repo_path / "SKILL.md"),
+                ]
             elif phase == 1:
-                artifact_paths = ["SRS.md"]
+                artifact_paths = [str(repo_path / "01-requirements" / "SRS.md")]
             elif phase == 2:
-                artifact_paths = ["SRS.md", "SAD.md"]
+                artifact_paths = [
+                    str(repo_path / "01-requirements" / "SRS.md"),
+                    str(repo_path / "02-architecture" / "SAD.md"),
+                ]
             else:
                 artifact_paths = []
             
-            # Build task prompt
-            task_prompt = f"""Implement {fr} for Phase {phase}
+            # Build task prompt - include full paths so subagent knows WHERE to read files
+            artifact_list = '\n'.join([f"{i+1}. {p}" for i, p in enumerate(artifact_paths)])
+            task_prompt = f"""你是 Developer Agent，執行 {fr} 實作 (Phase {phase})
 
-Task: {args.task or f'Execute {fr}'}
-Phase: {phase}
+Project Root: {repo_path}
 
-Instructions:
-1. Read artifacts: {', '.join(artifact_paths)}
-2. Implement the required functionality
-3. Ensure code compiles and follows best practices
-4. Output JSON: {{"status": "success"|"error", "result": "...", "confidence": 1-10, "citations": [...], "summary": "..."}}
+任務：{args.task or f'Implement {fr}'}
+
+步驟：
+1. 讀取以下 artifact（使用完整路徑）：
+{artifact_list}
+
+2. 根據 SRS/SAD 實作 {fr} 的功能
+3. 確保代碼可編譯並遵循最佳實踐
+4. Output JSON: {{"status": "success"|"error"|"unable_to_proceed", "result": "...", "confidence": 1-10, "citations": ["FR-01", "SRS.md#L23"], "summary": "..."}}
 """
             
             # Spawn Developer
@@ -4432,17 +4444,24 @@ Instructions:
             # --- Reviewer Phase ---
             print(f"\n   🔍 [Reviewer] Reviewing {fr}")
             
-            review_prompt = f"""Review {fr} implementation for Phase {phase}
+            # Build reviewer prompt with full artifact paths
+            artifact_list_rev = '\n'.join([f"{i+1}. {p}" for i, p in enumerate(artifact_paths)])
+            review_prompt = f"""你是 Reviewer Agent，審查 {fr} 實作 (Phase {phase})
 
-Task: Review the developer's implementation of {fr}
-Phase: {phase}
+Project Root: {repo_path}
 
-Check:
-1. Does the code match SRS/SAD specifications?
-2. Are there any violations?
-3. Is the code production-ready?
+任務：審查 Developer 對 {fr} 的實作
 
-Output JSON: {{"status": "APPROVE"|"REJECT", "reason": "...", "confidence": 1-10, "citations": [...], "summary": "..."}}
+步驟：
+1. 讀取以下 artifact（使用完整路徑）：
+{artifact_list_rev}
+
+2. 審查要點：
+   - 代碼是否符合 SRS/SAD 規格？
+   - 是否有任何違規？
+   - 代碼是否達到可上線標準？
+
+Output JSON: {{"status": "APPROVE"|"REJECT", "reason": "...", "confidence": 1-10, "citations": ["FR-01", "SRS.md#L23"], "summary": "..."}}
 """
             
             # Spawn Reviewer
