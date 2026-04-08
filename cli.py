@@ -92,7 +92,7 @@ from steering.steering_loop import SteeringLoop, SteeringConfig
 class MethodologyCLI:
     """統一 CLI 入口"""
     
-    VERSION = "6.100.0"
+    VERSION = "6.101.0"
 
     # Lazy-loading subsystem factories
     _FACTORIES = {
@@ -4465,13 +4465,27 @@ class MethodologyCLI:
                 if hasattr(dev_result, 'confidence'):
                     print(f"      Confidence: {dev_result.confidence}")
                 
-                # v6.100: Write files returned by Developer to disk
+                # v6.101: Parse Developer result (may be markdown-wrapped JSON)
                 try:
                     import json as json_mod
+                    import re
                     dev_result_text = str(dev_result.result) if dev_result.result else "{}"
+                    
+                    # v6.101 fix: Strip markdown code block markers before parsing JSON
+                    # Handle: ```json ... ```, ``` ... ```, [SKILL] prefix, etc.
+                    dev_result_text = dev_result_text.strip()
+                    if dev_result_text.startswith('[SKILL]'):
+                        dev_result_text = dev_result_text[6:].strip()
+                    
+                    # Remove ```json, ``` markers
+                    json_match = re.search(r'```(?:json)?\s*([\s\S]*?)```', dev_result_text)
+                    if json_match:
+                        dev_result_text = json_match.group(1).strip()
+                    
                     try:
                         dev_result_data = json_mod.loads(dev_result_text) if isinstance(dev_result_text, str) else {}
-                    except:
+                    except json_mod.JSONDecodeError as je:
+                        print(f"   ⚠️  JSON parse error after cleaning: {je}")
                         dev_result_data = {}
                     
                     files = dev_result_data.get('files', [])
@@ -4485,7 +4499,7 @@ class MethodologyCLI:
                                 file_path.write_text(file_content)
                                 print(f"      ✅ {f.get('path')}")
                     else:
-                        print(f"   ⚠️  No files returned in Developer result")
+                        print(f"   ⚠️  No files returned. Raw result preview: {dev_result_text[:100]}...")
                 except Exception as e:
                     print(f"   ❌ Error writing files: {e}")
             except Exception as e:

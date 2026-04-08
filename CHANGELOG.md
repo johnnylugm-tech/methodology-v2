@@ -1,3 +1,12 @@
+## v6.101 (2026-04-09)
+
+### fix: Parse markdown-wrapped JSON from Developer result (v6.101)
+
+- Root cause: dev_result.result is markdown code block, not pure JSON
+- Fix: Strip [SKILL] prefix, ```json markers before json.loads()
+
+---
+
 ## v6.100 (2026-04-09)
 
 ### fix: Developer returns file content, CLI writes to disk (v6.100)
