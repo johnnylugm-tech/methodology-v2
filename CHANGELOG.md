@@ -1,3 +1,19 @@
+## v6.87 (2026-04-09)
+
+### fix: Phase 3 Pre-flight Constitution Check Logic Contradiction (v6.86-87)
+
+- **Critical Bug Fix**: `run-phase --phase 3` Pre-flight Constitution check included 'implementation' type, but Phase 3's job IS to generate the implementation code. Logic contradiction caused check to always fail (33% < 80%)
+- **Solution A+B**: Separated preflight_mapping from postflight_mapping
+  - Pre-flight: checks PREVIOUS phase outputs as prerequisites  
+  - Post-flight: checks CURRENT phase outputs
+- **Bug Fix**: NameError 'runner' in POST-FLIGHT (cli.py line 4338)
+- **Bug Fix**: BVS path logic corrected in `_check_behaviour()`
+- **Optimization**: HR-09 skip_hr09 parameter to avoid redundant recursive calls
+- **CLI Fix**: Added missing --type options (implementation, verification, etc)
+- **Files Changed**: quality_gate/constitution/__init__.py, cli.py, runner.py, implementation_constitution_checker.py
+
+---
+
 ## v6.81 (2026-04-08)
 
 ### fix: 16 Low Priority Code Review Issues (Gemini Code Review)
