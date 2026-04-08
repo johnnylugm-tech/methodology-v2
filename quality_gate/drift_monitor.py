@@ -152,6 +152,7 @@ class DriftMonitor:
         try:
             result = self.baseline_manager.check_drift(current_metrics)
         except Exception as e:
+            logging.warning(f"[DriftMonitor] check_drift failed: {e}")
             return {"has_drift": False, "error": str(e)}
 
         # DriftResult dataclass → dict (handles both real dataclass and plain dict)

@@ -170,7 +170,7 @@ class CoverageAnalyzer:
                 for func, calls in funcs.items():
                     key = f"{py_file.name}:{func}"
                     callgraph[key] = list(set(calls))
-            except:
+            except Exception:
                 pass
         
         return callgraph

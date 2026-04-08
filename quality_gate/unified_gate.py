@@ -414,7 +414,7 @@ class UnifiedGate:
                 capture_output=True, text=True, cwd=self.project_path
             )
             return result.stdout.strip()
-        except:
+        except Exception:
             return None
 
     def _is_new_phase(self, phase: int) -> bool:

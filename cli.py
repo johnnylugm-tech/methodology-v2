@@ -3800,7 +3800,7 @@ class MethodologyCLI:
                 current_module = state.get("current_module")
                 if current_step or current_module:
                     print(f"\n📊 State Context: Step {current_step}, Module {current_module}")
-            except:
+            except Exception:
                 pass
 
         return 0
@@ -5013,7 +5013,7 @@ class MethodologyCLI:
             try:
                 result_data = json.loads(result.stdout)
                 score = result_data.get("score", result_data.get("total_score", 0))
-            except:
+            except Exception:
                 score = 0
             if score < threshold:
                 check_results.append(("Constitution", False, f"{score:.0f}% < {threshold}%"))
@@ -5492,7 +5492,15 @@ class MethodologyCLI:
                     handler = getattr(module, func_name)
                 else:
                     # 假設是內建或已導入的函式名
-                    handler = eval(handler_path, globals())
+                    # Security fix: use getattr instead of eval for handler lookup
+                    parts = handler_path.rsplit('.', 1)
+                    if len(parts) == 2:
+                        module_name, func_name = parts
+                        import importlib
+                        mod = importlib.import_module(module_name)
+                        handler = getattr(mod, func_name)
+                    else:
+                        handler = None
             except Exception as e:
                 pass # Removed print-debug
                 return 1

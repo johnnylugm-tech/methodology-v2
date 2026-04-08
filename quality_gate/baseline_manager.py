@@ -165,7 +165,7 @@ class BaselineManager:
         return DriftResult(
             tag=latest["tag"],
             baseline_timestamp=latest["timestamp"],
-            current_timestamp=datetime.now().isoformat(),
+            current_timestamp=datetime.now(timezone.utc).isoformat(),
             drift=drift,
             summary=summary
         )
@@ -266,7 +266,7 @@ def main():
             result = DriftResult(
                 tag="none",
                 baseline_timestamp="none",
-                current_timestamp=datetime.now().isoformat(),
+                current_timestamp=datetime.now(timezone.utc).isoformat(),
                 drift={},
                 summary="No baseline found — run with --capture --phase N first"
             )
