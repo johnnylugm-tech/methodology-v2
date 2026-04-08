@@ -22,6 +22,8 @@ from typing import Dict, List, Any, Optional, Tuple
 from pathlib import Path
 import json
 
+from steering.steering_loop import IterationResult, SteeringLoop, SteeringConfig
+
 
 # ─── HR Constraints ────────────────────────────────────────────────────────────
 
