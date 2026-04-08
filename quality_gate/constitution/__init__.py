@@ -198,6 +198,7 @@ def run_constitution_check(
     docs_path: str = "docs",
     current_phase: int = None,
     feedback_store=None,  # Optional FeedbackStore for auto-submission
+    check_mode: str = "preflight",  # "preflight" or "postflight" (v6.56 fix)
 ) -> ConstitutionCheckResult:
     """執行 Constitution 檢查
     
@@ -206,25 +207,49 @@ def run_constitution_check(
         docs_path: docs 目錄路徑
         current_phase: 只檢查到指定 Phase (1-8)。例如 current_phase=3 只檢查 Phase 1-3
         feedback_store: Optional FeedbackStore — if provided, violations are auto-submitted
-        
+        check_mode: "preflight" (進入前檢查前提條件) 或 "postflight" (完成後檢查產出品質)
+                   
     Returns:
         ConstitutionCheckResult
+    
+    Pre-flight vs Post-flight 設計原則 (v6.56):
+        - Pre-flight: 只檢查「已完成 Phase 的產出」作為前提條件
+        - Post-flight: 只檢查「當前 Phase 剛生成的產出」
+        - 例如 Phase 3 Pre-flight: 檢查 SRS, SAD (Phase 1-2 產出)
+        - 例如 Phase 3 Post-flight: 檢查 implementation (Phase 3 產出)
     
     Auto-submission:
         When feedback_store is provided and violations are found, each violation
         is automatically converted to StandardFeedback and submitted to the store.
     """
-    # Phase 映射
-    phase_mapping = {
+    # === v6.56 FIX: 分離 Pre-flight vs Post-flight ===
+    # Pre-flight: 檢查「已完成 Phase 的產出」作為進入前提
+    # Post-flight: 檢查「當前 Phase 剛生成的產出」
+    preflight_mapping = {
         1: ["srs"],
         2: ["srs", "sad"],
-        3: ["srs", "sad", "implementation"],
-        4: ["srs", "sad", "implementation", "test_plan"],
-        5: ["srs", "sad", "implementation", "test_plan", "verification"],
-        6: ["srs", "sad", "implementation", "test_plan", "verification", "quality_report"],
-        7: ["srs", "sad", "implementation", "test_plan", "verification", "quality_report", "risk_management"],
-        8: ["srs", "sad", "implementation", "test_plan", "verification", "quality_report", "risk_management", "configuration"],
+        3: ["srs", "sad"],                    # ✅ Phase 3 Pre-flight: 不含 implementation（還沒產生）
+        4: ["srs", "sad", "implementation"], # ✅ Phase 4 Pre-flight: Phase 3 已完成，implementation 存在
+        5: ["srs", "sad", "implementation", "test_plan"],
+        6: ["srs", "sad", "implementation", "test_plan", "verification"],
+        7: ["srs", "sad", "implementation", "test_plan", "verification", "quality_report"],
+        8: ["srs", "sad", "implementation", "test_plan", "verification", "quality_report", "risk_management"],
     }
+    
+    # Post-flight: 只檢查「當前 Phase 的產出」
+    postflight_mapping = {
+        1: ["srs"],
+        2: ["sad"],
+        3: ["implementation"],     # ✅ Phase 3 Post-flight: 只檢查 implementation（Phase 3 產出）
+        4: ["test_plan"],
+        5: ["verification"],
+        6: ["quality_report"],
+        7: ["risk_management"],
+        8: ["configuration"],
+    }
+    
+    # 根據 check_mode 選擇對應 mapping
+    phase_mapping = preflight_mapping if check_mode == "preflight" else postflight_mapping
     
     # 如果指定 current_phase，調整檢查範圍
     if current_phase is not None and current_phase in phase_mapping:
@@ -255,9 +280,9 @@ def run_constitution_check(
             # For implementation check, use project root (parent of docs)
             if ct == "implementation":
                 impl_path = Path(docs_path).parent
-                result = run_constitution_check(ct, str(impl_path), current_phase=None, feedback_store=None)  # Don't re-submit in recursive calls
+                result = run_constitution_check(ct, str(impl_path), current_phase=None, feedback_store=None, check_mode=check_mode)  # Pass check_mode for allow_missing
             else:
-                result = run_constitution_check(ct, docs_path, current_phase=None, feedback_store=None)  # Don't re-submit in recursive calls
+                result = run_constitution_check(ct, docs_path, current_phase=None, feedback_store=None, check_mode=check_mode)  # Pass check_mode
             results.append(result)
         
         # === Run HR-09 (InferentialSensor) check and merge violations ===
@@ -354,7 +379,13 @@ def run_constitution_check(
         from importlib import import_module
         module = import_module(f".{checker_module}", package="quality_gate.constitution")
         checker_fn = getattr(module, f"check_{check_type}_constitution")
-        result = checker_fn(docs_path)
+        
+        # === v6.56 FIX: implementation 在 preflight 時允許缺失 ===
+        # Phase 3 preflight 檢查 implementation 時，代碼還沒產生，不應該失敗
+        if check_type == "implementation" and check_mode == "preflight":
+            result = checker_fn(docs_path, allow_missing=True)
+        else:
+            result = checker_fn(docs_path)
     else:
         result = ConstitutionCheckResult(
             check_type=check_type,

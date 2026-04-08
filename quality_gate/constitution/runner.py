@@ -120,6 +120,12 @@ def main():
         help="只檢查到指定 Phase (1-8)。用於階段性檢查，例如：--current-phase 3 只檢查 Phase 1-3"
     )
     parser.add_argument(
+        "--check-mode", "-m",
+        choices=["preflight", "postflight"],
+        default="preflight",
+        help="檢查模式：preflight (進入前檢查前提) 或 postflight (完成後檢查產出). 預設: preflight"
+    )
+    parser.add_argument(
         "--format", "-f",
         choices=["text", "json"],
         default="text",
@@ -175,7 +181,7 @@ def main():
         print(f"Check type: {args.type}")
     
     # 執行檢查
-    result = run_constitution_check(args.type, str(docs_path), args.current_phase)
+    result = run_constitution_check(args.type, str(docs_path), args.current_phase, check_mode=args.check_mode)
     
     # 輸出結果
     if args.format == "json":

@@ -48,8 +48,17 @@ class ImplementationChecklist:
     # 其他
     version_info: bool = False
 
-def check_implementation_constitution(path: str) -> ConstitutionCheckResult:
-    """執行 Implementation Constitution 檢查"""
+def check_implementation_constitution(
+    path: str,
+    allow_missing: bool = False  # v6.56: preflight 時允許還沒有 implementation
+) -> ConstitutionCheckResult:
+    """執行 Implementation Constitution 檢查
+    
+    Args:
+        path: 專案根目錄路徑
+        allow_missing: 若為 True，當沒有代碼檔案時返回 pass（用於 Pre-flight）
+                       因為 Phase 3 的 Pre-flight 檢查時，implementation 還沒產生
+    """
     path_obj = Path(path)
     
     violations = []
@@ -58,6 +67,20 @@ def check_implementation_constitution(path: str) -> ConstitutionCheckResult:
     
     # 檢查代碼檔案
     code_files = list(path_obj.rglob("*.py")) + list(path_obj.rglob("*.js"))
+    
+    # === v6.56 FIX: Pre-flight 時 allow_missing ===
+    if allow_missing and not code_files:
+        return ConstitutionCheckResult(
+            check_type="implementation",
+            passed=True,                    # ✅ 不阻擋
+            score=100.0,
+            violations=[],
+            details={
+                "status": "no_implementation_yet",
+                "reason": "Pre-flight: Phase 3 implementation not generated yet"
+            },
+            recommendations=["Implementation will be generated during Phase 3 execution"]
+        )
     
     # 1. 檢查 README 或文件
     has_docs = any(path_obj.glob("README*")) or any(path_obj.glob("*.md"))
