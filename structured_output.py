@@ -330,7 +330,7 @@ class StructuredOutputEngine:
             # 嘗試提取 JSON
             json_str = self._extract_json(raw_output)
             return json.loads(json_str)
-        except:
+        except Exception:
             pass
         
         # Strategy 2: Regex extraction
@@ -345,7 +345,7 @@ class StructuredOutputEngine:
             match = re.search(r'\{[\s\S]*\}', raw_output)
             if match:
                 return json.loads(match.group(0))
-        except:
+        except Exception:
             pass
         
         # Strategy 3: Key-value extraction
@@ -354,7 +354,7 @@ class StructuredOutputEngine:
             data = self._extract_kv(raw_output)
             if data:
                 return data
-        except:
+        except Exception:
             pass
         
         return None
@@ -560,7 +560,7 @@ def extract_json(text: str) -> Optional[Dict]:
         match = re.search(r'\{[\s\S]*\}', text)
         if match:
             return json.loads(match.group(0))
-    except:
+    except Exception:
         pass
     return None
 

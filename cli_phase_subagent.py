@@ -409,7 +409,7 @@ PHASE_ITERATION = {
     1: {
         "name": "需求規格",
         "four_dimensional": {
-            "規範符合度": {"target": "10/10", "metric": "HR-15 citations", "method": "grep -c '\[FR-' SRS.md"},
+            "規範符合度": {"target": "10/10", "metric": "HR-15 citations", "method": "grep -c '\\[FR-' SRS.md"},
             "A/B 協作": {"target": "10/10", "metric": "sessions_spawn.log", "method": "developer + reviewer 各 1 筆記錄"},
             "子代理管理": {"target": "10/10", "metric": "SubagentIsolator", "method": "fresh_messages 隔離"},
             "Traceability": {"target": "10/10", "metric": "FR↔NFR 映射", "method": "每個 FR 有對應 NFR"}
@@ -441,7 +441,7 @@ PHASE_ITERATION = {
     3: {
         "name": "代碼實現",
         "four_dimensional": {
-            "規範符合度": {"target": "10/10", "metric": "HR-15 citations + docstring [FR-XX]", "method": "grep -c '\[FR-' app/**/*.py"},
+            "規範符合度": {"target": "10/10", "metric": "HR-15 citations + docstring [FR-XX]", "method": "grep -c '\\[FR-' app/**/*.py"},
             "A/B 協作": {"target": "10/10", "metric": "sessions_spawn.log", "method": "developer + reviewer 各 1 筆記錄"},
             "子代理管理": {"target": "10/10", "metric": "SubagentIsolator", "method": "fresh_messages 隔離"},
             "測試覆蓋率": {"target": "10/10", "metric": "pytest PASS + coverage ≥80%", "method": "pytest --cov=app/ -v"}
