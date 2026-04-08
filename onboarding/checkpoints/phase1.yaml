@@ -19,16 +19,16 @@ checkpoints:
 
   - id: cp1_quality_gate
     title: "Quality Gate Setup"
-    description: "Initialize quality gate sensors and configuration"
+    description: "Run first quality gate check to verify configuration"
     command: "quality-gate"
-    args: ["init"]
+    args: ["check", "--target", ".", "--phase", "1"]
     artifacts:
       - path: ".methodology/quality_gate/"
         description: "Quality gate configuration"
     hint: |
-      Run: python cli.py quality-gate init
-      If quality_watch is not running, start it with:
-      python quality_watch.py start --project .
+      Run: python cli.py quality-gate check --target . --phase 1
+      Valid subcommands: check, all, doc, docs, phase, aspice, ai-test
+      Run 'python cli.py quality-gate --help' to see all options.
 
   - id: cp1_srs
     title: "SRS.md Creation"

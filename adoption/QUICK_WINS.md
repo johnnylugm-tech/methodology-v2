@@ -8,11 +8,12 @@
 
 **Time: 5 minutes. No setup required.**
 
-This runs a spec-alignment check on any codebase directory. No git hooks, no CI integration — just run it and see what happens.
+Runs a spec-alignment check on any codebase directory. No git hooks, no CI integration — just run it and see what happens.
 
 ```bash
-# From your project root
-python -m quality_gate run --target ./src --phase 2
+# From the methodology-v2 root directory
+cd /path/to/methodology-v2
+python cli.py quality-gate check --target /path/to/your/project --phase 2
 ```
 
 **What you'll get:**
@@ -28,28 +29,29 @@ python -m quality_gate run --target ./src --phase 2
 
 ---
 
-## Quick Win #2: Add a Slack Notification to Your Existing CI
+## Quick Win #2: Run Quality Gate from Your Project Directory
 
-**Time: 10 minutes. Uses existing Slack webhook — no new channel needed.**
+**Time: 5 minutes. Point to your project from anywhere.**
 
-If you already have a Slack webhook URL (any channel), you can pipe quality gate results there.
+If you want to run quality gate from your actual project directory (not the methodology-v2 repo):
 
 ```bash
-# Set your webhook once
-export SLACK_WEBHOOK_URL="https://hooks.slack.com/services/YOUR/WEBHOOK/URL"
+# From your project root
+cd /path/to/your/project
 
-# Run with notification
-python -m quality_gate run --target ./src --notify-slack
+# Run quality gate using absolute path to methodology-v2
+python /path/to/methodology-v2/cli.py quality-gate check --target ./src --phase 2
 ```
 
 **What happens:**
-- After each quality gate run, a summary posts to your configured webhook
-- No new channel created — goes to wherever you point it
-- You see failures without checking CI logs
+- Quality gate reads your source files and checks them against your spec
+- Results show alignment score and specific violations
+- No files are modified
 
 **Why this matters:**
-- You get visibility without changing your team's notification habits
-- Failures surface where engineers already look
+- You can try it on any existing project
+- No installation required — just points to the CLI
+- See value in under 5 minutes
 
 ---
 
@@ -68,8 +70,8 @@ jobs:
       - uses: actions/checkout@v4
       - name: Run Quality Gate
         run: |
-          pip install -q quality-gate
-          python -m quality_gate run --target ./src --phase 2
+          python cli.py quality-gate check --target ./src --phase 2
+        working-directory: /path/to/methodology-v2  # adjust to where methodology-v2 is checked out
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 ```
@@ -91,7 +93,7 @@ jobs:
 | If you want... | Start with... |
 |---------------|---------------|
 | Quick feedback, no commitment | Quick Win #1 |
-| Visibility in your existing tools | Quick Win #2 |
+| Try on an existing project | Quick Win #2 |
 | Automated blocking on PRs | Quick Win #3 |
 
 All three are independent. Pick whichever matches your current pain point.

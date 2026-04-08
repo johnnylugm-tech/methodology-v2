@@ -16,7 +16,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: pip install -q quality-gate && python -m quality_gate run --target ./src --phase 2
+      - name: Run Quality Gate
+        run: |
+          METHODOLOGY_ROOT="/path/to/methodology-v2"
+          python $METHODOLOGY_ROOT/cli.py quality-gate check --target ./src --phase 2
+        working-directory: ./your-project
 ```
 
 ### Full Version with Fail Threshold
@@ -28,9 +32,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Run Quality Gate
-        run: python -m quality_gate run --target ./src --phase 2 --fail-threshold 0.8
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          METHODOLOGY_ROOT="/path/to/methodology-v2"
+          python $METHODOLOGY_ROOT/cli.py quality-gate check --target ./src --phase 2
+        working-directory: ./your-project
       - name: Upload Report
         if: failure()
         uses: actions/upload-artifact@v4
@@ -54,12 +59,12 @@ Uses your existing Slack webhook. No new channel, no new app.
 
 ```bash
 #!/bin/bash
-# Run quality gate, pipe result to Slack webhook
-python -m quality_gate run --target ./src --phase 2 --json > qg_result.json
+# Run quality gate and send result to Slack webhook
+METHODOLOGY_ROOT="/path/to/methodology-v2"
+RESULT=$(python $METHODOLOGY_ROOT/cli.py quality-gate check --target ./src --phase 2 2>&1)
+PASSED=$?
 
-# Parse result and send to Slack
-RESULT=$(cat qg_result.json | jq -r '.passed // false')
-if [ "$RESULT" = "false" ]; then
+if [ $PASSED -ne 0 ]; then
   curl -s -X POST -H 'Content-type: application/json' \
     --data "{\"text\":\"❌ Quality Gate Failed on PR: $(git rev-parse --abbrev-ref HEAD)\"}" \
     "$SLACK_WEBHOOK_URL"
@@ -88,27 +93,25 @@ fi
 
 Don't create a new issue type or project. Link quality gate failures to existing Jira tickets.
 
-### Link Failure to Existing Ticket (2 fields)
+### Run with Jira Link (bash)
 
 ```bash
-python -m quality_gate run --target ./src --phase 2 \
-  --jira-link "https://your-org.atlassian.net/browse/PROJ-123"
-```
+#!/bin/bash
+METHODOLOGY_ROOT="/path/to/methodology-v2"
+PROJECT="/path/to/your/project"
 
-This adds the quality gate result as a comment on the existing ticket. No new system.
+# Run quality gate and capture result
+python $METHODOLOGY_ROOT/cli.py quality-gate check \
+  --target $PROJECT/src \
+  --phase 2
 
-### Jira Webhook Payload (for automation server)
-
-```json
-{
-  "webhookEvent": "comment_created",
-  "issue": {
-    "key": "PROJ-123"
-  },
-  "comment": {
-    "body": "Quality Gate Result: FAILED\nFiles checked: 12\nViolations: 2\nSpec: SRS.md"
-  }
-}
+# Link result to existing Jira ticket
+# (adds quality gate output as a comment on the ticket)
+curl -s -X POST \
+  -H "Authorization: Basic $JIRA_AUTH" \
+  -H "Content-Type: application/json" \
+  --data "{\"body\": \"Quality Gate Result: See CI output.\"}" \
+  "https://your-org.atlassian.net/rest/api/3/issue/PROJ-123/comment"
 ```
 
 **What to track (existing ticket fields):**
@@ -144,4 +147,4 @@ All three are additive. Start with whichever tool you're already using daily.
 
 - [Value Proposition](./VALUE_PROPOSITION.md) — Why this matters to engineers
 - [Quick Wins](./QUICK_WINS.md) — 3 things to try today
-- [Case Study Template](../CASE_STUDIES/template.json) — Measure your own results
+- [Case Study Template](./CASE_STUDIES/template.json) — Measure your own results
