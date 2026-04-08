@@ -1,3 +1,16 @@
+## v6.78 (2026-04-08)
+
+### fix: BUG-001 - Steering Loop IterationResult Import Bug
+
+`steering/integrations.py` 第 469 行 `iterate_with_full_check()` 的 return type hint 使用了 `IterationResult`，但未從 `steering.steering_loop` import。
+
+修復：在 `integrations.py` 頂部加入：
+```python
+from steering.steering_loop import IterationResult, SteeringLoop, SteeringConfig
+```
+
+---
+
 ## v6.77 (2026-04-08)
 
 ### feat: P3-1 Technical Adoption Kit — 工程師視角的價值主張工具包
