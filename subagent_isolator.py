@@ -393,6 +393,7 @@ HR-15 強制：
             result = f"[Mock] {role.value}: {task[:50]}..."
             confidence = 7
             citations = []
+            review_status = None  # v6.96 fix: must initialize in else block
             error = None
         
         duration = (datetime.now() - start_time).total_seconds()

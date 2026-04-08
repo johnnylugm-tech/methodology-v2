@@ -1,3 +1,13 @@
+## v6.96 (2026-04-09)
+
+### fix: review_status in mock mode else block (v6.96)
+
+- Root cause: review_status was only assigned in try block, not in mock mode else block
+- When use_ondemand=False (mock mode), review_status was never initialized
+- Fix: Add review_status = None in the else block
+
+---
+
 ## v6.95 (2026-04-09)
 
 ### fix: review_status init in sessions_spawn exception handler (v6.95)
