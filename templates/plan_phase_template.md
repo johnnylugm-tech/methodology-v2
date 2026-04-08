@@ -411,7 +411,318 @@ tr.register("NewTool", handler)
 
 ---
 
-## 17. 下一步
+## 17. Agent 執行流程（v6.102+ 必讀）
+
+### ⚠️ 重要：sessions_spawn 由 Agent 直接呼叫
+
+`sessions_spawn` 是 OpenClaw runtime tool，**不是 Python module**。
+cli.py 無法 import，但 **Agent 可以直接呼叫**。
+
+### Agent 執行 Workflow
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ Agent: python cli.py run-phase --phase {PHASE}            │
+│   → PRE-FLIGHT checks (FSM, Constitution, Tool Registry)    │
+└─────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────┐
+│ Agent: 派遣 Developer 實作 FR-01                            │
+│                                                             │
+│ sessions_spawn(                                            │
+│     task="""你是 Developer...                                │
+│         1. 讀取 SRS.md (§FR-01), SAD.md                    │
+│         2. 實作代碼                                        │
+│         3. 返回 JSON:                                       │
+│            {{"status": "success",                         │
+│              "files": [                                    │
+│                {{"path": "03-development/...",            │
+│                  "content": "# 完整代碼..."}}             │
+│              ],                                            │
+│              "confidence": 8,                              │
+│              "citations": ["FR-01", "SRS.md#L23"],       │
+│              "summary": "..."}}                            │
+│     """,                                                 │
+│     mode="run",                                           │
+│     runtime="subagent"                                     │
+│ )                                                          │
+└─────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────┐
+│ Agent: 解析 Developer 返回的 JSON，寫入檔案                    │
+│                                                             │
+│ import json                                                │
+│ result = json.loads(dev_response)                           │
+│ for f in result["files"]:                                 │
+│     path = repo_path / f["path"]                          │
+│     path.parent.mkdir(parents=True, exist_ok=True)          │
+│     path.write_text(f["content"])                          │
+│     print(f"✅ {f['path']}")                              │
+└─────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────┐
+│ Agent: 派遣 Reviewer 審查 FR-01                              │
+│                                                             │
+│ sessions_spawn(                                            │
+│     task="""你是 Reviewer，審查 FR-01                        │
+│         1. 讀取代碼檔案                                    │
+│         2. 對照 SRS.md §FR-01                              │
+│         3. 返回 JSON:                                       │
+│            {{"status": "success",                         │
+│              "review_status": "APPROVE",                  │
+│              "reason": "...",                              │
+│              "confidence": 9,                             │
+│              "citations": ["FR-01"],                      │
+│              "summary": "..."}}                            │
+│     """,                                                 │
+│     mode="run",                                           │
+│     runtime="subagent"                                     │
+│ )                                                          │
+└─────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────┐
+│ Agent: 呼叫 PhaseHooks 記錄結果                              │
+│                                                             │
+│ from phase_hooks import PhaseHooks                           │
+│ hooks = PhaseHooks(project_path, phase={PHASE})             │
+│                                                             │
+│ hooks.monitoring_after_dev("FR-01", dev_result)            │
+│ hooks.monitoring_after_rev("FR-01", rev_result)            │
+│                                                             │
+│ # HR-12 檢查                                               │
+│ if iteration >= 5:                                         │
+│     hooks.monitoring_hr12_check("FR-01", iteration=5)      │
+│     # → PAUSE，通知 Johnny                                  │
+└─────────────────────────────────────────────────────────────┘
+                              ↓
+                    重複執行 FR-02 ~ FR-{FR_COUNT}
+                              ↓
+┌─────────────────────────────────────────────────────────────┐
+│ Agent: python cli.py run-phase --phase {PHASE} --resume      │
+│   → POST-FLIGHT (Constitution, State Update, Summary)        │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### 完整 Agent 執行腳本
+
+```python
+# ==========================================
+# Phase {PHASE} FR 執行腳本
+# ==========================================
+
+from phase_hooks import PhaseHooks
+import json
+
+PROJECT_PATH = "/path/to/project"
+PHASE = {PHASE}
+FR_LIST = ["FR-01", "FR-02", ..., "FR-{FR_COUNT}"]
+
+# 初始化 PhaseHooks
+hooks = PhaseHooks(PROJECT_PATH, phase=PHASE)
+
+# ==========================================
+# PRE-FLIGHT（使用 CLI）
+# ==========================================
+# Agent: python cli.py run-phase --phase {PHASE}
+# （PRE-FLIGHT checks 會自動執行）
+
+# ==========================================
+# FR 執行迴圈
+# ==========================================
+for fr_id in FR_LIST:
+    print(f"\n{'='*50}")
+    print(f"📦 執行 {fr_id}")
+    print(f"{'='*50}")
+    
+    iteration = 1
+    max_iterations = 5
+    
+    while iteration <= max_iterations:
+        print(f"\n🔄 {fr_id} Iteration {iteration}/{max_iterations}")
+        
+        # ==========================================
+        # 1. Developer 實作
+        # ==========================================
+        print(f"\n👨💻 [Developer] 實作 {fr_id}")
+        
+        dev_task = f"""你是 Developer Agent，實作 {fr_id}
+
+任務：
+1. 讀取 SRS.md (§{fr_id}) 和 SAD.md
+2. 實現代碼
+3. 返回 JSON（不要寫入檔案）：
+
+{{
+  "status": "success",
+  "files": [
+    {{
+      "path": "03-development/module_{fr_id}/main.py",
+      "content": "# 完整代碼..."
+    }}
+  ],
+  "confidence": 1-10,
+  "citations": ["{fr_id}", "SRS.md#L23"],
+  "summary": "實作摘要"
+}}
+"""
+        
+        # Agent 直接呼叫 sessions_spawn
+        dev_result = sessions_spawn(
+            task=dev_task,
+            mode="run",
+            runtime="subagent"
+        )
+        
+        # ==========================================
+        # 2. 解析 JSON 並寫入檔案
+        # ==========================================
+        print(f"\n📁 寫入檔案...")
+        
+        try:
+            # 解析 Developer 返回
+            result_text = dev_result.get("result", "{}")
+            result_text = result_text.strip()
+            
+            # 去除 markdown markers
+            if result_text.startswith('[SKILL]'):
+                result_text = result_text[6:].strip()
+            import re
+            match = re.search(r'```(?:json)?\s*([\s\S]*?)```', result_text)
+            if match:
+                result_text = match.group(1).strip()
+            
+            dev_data = json.loads(result_text)
+            files = dev_data.get("files", [])
+            
+            for f in files:
+                file_path = PROJECT_PATH / f["path"]
+                file_path.parent.mkdir(parents=True, exist_ok=True)
+                file_path.write_text(f["content"])
+                print(f"   ✅ {f['path']}")
+        except Exception as e:
+            print(f"   ❌ 檔案寫入失敗: {e}")
+        
+        # ==========================================
+        # 3. Reviewer 審查
+        # ==========================================
+        print(f"\n🔍 [Reviewer] 審查 {fr_id}")
+        
+        rev_task = f"""你是 Reviewer Agent，審查 {fr_id}
+
+任務：
+1. 讀取代碼檔案
+2. 對照 SRS.md (§{fr_id}) 和 SAD.md
+3. 返回 JSON：
+
+{{
+  "status": "success",
+  "review_status": "APPROVE" 或 "REJECT",
+  "reason": "審查理由",
+  "confidence": 1-10,
+  "citations": ["{fr_id}", "SAD.md#L45"],
+  "summary": "審查摘要"
+}}
+"""
+        
+        rev_result = sessions_spawn(
+            task=rev_task,
+            mode="run",
+            runtime="subagent"
+        )
+        
+        # ==========================================
+        # 4. 呼叫 PhaseHooks 記錄結果
+        # ==========================================
+        hooks.monitoring_after_dev(fr_id, dev_result)
+        hooks.monitoring_after_rev(fr_id, rev_result)
+        
+        # ==========================================
+        # 5. 判斷是否通過
+        # ==========================================
+        review_status = rev_result.get("review_status", None)
+        
+        if review_status == "APPROVE":
+            print(f"\n✅ {fr_id} APPROVE")
+            break
+        else:
+            print(f"\n🔄 {fr_id} REJECT → 重新實作")
+            iteration += 1
+            
+            # HR-12 檢查
+            if iteration > max_iterations:
+                print(f"\n⚠️  HR-12 TRIGGERED: > {max_iterations} 輪")
+                print(f"   專案 PAUSE，通知 Johnny")
+                # hooks.monitoring_hr12_check(fr_id, iteration)
+                break
+
+# ==========================================
+# POST-FLIGHT（使用 CLI）
+# ==========================================
+# Agent: python cli.py run-phase --phase {PHASE} --resume
+# （POST-FLIGHT checks 會自動執行）
+```
+
+### PhaseHooks 呼叫時機
+
+| 時機 | PhaseHook 呼叫 | 用途 |
+|------|---------------|------|
+| PRE-FLIGHT | `hooks.preflight_all()` | 執行所有預檢查 |
+| Developer 執行前 | `hooks.monitoring_before_dev(fr_id)` | 記錄即將開始 |
+| Developer 執行後 | `hooks.monitoring_after_dev(fr_id, dev_result)` | 記錄結果 |
+| Reviewer 執行前 | `hooks.monitoring_before_rev(fr_id)` | 記錄即將開始 |
+| Reviewer 執行後 | `hooks.monitoring_after_rev(fr_id, rev_result)` | 記錄結果 |
+| HR-12 檢查 | `hooks.monitoring_hr12_check(fr_id, iteration)` | 超過 5 輪阻擋 |
+| POST-FLIGHT | `hooks.postflight_all()` | 執行所有後檢查 |
+
+### sessions_spawn 呼叫方式
+
+```python
+# Agent 直接呼叫（不是 import，是 tool 呼叫）
+sessions_spawn(
+    task="你是 Developer Agent...",
+    mode="run",           # 或 "session"
+    runtime="subagent",   # 固定值
+    timeout=300,          # 可選，超時秒數
+)
+```
+
+### Developer 返回格式
+
+```json
+{
+  "status": "success",
+  "files": [
+    {
+      "path": "03-development/module_FR-01/main.py",
+      "content": "# 完整代碼（不要截斷）..."
+    },
+    {
+      "path": "03-development/module_FR-01/utils.py",
+      "content": "# 完整代碼..."
+    }
+  ],
+  "confidence": 8,
+  "citations": ["FR-01", "SRS.md#L23-L45"],
+  "summary": "FR-01 LexiconMapper 實作完成"
+}
+```
+
+### Reviewer 返回格式
+
+```json
+{
+  "status": "success",
+  "review_status": "APPROVE",
+  "reason": "代碼符合 SRS §FR-01 規格，邏輯正確",
+  "confidence": 9,
+  "citations": ["FR-01", "SAD.md#L45-L60"],
+  "summary": "審查通過，無違規"
+}
+```
+
+---
+
+## 18. 下一步
 
 ```bash
 # Johnny 審核後，執行：
