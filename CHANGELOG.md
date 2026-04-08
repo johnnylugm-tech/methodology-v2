@@ -1,3 +1,22 @@
+## v6.80 (2026-04-08)
+
+### fix: 15 Medium Priority Code Review Issues (Gemini Code Review)
+
+- **Medium #5** (`constitution/claim_verifier.py`): `verify_claims()` now calls `_assess_reasoning_chain()` and populates `VerifiedClaim.reasoning_chain_score`
+- **Medium #6** (`constitution/execution_logger.py`): Increased artifact truncation from 10k to 100k chars; HR-09 large files no longer incorrectly fail
+- **Medium #7** (`quality_gate/sensors/sensors.py`): Unified all `read_text()` to `read_text(encoding="utf-8", errors="ignore")`
+- **Medium #8** (`quality_gate/drift_monitor.py`): `_check_drift` now logs exceptions instead of silently swallowing them; returns `{"error": str(e)}`
+- **Medium #9** (`quality_gate/fitness_functions.py`): Replaced silent `except: pass` with `logging.warning()` in `_extract_dependencies` and `_calculate_cohesion`
+- **Medium #10** (`quality_gate/baseline_manager.py`): Added `try/except JSONDecodeError` fault tolerance around `latest.json` read/write in `check_drift` and `capture_baseline`
+- **Medium #11** (`quality_gate/baseline_manager.py`): Replaced `datetime.now()` with `datetime.now(timezone.utc)` for UTC consistency
+- **Medium #12** (`core/feedback/feedback.py`): `FeedbackStore.update()` now properly updates `_by_assignee` index when `assignee` changes
+- **Medium #13** (`core/feedback/closure.py`): Replaced direct object mutation with dict/copy pattern to avoid breaking DB-backed stores
+- **Medium #13** (`core/feedback/router.py`): Removed direct `fb_updated.sla_deadline = deadline` mutation; returns deadline directly instead
+- **Medium #14** (`steering/integrations.py`): Added type check at the start of `check_output_compliance`; converts str to dict or returns explicit TypeError violation
+- **Medium #15** (`onboarding/wizard.py`): Replaced file mtime `str(Path(__file__).stat().st_mtime)` with `datetime.now(timezone.utc).isoformat()`
+
+---
+
 ## v6.78 (2026-04-08)
 
 ### fix: BUG-001 - Steering Loop IterationResult Import Bug
