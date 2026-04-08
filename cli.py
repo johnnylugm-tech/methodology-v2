@@ -92,7 +92,7 @@ from steering.steering_loop import SteeringLoop, SteeringConfig
 class MethodologyCLI:
     """統一 CLI 入口"""
     
-    VERSION = "6.99.0"
+    VERSION = "6.100.0"
 
     # Lazy-loading subsystem factories
     _FACTORIES = {
@@ -4409,7 +4409,7 @@ class MethodologyCLI:
             else:
                 artifact_paths = []
             
-            # Build task prompt - include full paths so subagent knows WHERE to read/write
+            # Build task prompt - subagent returns file content, CLI writes to disk
             artifact_list = '\n'.join([f"{i+1}. {p}" for i, p in enumerate(artifact_paths)])
             
             # Determine output directory based on phase
@@ -4420,21 +4420,37 @@ class MethodologyCLI:
             
             task_prompt = f"""你是 Developer Agent，執行 {fr} 實作 (Phase {phase})
 
-Project Root: {repo_path}
-Output Directory: {output_dir}
-
 任務：{args.task or f'Implement {fr}'}
 
-步驟：
+重要：由於執行環境限制，你不需要也不應該嘗試寫入檔案。
+相反，你應該：
 1. 讀取以下 artifact（使用完整路徑）：
 {artifact_list}
 
 2. 根據 SRS/SAD 實作 {fr} 的功能
-3. 在磁碟上建立代碼檔案（寫入到：{output_dir}/）
-   - 建立必要的目錄結構
-   - 寫入 Python/JS/其他代碼檔案
-4. 確保代碼可編譯並遵循最佳實踐
-5. Output JSON: {{"status": "success"|"error"|"unable_to_proceed", "result": "wrote files to {output_dir}", "confidence": 1-10, "citations": ["FR-01", "SRS.md#L23"], "summary": "..."}}
+
+3. 在 Output JSON 的 "files" 欄位返回完整的檔案內容，格式如下：
+{{
+  "status": "success",
+  "files": [
+    {{
+      "path": "{output_dir}/filename.py",
+      "content": "# 完整的檔案內容..."
+    }},
+    {{
+      "path": "{output_dir}/another.py",
+      "content": "# 完整內容..."
+    }}
+  ],
+  "confidence": 1-10,
+  "citations": ["FR-01", "SRS.md#L23"],
+  "summary": "實作摘要"
+}}
+
+注意：
+- "path" 是相對於 Project Root 的路徑
+- "content" 是檔案的完整內容（不要截斷）
+- 所有需要建立的檔案都要在 "files" 陣列中
 """
             
             # Spawn Developer
@@ -4448,6 +4464,30 @@ Output Directory: {output_dir}
                 print(f"   ✅ Developer completed: {dev_result.status}")
                 if hasattr(dev_result, 'confidence'):
                     print(f"      Confidence: {dev_result.confidence}")
+                
+                # v6.100: Write files returned by Developer to disk
+                try:
+                    import json as json_mod
+                    dev_result_text = str(dev_result.result) if dev_result.result else "{}"
+                    try:
+                        dev_result_data = json_mod.loads(dev_result_text) if isinstance(dev_result_text, str) else {}
+                    except:
+                        dev_result_data = {}
+                    
+                    files = dev_result_data.get('files', [])
+                    if files:
+                        print(f"   📁 Writing {len(files)} files to disk...")
+                        for f in files:
+                            file_path = repo_path / f.get('path', '')
+                            file_content = f.get('content', '')
+                            if file_path and file_content:
+                                file_path.parent.mkdir(parents=True, exist_ok=True)
+                                file_path.write_text(file_content)
+                                print(f"      ✅ {f.get('path')}")
+                    else:
+                        print(f"   ⚠️  No files returned in Developer result")
+                except Exception as e:
+                    print(f"   ❌ Error writing files: {e}")
             except Exception as e:
                 print(f"   ❌ Developer error: {e}")
                 dev_result = type('obj', (object,), {'status': 'error', 'result': str(e), 'confidence': 0})()

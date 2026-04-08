@@ -1,3 +1,14 @@
+## v6.100 (2026-04-09)
+
+### fix: Developer returns file content, CLI writes to disk (v6.100)
+
+- Root cause: sessions_spawn sandbox doesn't persist files to host filesystem
+- Solution: Agent returns file content in JSON, CLI writes to disk
+- Developer prompt now asks for files array with {path, content}
+- CLI parses files and writes to repo_path
+
+---
+
 ## v6.99 (2026-04-09)
 
 ### fix: Developer task prompt to write files to disk (v6.99)
