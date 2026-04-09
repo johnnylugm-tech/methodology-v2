@@ -5134,19 +5134,14 @@ Full execution script is in templates/plan_phase_template.md Section 17.
         from parse_phase_artifacts import get_artifacts_summary
         artifacts_summary = get_artifacts_summary(phase, repo_path)
         
-        # Build pre-flight results
-        pf_lines = []
-        for name, passed, detail in check_results:
-            status = "✅ PASS" if passed else "❌ FAIL"
-            pf_lines.append(f"| {name} | {status} | {detail} |")
+        # NOTE (v6.107): Pre-flight checks moved to run-phase.
+        # plan-phase only generates the execution plan.
+        pf_note = "_(Pre-flight checks handled by run-phase)_"
         
         # Build deliverables
         deliv_lines = []
         for d in deliverables:
             deliv_lines.append(f"- [ ] `{d}`")
-        
-        # Determine FSM string
-        fsm_str = current_state.value if hasattr(current_state, 'value') else str(current_state)
         
         if template_content:
             # Use template
@@ -5184,7 +5179,7 @@ Full execution script is in templates/plan_phase_template.md Section 17.
             plan = plan.replace('{QG_COMMANDS}', qg_commands)
             plan = plan.replace('{SESSION_LOG_EXAMPLE}', log_format)
             plan = plan.replace('{TOTAL_RECORDS}', str(len(frs) * 2))
-            plan = plan.replace('{PREFLIGHT_RESULTS}', '\n'.join(pf_lines))
+            plan = plan.replace('{PREFLIGHT_RESULTS}', pf_note)
             
             # Generate deliverable structure from modules
             deliverable_structure = self._generate_deliverable_structure(frs, modules)
@@ -5203,13 +5198,9 @@ Full execution script is in templates/plan_phase_template.md Section 17.
             plan = plan.replace('{artifacts_summary}', artifacts_summary)
             plan = plan.replace('{four_dimensional_table}', four_dimensional_table)
             plan = plan.replace('{iteration_rounds_table}', iteration_rounds_table)
-        else:
-            # Inline generation fallback
-            plan = self._generate_plan_fallback(phase, goal, state, fsm_str, 
-                                                check_results, hr_map, th_map, 
-                                                agent_a, agent_b, deliverables,
-                                                frs, fr_table_rows, qg_commands,
-                                                log_format)
+        # NOTE: Inline generation fallback (_generate_plan_fallback) removed in v6.107.
+        # plan-phase now uses template-based generation only.
+        # If template is missing, the code will error at template_content read above.
         # Print plan
         print(plan)
 
