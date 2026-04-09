@@ -184,6 +184,28 @@ FORBIDDEN:
 - ❌ 使用 @covers annotation → 請改用 docstring [FR-XX]
 - ❌ @type: edge → positive/negative/boundary
 - ❌ ... 省略 → 任務失敗
+- ❌ **沒有執行 grep 確認行號就寫入 docstring**
+- ❌ **沒有執行 grep 確認 Citations 寫入就返回 JSON**
+
+【強制執行步驟 - Citations 驗證】
+
+STEP 1: 讀取 SRS.md §FR-XX 和 SAD.md §對應章節
+
+STEP 2: 用 grep 確認函數的實際行號：
+```bash
+grep -n "def 函數名\|class 類別名" app/xxx.py
+```
+把輸出的行號記下來（不是估算）
+
+STEP 3: 實作 + 寫 docstring 時用 STEP 2 的實際行號
+
+STEP 4: 寫完後再次 grep 確認：
+```bash
+grep -A5 "def 函數名" app/xxx.py | grep "Citations:"
+```
+確認 Citations 確實寫入且行號正確
+
+STEP 5: 只通過 STEP 4 才能返回 JSON
 
 OUTPUT_FORMAT:
 {{
@@ -622,6 +644,27 @@ for fr_id in FR_LIST:
   "citations": ["{fr_id}", "SAD.md#L45"],
   "summary": "審查摘要"
 }}
+
+【REJECT_IF 新增】
+- ❌ **沒有執行以下命令驗證 Citations 存在**：
+ ```bash
+grep -n "Citations:" app/xxx.py
+ ```
+ 就直接宣稱「有 Citations」→「未實際驗證」→「REJECT」
+
+【 Citations 驗證流程】
+
+1. 先執行：
+ ```bash
+grep -n "Citations:" app/xxx.py
+ ```
+ 確認有多少處有 Citations
+
+2. 對照 docstring 數量，確認每個函數都有
+
+3. 驗證行號範圍是否合理：
+ - 檢查 docstring 內的 `SRS.md#L` 和 `SAD.md#L` 是否落於合理區間
+ - 如：SRS.md 總行數 200，但引用 L500 → 不合理 → REJECT
 """
         
         rev_result = sessions_spawn(
