@@ -5253,13 +5253,10 @@ Full execution script is in templates/plan_phase_template.md Section 17.
             except Exception as e:
                 print(f"⚠️ FR 詳細任務生成異常: {e}")
 
-        # Return non-zero if pre-flight failed
-        if checks_passed < checks_total:
-            print(f"\n⚠️  Pre-flight failed ({checks_passed}/{checks_total} passed)")
-            print(f"   Fix issues before running 'run-phase'")
-            return 1
-
-        print(f"\n✅ Plan generated successfully ({checks_passed}/{checks_total} pre-flight checks passed)")
+        # NOTE (v6.108): Pre-flight checks moved to run-phase.
+        # plan-phase only generates the plan; run-phase validates.
+        print(f"\n✅ Plan generated successfully")
+        print(f"   Pre-flight checks are handled by 'run-phase'")
         return 0
 
     # ============================================================================
