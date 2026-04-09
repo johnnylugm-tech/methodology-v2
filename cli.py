@@ -4411,7 +4411,15 @@ Agent Workflow:
 Full execution script is in templates/plan_phase_template.md Section 17.
 """)
         
-        # Placeholder values for POST-FLIGHT
+        # NOTE (v6.109): If NOT resuming, just show guide and exit.
+        # Agent must execute FRs, then call run-phase --resume for POST-FLIGHT.
+        if not (hasattr(args, 'resume') and args.resume):
+            print(f"\n✅ PRE-FLIGHT passed. Agent execution guide shown above.")
+            print(f"\n   After Agent executes FRs, run:")
+            print(f"   python cli.py run-phase --phase {phase} --resume")
+            return 0
+        
+        # Placeholder values for POST-FLIGHT (only when --resume)
         fr_results = []
         approved = 0
         total = len(fr_patterns) if fr_patterns else 0
