@@ -1,6 +1,6 @@
-## v6.102 (2026-04-09)
+## v6.109 (2026-04-09)
 
-### refactor: PhaseHooks framework + new Agent workflow (v6.102)
+### refactor: PhaseHooks framework + new Agent workflow (v6.109)
 
 **ARCHITECTURAL CHANGE:**
 - cli.py NO LONGER calls sessions_spawn directly (architecture limitation)
