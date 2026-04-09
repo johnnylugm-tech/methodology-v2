@@ -4982,14 +4982,18 @@ Full execution script is in templates/plan_phase_template.md Section 17.
 
     def cmd_plan_phase(self, args):
         """
-        Generate execution plan for Phase with pre-flight checks
+        Generate execution plan for Phase
 
-        本命令：
+        本命令（重構 v6.106）：
         - ✅ 掃描所有相關資料（SKILL.md / SOP / state.json / 歷史迭代）
-        - ✅ 執行 Pre-flight 檢查（FSM / Phase Sequence / Constitution / Tool / Integrity）
-        - ✅ 產生 Markdown 格式執行計畫供 Johnny 審核
+        - ✅ 產生 Markdown 格式執行計畫供主代理依循
         - ✅ 支援 --repair 修復迭代
         - ✅ 支援 --history 查看歷史
+        - ❌ 不執行 Pre-flight 檢查（交給 run-phase）
+
+        職責分離：
+        - plan-phase：生成計劃
+        - run-phase：Pre-flight 檢查 + 執行
         """
         import sys
         import json
@@ -5064,97 +5068,7 @@ Full execution script is in templates/plan_phase_template.md Section 17.
         if missing_deliverables:
             print(f"⚠️  Missing deliverables: {missing_deliverables}")
 
-        # === PHASE 2: PRE-FLIGHT CHECKS ===
-        print(f"\n[{datetime.now().strftime('%H:%M:%S')}] PRE-FLIGHT: 執行檢查")
-
-        checks_passed = 0
-        checks_total = 0
-        check_results = []
-
-        # 2.1 FSM State Check
-        checks_total += 1
-        from quality_gate.unified_gate import FSMStateMachine, ProjectState
-        fsm = FSMStateMachine(project_path=repo_path)
-        current_state = fsm.get_state()
-        if current_state == ProjectState.FREEZE:
-            check_results.append(("FSM State", False, "HR-14: Project FREEZE"))
-        elif current_state == ProjectState.PAUSED:
-            check_results.append(("FSM State", False, "HR-12/13: Project PAUSED"))
-        else:
-            check_results.append(("FSM State", True, current_state.value if hasattr(current_state, 'value') else str(current_state)))
-            checks_passed += 1
-
-        # 2.2 Phase Sequence Check (HR-03)
-        checks_total += 1
-        current_phase = state.get("current_phase", 0)
-        if current_phase >= phase:
-            check_results.append(("Phase Sequence", False, f"HR-03: Phase {phase} 已執行或跳過（current: {current_phase})"))
-        else:
-            check_results.append(("Phase Sequence", True, f"Phase {current_phase} → Phase {phase}"))
-            checks_passed += 1
-
-        # 2.3 Constitution Check (HR-08)
-        checks_total += 1
-        phase_type_map = {1: "srs", 2: "sad", 3: "implementation", 4: "test_plan",
-                          5: "verification", 6: "quality_report", 7: "risk_management", 8: "configuration"}
-        phase_type = phase_type_map.get(phase, "srs")
-        threshold_map = {1: 100, 2: 100, 3: 80, 4: 80, 5: 80, 6: 80, 7: 80, 8: 80}
-        threshold = threshold_map.get(phase, 80)
-        try:
-            import subprocess
-            # Use subprocess to run constitution check
-            result = subprocess.run(
-                [sys.executable, str(Path(__file__).parent / "quality_gate" / "constitution" / "runner.py"),
-                 "--path", str(repo_path),
-                 "--type", phase_type,
-                 "--format", "json"],
-                capture_output=True, text=True, timeout=60
-            )
-            try:
-                result_data = json.loads(result.stdout)
-                score = result_data.get("score", result_data.get("total_score", 0))
-            except Exception:
-                score = 0
-            if score < threshold:
-                check_results.append(("Constitution", False, f"{score:.0f}% < {threshold}%"))
-            else:
-                check_results.append(("Constitution", True, f"{score:.0f}%"))
-                checks_passed += 1
-        except Exception as e:
-            check_results.append(("Constitution", False, f"N/A ({str(e)[:50]})"))
-
-        # 2.4 Tool Registry Check
-        # FIX v6.105: Removed false positive check.
-        # The required tools (knowledge_curator, context_manager, etc.) are
-        # methodology-v2 internal Agent Roles, NOT OpenClaw runtime tools.
-        # ToolRegistry.list_tools() returns runtime tools (sessions_spawn, web_search, etc.)
-        # This check was incorrectly validating OpenClaw tools against internal role names.
-        checks_total += 1
-        check_results.append(("Tool Registry", True, "SKIPPED (false positive - checks internal roles, not tools)"))
-        checks_passed += 1
-
-        # 2.5 Integrity Check (HR-14)
-        checks_total += 1
-        try:
-            # FIX v6.105: phase_state is a nested dict, not flat keys
-            # state["phase_state"] = {"phase_1": {"status": "APPROVE", "completeness": 1.0}, ...}
-            phase_state = state.get("phase_state", {})
-            completed = 0
-            for phase_num in range(1, phase + 1):
-                phase_key = f"phase_{phase_num}"
-                if phase_key in phase_state:
-                    if phase_state[phase_key].get("status") == "APPROVE":
-                        completed += 1
-            integrity_score = min(100, (completed / max(phase, 1)) * 100)
-            if integrity_score < 40:
-                check_results.append(("Integrity", False, f"HR-14: {integrity_score:.0f}% < 40% → FREEZE"))
-            else:
-                check_results.append(("Integrity", True, f"{integrity_score:.0f}%"))
-                checks_passed += 1
-        except Exception as e:
-            check_results.append(("Integrity", False, f"N/A ({str(e)[:50]})"))
-
-        # === PHASE 3: GENERATE PLAN ===
+        # === PHASE 2: GENERATE PLAN ===
         print(f"\n[{datetime.now().strftime('%H:%M:%S')}] PLAN: 產生執行計畫")
 
         # 讀取專案上下文
