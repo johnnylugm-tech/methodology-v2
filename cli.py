@@ -4440,6 +4440,17 @@ Full execution script is in templates/plan_phase_template.md Section 17.
         else:
             print(f"✅ Final Constitution score: {result_final.score:.0f}%")
 
+        # === Generate STAGE_PASS.md (v7.7 fix) ===
+        if approved >= total and result_final.score >= 80:
+            print(f"\n[{datetime.now().strftime('%H:%M:%S')}] POST-FLIGHT: Generating STAGE_PASS.md")
+            try:
+                from quality_gate.stage_pass_generator import STAGEPassGenerator
+                generator = STAGEPassGenerator(repo_path=str(repo_path), phase=phase)
+                output_path = generator.generate()
+                print(f"✅ STAGE_PASS.md generated: {output_path}")
+            except Exception as e:
+                print(f"⚠️ STAGE_PASS generation failed: {e}")
+
         # Update state.json (v6.94 fix: only on success)
         # v6.94: Only update state.json if phase succeeded
         if approved >= total and result_final.score >= 80:
