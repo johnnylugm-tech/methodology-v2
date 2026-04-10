@@ -24,6 +24,7 @@ PHASE_CONFIG = {
             "01-requirements/SRS.md",
             "01-requirements/SPEC_TRACKING.md",
             "DEVELOPMENT_LOG.md",
+            "Phase1_STAGE_PASS.md",
         ],
         "block_checks": [
             "SPEC_TRACKING",
@@ -47,6 +48,7 @@ PHASE_CONFIG = {
             "02-architecture/SAD.md",
             "02-architecture/adr/",
             "DEVELOPMENT_LOG.md",
+            "Phase2_STAGE_PASS.md",
         ],
         "block_checks": [
             "SPEC_TRACKING",
@@ -72,6 +74,7 @@ PHASE_CONFIG = {
             "03-development/tests/",
             "DEVELOPMENT_LOG.md",
             "sessions_spawn.log",
+            "Phase3_STAGE_PASS.md",
         ],
         "block_checks": [
             "SPEC_TRACKING",
@@ -96,6 +99,7 @@ PHASE_CONFIG = {
             "04-verification/TEST_PLAN.md",
             "04-verification/TEST_RESULTS.md",
             "DEVELOPMENT_LOG.md",
+            "Phase4_STAGE_PASS.md",
         ],
         "block_checks": [
             "SPEC_TRACKING",
@@ -120,6 +124,7 @@ PHASE_CONFIG = {
             "05-system-test/BASELINE.md",
             "05-system-test/SYSTEM_TEST_RESULTS.md",
             "DEVELOPMENT_LOG.md",
+            "Phase5_STAGE_PASS.md",
         ],
         "block_checks": [
             "SPEC_TRACKING",
@@ -143,6 +148,7 @@ PHASE_CONFIG = {
         "required_artifacts": [
             "06-quality/QUALITY_REPORT.md",
             "DEVELOPMENT_LOG.md",
+            "Phase6_STAGE_PASS.md",
         ],
         "block_checks": [
             "SPEC_TRACKING",
@@ -167,6 +173,7 @@ PHASE_CONFIG = {
             "07-risk/RISK_ASSESSMENT.md",
             "07-risk/RISK_REGISTER.md",
             "DEVELOPMENT_LOG.md",
+            "Phase7_STAGE_PASS.md",
         ],
         "block_checks": [
             "SPEC_TRACKING",
@@ -190,6 +197,7 @@ PHASE_CONFIG = {
         "required_artifacts": [
             "08-configuration/CONFIG_RECORDS.md",
             "DEVELOPMENT_LOG.md",
+            "Phase8_STAGE_PASS.md",
         ],
         "block_checks": [
             "SPEC_TRACKING",
