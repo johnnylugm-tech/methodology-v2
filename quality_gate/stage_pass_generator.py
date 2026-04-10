@@ -150,7 +150,55 @@ class IntegratedStagePassGenerator:
             print(f"   {result.message}")
         
         return result.passed
-    
+
+    def run_step2b_confidence_format(self) -> Dict:
+        """
+        Step 2b: Confidence 格式驗證 (0-10 範圍)
+
+        驗證 sessions_spawn.log 中所有 confidence 值都在 0-10 範圍內。
+        """
+        print(f"\n{'='*60}")
+        print(f"[Step 2b] Confidence 格式驗證")
+        print(f"{'='*60}")
+
+        log_file = self.project_root / "sessions_spawn.log"
+
+        if not log_file.exists():
+            print("⚠️ sessions_spawn.log 不存在，跳過 confidence 驗證")
+            return {"passed": True, "message": "log not found", "invalid_entries": []}
+
+        try:
+            content = log_file.read_text(encoding="utf-8")
+            entries = [json.loads(line) for line in content.strip().split("\n") if line]
+        except (json.JSONDecodeError, IOError) as e:
+            print(f"⚠️ sessions_spawn.log 解析失敗: {e}")
+            return {"passed": True, "message": "parse error", "invalid_entries": []}
+
+        # 檢查 confidence 格式
+        invalid_entries = []
+        for entry in entries:
+            if "confidence" in entry:
+                conf = entry["confidence"]
+                if not isinstance(conf, (int, float)) or conf < 0 or conf > 10:
+                    invalid_entries.append({
+                        "session_id": entry.get("session_id", "unknown"),
+                        "confidence": conf,
+                        "expected": "0-10"
+                    })
+
+        if invalid_entries:
+            print(f"❌ Confidence 格式錯誤: {len(invalid_entries)} 筆記錄")
+            for ie in invalid_entries[:3]:
+                print(f"   Session: {ie['session_id']}, Confidence: {ie['confidence']} (expected 0-10)")
+            return {
+                "passed": False,
+                "message": f"{len(invalid_entries)} confidence values out of range 0-10",
+                "invalid_entries": invalid_entries
+            }
+
+        print("✅ Confidence 格式驗證通過 (0-10)")
+        return {"passed": True, "message": "all valid", "invalid_entries": []}
+
     def run_step3_pytest_evidence(self) -> Dict:
         """
         Step 3: 收集實際 pytest 證據
@@ -452,7 +500,7 @@ class IntegratedStagePassGenerator:
                 f"\n## Phase {self.phase} STAGE_PASS — {timestamp}",
                 f"\n✅ **[{timestamp}] Constitution Score**: {const_score:.1f}% (threshold > 80%)",
                 f"\n✅ **[{timestamp}] FrameworkEnforcer**: {'✅' if violations_count == 0 else '❌'} {violations_count} violations",
-                f"\n✅ **[{timestamp}] Stage-Pass Confidence**: {self.results.get('confidence_score', 0)}/100",
+                f"\n✅ **[{timestamp}] Stage-Pass Confidence**: {self.results.get('confidence_score', 0)}/10",
             ]
             
             log_content = "\n".join(log_lines)
@@ -476,6 +524,9 @@ class IntegratedStagePassGenerator:
         
         # Step 2: Session log
         step2_passed = self.run_step2_session_log()
+
+        # Step 2b: Confidence format validation
+        confidence_check = self.run_step2b_confidence_format()
         
         # Step 3: Test evidence
         self.run_step3_pytest_evidence()
