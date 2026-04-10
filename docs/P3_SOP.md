@@ -196,7 +196,7 @@ result = si.spawn(
     context={
         "task_id": "task-001",
         "artifact_paths": ["SRS.md", "SAD.md", "SKILL.md"],
-        "forbidden": ["app/processing/", "app/synth/", "app/cache/", "app/audio/", "app/api/", "app/backend/", "@covers: L1 Error"]
+        "forbidden": ["03-development/src/infrastructure/", "03-development/src/processing/", "03-development/src/synth/", "03-development/src/cache/", "03-development/src/audio/", "03-development/src/api/", "03-development/src/backend/", "@covers: L1 Error"]
     },
     timeout=600
 )
