@@ -11,10 +11,11 @@ project/
 ├── 00-summary/             # 摘要
 ├── 01-requirements/        # Phase 1: 需求分析 (SRS.md)
 ├── 02-architecture/       # Phase 2: 架構設計 (SAD.md)
-├── 03-development/          # Phase 3: 代碼實作 (src/, tests/)
+├── 03-development/src/     # Phase 3: 代碼實作
+├── 03-development/tests/   # Phase 3: 測試
 ├── 04-testing/            # Phase 4: 測試驗證
 ├── 05-deployment/         # Phase 5: 部署
-├── 06-maintenance/         # Phase 6+: 維運
+├── 06-maintenance/        # Phase 6+: 維運
 └── .methodology/          # Framework 狀態追蹤
 ```
 
