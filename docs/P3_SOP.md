@@ -335,7 +335,12 @@ except MethodologyError as e:
 ```
 1. 任務名稱：Review FR-01 LexiconMapper
 2. TaskContext ID：task-001
-3. Artifact paths：
+### Artifact paths 說明
+
+> ⚠️ 注意：Convention 標準使用 `03-development/src/` 作為 Phase 3 代碼目錄。
+> 實際專案若使用不同結構（如 `app/`），應在 Phase 2 SAD 中明確定義，並在 Phase 3 執行時嚴格遵守。
+
+3. Artifact paths（Convention 標準）：
    - 03-development/src/processing/lexicon_mapper.py
    - 03-development/tests/test_fr01_lexicon.py
    - SRS.md（用於對照規格）
