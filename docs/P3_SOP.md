@@ -336,8 +336,8 @@ except MethodologyError as e:
 1. 任務名稱：Review FR-01 LexiconMapper
 2. TaskContext ID：task-001
 3. Artifact paths：
-   - src/processing/lexicon_mapper.py
-   - tests/test_fr01_lexicon.py
+   - 03-development/src/processing/lexicon_mapper.py
+   - 03-development/tests/test_fr01_lexicon.py
    - SRS.md（用於對照規格）
 4. 禁止事項：
    - ❌ 沒有 @FR annotation → REJECT
