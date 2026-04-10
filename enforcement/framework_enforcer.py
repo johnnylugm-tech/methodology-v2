@@ -123,7 +123,7 @@ class FrameworkEnforcer:
             phase_info_map = {
                 1: {"type": "srs", "dir": "01-requirements"},
                 2: {"type": "sad", "dir": "02-architecture"},
-                3: {"type": "design", "dir": "03-implementation"},
+                3: {"type": "implementation", "dir": "03-development"},
                 4: {"type": "testing", "dir": "04-testing"},
                 5: {"type": "verify", "dir": "05-verify"},
                 6: {"type": "quality", "dir": "06-quality"},
@@ -133,8 +133,8 @@ class FrameworkEnforcer:
             phase_info = phase_info_map.get(getattr(self, 'phase', 1), {"type": "srs", "dir": "docs"})
             const_type = phase_info["type"]
             
-            # 只使用 phase 對應目錄（嚴格 SKILL.md）
-            docs_path = self.project_root / phase_info["dir"]
+            # Constitution 檢查使用專案根目錄，由 runner 自行決定檢查路徑
+            docs_path = self.project_root
             if not docs_path.exists():
                 return {"score": 0, "passed": False, "error": f"Phase {self.phase} directory not found: {phase_info['dir']}"}
 
@@ -362,7 +362,7 @@ class FrameworkEnforcer:
         phase_doc_roots = {
             1: "01-requirements",
             2: "02-architecture",
-            3: "03-implementation",
+            3: "03-development",
             4: "04-testing",
             5: "05-verify",
             6: "06-quality",
@@ -375,7 +375,7 @@ class FrameworkEnforcer:
         required_by_phase = {
             1: {"Phase 1 (SPECIFY)": ["01-requirements/SRS.md", "01-requirements/SPEC_TRACKING.md", "01-requirements/TRACEABILITY_MATRIX.md"]},
             2: {"Phase 2 (PLAN)": ["02-architecture/SAD.md"]},
-            3: {"Phase 3 (IMPLEMENT)": ["03-implementation/IMPLEMENTATION.md", "03-implementation/src/", "03-implementation/tests/"]},
+            3: {"Phase 3 (IMPLEMENT)": ["03-development/IMPLEMENTATION.md", "03-development/src/", "03-development/tests/"]},
             4: {"Phase 4 (VERIFY)": ["04-testing/TEST_PLAN.md", "04-testing/TEST_RESULTS.md"]},
             5: {"Phase 5 (SYSTEM_TEST)": ["05-verify/BASELINE.md", "05-verify/VERIFICATION_REPORT.md", "05-verify/MONITORING_PLAN.md"]},
             6: {"Phase 6 (QUALITY)": ["06-quality/QUALITY_REPORT.md", "06-quality/MONITORING_PLAN.md"]},
