@@ -179,9 +179,8 @@ python cli.py run-phase --phase 3 --step 3.1 --task "FR-01 實作"
 3. Artifact paths：
    - SRS.md
    - 02-architecture/SAD.md
-   - 03-implementation/SKILL.md
+   - SKILL.md
 4. 禁止事項（少數關鍵）：
-   - ❌ app/infrastructure/（已廢除）
    - ❌ @covers: L1 Error（應寫 @covers: FR-0X）
    - ❌ @type: edge（應寫 positive/negative/boundary）
    - ❌ 省略任何內容（視為任務失敗）
@@ -197,7 +196,7 @@ result = si.spawn(
     context={
         "task_id": "task-001",
         "artifact_paths": ["SRS.md", "SAD.md", "SKILL.md"],
-        "forbidden": ["app/infrastructure/", "@covers: L1 Error"]
+        "forbidden": ["app/processing/", "app/synth/", "app/cache/", "app/audio/", "app/api/", "app/backend/", "@covers: L1 Error"]
     },
     timeout=600
 )
@@ -337,7 +336,7 @@ except MethodologyError as e:
 1. 任務名稱：Review FR-01 LexiconMapper
 2. TaskContext ID：task-001
 3. Artifact paths：
-   - app/processing/lexicon_mapper.py
+   - src/processing/lexicon_mapper.py
    - tests/test_fr01_lexicon.py
    - SRS.md（用於對照規格）
 4. 禁止事項：
