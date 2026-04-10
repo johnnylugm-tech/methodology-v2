@@ -22,9 +22,9 @@ project/
 
 ---
 
-## 02-Specify 模板
+## 01-requirements 模板
 
-### requirements.md
+### SRS.md
 
 ```markdown
 # 需求規格
@@ -41,9 +41,9 @@ project/
 
 ---
 
-## 03-Plan 模板
+## 02-architecture 模板
 
-### architecture.md
+### SAD.md
 
 ```markdown
 # 架構設計
@@ -59,35 +59,53 @@ project/
 
 ---
 
-## 04-Tasks 模板
+## 03-development 模板
 
-### sprint_01.md
+### src/
 
-```markdown
-# Sprint 1
-
-## 目標
-[迭代目標]
-
-## Sprint Backlog
-
-- [ ] US-001: [標題] (故事點: 5)
+```
+src/
+├── FR-01/                  # FR-01 模組
+│   ├── __init__.py
+│   ├── main.py
+│   └── test_fr01.py
+└── FR-02/                  # FR-02 模組
 ```
 
 ---
 
-## 05-Verification 模板
+## 04-testing 模板
 
-### gates.md
+### tests/
 
-```markdown
-# 驗證關卡報告
+```
+tests/
+├── test_fr01.py
+├── test_fr02.py
+└── integration/
+```
 
-## Gate 1: Code Quality
+---
 
-| 檢查項 | 狀態 |
-|--------|------|
-| 語法檢查 | ✅ |
+## 05-deployment 模板
+
+### DOCKERFILE / deployment/
+
+```dockerfile
+FROM python:3.11
+COPY src/ /app/src/
+```
+
+---
+
+## 06-maintenance 模板
+
+### 維運文件結構
+
+```
+06-maintenance/
+├── MONITORING_PLAN.md
+└── RUNBOOK.md
 ```
 
 ---
