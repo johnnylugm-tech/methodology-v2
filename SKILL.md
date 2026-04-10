@@ -59,7 +59,7 @@ Phase Reset → **docs/CLI_REFERENCE.md**
 |----|------|-----------|-----------|------|
 | 1 | 需求規格 | architect/reviewer | SRS, SPEC_TRACKING, TRACEABILITY | TH-01,03,14; APPROVE |
 | 2 | 架構設計 | architect/reviewer | SAD, ADR | TH-01,03,05; APPROVE |
-| 3 | 代碼實現 | developer/reviewer | src/, tests/ | TH-06,08,10,11,16; APPROVE |
+| 3 | 代碼實現 | developer/reviewer | 03-development/src/, 03-development/tests/ | TH-06,08,10,11,16; APPROVE |
 | 4 | 測試 | qa/reviewer | TEST_PLAN, TEST_RESULTS | TH-01,03,06,10,12,17 |
 | 5 | 驗證交付 | devops/architect | BASELINE, MONITORING_PLAN | TH-02,07; APPROVE |
 | 6 | 品質保證 | qa/architect | QUALITY_REPORT | TH-02,07; APPROVE |

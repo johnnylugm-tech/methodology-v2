@@ -8,13 +8,17 @@
 
 ```
 project/
-├── 01-constitution/          # 團隊憲章
-├── 02-specify/               # 需求規格
-├── 03-plan/                 # 規劃
-├── 04-tasks/                # 任務
-├── 05-verification/         # 驗證記錄
-└── 06-outputs/              # 產出
+├── 00-summary/             # 摘要
+├── 01-requirements/        # Phase 1: 需求分析 (SRS.md)
+├── 02-architecture/       # Phase 2: 架構設計 (SAD.md)
+├── 03-development/          # Phase 3: 代碼實作 (src/, tests/)
+├── 04-testing/            # Phase 4: 測試驗證
+├── 05-deployment/         # Phase 5: 部署
+├── 06-maintenance/         # Phase 6+: 維運
+└── .methodology/          # Framework 狀態追蹤
 ```
+
+> ⚠️ 注意：Phase 編號與目錄前綴對齊（Phase N → 0N-xxx/）
 
 ---
 
