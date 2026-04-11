@@ -247,43 +247,56 @@ Sub-agent 執行中：
 4. Reviewer APPROVE → commit → 繼續下一個
    Reviewer REJECT → 修復 → re-verify → re-spawn
    
-   **⚡ 當下檢查（v7.42 修正）**
-   Reviewer APPROVE 後，執行快速檢查：
+   **⚡ 當下檢查（v7.46 修正）**
+   Reviewer APPROVE 後，執行完整檢查：
    ```bash
-   # 每個 FR 完成後立即檢查（迭代版本）
+   # 完整檢查（推薦）- 一次跑完三層
+   python scripts/check_fr_full.py --fr FR-01 --loop
+   
+   # 只做輕量檢查（~30秒）
    python scripts/check_fr_quality.py --fr FR-01 --loop
    ```
    
-   **檢查內容：**
+   **三層檢查內容：**
+   ```
+   Layer 1: 輕量檢查（~30秒）
    - Syntax check (py_compile)
    - Import check
-   - （不包含 Constitution/CQG，那些在事後檢查時做）
+   
+   Layer 2: Constitution（~1分鐘，可選）
+   - BVS (Behavioral Validation)
+   - HR-09 (Claims Verifier)
+   
+   Layer 3: CQG（~1分鐘，可選）
+   - Linter
+   - Complexity
+   ```
+   
+   **Pass 條件：**
+   - Layer 1: 無 Error
+   - Layer 2: 無 BLOCK（Warning 可接受）
+   - Layer 3: 無 Error（Warning 可接受）
    
    **迭代修復流程：**
    ```
-   # 1. 執行檢查
-   python scripts/check_fr_quality.py --fr FR-01 --loop
+   # 1. 執行完整檢查
+   python scripts/check_fr_full.py --fr FR-01 --loop
    
    # 2. 如果 FAIL：
-   #    ❌ FAILED: Syntax error in src/module_1.py
+   #    ❌ Layer 1: FAILED
    #    🔧 修復問題
    #    按 Enter 繼續
    
-   # 3. 再次檢查
-   #    ❌ FAILED: Import error in src/module_1.py
-   #    🔧 修復問題
-   #    按 Enter 繼續
-   
-   # 4. 直到 PASS
-   #    ✅ PASSED: All checks passed
+   # 3. 直到所有 Layer PASS
+   #    ✅ ALL CHECKS PASSED
    #    進入下一個 FR
    ```
    
    **好處：**
-   - 只需 30 秒
-   - 簡單不易犯錯
+   - 一個命令跑完所有檢查
    - 問題當下發現當下修
    - 修復成本低（每次只修一個 FR）
+   - 可選 Constitution/CQG
    
    **流程對比：**
    ```
@@ -337,9 +350,10 @@ Sub-agent 執行中：
    **Section 10.5 自動化功能整合狀態：**
    | 功能 | 整合 | 觸發時機 |
    |------|------|----------|
-   | check_fr_quality | ✅ 已整合 | 每個 FR 完成後 |
-   | Constitution (BVS+HR-09) | ⚠️ 手動 | Reviewer APPROVE 後 |
-   | CQG (Linter+Complexity) | ⚠️ 手動 | Reviewer APPROVE 後 |
+   | check_fr_full.py | ✅ 已整合 | 每個 FR 完成後 |
+   | check_fr_quality.py | ✅ 已整合 | 每個 FR 完成後（輕量）|
+   | Constitution (BVS+HR-09) | ✅ 已整合 | check_fr_full.py 內 |
+   | CQG (Linter+Complexity) | ✅ 已整合 | check_fr_full.py 內 |
    | SAB Drift | ❌ 未整合 | Phase 結束後 |
    | Self-Correction | ❌ 未整合 | 待實作 |
    | Feedback Loop | ❌ 未整合 | 待實作 |

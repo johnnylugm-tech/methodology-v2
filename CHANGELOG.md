@@ -1369,6 +1369,33 @@ pip install methodology-v2==5.30.0
 
 # v7.x Releases (2026-04-10)
 
+## v7.46 (2026-04-12)
+
+### feat: Phase 2 - check_fr_full.py 統一檢查腳本
+
+**NEW: scripts/check_fr_full.py**
+- 統一呼叫 check_fr_quality + Constitution + CQG
+- 三層檢查一次完成
+- `--loop` 迭代修復支援
+- `--skip-constitution` / `--skip-cqg` 可選
+
+**三層檢查內容：**
+```bash
+Layer 1: 輕量檢查（~30秒）
+- Syntax check + Import check
+
+Layer 2: Constitution（~1分鐘）
+- BVS + HR-09
+
+Layer 3: CQG（~1分鐘）
+- Linter + Complexity
+```
+
+**UPDATED: docs/P3_SOP.md**
+- Section 10.5 自動化功能全部整合完成 ✅
+
+---
+
 ## v7.45 (2026-04-11)
 
 ### docs: P3_SOP.md - Section 10.5 自動化功能整合狀態
