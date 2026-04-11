@@ -1,3 +1,14 @@
+## v7.54 (2026-04-12)
+
+### fix: cli.py UnboundLocalError - remove local import os
+
+**FIXED: cli.py**
+- Line 3034: Removed local `import os` inside `cmd_quality_gate`
+- Problem: Local `import os` shadows global `os`, causing `os.getcwd()` at line 2934 to fail with UnboundLocalError
+- Solution: `os` is already globally imported at line 15
+
+---
+
 ## v7.53 (2026-04-12)
 
 ### fix: plan-phase template - add check_fr_full.py command

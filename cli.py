@@ -3032,7 +3032,6 @@ class MethodologyCLI:
         elif sub == "ai-test":
             # AI Test Suite Generator
             import subprocess
-            import os
             from pathlib import Path
 
             cli_path = Path(__file__).parent / "quality_gate" / "ai_test_suite" / "cli.py"
