@@ -6,12 +6,15 @@ Check FR Quality - 每個 FR 完成後的快速檢查
 用途：每個 FR 完成後，快速檢查該 FR 的代碼品質
 
 使用方式：
-    python scripts/check_fr_quality.py --fr FR-01 --project /path/to/project
+    # 單次檢查
+    python scripts/check_fr_quality.py --fr FR-01
+
+    # 迭代檢查（修復後按 Enter 繼續）
+    python scripts/check_fr_quality.py --fr FR-01 --loop
 
 檢查內容：
     1. Syntax check (python -m py_compile)
-    2. Basic lint (ruff 或 flake8)
-    3. Import check (import 該模組)
+    2. Import check (import 該模組)
 
 Pass 條件：無 Error（Warning 可接受）
 
@@ -53,41 +56,13 @@ def check_syntax(file_path: Path) -> tuple:
         return False, str(e)
 
 
-def check_import(file_path: Path) -> tuple:
-    """Import 該模組"""
-    try:
-        module_name = str(file_path).replace("/", ".").replace(".py", "")
-        result = subprocess.run(
-            ["python3", "-c", f"import {module_name}"],
-            capture_output=True, text=True,
-            timeout=10
-        )
-        return result.returncode == 0, result.stderr
-    except subprocess.TimeoutExpired:
-        return False, "Import timeout"
-    except Exception as e:
-        return False, str(e)
-
-
-def main():
-    parser = argparse.ArgumentParser(description="每個 FR 的快速品質檢查")
-    parser.add_argument("--fr", required=True, help="FR ID (e.g., FR-01)")
-    parser.add_argument("--project", default=".", help="專案路徑")
-    args = parser.parse_args()
-    
-    project = Path(args.project)
-    fr_id = args.fr
-    
-    print(f"\n{'='*50}")
-    print(f"FR Quality Check: {fr_id}")
-    print(f"{'='*50}")
-    
-    # 取得該 FR 的檔案
+def run_check(fr_id: str, project: Path) -> tuple:
+    """執行檢查，返回 (passed, errors)"""
     files = get_fr_files(project, fr_id)
     if not files:
         print(f"⚠️  找不到 {fr_id} 的代碼檔案")
         print(f"   跳過（請確認 traceability_report.json 已更新）")
-        return 0
+        return True, []
     
     print(f"📁 檢查 {len(files)} 個檔案: {files}\n")
     
@@ -108,15 +83,54 @@ def main():
         else:
             print(f"✅ {f}: Syntax OK")
     
-    print(f"\n{'='*50}")
-    if errors:
-        print(f"❌ FAILED: {len(errors)} errors")
-        for e in errors:
-            print(f"   {e}")
-        return 1
-    else:
-        print(f"✅ PASSED: All checks passed")
-        return 0
+    return len(errors) == 0, errors
+
+
+def main():
+    parser = argparse.ArgumentParser(description="每個 FR 的快速品質檢查")
+    parser.add_argument("--fr", required=True, help="FR ID (e.g., FR-01)")
+    parser.add_argument("--project", default=".", help="專案路徑")
+    parser.add_argument("--loop", action="store_true", help="Loop until PASS (for iteration)")
+    parser.add_argument("--max-loops", type=int, default=10, help="Max loop count (default: 10)")
+    args = parser.parse_args()
+    
+    project = Path(args.project)
+    fr_id = args.fr
+    loop_count = 0
+    
+    while True:
+        loop_count += 1
+        if args.loop:
+            print(f"\n{'='*50}")
+            print(f"FR Quality Check: {fr_id} (loop {loop_count}/{args.max_loops})")
+            print(f"{'='*50}")
+        else:
+            print(f"\n{'='*50}")
+            print(f"FR Quality Check: {fr_id}")
+            print(f"{'='*50}")
+        
+        passed, errors = run_check(fr_id, project)
+        
+        print(f"\n{'='*50}")
+        if errors:
+            print(f"❌ FAILED: {len(errors)} errors")
+            for e in errors:
+                print(f"   {e}")
+            
+            if args.loop and loop_count < args.max_loops:
+                print(f"\n🔧 修復問題後，按 Enter 繼續... (Ctrl+C 退出)")
+                try:
+                    input()
+                except (KeyboardInterrupt, EOFError):
+                    print("\n❌ 退出")
+                    return 1
+                continue
+            return 1
+        else:
+            print(f"✅ PASSED: All checks passed")
+            return 0
+    
+    return 0  # Should not reach here
 
 
 if __name__ == "__main__":

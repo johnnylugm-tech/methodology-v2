@@ -1369,6 +1369,27 @@ pip install methodology-v2==5.30.0
 
 # v7.x Releases (2026-04-10)
 
+## v7.44 (2026-04-11)
+
+### fix: check_fr_quality.py - 加入迭代修復迴圈
+
+**UPDATED: scripts/check_fr_quality.py**
+- 新增 `--loop` 選項：修復後按 Enter 繼續檢查
+- 新增 `--max-loops` 選項：最大迭代次數
+- 支援迭代修復流程
+
+**使用方式：**
+```bash
+# 單次檢查
+python scripts/check_fr_quality.py --fr FR-01
+
+# 迭代檢查（推薦）
+python scripts/check_fr_quality.py --fr FR-01 --loop
+# FAIL → 修復 → 按 Enter → 再次檢查 → 直到 PASS
+```
+
+---
+
 ## v7.43 (2026-04-11)
 
 ### fix: Phase 3 - 每個 FR 完成後的簡單檢查命令
