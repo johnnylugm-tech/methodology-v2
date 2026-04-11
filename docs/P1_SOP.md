@@ -182,3 +182,57 @@ plan-phase（生成計畫） → Johnny 審核 → run-phase（執行）
 - ✅ Agent B APPROVE
 - ✅ sessions_spawn.log 有記錄（HR-10）
 - ✅ DEVELOPMENT_LOG 有 session_id（HR-07）
+
+---
+
+## Traceability 驗證（TH-13: FR→SRS 映射率 =100%）
+
+> ⚠️ **Phase 1 必須建立所有 FR→SRS 映射，這是後續 Phase 的基礎**
+
+### 驗證時機
+
+| Step | 內容 | Traceability 動作 |
+|------|------|------------------|
+| 1.1 | 需求分析 | 建立 FR 清單 |
+| 1.2 | 撰寫 SRS | 建立 FR→SRS§ 映射 |
+
+### 使用方式
+
+```python
+from requirement_traceability import RequirementTraceability
+
+rt = RequirementTraceability(project_id="my-project")
+
+# 建立所有 FR
+fr_list = [
+    ("FR-01", "台灣中文詞彙映射", "§2.1"),
+    ("FR-02", "SSML 解析", "§2.2"),
+    ("FR-03", "智能文本切分", "§2.3"),
+    # ...
+]
+
+for fr_id, title, srs_section in fr_list:
+    rt.add_requirement(fr_id, title, f"SRS.md {srs_section}")
+
+# 驗證完整性（所有 FR 都必須有 SRS 章節）
+result = rt.verify_completeness()
+assert result["srs_coverage"] == "100.0%", "所有 FR 必須映射到 SRS"
+```
+
+### 驗證命令
+
+```bash
+# 驗證 FR→SRS 映射
+python requirement_traceability.py \
+    --project-id my-project \
+    --verify \
+    --export phase1_traceability.json
+```
+
+### HARNESS v1.0/v2.0 合規
+
+| ASPICE 能力 | 支援 |
+|-------------|------|
+| SWE.3.B.SP1 任務到工作產品追溯 | ✅ |
+| SWE.3.B.SP2 工作產品之間的雙向追溯 | ✅ Phase 1 建立 FR→SRS |
+| SWE.3.B.SP3 追溯一致性 | ✅ Phase 3+4 完整性驗證 |

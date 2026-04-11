@@ -554,6 +554,70 @@ python cli.py context-compress --level auto  # 自動選擇等級
 
 ---
 
+---
+
+## Traceability 驗證（Phase 3 必要步驟）
+
+> ⚠️ **Phase 3 必須建立 FR→Code 映射，否則 Phase 4 無法驗證 TH-17**
+
+### 驗證時機
+
+| Step | 內容 | Traceability 動作 |
+|------|------|------------------|
+| 3.1 | 實作 FR-01~03 | 建立 FR→Code 鏈接 |
+| 3.2 | 實作 FR-04~06 | 建立 FR→Code 鏈接 |
+| 3.3 | 實作 FR-07~09 | 建立 FR→Code 鏈接 |
+| 3.4 | 單元測試 | 建立 Code→Test 鏈接 |
+
+### 使用方式
+
+```python
+from requirement_traceability import RequirementTraceability
+
+rt = RequirementTraceability(project_id="my-project")
+
+# Step 3.1: 建立 FR→Code 映射
+rt.add_requirement("FR-01", "台灣中文詞彙映射", "SRS.md §2.1")
+rt.add_code_component(
+    "src/processing/lexicon_mapper.py",
+    fr_id="FR-01",
+    functions=["map_text", "load_lexicon"],
+    line_range="1-150"
+)
+
+# Step 3.4: 建立 Code→Test 映射
+rt.add_test_coverage(
+    "tests/test_fr01_lexicon_mapper.py",
+    fr_id="FR-01",
+    test_functions=["test_map_text", "test_coverage"],
+    coverage_percentage=0.85
+)
+
+# 驗證完整性
+result = rt.verify_completeness()
+assert result["frs_with_code_implementation"] == 9, "所有 FR 必須有代碼實作"
+```
+
+### 驗證命令
+
+```bash
+# CLI 驗證
+python requirement_traceability.py \
+    --project-id my-project \
+    --verify \
+    --export phase3_traceability.json
+```
+
+### 閾值檢查
+
+| 閾值 | 標準 | Phase 3 目標 |
+|------|------|-------------|
+| TH-13 | SRS FR 覆蓋率 =100% | FR→SRS 映射 100% |
+| TH-16 | 代碼↔SAD 映射率 =100% | FR→Code 映射 100% |
+| TH-17 | FR↔測試映射率 ≥90% | Phase 4 驗證 |
+
+---
+
 ## 教訓（經驗累積）
 
 ### Phase 3 Module 1 學到的教訓（2026-04-02）

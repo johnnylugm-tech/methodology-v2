@@ -146,3 +146,66 @@ python cli.py run-phase --phase 4
 - ✅ TH-13=100%, TH-17 ≥90%
 - ✅ Agent B 兩次 APPROVE
 - ✅ sessions_spawn.log 有記錄（HR-10）
+
+---
+
+## Traceability 驗證（TH-13, TH-17）
+
+> ⚠️ **Traceability 是 ASPICE 合規的核心要求**
+
+### 驗證工具
+
+使用 `requirement_traceability.py` 進行完整追溯驗證：
+
+```bash
+# 驗證完整性
+python requirement_traceability.py \
+    --project-id $PROJECT_ID \
+    --verify
+
+# 匯出 ASPICE 合規報告
+python requirement_traceability.py \
+    --project-id $PROJECT_ID \
+    --export traceability_report.json \
+    --format aspice
+```
+
+### 驗證清單
+
+| 檢查項 | 標準 | 狀態 |
+|--------|------|------|
+| FR → SRS 映射 | 100% | ⬜ |
+| SRS → Code 映射 | 100% | ⬜ |
+| Code → Test 映射 | 100% | ⬜ |
+| FR ↔ Test 映射率 | ≥90% | ⬜ |
+| 測試覆蓋率 | ≥80% | ⬜ |
+
+### 缺口修復
+
+如果驗證失敗，使用以下流程修復：
+
+```python
+from requirement_traceability import RequirementTraceability
+
+rt = RequirementTraceability(project_id="my-project")
+
+# 1. 新增缺失的映射
+rt.add_requirement("FR-01", "功能描述", "SRS.md §2.1")
+rt.add_code_component("src/auth.py", fr_id="FR-01", functions=["login", "logout"])
+rt.add_test_coverage("tests/test_auth.py", fr_id="FR-01", coverage_percentage=0.85)
+
+# 2. 驗證完整性
+result = rt.verify_completeness()
+print(result["overall_completeness"])
+
+# 3. 匯出報告
+rt.save("traceability_report.json")
+```
+
+### HARNESS v1.0/v2.0 合規
+
+| ASPICE 能力 | 支援 |
+|-------------|------|
+| SWE.3.B.SP1 任務到工作產品追溯 | ✅ |
+| SWE.3.B.SP2 工作產品之間的雙向追溯 | ✅ |
+| SWE.3.B.SP3 追溯一致性 | ✅ |
