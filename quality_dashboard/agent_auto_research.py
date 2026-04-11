@@ -166,6 +166,7 @@ class AgentDrivenAutoResearch:
     
     def __init__(self, project_path: str):
         self.project_path = Path(project_path)
+        self.src_path = self.project_path / "03-development" / "src"
         self.data_dir = self.project_path / ".quality_dashboard"
         self.data_dir.mkdir(exist_ok=True)
         self.history_file = self.data_dir / "agent_history.json"
@@ -469,7 +470,11 @@ for k, v in result.dimensions.items():
         """
         嘗試通用的代碼品質修復
         """
+        # 確保 src_path 已初始化
+        if not hasattr(self, 'src_path'):
+            self.src_path = self.project_path / "03-development" / "src"
         if not self.src_path.exists():
+            print(f"   ⚠️ src_path 不存在: {self.src_path}")
             return False
         
         # 對於需要 Agent 的維度，嘗試基本修復
