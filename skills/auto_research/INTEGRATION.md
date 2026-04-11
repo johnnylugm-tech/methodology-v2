@@ -1,17 +1,21 @@
 # AutoResearch 整合進 methodology-v2
 
-> **Version**: v1.0.0
+> **Version**: v2.0.0
 > **Date**: 2026-04-11
 > **Author**: Musk Agent
 > **Purpose**: 將 AutoResearch 整合為 methodology-v2 的全域品質監控選項
 
 ---
 
-## 整合目標
+## 當前狀態（v7.35/v7.36）
 
-1. **全域開關**：`auto_research.enabled = true/false`（預設 true）
-2. **Phase Trigger**：在特定 Phase 完成後自動觸發
-3. **維度階段化**：根據當前 Phase 活躍維度評估
+| 元件 | 狀態 | 說明 |
+|------|------|------|
+| CLI `auto-research` 命令 | ✅ 已實作 | `python cli.py auto-research --project /path --phase 3` |
+| `--no-autoresearch` 標誌 | ✅ 已實作 | `run-phase --no-autoresearch` |
+| 全域開關 | ✅ 已實作 | `project-config.yaml` 中設定 |
+| Phase-aware scoring | ✅ 已實作 | 每個 Phase 只計算活躍維度 |
+| POST-FLIGHT 觸發 | ✅ 已實作 | Phase 完成後自動執行 |
 
 ---
 
@@ -24,74 +28,30 @@
 auto_research:
   enabled: true              # 全域開關，預設 true
   
-  # Phase Trigger（可選）
-  trigger_after_phase: [3, 5]  # 這些 Phase 完成後自動觸發
-  
-  # 維度設定
-  dimensions:
-    phase_3: [D1, D5, D6, D7]    # Phase 3 活躍維度
-    phase_4: [D1, D2, D3, D4, D5, D6, D7]
-    phase_5: all                    # Phase 5+ 全部維度
-    
-  # 分數標準
-  scoring:
-    pass: 70
-    target: 85
-    
-  # 迭代設定
-  iterations:
-    min: 1
-    max: 3
-    stop_on_full: true  # 全 100% 時提前停止
+  # Phase-specific 配置
+  phases:
+    3:
+      dimensions: [D1, D5, D6, D7]
+      target: 85
+    4:
+      dimensions: [D1, D2, D3, D4, D5, D6, D7]
+      target: 85
+    5:
+      dimensions: all
+      target: 85
 ```
 
 ### CLI 覆寫
 
 ```bash
-# 使用全域設定
-python3 cli.py phase-3
+# 使用全域設定（預設）
+python3 cli.py run-phase --phase 3 --repo /path
 
 # 停用 AutoResearch
-python3 cli.py phase-3 --no-autoresearch
+python3 cli.py run-phase --phase 3 --repo /path --no-autoresearch
 
-# 只跑 AutoResearch（不執行 Phase）
-python3 cli.py auto-research --project /path/to/project --phase 3
-```
-
----
-
-## CLI 整合
-
-### 新增命令
-
-```python
-@cli.command('auto-research')
-@click.option('--project', required=True)
-@click.option('--phase', default=3, type=click.Choice([3, 4, 5, 6, 7]))
-@click.option('--iterations', default=3)
-@click.option('--dimensions', default=None)  # None = 使用 phase 預設
-def auto_research(project, phase, iterations, dimensions):
-    """執行 AutoResearch 品質改進"""
-    # 讀取 project-config.yaml 的 auto_research.enabled
-    # 如果 enabled=False，顯示提示並退出
-    # 否則執行 AutoResearch
-```
-
-### Phase 命令修改
-
-```python
-@cli.command('phase-3')
-@click.option('--no-autoresearch', is_flag=True)
-def phase_3(no_autoresearch):
-    """執行 Phase 3"""
-    # 執行 Phase 3 邏輯
-    
-    # 檢查 AutoResearch 是否啟用
-    if not no_autoresearch:
-        config = load_project_config()
-        if config.get('auto_research', {}).get('enabled', True):
-            # 執行 AutoResearch
-            run_autoresearch(project_path, phase=3)
+# 單獨執行 AutoResearch
+python3 cli.py auto-research --project /path --phase 3 --iterations 3
 ```
 
 ---
@@ -102,57 +62,118 @@ def phase_3(no_autoresearch):
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│ 執行 Phase N                                               │
+│ run-phase --phase N                                       │
 ├─────────────────────────────────────────────────────────────┤
-│ 1. 執行 Phase N 邏輯                                       │
-│ 2. 檢查 auto_research.enabled                               │
-│    └─→ false → 跳過，直接完成                              │
-│ 3. 根據當前 Phase 取得活躍維度                              │
-│ 4. 執行 AutoResearch（min-max 輪）                          │
-│ 5. 檢查結果                                                 │
-│    └─→ 全 100% 或已達目標分數 → 完成                        │
-│    └─→ 未達標且還有輪數 → 繼續                              │
-│ 6. 報告結果                                                 │
+│ 1. 執行 Phase N 邏輯                                      │
+│ 2. 進入 POST-FLIGHT                                        │
+│ 3. 讀取 project-config.yaml 的 auto_research.enabled       │
+│    └─→ false → 顯示「Enabled: no」並跳過                   │
+│ 4. 根據 Phase 取得活躍維度                                  │
+│    Phase 3 → [D1, D5, D6, D7]                             │
+│    Phase 4 → [D1, D2, D3, D4, D5, D6, D7]                 │
+│    Phase 5+ → [D1, D2, D3, D4, D5, D6, D7, D8, D9]        │
+│ 5. 執行 AutoResearch（最多 3 輪）                          │
+│ 6. 報告結果                                                │
 └─────────────────────────────────────────────────────────────┘
+```
+
+### Phase-aware Scoring
+
+```python
+# Phase 3：只計算 4 個維度
+total_score = (D1 + D5 + D6 + D7) / 4 * 100
+
+# Phase 4：計算 7 個維度
+total_score = (D1 + D2 + D3 + D4 + D5 + D6 + D7) / 7 * 100
+
+# Phase 5+：計算全部 9 個維度
+total_score = (D1 + D2 + D3 + D4 + D5 + D6 + D7 + D8 + D9) / 9 * 100
 ```
 
 ---
 
-## 實作規劃
+## 實作細節
 
-| 元件 | 檔案 | 說明 |
-|------|------|------|
-| 設定讀取 | `cli.py` | 新增 `load_autoresearch_config()` |
-| Phase Trigger | `cli.py` | 在 Phase 完成後呼叫 |
-| AutoResearch 執行 | `quality_dashboard/agent_auto_research.py` | 現有腳本增強 |
-| 報告生成 | `cli.py` | 整合進 Phase 輸出 |
+### CLI 命令
+
+```bash
+# auto-research 命令
+$ python3 cli.py auto-research --help
+usage: cli.py auto-research [-h] --project PROJECT [--phase PHASE]
+                          [--iterations ITERATIONS] [--dimensions DIMENSIONS]
+
+# run-phase 命令（新增 --no-autoresearch）
+$ python3 cli.py run-phase --help
+usage: cli.py run-phase [--repo REPO] [--resume] [--no-autoresearch]
+```
+
+### AgentDrivenAutoResearch 初始化
+
+```python
+from quality_dashboard.agent_auto_research import AgentDrivenAutoResearch
+
+# Phase 3（只計算 D1, D5, D6, D7）
+agent = AgentDrivenAutoResearch('/path/to/project', phase=3)
+
+# Phase 5+（計算全部 9 維度）
+agent = AgentDrivenAutoResearch('/path/to/project', phase=5)
+
+result = agent.run(max_iterations=3)
+```
 
 ---
 
 ## 範例輸出
 
-```bash
-$ python3 cli.py phase-3 --project /path/to/project
+### `run-phase` POST-FLIGHT
 
-=== Phase 3 執行中 ===
-...
-✅ Phase 3 完成
-
-=== AutoResearch 品質檢查 ===
-Enabled: true (project-config.yaml)
-Phase: 3
-Active dimensions: D1, D5, D6, D7
-
-🔍 評估中...
-   D1 Linting: 90% → 100% ✅
-   D5 Complexity: 40% → 100% ✅
-   D6 Architecture: 70% → 100% ✅
-   D7 Readability: 100% ✅
-
-📊 Phase 3 分數: 75 → 100分 ✅
-
-AutoResearch 完成（2 輪）
 ```
+=== POST-FLIGHT: AutoResearch Quality Check ===
+   Enabled: yes (project-config.yaml)
+   Phase: 3
+   Active dimensions: D1_Linting, D5_Complexity, D6_Architecture, D7_Readability
+   
+🚀 Agent-Driven AutoResearch Loop 啟動
+   專案: tts-kokoro-v613
+   Phase: 3
+   活躍維度: D1_Linting, D5_Complexity, D6_Architecture, D7_Readability
+   目標: 85% (及格: 70%)
+
+📊 當前分數 (Phase 3 活躍維度):
+   ✅ D1_Linting: 90.0%
+   ✅ D5_Complexity: 100.0%
+   ✅ D6_Architecture: 100.0%
+   ✅ D7_Readability: 100.0%
+
+   Phase 3 分數: 97.5% / 目標: 85%
+🎉 達成目標分數 85%！
+```
+
+### `auto-research` 獨立命令
+
+```bash
+$ python3 cli.py auto-research --project /path --phase 3
+
+🔬 AutoResearch Quality Improvement
+   Project: /path
+   Phase: 3
+   Active dimensions: D1_Linting, D5_Complexity, D6_Architecture, D7_Readability
+   Max iterations: 3
+   Enabled: True
+
+🚀 Agent-Driven AutoResearch Loop 啟動
+...
+```
+
+---
+
+## 版本歷史
+
+| 版本 | 改進 |
+|------|------|
+| v7.34 | 整合規劃文件 |
+| v7.35 | CLI 命令實作（auto-research, --no-autoresearch, 全域開關）|
+| v7.36 | Phase-aware scoring（每個 Phase 只計算活躍維度）|
 
 ---
 
@@ -161,10 +182,10 @@ AutoResearch 完成（2 輪）
 | 設定 | 預設值 | 說明 |
 |------|--------|------|
 | `auto_research.enabled` | `true` | 全域開關 |
-| `trigger_after_phase` | `[3, 5]` | 自動觸發的 Phase |
+| `--no-autoresearch` | `false` | CLI 覆寫 |
 | `iterations.max` | `3` | 最大迭代次數 |
-| `iterations.stop_on_full` | `true` | 全 100% 時停止 |
 | `scoring.target` | `85` | 目標分數 |
+| `scoring.pass` | `70` | 及格分數 |
 
 ---
 
