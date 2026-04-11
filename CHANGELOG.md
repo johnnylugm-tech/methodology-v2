@@ -1,3 +1,13 @@
+## v7.55 (2026-04-12)
+
+### fix: cmd_quality_gate silent exit - add output before sys.exit
+
+**FIXED: cli.py cmd_quality_gate()**
+- Problem: All print statements replaced with `pass`, causing silent exit(1)
+- Fix: Restore output for FrameworkEnforcer violations
+
+---
+
 ## v7.54 (2026-04-12)
 
 ### fix: cli.py UnboundLocalError - remove local import os

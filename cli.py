@@ -2949,12 +2949,9 @@ class MethodologyCLI:
             
             # 失敗時阻擋
             if not result.passed:
-                pass # Removed print-debug
-                pass # Removed print-debug
-                for msg, fix in result.violations:
-                    pass # Removed print-debug
-                    if fix:
-                        pass # Removed print-debug
+                print(f"❌ FrameworkEnforcer: {len(result.violations)} violations")
+                for msg, fix in result.violations[:5]:
+                    print(f"   - {msg}")
                 sys.exit(1)
             
             pass # Removed print-debug
