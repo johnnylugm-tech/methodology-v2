@@ -4563,10 +4563,10 @@ Full execution script is in templates/plan_phase_template.md Section 17.
         content = sad_path.read_text()
         import re
         
-        # 優先：解析 Markdown 表格格式（FR ID | 需求 | app/...）
+        # 優先：解析 Markdown 表格格式（FR ID | 需求 | 03-development/src/...）
         # 例如：| **FR-01** | TaiwanLexicon ≥ 50 詞映射 | `03-development/src/processing/lexicon_mapper.py` |
-        # 簡化：直接找 FR-XX 和 app/ 路徑
-        simple_pattern = re.compile(r'FR-(\d+)[^\n]*?`?(app/[^\s`]+)`?', re.DOTALL)
+        # 支援 both 'app/' and '03-development/src/' paths
+        simple_pattern = re.compile(r'FR-(\d+)[^\n]*?`?(?:app/|03-development/src/)([^\s`]+)`?', re.DOTALL)
         modules = []
         seen_frs = set()
         for m in simple_pattern.finditer(content):
@@ -4579,6 +4579,9 @@ Full execution script is in templates/plan_phase_template.md Section 17.
             if '/' in file_path:
                 filename = file_path.split('/')[-1].replace('.py', '')
                 module_name = filename
+                # Normalize: ensure 03-development/src/ prefix
+                if not file_path.startswith('03-development'):
+                    file_path = f"03-development/src/{file_path}"
             else:
                 module_name = f"Module{fr_num}"
             modules.append({
@@ -4625,7 +4628,8 @@ Full execution script is in templates/plan_phase_template.md Section 17.
                 impl_path = ""
             
             # 推斷測試檔案（從 impl_path）
-            if impl_path and "app/" in impl_path:
+            # Support both 'app/' and '03-development/src/' paths
+            if impl_path and ("app/" in impl_path or "03-development/src/" in impl_path):
                 filename = impl_path.split("/")[-1].replace(".py", "")
                 test_path = f"tests/test_fr{fr_num.zfill(2)}_{filename}.py"
             else:
