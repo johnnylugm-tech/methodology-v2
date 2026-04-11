@@ -1369,6 +1369,23 @@ pip install methodology-v2==5.30.0
 
 # v7.x Releases (2026-04-10)
 
+## v7.41 (2026-04-11)
+
+### fix: Stage-Pass auto-call traceability verification
+
+**UPDATED: stage_pass_generator.py**
+- Added `run_step5_traceability()` method
+- Auto-calls `requirement_traceability.py --verify` at phase end
+- Non-blocking (warns but doesn't block)
+- Only runs if traceability_report.json exists
+
+**Note:** For full traceability, initialize with:
+```bash
+python requirement_traceability.py --project-id $PROJECT --verify
+```
+
+---
+
 ## v7.40 (2026-04-11)
 
 ### feat: Requirement Traceability System - FR→SRS→Code→Test Complete Chain

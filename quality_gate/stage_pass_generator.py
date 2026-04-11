@@ -554,6 +554,9 @@ class IntegratedStagePassGenerator:
         # Step 4: Confidence
         score = self.run_step4_confidence()
         
+        # Step 5: Traceability verification (optional)
+        self.run_step5_traceability()
+        
         # Log to DEVELOPMENT_LOG（修復 WARNING 5）
         self._log_to_development_log()
         
@@ -567,6 +570,47 @@ class IntegratedStagePassGenerator:
         print(f"{'='*60}")
         
         return score >= 70  # 70 分以上算通過
+
+    def run_step5_traceability(self) -> bool:
+        """Traceability 驗證（可選）"""
+        print(f"\n{'─'*40}")
+        print(f"Step 5: Traceability 驗證")
+        print(f"{'─'*40}")
+        
+        # 檢查是否有 traceability_report.json
+        trace_file = os.path.join(self.project_root, "traceability_report.json")
+        if not os.path.exists(trace_file):
+            print(f"⚠️  Traceability 未初始化 (traceability_report.json 不存在)")
+            print(f"   如需啟用，執行: python requirement_traceability.py --project-id $PROJECT --verify")
+            return True  # 不阻擋流程
+        
+        # 執行驗證
+        try:
+            from requirement_traceability import RequirementTraceability
+            import json
+            
+            with open(trace_file, "r") as f:
+                data = json.load(f)
+            
+            rt = RequirementTraceability.load(trace_file)
+            result = rt.verify_completeness()
+            
+            print(f"✅ Traceability 完整性: {result['overall_completeness']}")
+            print(f"   FR→SRS: {result['srs_coverage']}")
+            print(f"   FR→Code: {result['code_coverage']}")
+            print(f"   FR→Test: {result['test_coverage']}")
+            
+            # 如果覆蓋率 < 100%，警告但不放棄
+            completeness_pct = float(result['overall_completeness'].replace('%', ''))
+            if completeness_pct < 100:
+                print(f"⚠️  Traceability 覆蓋率 {result['overall_completeness']} < 100%")
+                print(f"   建議: 補全 FR 映射")
+            
+            return True
+            
+        except Exception as e:
+            print(f"⚠️  Traceability 驗證失敗: {e}")
+            return True  # 不阻擋流程
 
 
 def main():
