@@ -335,6 +335,7 @@ pytest --cov=app/ --cov-report=term -q
 | **Steering Loop** | v6.67 | `steering run --phase N` | 根據反饋自動調整策略 |
 | **Self-Correction Engine** | v6.67 | 自動（如果啟用）| 根據錯誤自動修正代碼 |
 | **Verify_Agent** | v6.21 | 當 Agent B 超過 20 輪 | 第三方獨立審計 |
+| **SAB Drift Detection** | IMPROVEMENT_P0-3 | `python cli.py trace-check` 或 UnifiedGate | 驗證代碼↔SAD 一致性 |
 
 ### 建議的自動化流程（Phase 3+）
 
@@ -348,17 +349,29 @@ done
 # 2. 自動化品質檢查
 python cli.py quality-gate --phase {PHASE}
 
-# 3. AutoResearch 自動生成測試
+# 3. SAB Drift Detection（代碼↔SAD 一致性）
+python cli.py trace-check --phase {PHASE}
+
+# 4. AutoResearch 自動生成測試
 python cli.py auto-research --phase {PHASE}
 
-# 4. Feedback Loop 收集回饋
+# 5. Feedback Loop 收集回饋
 steering run --phase {PHASE}
 
-# 5. Verify_Agent（如需要）
+# 6. Verify_Agent（如需要）
 if [ $AGENT_B_ROUNDS -gt 20 ]; then
     python cli.py verify-agent --phase {PHASE}
 fi
 ```
+
+### SAB Drift Detection 說明
+
+| 項目 | 內容 |
+|------|------|
+| **TH-16** | 代碼↔SAD 映射率 = 100% |
+| **目的** | 驗證代碼結構與 SAD 設計一致 |
+| **工具** | `sab_spec.py` + `trace-check` 命令 |
+| **時機** | Phase 3 Constitution check 前執行 |
 
 ---
 
