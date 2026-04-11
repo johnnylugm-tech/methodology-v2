@@ -4564,7 +4564,7 @@ Full execution script is in templates/plan_phase_template.md Section 17.
         import re
         
         # 優先：解析 Markdown 表格格式（FR ID | 需求 | app/...）
-        # 例如：| **FR-01** | TaiwanLexicon ≥ 50 詞映射 | `app/processing/lexicon_mapper.py` |
+        # 例如：| **FR-01** | TaiwanLexicon ≥ 50 詞映射 | `03-development/src/processing/lexicon_mapper.py` |
         # 簡化：直接找 FR-XX 和 app/ 路徑
         simple_pattern = re.compile(r'FR-(\d+)[^\n]*?`?(app/[^\s`]+)`?', re.DOTALL)
         modules = []
@@ -4575,7 +4575,7 @@ Full execution script is in templates/plan_phase_template.md Section 17.
                 continue
             file_path = m.group(2) or ""
             seen_frs.add(fr_num)
-            # 從路徑推斷模組名：app/processing/lexicon_mapper.py → lexicon_mapper
+            # 從路徑推斷模組名：03-development/src/processing/lexicon_mapper.py → lexicon_mapper
             if '/' in file_path:
                 filename = file_path.split('/')[-1].replace('.py', '')
                 module_name = filename
@@ -4822,7 +4822,7 @@ Full execution script is in templates/plan_phase_template.md Section 17.
 - `{mod_match.get('file', 'N/A') if mod_match else 'N/A'}`
 
 **Forbidden**：
-- ❌ app/infrastructure/
+- ❌ 03-development/src/infrastructure/
 - ❌ @covers: L1 Error
 - ❌ @type: edge
 """)
@@ -4876,7 +4876,7 @@ Full execution script is in templates/plan_phase_template.md Section 17.
             template = re.sub(r"\{fr_num\}", fr_num, template)
             template = re.sub(r"\{fr\['fr'\]\}", fr.get("fr", f"FR-{fr_num}"), template)
             template = re.sub(r"\{fr\['title'\]\}", fr.get("title", ""), template)
-            file_path = fr.get("file", f"app/processing/{fr_num}.py")
+            file_path = fr.get("file", f"03-development/src/processing/{fr_num}.py")
             template = re.sub(r"\{fr\.get\('file'[^}]*\)", file_path, template)
             # Inject project path for cwd verification
             if repo_path:
@@ -5056,7 +5056,7 @@ Full execution script is in templates/plan_phase_template.md Section 17.
         phase_deliverables = {
             1: ["SRS.md", "SPEC_TRACKING.md", "TRACEABILITY_MATRIX.md"],
             2: ["SRS.md", "SAD.md", "ADR.md"],
-            3: ["SRS.md", "SAD.md", "app/processing/"],
+            3: ["SRS.md", "SAD.md", "03-development/src/processing/"],
             4: ["SRS.md", "SAD.md", "TEST_PLAN.md"],
             5: ["BASELINE.md", "MONITORING_PLAN.md"],
             6: ["QUALITY_REPORT.md"],
@@ -5167,7 +5167,10 @@ Full execution script is in templates/plan_phase_template.md Section 17.
             plan = template_content
             plan = plan.replace('{PHASE}', str(phase))
             plan = plan.replace('{PHASE_PLUS_1}', str(phase + 1))
-            plan = plan.replace('{VERSION}', 'v6.54.0')
+            # Read VERSION dynamically
+            version_file = Path(__file__).parent / "VERSION"
+            current_version = version_file.read_text().strip() if version_file.exists() else "v7.19"
+            plan = plan.replace('{VERSION}', current_version)
             plan = plan.replace('{PROJECT_NAME}', state.get('project_name', repo_path.name))
             plan = plan.replace('{DATE}', datetime.now().strftime('%Y-%m-%d'))
             plan = plan.replace('{GOAL}', goal)
@@ -5181,7 +5184,7 @@ Full execution script is in templates/plan_phase_template.md Section 17.
             plan = plan.replace('{AGENT_B_UPPER}', agent_b.upper())
             
             # Enrich FR with module info from SAD
-            first_fr = frs[0] if frs else {'fr': 'FR-01', 'title': 'Task', 'module': 'module', 'file': 'app/processing/01.py'}
+            first_fr = frs[0] if frs else {'fr': 'FR-01', 'title': 'Task', 'module': 'module', 'file': '03-development/src/processing/01.py'}
             mod_match = next((m for m in modules if m.get("fr", "").upper() == first_fr["fr"].upper()), None)
             if mod_match:
                 first_fr['module'] = mod_match.get("module", first_fr.get('module', 'module'))
