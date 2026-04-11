@@ -1369,6 +1369,21 @@ pip install methodology-v2==5.30.0
 
 # v7.x Releases (2026-04-10)
 
+## v7.42 (2026-04-11)
+
+### fix: Phase 3 - 每個 FR 完成後當下檢查 Constitution + CQG
+
+**UPDATED: docs/P3_SOP.md**
+- 每個 FR Reviewer APPROVE 後，立即觸發 Constitution + CQG
+- 問題少時容易修，不等到最後累積
+- 符合「快速失敗」原則
+
+**流程對比：**
+- 之前：FR-01→FR-02→...→FR-09→最後檢查（8 個問題）
+- 之後：每個 FR 完成後立即檢查（0 個問題）
+
+---
+
 ## v7.41 (2026-04-11)
 
 ### fix: Stage-Pass auto-call traceability verification

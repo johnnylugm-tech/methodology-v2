@@ -246,6 +246,28 @@ Sub-agent 執行中：
        ↓
 4. Reviewer APPROVE → commit → 繼續下一個
    Reviewer REJECT → 修復 → re-verify → re-spawn
+   
+   **⚡ 當下檢查（v7.42 修正）**
+   Reviewer APPROVE 後，立即觸發 Constitution + CQG：
+   ```bash
+   # 每個 FR 完成後立即檢查（不要等到最後）
+   python quality_gate/constitution/runner.py --type implementation
+   python cli.py quality-gate --phase 3
+   ```
+   
+   **的好處：**
+   - 問題少時容易修
+   - 不等到最後累積 8 個問題
+   - 符合「快速失敗」原則
+   
+   **流程對比：**
+   ```
+   # 之前（事後檢查）
+   FR-01 → FR-02 → FR-03 → ... → FR-09 → 最後檢查（8 個問題）
+   
+   # 之後（當下檢查）
+   FR-01 → Constitution+CQG → 修復（0 個問題）→ FR-02 → Constitution+CQG → 修復（0 個問題）→ ...
+   ```
 ```
 
 ### Step 5: 危險把關（PermissionGuard）
