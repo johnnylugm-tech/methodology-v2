@@ -145,7 +145,8 @@ class ArchitectureEvaluator:
     
     def evaluate(self, project_path: str) -> DimensionScore:
         stdout, _, rc = run_tool(["radon", "cc", project_path, "-a"], timeout=30)
-        issues = [l.strip() for l in stdout.split('\n') if ' - A' in l or ' - B' in l][:3]
+        # 修復：只計算 C/D/E 作為問題，A/B 是好品質不應懲罰
+        issues = [l.strip() for l in stdout.split('\n') if ' - C' in l or ' - D' in l or ' - E' in l][:3]
         score = max(0, 100 - len(issues) * 10)
         return DimensionScore(self.name, score, self.weight, issues if issues else ["No major issues"], False, "radon")
 
