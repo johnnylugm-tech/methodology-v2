@@ -1,3 +1,31 @@
+## v7.49 (2026-04-12)
+
+### fix: check_fr_quality.py FR mapping + generate_fr_mapping.py
+
+**NEW: scripts/generate_fr_mapping.py**
+- 從專案結構自動生成 FR → 代碼檔案映射
+- 基於關鍵字掃描 src/ 目錄
+- 產出 .methodology/fr_mapping.json
+
+**UPDATED: scripts/check_fr_quality.py**
+- 優先讀取 fr_mapping.json
+- Fallback 到 traceability_report.json
+
+**FR Mapping 結果（tts-kokoro-v613）：**
+| FR | 檔案數 |
+|---|---|
+| FR-01 | 1 |
+| FR-02 | 2 |
+| FR-03 | 3 |
+| FR-04 | 4 |
+| FR-05 | 2 |
+| FR-06 | 1 |
+| FR-07 | ⚠️ 0（待實作）|
+| FR-08 | 2 |
+| FR-09 | 3 |
+
+---
+
 ## v6.109 (2026-04-09)
 
 ### refactor: PhaseHooks framework + new Agent workflow (v6.109)

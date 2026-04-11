@@ -28,7 +28,17 @@ from pathlib import Path
 
 
 def get_fr_files(project_path: Path, fr_id: str) -> list:
-    """從 traceability_report.json 取得該 FR 的檔案"""
+    """從 fr_mapping.json 或 traceability_report.json 取得該 FR 的檔案"""
+    # 優先使用 fr_mapping.json
+    fr_map_file = project_path / ".methodology" / "fr_mapping.json"
+    if fr_map_file.exists():
+        import json
+        with open(fr_map_file) as f:
+            data = json.load(f)
+        if fr_id in data:
+            return data[fr_id].get("files", [])
+    
+    # Fallback: traceability_report.json
     trace_file = project_path / "traceability_report.json"
     if not trace_file.exists():
         return []
