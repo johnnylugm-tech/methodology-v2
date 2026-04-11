@@ -132,3 +132,47 @@ python cli.py run-phase --phase 5
 - ✅ TH-07 ≥90
 - ✅ Agent B 兩次 APPROVE
 - ✅ sessions_spawn.log 有記錄（HR-10）
+
+---
+
+## Traceability 驗證（Quality→Test 連結）
+
+> ⚠️ **Phase 5 必須建立 Quality Score→Test Coverage 連結**
+
+### 驗證時機
+
+| Step | 內容 | Traceability 動作 |
+|------|------|------------------|
+| 5.1 | 建立 BASELINE | 建立 Quality 基線 |
+| 5.2 | 執行驗證 | 記錄 Quality Score |
+
+### 使用方式
+
+```python
+from requirement_traceability import RequirementTraceability
+
+rt = RequirementTraceability(project_id="my-project")
+
+# 記錄 Quality Score→Test Coverage 連結
+rt.add_link(
+    source_type="quality",
+    source_id="BASELINE: D1=85%, D2=80%, D3=75%",
+    target_type="test",
+    target_id="tests/test_fr01_lexicon_mapper.py",
+    link_type=LinkType.QUALITY_TO_AUDIT
+)
+
+# 驗證 Quality 完整性
+result = rt.verify_completeness()
+print(f"Quality coverage: {result['quality_coverage']}")
+```
+
+### 驗證命令
+
+```bash
+# 驗證 Quality→Test 連結
+python requirement_traceability.py \
+    --project-id my-project \
+    --verify \
+    --export phase5_traceability.json
+```

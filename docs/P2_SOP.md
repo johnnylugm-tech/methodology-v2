@@ -143,3 +143,55 @@ python cli.py run-phase --phase 2
 - ✅ TH-01 >80%
 - ✅ Agent B APPROVE
 - ✅ sessions_spawn.log 有記錄（HR-10）
+
+---
+
+## Traceability 驗證（TH-16: SAD↔Code 映射率 =100%）
+
+> ⚠️ **Phase 2 必須建立 SAD→Code 映射，這是架構驗證的核心**
+
+### 驗證時機
+
+| Step | 內容 | Traceability 動作 |
+|------|------|------------------|
+| 2.1 | 撰寫 SAD | 建立 SAD 模組→代碼檔案映射 |
+| 2.2 | 實作 ADR | 記錄架構決策 |
+
+### 使用方式
+
+```python
+from requirement_traceability import RequirementTraceability
+
+rt = RequirementTraceability(project_id="my-project")
+
+# 建立 SAD 模組→代碼映射
+rt.add_link(
+    source_type="srs",
+    source_id="SAD §3.1 Module: LexiconMapper",
+    target_type="code",
+    target_id="src/processing/lexicon_mapper.py",
+    link_type=LinkType.SRS_TO_CODE
+)
+
+# 驗證完整性
+result = rt.verify_completeness()
+assert result["code_coverage"] == "100.0%", "所有 SAD 模組必須有代碼實作"
+```
+
+### 驗證命令
+
+```bash
+# 驗證 SAD→Code 映射
+python requirement_traceability.py \
+    --project-id my-project \
+    --verify \
+    --export phase2_traceability.json
+```
+
+### HARNESS v1.0/v2.0 合規
+
+| ASPICE 能力 | 支援 |
+|-------------|------|
+| SWE.3.B.SP1 任務到工作產品追溯 | ✅ |
+| SWE.3.B.SP2 工作產品之間的雙向追溯 | ✅ Phase 1 FR→SRS + Phase 2 SAD→Code |
+| SWE.3.B.SP3 追溯一致性 | ✅ Phase 3+4 完整性驗證 |

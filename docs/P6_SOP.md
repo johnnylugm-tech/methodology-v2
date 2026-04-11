@@ -123,3 +123,65 @@ python cli.py run-phase --phase 6
 - ✅ Agent B APPROVE
 - ✅ sessions_spawn.log 有記錄（HR-10）
 - ✅ DEVELOPMENT_LOG 有 session_id（HR-07）
+
+---
+
+## Traceability 驗證（Quality→Audit 連結）
+
+> ⚠️ **Phase 6 必須建立 Quality Score→Audit Finding 連結，完成完整追溯鏈**
+
+### 驗證時機
+
+| Step | 內容 | Traceability 動作 |
+|------|------|------------------|
+| 6.1 | 執行審計 | 建立 Quality→Audit 連結 |
+| 6.2 | 產出報告 | 驗證完整追溯鏈 |
+
+### 使用方式
+
+```python
+from requirement_traceability import RequirementTraceability
+
+rt = RequirementTraceability(project_id="my-project")
+
+# 建立 Quality→Audit Finding 連結
+rt.add_link(
+    source_type="quality",
+    source_id="BASELINE: Test Coverage 85%",
+    target_type="audit",
+    target_id="AUDIT: FR-01 Verified",
+    link_type=LinkType.QUALITY_TO_AUDIT
+)
+
+# 驗證完整追溯鏈（FR→SRS→Code→Test→Quality→Audit）
+result = rt.verify_completeness()
+print(f"Complete traceability chain: {result['overall_completeness']}")
+```
+
+### 完整追溯鏈驗證
+
+```
+FR-01 → SRS.md §2.1 → src/processing/lexicon_mapper.py
+    → tests/test_fr01_lexicon_mapper.py
+    → Quality Score: 85%
+    → AUDIT: VERIFIED ✓
+```
+
+### 驗證命令
+
+```bash
+# 驗證完整追溯鏈
+python requirement_traceability.py \
+    --project-id my-project \
+    --verify \
+    --format aspice \
+    --export phase6_traceability.json
+```
+
+### ASPICE 合規最終驗證
+
+| ASPICE 能力 | Phase 1 | Phase 2 | Phase 3 | Phase 4 | Phase 5 | Phase 6 |
+|-------------|---------|---------|---------|---------|---------|---------|
+| SWE.3.B.SP1 | ✅ FR→SRS | ✅ SAD | ✅ Code | ✅ Test | ✅ | ✅ Audit |
+| SWE.3.B.SP2 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| SWE.3.B.SP3 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |

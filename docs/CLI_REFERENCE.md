@@ -292,4 +292,70 @@ export METHODOLOGY_NO_CONFIRM=1
 
 ---
 
-*最後更新: 2026-03-31*
+---
+
+## 14. Traceability 驗證（需求可追溯性）
+
+### 使用 requirement_traceability.py
+
+```bash
+# 驗證完整性
+python -m methodology-v2.requirement_traceability \
+    --project-id my-project \
+    --verify
+
+# 匯出報告
+python -m methodology-v2.requirement_traceability \
+    --project-id my-project \
+    --export traceability_report.json \
+    --format aspice
+```
+
+### CLI 整合（透過 enforce）
+
+```bash
+# 執行 enforcement 並生成 ASPICE traceability 報告
+python cli.py enforce --project . --aspice-report
+```
+
+### Phase 整合
+
+| Phase | Traceability 驗證 |
+|-------|-------------------|
+| Phase 1 | FR→SRS 映射（TH-13）|
+| Phase 2 | SAD↔Code 映射（TH-16）|
+| Phase 3 | FR→Code 映射 |
+| Phase 4 | FR↔Test 映射（TH-17）|
+| Phase 5 | Quality→Test 連結 |
+| Phase 6 | Quality→Audit 連結 |
+
+### 驗證輸出範例
+
+```json
+{
+  "project_id": "my-project",
+  "total_requirements": 9,
+  "frs_with_srs_mapping": 9,
+  "frs_with_code_implementation": 9,
+  "frs_with_test_coverage": 9,
+  "srs_coverage": "100.0%",
+  "code_coverage": "100.0%",
+  "test_coverage": "100.0%",
+  "verification_rate": "85.0%",
+  "overall_completeness": "95.0%"
+}
+```
+
+### ASPICE 合規報告
+
+```bash
+python -m methodology-v2.requirement_traceability \
+    --project-id my-project \
+    --verify \
+    --format aspice \
+    --export aspice_report.json
+```
+
+---
+
+*最後更新: 2026-04-11*
