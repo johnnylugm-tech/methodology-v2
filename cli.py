@@ -4640,35 +4640,38 @@ Full execution script is in templates/plan_phase_template.md Section 17.
         return table
 
     def _generate_deliverable_structure(self, frs: list, modules: list) -> str:
-        """從 FR/Module 對應產生產出結構樹"""
+        """從 FR/Module 對應產出產出結構樹"""
         if not modules:
             return "*（請從 SAD.md §1.3 解析）*"
         
-        # Group by directory
+        # Group by directory (normalize paths)
         dirs = {}
         for m in modules:
             file_path = m.get('file', '')
             if '/' in file_path:
-                dir_name = '/'.join(file_path.split('/')[:-1])
-                filename = file_path.split('/')[-1]
+                # Normalize: strip 03-development/src/ prefix for grouping
+                if file_path.startswith('03-development/src/'):
+                    rel_path = file_path.replace('03-development/src/', '')
+                else:
+                    rel_path = file_path
+                dir_name = '/'.join(rel_path.split('/')[:-1])
+                filename = rel_path.split('/')[-1]
                 if dir_name not in dirs:
                     dirs[dir_name] = []
                 dirs[dir_name].append(filename)
         
-        lines = ["03-development/", "├── src/"]
+        lines = ["03-development/src/"]
         for dir_name, files in sorted(dirs.items()):
-            indent = "│   " * dir_name.count('/')
-            lines.append(f"{indent}├── {dir_name}/")
-            file_indent = indent + "│   "
+            lines.append(f"├── {dir_name}/")
             for f in sorted(files):
-                lines.append(f"{file_indent}{f}")
+                lines.append(f"│   ├── {f}")
         
-        lines.append("├── tests/")
+        lines.append("tests/")
         for fr in frs[:5]:
             fr_num = fr['fr'].lower().replace('-', '').replace('fr', '').zfill(2)
-            lines.append(f"│   ├── test_fr{fr_num}_*.py")
+            lines.append(f"├── test_fr{fr_num}_*.py")
         if len(frs) > 5:
-            lines.append(f"│   ... ({len(frs) - 5} more)")
+            lines.append(f"... ({len(frs) - 5} more)")
         
         return '\n'.join(lines)
 
