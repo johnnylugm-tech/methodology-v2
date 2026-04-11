@@ -248,17 +248,23 @@ Sub-agent 執行中：
    Reviewer REJECT → 修復 → re-verify → re-spawn
    
    **⚡ 當下檢查（v7.42 修正）**
-   Reviewer APPROVE 後，立即觸發 Constitution + CQG：
+   Reviewer APPROVE 後，執行快速檢查：
    ```bash
-   # 每個 FR 完成後立即檢查（不要等到最後）
-   python quality_gate/constitution/runner.py --type implementation
-   python cli.py quality-gate --phase 3
+   # 每個 FR 完成後立即檢查（最簡單的命令）
+   python scripts/check_fr_quality.py --fr FR-01
    ```
    
+   **檢查內容：**
+   - Syntax check (py_compile)
+   - Import check
+   - （不包含 Constitution/CQG，那些在事後檢查時做）
+   
+   **Pass 條件：** 無 Error（Warning 可接受）
+   
    **的好處：**
-   - 問題少時容易修
-   - 不等到最後累積 8 個問題
-   - 符合「快速失敗」原則
+   - 只需 30 秒
+   - 簡單不易犯錯
+   - 問題當下發現當下修
    
    **流程對比：**
    ```
@@ -266,7 +272,14 @@ Sub-agent 執行中：
    FR-01 → FR-02 → FR-03 → ... → FR-09 → 最後檢查（8 個問題）
    
    # 之後（當下檢查）
-   FR-01 → Constitution+CQG → 修復（0 個問題）→ FR-02 → Constitution+CQG → 修復（0 個問題）→ ...
+   FR-01 → check_fr_quality.py → 修復 → FR-02 → check_fr_quality.py → 修復 → ...
+   ```
+   
+   **完整檢查（事後，大量問題時）：**
+   ```bash
+   # Phase 結束後執行完整檢查
+   python quality_gate/constitution/runner.py --type implementation
+   python cli.py quality-gate --phase 3
    ```
 ```
 

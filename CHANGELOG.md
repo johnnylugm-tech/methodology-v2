@@ -1369,6 +1369,22 @@ pip install methodology-v2==5.30.0
 
 # v7.x Releases (2026-04-10)
 
+## v7.43 (2026-04-11)
+
+### fix: Phase 3 - 每個 FR 完成後的簡單檢查命令
+
+**NEW: scripts/check_fr_quality.py**
+- 最簡單的 FR 檢查命令：30 秒完成
+- Syntax check + Import check
+- 使用方式：`python scripts/check_fr_quality.py --fr FR-01`
+- 不易犯錯：只需一個命令
+
+**UPDATED: docs/P3_SOP.md**
+- 每個 FR 完成後執行快速檢查
+- 保持事後完整檢查（Constitution/CQG）不變
+
+---
+
 ## v7.42 (2026-04-11)
 
 ### fix: Phase 3 - 每個 FR 完成後當下檢查 Constitution + CQG
