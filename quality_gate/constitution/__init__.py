@@ -42,6 +42,14 @@ except ImportError as e:
     BVS_AVAILABLE = False
     _bvs_import_error = str(e)
 
+# SAB Drift Detection (IMPROVEMENT_P0-3)
+try:
+    from quality_gate.drift_monitor import DriftMonitor
+    SAB_DRIFT_AVAILABLE = True
+except ImportError as e:
+    SAB_DRIFT_AVAILABLE = False
+    _sab_import_error = str(e)
+
 # Constitution 原則閾值（2026-03-27 調整 - 對標第三方審計目標）
 CONSTITUTION_THRESHOLDS = {
     "correctness": 100,      # 正確性 100%
@@ -201,6 +209,70 @@ def _check_behaviour(phase: int, docs_path: str = "docs") -> dict:
         return {"passed": False, "status": "error", "reason": str(e)}
 
 
+def _check_sab_drift(phase: int, docs_path: str = "docs") -> dict:
+    """
+    SAB Drift Detection (IMPROVEMENT_P0-3)
+
+    在 Phase 3+ 執行，驗證代碼結構是否偏離 SAD 設計
+
+    Args:
+        phase: 當前 Phase (1-8)
+        docs_path: docs 目錄路徑
+
+    Returns:
+        {
+            "passed": bool,
+            "drifts": [...],
+            "status": "passed" / "skipped" / "no_baseline"
+        }
+    """
+    if not SAB_DRIFT_AVAILABLE:
+        return {"passed": True, "status": "skipped", "reason": "SAB Drift not available"}
+
+    # 只在 Phase 3+ 執行
+    if phase < 3:
+        return {"passed": True, "status": "skipped", "reason": f"Only Phase 3+ (current: {phase})"}
+
+    try:
+        # Calculate project root from docs_path
+        docs_path_obj = Path(docs_path)
+        if docs_path_obj.is_file():
+            project_path_obj = docs_path_obj.parent
+        else:
+            project_path_obj = docs_path_obj
+        if not docs_path_obj.is_absolute() and docs_path_obj.name == "docs":
+            project_path_obj = docs_path_obj.parent
+        project_path = str(project_path_obj)
+
+        # Check if SAB baseline exists
+        from pathlib import Path
+        sab_path = Path(project_path) / ".methodology" / "sab_spec.json"
+        if not sab_path.exists():
+            return {
+                "passed": True,
+                "status": "no_baseline",
+                "reason": "SAB baseline not found (run Phase 2 first)"
+            }
+
+        # Run drift detection
+        monitor = DriftMonitor(project_path)
+        result = monitor.run_and_alert()
+
+        # Check for SAB-specific drifts
+        drifts = result.get("alerts", []) if isinstance(result, dict) else []
+        sab_drifts = [d for d in drifts if "sab" in str(d).lower() or "architecture" in str(d).lower()]
+
+        return {
+            "passed": len(sab_drifts) == 0,
+            "total_drifts": len(drifts),
+            "sab_drifts": len(sab_drifts),
+            "drifts": sab_drifts[:10] if sab_drifts else drifts[:10],
+            "status": "passed" if len(sab_drifts) == 0 else "drifted"
+        }
+    except Exception as e:
+        return {"passed": False, "status": "error", "reason": str(e)}
+
+
 def run_constitution_check(
     check_type: str,
     docs_path: str = "docs",
@@ -342,7 +414,18 @@ def run_constitution_check(
                         "severity": v.get("severity", "MEDIUM"),
                         "message": v.get("message", str(v))
                     })
-        
+
+        # SAB Drift Detection (Phase 3+, IMPROVEMENT_P0-3)
+        sab_result = None
+        if current_phase is not None and current_phase >= 3:
+            sab_result = _check_sab_drift(current_phase, docs_path)
+            if not sab_result.get("passed", True):
+                all_violations.append({
+                    "type": "sab_drift",
+                    "severity": "HIGH",
+                    "message": f"SAB Drift: {sab_result.get('sab_drifts', 0)} drifts detected"
+                })
+
         # === Determine overall pass (consider ALL failure modes) ===
         # Bug Fix: 2026-03-27 + v6.56 - consider avg_score AND HR-09 AND BVS
         overall_passed = avg_score >= CONSTITUTION_THRESHOLDS["maintainability"]
