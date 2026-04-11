@@ -7,10 +7,10 @@ Check FR Full - 每個 FR 完成後的完整檢查
 
 使用方式：
     # 完整檢查（推薦）
-    python scripts/check_fr_full.py --fr FR-01
+    python scripts/check_fr_full.py --fr FR-01 --project /path/to/project
 
     # 迭代檢查
-    python scripts/check_fr_full.py --fr FR-01 --loop
+    python scripts/check_fr_full.py --fr FR-01 --project /path/to/project --loop
 
 檢查內容（三層）：
     1. 輕量：Syntax + Import（~30秒）
@@ -26,14 +26,29 @@ Pass 條件：
 import argparse
 import subprocess
 import sys
+import os
 from pathlib import Path
 
 
-def run_check(name: str, cmd: list, project: str) -> tuple:
+# 自動偵測 methodology-v2 路徑
+SCRIPT_DIR = Path(__file__).resolve().parent
+METHODOLOGY_V2_DIR = SCRIPT_DIR.parent
+QUALITY_GATE_DIR = METHODOLOGY_V2_DIR / "quality_gate"
+
+
+def run_check(name: str, cmd: list, project: str, cwd: str = None) -> tuple:
     """執行檢查命令"""
     print(f"\n{'='*50}")
     print(f"  {name}")
     print(f"{'='*50}")
+    
+    # 設定環境：PYTHONPATH 包含 methodology-v2
+    env = os.environ.copy()
+    current_pythonpath = env.get("PYTHONPATH", "")
+    env["PYTHONPATH"] = f"{METHODOLOGY_V2_DIR}:{current_pythonpath}"
+    
+    # 使用 methodology-v2 作為 cwd
+    exec_cwd = cwd or str(METHODOLOGY_V2_DIR)
     
     try:
         result = subprocess.run(
@@ -41,7 +56,8 @@ def run_check(name: str, cmd: list, project: str) -> tuple:
             capture_output=True,
             text=True,
             timeout=300,  # 5 分鐘超時
-            cwd=project
+            cwd=exec_cwd,
+            env=env
         )
         passed = result.returncode == 0
         output = result.stdout + result.stderr
@@ -69,10 +85,21 @@ def main():
     parser.add_argument("--max-loops", type=int, default=10, help="Max loop count")
     parser.add_argument("--skip-constitution", action="store_true", help="Skip Constitution check")
     parser.add_argument("--skip-cqg", action="store_true", help="Skip CQG check")
+    parser.add_argument("--methodology", default=None, help="Methodology-v2 路徑（自動偵測）")
     args = parser.parse_args()
     
     project = str(Path(args.project).resolve())
     fr_id = args.fr
+    
+    # 如果有指定 methodology-v2 路徑，使用它
+    global METHODOLOGY_V2_DIR, QUALITY_GATE_DIR, SCRIPT_DIR
+    if args.methodology:
+        METHODOLOGY_V2_DIR = Path(args.methodology).resolve()
+        SCRIPT_DIR = METHODOLOGY_V2_DIR / "scripts"
+        QUALITY_GATE_DIR = METHODOLOGY_V2_DIR / "quality_gate"
+    
+    print(f"Project: {project}")
+    print(f"Methodology-v2: {METHODOLOGY_V2_DIR}")
     
     loop_count = 0
     while True:
@@ -86,7 +113,7 @@ def main():
         # Layer 1: 輕量檢查（必須）
         passed, _ = run_check(
             "Layer 1: Syntax + Import",
-            ["python3", "scripts/check_fr_quality.py", "--fr", fr_id, "--project", project],
+            ["python3", str(SCRIPT_DIR / "check_fr_quality.py"), "--fr", fr_id, "--project", project],
             project
         )
         if not passed:
@@ -96,7 +123,7 @@ def main():
         if not args.skip_constitution:
             passed, _ = run_check(
                 "Layer 2: Constitution (BVS + HR-09)",
-                ["python3", "-m", "quality_gate.constitution.runner", "--type", "implementation"],
+                ["python3", "-m", "quality_gate.constitution.runner", "--type", "implementation", "--project", project],
                 project
             )
             if not passed:
@@ -106,7 +133,7 @@ def main():
         if not args.skip_cqg:
             passed, _ = run_check(
                 "Layer 3: CQG (Linter + Complexity)",
-                ["python3", "-m", "cli", "quality-gate", "--phase", "3"],
+                ["python3", "-m", "cli", "quality-gate", "--phase", "3", "--project", project],
                 project
             )
             if not passed:

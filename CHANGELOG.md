@@ -1,3 +1,19 @@
+## v7.52 (2026-04-12)
+
+### fix: check_fr_full.py path issue
+
+**UPDATED: scripts/check_fr_full.py**
+- Auto-detect methodology-v2 path
+- Set PYTHONPATH for subprocess calls
+- Add --methodology flag override
+- Use absolute paths for scripts
+
+**Fixes:**
+- Layer 1-3 now can run from any directory
+- `quality_gate` and `cli` modules found correctly
+
+---
+
 ## v7.51 (2026-04-12)
 
 ### feat: FR tag parsing for accurate FR → code mapping
