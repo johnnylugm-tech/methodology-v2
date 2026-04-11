@@ -143,6 +143,28 @@ python cli.py run-phase --phase 2
 - ✅ TH-01 >80%
 - ✅ Agent B APPROVE
 - ✅ sessions_spawn.log 有記錄（HR-10）
+- ✅ **SAB 生成**（用於 Phase 3 Drift Detection）
+
+---
+
+## SAB 生成（v7.47 新增）
+
+Phase 2 完成後，必須生成 SAB：
+
+```bash
+# 從 SAD.md 生成 SAB
+python scripts/generate_sab.py --project /path/to/project
+```
+
+**用途：**
+- Phase 3 的 SAB Drift Detection 需要 SAB 作為基準
+- 沒有 SAB，drift detection 無法執行
+
+**產出：**
+- `.methodology/SAB.json` - 結構化的 Architecture Baseline
+
+**觸發時機：**
+- Phase 2 stage-pass 完成後
 
 ---
 

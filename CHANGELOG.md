@@ -1369,6 +1369,35 @@ pip install methodology-v2==5.30.0
 
 # v7.x Releases (2026-04-10)
 
+## v7.47 (2026-04-12)
+
+### feat: SAB generation for Phase 3 Drift Detection
+
+**NEW: scripts/generate_sab.py**
+- 從 SAD.md 生成結構化 SAB (Software Architecture Baseline)
+- 產出 .methodology/SAB.json
+- 用途：Phase 3 SAB Drift Detection
+
+**UPDATED: docs/P2_SOP.md**
+- Phase 2 Exit 加入 SAB 生成步驟
+- SAB 是 Phase 3 Drift Detection 的必要輸入
+
+**UPDATED: docs/P3_SOP.md**
+- Section 10.5 status 加入 SAB 欄位
+- SAB Drift 需要 Phase 2 先生成 SAB
+
+**流程：**
+```
+Phase 2 完成
+  → python scripts/generate_sab.py
+  → .methodology/SAB.json
+  
+Phase 3 FR 完成後
+  → SAB Drift Detection 可執行
+```
+
+---
+
 ## v7.46 (2026-04-12)
 
 ### feat: Phase 2 - check_fr_full.py 統一檢查腳本

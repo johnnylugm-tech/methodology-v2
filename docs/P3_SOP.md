@@ -354,7 +354,7 @@ Sub-agent 執行中：
    | check_fr_quality.py | ✅ 已整合 | 每個 FR 完成後（輕量）|
    | Constitution (BVS+HR-09) | ✅ 已整合 | check_fr_full.py 內 |
    | CQG (Linter+Complexity) | ✅ 已整合 | check_fr_full.py 內 |
-   | SAB Drift | ❌ 未整合 | Phase 結束後 |
+   | **SAB Drift** | ⚠️ **P2 生成 SAB** | Phase 結束後 |
    | Self-Correction | ❌ 未整合 | 待實作 |
    | Feedback Loop | ❌ 未整合 | 待實作 |
 ```
