@@ -4691,7 +4691,7 @@ Full execution script is in templates/plan_phase_template.md Section 17.
                 ("TH-06", "Constitution 測試覆蓋率", ">80%", "constitution/runner.py --type implementation"),
                 ("TH-08", "AgentEvaluator 嚴格", "≥90", "phase-verify"),
                 ("TH-10", "測試通過率", "=100%", "pytest tests/ -v"),
-                ("TH-11", "單元測試覆蓋率", "≥70%", "pytest --cov=app/ -v"),
+                ("TH-11", "單元測試覆蓋率", "≥70%", "pytest --cov=03-development/src/ -v"),
                 ("TH-15", "Phase Truth", "≥70%", "phase-verify"),
                 ("TH-16", "代碼↔SAD 映射率", "=100%", "trace-check"),
             ],
@@ -4700,7 +4700,7 @@ Full execution script is in templates/plan_phase_template.md Section 17.
                 ("TH-03", "Constitution 正確性", "=100%", "constitution/runner.py --type test_plan"),
                 ("TH-06", "Constitution 測試覆蓋率", ">80%", "constitution/runner.py --type test_plan"),
                 ("TH-10", "測試通過率", "=100%", "pytest tests/ -v"),
-                ("TH-12", "單元測試覆蓋率", "≥80%", "pytest --cov=app/ -v"),
+                ("TH-12", "單元測試覆蓋率", "≥80%", "pytest --cov=03-development/src/ -v"),
                 ("TH-15", "Phase Truth", "≥70%", "phase-verify"),
                 ("TH-17", "FR↔測試映射率", "≥90%", "trace-check"),
             ],
@@ -4720,7 +4720,7 @@ Full execution script is in templates/plan_phase_template.md Section 17.
             ],
             8: [
                 ("TH-02", "Constitution 總分", "≥80%", "constitution/runner.py --type configuration"),
-                ("TH-12", "單元測試覆蓋率", "≥80%", "pytest --cov=app/ -v"),
+                ("TH-12", "單元測試覆蓋率", "≥80%", "pytest --cov=03-development/src/ -v"),
                 ("TH-15", "Phase Truth", "≥70%", "phase-verify"),
             ],
         }
@@ -4834,14 +4834,14 @@ Full execution script is in templates/plan_phase_template.md Section 17.
             3: [
                 ("# 1. TH-06 Constitution 測試覆蓋率 >80%", "python3 quality_gate/constitution/runner.py --type implementation"),
                 ("# 2. TH-10 測試通過率 =100%", "pytest tests/ -v"),
-                ("# 3. TH-11 覆蓋率 ≥70%", "pytest --cov=app/ -v"),
+                ("# 3. TH-11 覆蓋率 ≥70%", "pytest --cov=03-development/src/ -v"),
                 ("# 4. TH-16 代碼↔SAD =100%", "python3 cli.py trace-check"),
                 ("# 5. TH-15 Phase Truth ≥70%", "python3 cli.py phase-verify --phase 3"),
                 ("# 6. HR-08 stage-pass", "python3 cli.py stage-pass --phase 3"),
                 ("# 7. HR-02 FrameworkEnforcer BLOCK", "python3 cli.py enforce --level BLOCK"),
             ],
             4: [
-                ("# 1. TH-12 覆蓋率 ≥80%", "pytest --cov=app/ -v"),
+                ("# 1. TH-12 覆蓋率 ≥80%", "pytest --cov=03-development/src/ -v"),
                 ("# 2. TH-10 =100%", "pytest tests/ -v"),
                 ("# 3. TH-13 FR覆蓋率 =100%", "python3 cli.py trace-check"),
                 ("# 4. TH-17 FR↔測試 ≥90%", "python3 cli.py phase-verify --phase 4"),
