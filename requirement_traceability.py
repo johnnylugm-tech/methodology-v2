@@ -85,6 +85,7 @@ class CodeComponent:
     fr_id: Optional[str] = None
     test_files: List[str] = field(default_factory=list)
     coverage: Optional[float] = None  # 0.0 - 1.0
+    metadata: Dict[str, Any] = field(default_factory=dict)
     
     def to_dict(self) -> dict:
         return {
@@ -94,7 +95,8 @@ class CodeComponent:
             "line_range": self.line_range,
             "fr_id": self.fr_id,
             "test_files": self.test_files,
-            "coverage": self.coverage
+            "coverage": self.coverage,
+            "metadata": self.metadata
         }
 
 
@@ -106,6 +108,7 @@ class TestCoverage:
     fr_id: Optional[str] = None
     coverage_percentage: float = 0.0
     status: TraceStatus = TraceStatus.PENDING
+    metadata: Dict[str, Any] = field(default_factory=dict)
     
     def to_dict(self) -> dict:
         return {
@@ -113,7 +116,8 @@ class TestCoverage:
             "test_functions": self.test_functions,
             "fr_id": self.fr_id,
             "coverage_percentage": self.coverage_percentage,
-            "status": self.status.value
+            "status": self.status.value,
+            "metadata": self.metadata
         }
 
 
@@ -169,12 +173,21 @@ class RequirementTraceability:
         self,
         req_id: str,
         title: str,
-        description: str,
         srs_section: Optional[str] = None,
+        description: str = "",
         priority: str = "HIGH",
         metadata: Optional[Dict] = None
     ) -> Requirement:
-        """新增需求"""
+        """新增需求
+        
+        Args:
+            req_id: 需求 ID (e.g., "FR-01")
+            title: 需求標題
+            srs_section: SRS 章節 (e.g., "§2.1", "SRS.md §2.1")
+            description: 需求描述
+            priority: 優先級 (HIGH/MEDIUM/LOW)
+            metadata: 額外元數據
+        """
         req = Requirement(
             req_id=req_id,
             title=title,
@@ -184,6 +197,17 @@ class RequirementTraceability:
             metadata=metadata or {}
         )
         self.requirements[req_id] = req
+        
+        # 自動建立 FR→SRS 鏈接（如果提供了 srs_section）
+        if srs_section:
+            self.add_link(
+                source_type="fr",
+                source_id=req_id,
+                target_type="srs",
+                target_id=srs_section,
+                link_type=LinkType.FR_TO_SRS
+            )
+        
         return req
     
     def get_requirement(self, req_id: str) -> Optional[Requirement]:
