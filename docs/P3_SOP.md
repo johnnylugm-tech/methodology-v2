@@ -251,7 +251,7 @@ Sub-agent 執行中：
    Reviewer APPROVE 後，執行快速檢查：
    ```bash
    # 每個 FR 完成後立即檢查（最簡單的命令）
-   python scripts/check_fr_quality.py --fr FR-01
+   python scripts/check_fr_quality.py --fr FR-01 --loop
    ```
    
    **檢查內容：**
