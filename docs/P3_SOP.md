@@ -348,15 +348,21 @@ Sub-agent 執行中：
    ```
    
    **Section 10.5 自動化功能整合狀態：**
-   | 功能 | 整合 | 觸發時機 |
-   |------|------|----------|
-   | check_fr_full.py | ✅ 已整合 | 每個 FR 完成後 |
-   | check_fr_quality.py | ✅ 已整合 | 每個 FR 完成後（輕量）|
-   | Constitution (BVS+HR-09) | ✅ 已整合 | check_fr_full.py 內 |
-   | CQG (Linter+Complexity) | ✅ 已整合 | check_fr_full.py 內 |
-   | **SAB Drift** | ⚠️ **P2 生成 SAB** | Phase 結束後 |
-   | Self-Correction | ❌ 未整合 | 待實作 |
-   | Feedback Loop | ❌ 未整合 | 待實作 |
+   | 功能 | 狀態 | 觸發時機 |
+|------|------|----------|
+| **Layer 1: 輕量檢查** | ✅ 已整合 | 每個 FR 完成後 |
+| check_fr_quality.py | ✅ | `check_fr_full.py --skip-constitution --skip-cqg` |
+| **Layer 2: Constitution** | ✅ 已整合 | check_fr_full.py 內 |
+| BVS | ✅ | check_fr_full.py 內 |
+| HR-09 Claims | ✅ | check_fr_full.py 內 |
+| **Layer 3: CQG** | ✅ 已整合 | check_fr_full.py 內 |
+| Linter | ✅ | check_fr_full.py 內 |
+| Complexity | ✅ | check_fr_full.py 內 |
+| Coverage | ✅ | check_fr_full.py 內 |
+| **SAB Drift** | ⚠️ P2 stage-pass 自動生成 SAB | Phase 2 Exit |
+| Self-Correction | ❌ Pending | 待實作 |
+| Feedback Loop | ❌ Pending | 待實作 |
+| Steering Loop | ❌ Pending | 待實作 |
 ```
 
 ### Step 5: 危險把關（PermissionGuard）
