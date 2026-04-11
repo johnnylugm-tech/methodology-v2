@@ -1,10 +1,21 @@
+## v7.51 (2026-04-12)
+
+### feat: FR tag parsing for accurate FR → code mapping
+
+**UPDATED: generate_fr_mapping.py**
+- 解析 docstring 裡的 [FR-XX] pattern
+- FR Tag 優先，Keyword 補充
+- 新增 --force-keyword 選項
+- 9/9 FRs 有 FR tags ✅
+
+---
+
 ## v7.50 (2026-04-12)
 
 ### fix: FR-07 mapping keywords
 
 **UPDATED: generate_fr_mapping.py**
 - FR-07 keywords: add "routes"
-- Now correctly maps FR-07 → routes.py
 
 ---
 
