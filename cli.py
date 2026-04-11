@@ -4651,7 +4651,7 @@ Full execution script is in templates/plan_phase_template.md Section 17.
                     dirs[dir_name] = []
                 dirs[dir_name].append(filename)
         
-        lines = ["03-implementation/", "├── app/"]
+        lines = ["03-development/", "├── src/"]
         for dir_name, files in sorted(dirs.items()):
             indent = "│   " * dir_name.count('/')
             lines.append(f"{indent}├── {dir_name}/")
