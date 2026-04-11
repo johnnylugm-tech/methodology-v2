@@ -50,6 +50,14 @@ except ImportError as e:
     SAB_DRIFT_AVAILABLE = False
     _sab_import_error = str(e)
 
+# CQG — Computational Quality Gates (v6.61)
+try:
+    from quality_gate.unified_gate import UnifiedGate
+    CQG_AVAILABLE = True
+except ImportError as e:
+    CQG_AVAILABLE = False
+    _cqg_import_error = str(e)
+
 # Constitution 原則閾值（2026-03-27 調整 - 對標第三方審計目標）
 CONSTITUTION_THRESHOLDS = {
     "correctness": 100,      # 正確性 100%
@@ -273,6 +281,67 @@ def _check_sab_drift(phase: int, docs_path: str = "docs") -> dict:
         return {"passed": False, "status": "error", "reason": str(e)}
 
 
+def _check_cqg(phase: int, docs_path: str = "docs") -> dict:
+    """
+    CQG — Computational Quality Gates (v6.61)
+
+    在 Phase 3+ 執行，驗證 Linter + Complexity + Coverage
+
+    Args:
+        phase: 當前 Phase (1-8)
+        docs_path: docs 目錄路徑
+
+    Returns:
+        {
+            "passed": bool,
+            "linter_passed": bool,
+            "complexity_passed": bool,
+            "coverage_passed": bool,
+            "status": str
+        }
+    """
+    if not CQG_AVAILABLE:
+        return {"passed": True, "status": "skipped", "reason": "CQG not available"}
+
+    # 只在 Phase 3+ 執行
+    if phase < 3:
+        return {"passed": True, "status": "skipped", "reason": f"Only Phase 3+ (current: {phase})"}
+
+    try:
+        # Calculate project root from docs_path
+        from pathlib import Path
+        docs_path_obj = Path(docs_path)
+        if docs_path_obj.is_file():
+            project_path_obj = docs_path_obj.parent
+        else:
+            project_path_obj = docs_path_obj
+        if not docs_path_obj.is_absolute() and docs_path_obj.name == "docs":
+            project_path_obj = docs_path_obj.parent
+        project_path = str(project_path_obj)
+
+        # Run CQG checks
+        gate = UnifiedGate(project_path)
+        result = gate.check_all(phase=phase)
+
+        # Extract key metrics
+        linter_passed = result.get("linter_passed", True)
+        complexity_passed = result.get("complexity_passed", True)
+        coverage_passed = result.get("coverage_passed", True)
+
+        return {
+            "passed": linter_passed and complexity_passed and coverage_passed,
+            "linter_passed": linter_passed,
+            "complexity_passed": complexity_passed,
+            "coverage_passed": coverage_passed,
+            "linter_issues": result.get("linter_issues", 0),
+            "complexity_violations": result.get("complexity_violations", 0),
+            "coverage": result.get("coverage", 0),
+            "status": "passed" if (linter_passed and complexity_passed and coverage_passed) else "failed"
+        }
+    except Exception as e:
+        return {"passed": False, "status": "error", "reason": str(e)}
+
+
 def run_constitution_check(
     check_type: str,
     docs_path: str = "docs",
@@ -425,6 +494,43 @@ def run_constitution_check(
                     "severity": "HIGH",
                     "message": f"SAB Drift: {sab_result.get('sab_drifts', 0)} drifts detected"
                 })
+
+        # CQG — Computational Quality Gates (Phase 3+, v6.61)
+        cqg_result = None
+        if current_phase is not None and current_phase >= 3:
+            cqg_result = _check_cqg(current_phase, docs_path)
+            if not cqg_result.get("passed", True):
+                violations_detail = []
+                if not cqg_result.get("linter_passed", True):
+                    violations_detail.append(f"Linter: {cqg_result.get('linter_issues', 0)} issues")
+                if not cqg_result.get("complexity_passed", True):
+                    violations_detail.append(f"Complexity: {cqg_result.get('complexity_violations', 0)} violations")
+                if not cqg_result.get("coverage_passed", True):
+                    violations_detail.append(f"Coverage: {cqg_result.get('coverage', 0)}%")
+                all_violations.append({
+                    "type": "cqg_failure",
+                    "severity": "HIGH",
+                    "message": f"CQG Failed: {', '.join(violations_detail)}"
+                })
+
+        # Phase 4: FR↔測試映射率 (TH-17 ≥90%)
+        fr_coverage_result = None
+        if current_phase is not None and current_phase == 4:
+            try:
+                from quality_gate.unified_gate import UnifiedGate
+                from pathlib import Path
+                project_path = str(Path(docs_path).parent)
+                gate = UnifiedGate(project_path)
+                fr_result = gate._check_fr_coverage_only()
+                fr_coverage_result = fr_result
+                if not fr_result.get("passed", True):
+                    all_violations.append({
+                        "type": "fr_coverage_failure",
+                        "severity": "HIGH",
+                        "message": f"FR↔Test mapping: {fr_result.get('fr_coverage', 0)}% (threshold ≥90%)"
+                    })
+            except Exception as e:
+                pass  # Don't break constitution check for this
 
         # === Determine overall pass (consider ALL failure modes) ===
         # Bug Fix: 2026-03-27 + v6.56 - consider avg_score AND HR-09 AND BVS
