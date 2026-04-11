@@ -4190,7 +4190,7 @@ class MethodologyCLI:
         try:
             from agent_auto_research import AgentDrivenAutoResearch
 
-            agent = AgentDrivenAutoResearch(str(project_path))
+            agent = AgentDrivenAutoResearch(str(project_path), phase=args.phase)
             result = agent.run(max_iterations=iterations)
 
             print(f"\n{'='*60}")
@@ -4555,7 +4555,7 @@ Full execution script is in templates/plan_phase_template.md Section 17.
                 
                 try:
                     from agent_auto_research import AgentDrivenAutoResearch
-                    ar_agent = AgentDrivenAutoResearch(str(repo_path))
+                    ar_agent = AgentDrivenAutoResearch(str(repo_path), phase=phase)
                     ar_result = ar_agent.run(max_iterations=3)
                     print(f"   AutoResearch: {ar_result.get('status', 'completed')}")
                 except Exception as e:

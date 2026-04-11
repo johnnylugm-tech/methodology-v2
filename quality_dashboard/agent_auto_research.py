@@ -164,13 +164,39 @@ class AgentDrivenAutoResearch:
     MAX_ITERATIONS = 5
     TARGET_SCORE = 85.0
     
-    def __init__(self, project_path: str):
+    # Phase-specific dimensions and targets
+    PHASE_CONFIG = {
+        3: {
+            'dimensions': ['D1_Linting', 'D5_Complexity', 'D6_Architecture', 'D7_Readability'],
+            'target': 85,  # simple average target
+            'pass': 70
+        },
+        4: {
+            'dimensions': ['D1_Linting', 'D2_TypeSafety', 'D3_Coverage', 'D4_Security',
+                          'D5_Complexity', 'D6_Architecture', 'D7_Readability'],
+            'target': 85,
+            'pass': 70
+        },
+        5: {
+            'dimensions': ['D1_Linting', 'D2_TypeSafety', 'D3_Coverage', 'D4_Security',
+                          'D5_Complexity', 'D6_Architecture', 'D7_Readability',
+                          'D8_ErrorHandling', 'D9_Documentation'],
+            'target': 85,
+            'pass': 70
+        }
+    }
+    
+    def __init__(self, project_path: str, phase: int = 3):
         self.project_path = Path(project_path)
         self.src_path = self.project_path / "03-development" / "src"
         self.data_dir = self.project_path / ".quality_dashboard"
         self.data_dir.mkdir(exist_ok=True)
         self.history_file = self.data_dir / "agent_history.json"
         self.records: List[IterationRecord] = []
+        self.phase = phase
+        self.active_dims = self.PHASE_CONFIG.get(phase, self.PHASE_CONFIG[3])['dimensions']
+        self.target_score = self.PHASE_CONFIG.get(phase, self.PHASE_CONFIG[3])['target']
+        self.pass_score = self.PHASE_CONFIG.get(phase, self.PHASE_CONFIG[3])['pass']
         
     def load_history(self) -> Dict:
         if self.history_file.exists():
@@ -196,7 +222,9 @@ class AgentDrivenAutoResearch:
         print("🚀 Agent-Driven AutoResearch Loop 啟動")
         print("=" * 70)
         print(f"專案: {self.project_path.name}")
-        print(f"目標: {self.TARGET_SCORE}%")
+        print(f"Phase: {self.phase}")
+        print(f"活躍維度: {', '.join(self.active_dims)}")
+        print(f"目標: {self.target_score}% (及格: {self.pass_score}%)")
         print(f"最大迭代: {max_iterations}")
         print("=" * 70)
         
@@ -224,8 +252,8 @@ class AgentDrivenAutoResearch:
             print(f"\n   總分: {total_score:.1f}%")
             
             # Step 2: 檢查是否達標
-            if total_score >= self.TARGET_SCORE:
-                print(f"\n🎉 達成目標分數 {self.TARGET_SCORE}%！")
+            if total_score >= self.target_score:
+                print(f"\n🎉 達成目標分數 {self.target_score}%！")
                 break
             
             # Step 3: 識別需要改進的維度
