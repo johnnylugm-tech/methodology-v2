@@ -321,6 +321,47 @@ pytest --cov=app/ --cov-report=term -q
 
 ---
 
+## 10.5 自動化品質增強（v6.61+ 新功能）
+
+### 當前 framework 版本支援的自動化功能
+
+| 功能 | 版本 | 啟用方式 | 說明 |
+|------|------|----------|------|
+| **BVS** | v6.62 | 自動（Constitution runner）| 驗證 Agent 行為是否符合 Constitution |
+| **HR-09 Claims Verifier** | v6.63 | 自動（Constitution runner）| 驗證 citations 是否有 artifact 支持 |
+| **CQG** | v6.61 | `python cli.py quality-gate` | Linter + Complexity + Coverage 自動檢查 |
+| **AutoResearch** | IMPROVEMENT_P1-3 | `python cli.py auto-research` | 自動生成測試案例 |
+| **Feedback Loop** | v6.29 | 自動（如果啟用）| 收集並回饋執行結果 |
+| **Steering Loop** | v6.67 | `steering run --phase N` | 根據反饋自動調整策略 |
+| **Self-Correction Engine** | v6.67 | 自動（如果啟用）| 根據錯誤自動修正代碼 |
+| **Verify_Agent** | v6.21 | 當 Agent B 超過 20 輪 | 第三方獨立審計 |
+
+### 建議的自動化流程（Phase 3+）
+
+```bash
+# 1. FR Execution Loop
+for FR in FR-01 FR-02 ... FR-09; do
+    # Agent A + Agent B 執行
+    # Constitution Check（自動含 BVS + HR-09）
+done
+
+# 2. 自動化品質檢查
+python cli.py quality-gate --phase {PHASE}
+
+# 3. AutoResearch 自動生成測試
+python cli.py auto-research --phase {PHASE}
+
+# 4. Feedback Loop 收集回饋
+steering run --phase {PHASE}
+
+# 5. Verify_Agent（如需要）
+if [ $AGENT_B_ROUNDS -gt 20 ]; then
+    python cli.py verify-agent --phase {PHASE}
+fi
+```
+
+---
+
 ## 11. sessions_spawn.log 格式（HR-10）
 
 每個 FR 產生 2 筆記錄，共 {FR_COUNT} × 2 = {TOTAL_RECORDS} 筆記錄：
