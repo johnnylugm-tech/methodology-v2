@@ -557,6 +557,10 @@ class IntegratedStagePassGenerator:
         # Step 5: Traceability verification (optional)
         self.run_step5_traceability()
         
+        # Step 6: SAB Generation (Phase 2 only)
+        if self.phase == 2:
+            self.run_step6_sab_generation()
+        
         # Log to DEVELOPMENT_LOG（修復 WARNING 5）
         self._log_to_development_log()
         
@@ -571,6 +575,38 @@ class IntegratedStagePassGenerator:
         
         return score >= 70  # 70 分以上算通過
 
+    def run_step6_sab_generation(self) -> bool:
+        """SAB Generation (Phase 2 only)"""
+        print(f"\n{'─'*40}")
+        print(f"Step 6: SAB Generation (Phase 2)")
+        print(f"{'─'*40}")
+        
+        import subprocess
+        import os
+        
+        sab_script = os.path.join(os.path.dirname(__file__), "..", "scripts", "generate_sab.py")
+        if not os.path.exists(sab_script):
+            sab_script = os.path.join(os.path.dirname(__file__), "scripts", "generate_sab.py")
+        
+        if not os.path.exists(sab_script):
+            print(f"⚠️  generate_sab.py not found, skipping SAB generation")
+            return True
+        
+        try:
+            result = subprocess.run(
+                ["python3", sab_script, "--project", self.project_root],
+                capture_output=True, text=True, timeout=60
+            )
+            if result.returncode == 0:
+                print(f"✅ SAB generated successfully")
+                return True
+            else:
+                print(f"⚠️  SAB generation failed: {result.stderr[:200]}")
+                return True  # Don't block
+        except Exception as e:
+            print(f"⚠️  SAB generation error: {e}")
+            return True  # Don't block
+    
     def run_step5_traceability(self) -> bool:
         """Traceability 驗證（可選）"""
         print(f"\n{'─'*40}")
