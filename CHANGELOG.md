@@ -1,3 +1,20 @@
+## v7.53 (2026-04-12)
+
+### fix: plan-phase template - add check_fr_full.py command
+
+**UPDATED: templates/plan_phase_template.md**
+- FR loop 加入 Layer 1-3 檢查命令
+- Section 10.5 table 加入 check_fr_full.py
+- Reviewer APPROVE 後明確觸發 check_fr_full.py
+
+**使用方法：**
+```bash
+# 單一完整 plan（包含 FR 詳細任務）
+python3 cli.py plan-phase --phase 3 --project /path --detailed
+```
+
+---
+
 ## v7.52 (2026-04-12)
 
 ### fix: check_fr_full.py path issue

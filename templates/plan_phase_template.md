@@ -500,6 +500,7 @@ cli.py 無法 import，但 **Agent 可以直接呼叫**。
 |------|---------|---------|
 | **BVS** | 每個 FR 審查後 | `constitution/runner.py --type implementation` |
 | **HR-09 Claims Verifier** | 每個 FR 審查後 | `constitution/runner.py --type implementation`（自動）|
+| **check_fr_full.py** | 每個 FR APPROVE 後 | `check_fr_full.py --fr {fr_id} --project /path --loop` |
 | **CQG** | 每個 FR APPROVE 後 | `cli.py quality-gate --phase {PHASE}` |
 | **SAB Drift Detection** | POST-FLIGHT | `cli.py trace-check --phase {PHASE}` |
 | **Steering Loop** | POST-FLIGHT | `cli.py steering run --phase {PHASE}` |
@@ -671,6 +672,19 @@ for fr_id in FR_LIST:
         review_status = rev_result.get("review_status", None)
         if review_status == "APPROVE":
             print(f"\n✅ {fr_id} APPROVE")
+            
+            # Layer 1-3 檢查
+            print(f"\n🔍 [Layer 1-3] FR Quality Check")
+            METHODOLOGY_V2 = Path("/path/to/methodology-v2")
+            result = run_cmd([
+                "python3", 
+                str(METHODOLOGY_V2 / "scripts" / "check_fr_full.py"),
+                "--fr", fr_id,
+                "--project", str(PROJECT_PATH),
+                "--loop"
+            ])
+            print(f"   {'✅' if result.returncode == 0 else '⚠️'} Layer 1-3 Check {'PASS' if result.returncode == 0 else '需修復'}")
+            
             break
         else:
             print(f"\n🔄 {fr_id} REJECT → 重新實作")
