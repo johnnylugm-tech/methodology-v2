@@ -195,6 +195,8 @@ class MethodologyCLI:
             return self.cmd_constitution_sync(args)
         elif command == "run-phase":
             return self.cmd_run_phase(args)
+        elif command == "auto-research":
+            return self.cmd_auto_research(args)
         elif command == "plan-phase":
             return self.cmd_plan_phase(args)
         elif command == "spec-track":
@@ -4127,6 +4129,85 @@ class MethodologyCLI:
         return 0
 
     # ============================================================================
+    # ============================================================================
+    # auto-research: AutoResearch Quality Improvement
+    # ============================================================================
+
+    def cmd_auto_research(self, args):
+        """
+        Execute AutoResearch quality improvement
+
+        Reads project-config.yaml for auto_research.enabled setting.
+        If enabled=False, shows message and exits.
+        """
+        from pathlib import Path
+        import sys
+
+        project_path = Path(args.project)
+        phase = args.phase
+        iterations = args.iterations
+
+        # Check project-config.yaml
+        config_file = project_path / "project-config.yaml"
+        auto_research_enabled = True  # default
+
+        if config_file.exists():
+            import yaml
+            try:
+                with open(config_file) as f:
+                    config = yaml.safe_load(f)
+                    auto_research_enabled = config.get('auto_research', {}).get('enabled', True)
+            except Exception as e:
+                print(f"⚠️  Could not read project-config.yaml: {e}")
+
+        if not auto_research_enabled:
+            print(f"❌ AutoResearch is disabled in project-config.yaml")
+            print(f"   Set auto_research.enabled: true to enable")
+            return 1
+
+        # Get phase dimensions
+        phase_dimensions = {
+            3: ['D1', 'D5', 'D6', 'D7'],
+            4: ['D1', 'D2', 'D3', 'D4', 'D5', 'D6', 'D7'],
+            5: ['D1', 'D2', 'D3', 'D4', 'D5', 'D6', 'D7', 'D8', 'D9'],
+        }
+        dimensions = phase_dimensions.get(phase, phase_dimensions[3])
+
+        print(f"\n{'='*60}")
+        print(f"🔬 AutoResearch Quality Improvement")
+        print(f"{'='*60}")
+        print(f"   Project: {project_path}")
+        print(f"   Phase: {phase}")
+        print(f"   Active dimensions: {', '.join(dimensions)}")
+        print(f"   Max iterations: {iterations}")
+        print(f"   Enabled: {auto_research_enabled}")
+        print()
+
+        # Add quality_dashboard to path
+        dashboard_path = Path(__file__).parent / "quality_dashboard"
+        sys.path.insert(0, str(dashboard_path))
+
+        try:
+            from agent_auto_research import AgentDrivenAutoResearch
+
+            agent = AgentDrivenAutoResearch(str(project_path))
+            result = agent.run(max_iterations=iterations)
+
+            print(f"\n{'='*60}")
+            print(f"📊 AutoResearch Result")
+            print(f"{'='*60}")
+            print(f"   Status: {result.get('status', 'unknown')}")
+            print(f"   Iterations: {result.get('iterations', 0)}")
+            print(f"   Total improvement: {result.get('improvement', 0):.1f}%")
+
+            return 0
+        except Exception as e:
+            print(f"❌ AutoResearch failed: {e}")
+            import traceback
+            traceback.print_exc()
+            return 1
+
+
     # run-phase: Single Entry Point for Phase Execution
     # ============================================================================
 
@@ -4439,6 +4520,52 @@ Full execution script is in templates/plan_phase_template.md Section 17.
             print(f"   Violations: {result_final.violations}")
         else:
             print(f"✅ Final Constitution score: {result_final.score:.0f}%")
+
+        # === AutoResearch Quality Check (v7.35) ===
+        if not args.no_autoresearch:
+            # Check project-config.yaml for auto_research.enabled
+            config_file = repo_path / "project-config.yaml"
+            auto_research_enabled = True  # default
+            if config_file.exists():
+                try:
+                    import yaml
+                    with open(config_file) as f:
+                        config = yaml.safe_load(f)
+                        auto_research_enabled = config.get('auto_research', {}).get('enabled', True)
+                except Exception:
+                    pass
+            
+            if auto_research_enabled:
+                print(f"\n[{datetime.now().strftime('%H:%M:%S')}] POST-FLIGHT: AutoResearch Quality Check")
+                print(f"   Enabled: yes (project-config.yaml)")
+                
+                # Get phase dimensions
+                phase_dimensions = {
+                    3: ['D1', 'D5', 'D6', 'D7'],
+                    4: ['D1', 'D2', 'D3', 'D4', 'D5', 'D6', 'D7'],
+                    5: ['D1', 'D2', 'D3', 'D4', 'D5', 'D6', 'D7', 'D8', 'D9'],
+                }
+                dimensions = phase_dimensions.get(phase, phase_dimensions[3])
+                print(f"   Active dimensions: {', '.join(dimensions)}")
+                
+                # Add quality_dashboard to path and run
+                dashboard_path = Path(__file__).parent / "quality_dashboard"
+                if str(dashboard_path) not in sys.path:
+                    sys.path.insert(0, str(dashboard_path))
+                
+                try:
+                    from agent_auto_research import AgentDrivenAutoResearch
+                    ar_agent = AgentDrivenAutoResearch(str(repo_path))
+                    ar_result = ar_agent.run(max_iterations=3)
+                    print(f"   AutoResearch: {ar_result.get('status', 'completed')}")
+                except Exception as e:
+                    print(f"   ⚠️  AutoResearch failed: {e}")
+            else:
+                print(f"\n[{datetime.now().strftime('%H:%M:%S')}] POST-FLIGHT: AutoResearch")
+                print(f"   Enabled: no (project-config.yaml)")
+        else:
+            print(f"\n[{datetime.now().strftime('%H:%M:%S')}] POST-FLIGHT: AutoResearch")
+            print(f"   Skipped: --no-autoresearch flag")
 
         # === Generate STAGE_PASS.md (v7.7 fix) ===
         if approved >= total and result_final.score >= 80:
@@ -5889,6 +6016,14 @@ def main():
     run_phase_parser.add_argument("--task", type=str, help="Task description override")
     run_phase_parser.add_argument("--repo", type=str, default=".", help="Repository path")
     run_phase_parser.add_argument("--resume", action="store_true", help="Skip to POST-FLIGHT checks")
+    run_phase_parser.add_argument("--no-autoresearch", action="store_true", help="Disable AutoResearch quality check after phase")
+
+    # auto-research command
+    autoresearch_parser = subparsers.add_parser("auto-research", help="Execute AutoResearch quality improvement")
+    autoresearch_parser.add_argument("--project", "-p", type=str, required=True, help="Project path")
+    autoresearch_parser.add_argument("--phase", type=int, default=3, help="Phase number (3-5)")
+    autoresearch_parser.add_argument("--iterations", type=int, default=3, help="Max iterations (default: 3)")
+    autoresearch_parser.add_argument("--dimensions", type=str, default=None, help="Comma-separated dimensions (default: phase preset)")
 
     # spec-track
     spec_track_parser = subparsers.add_parser("spec-track", help="Spec Tracking")
