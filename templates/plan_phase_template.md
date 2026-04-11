@@ -330,7 +330,7 @@ pytest --cov=03-development/src/ --cov-report=term -q
 | **BVS** | v6.62 | 自動（Constitution runner）| 驗證 Agent 行為是否符合 Constitution |
 | **HR-09 Claims Verifier** | v6.63 | 自動（Constitution runner）| 驗證 citations 是否有 artifact 支持 |
 | **CQG** | v6.61 | `python cli.py quality-gate` | Linter + Complexity + Coverage 自動檢查 |
-| **AutoResearch** | IMPROVEMENT_P1-3 | ⚠️ TODO | 自動生成測試案例（CLI 未實作） |
+| **AutoResearch** | IMPROVEMENT_P1-3 | ⚠️ 獨立 Skill | 自動生成測試案例（作為獨立 Skill，等成熟再整合） |
 | **Feedback Loop** | v6.29 | 自動（如果啟用）| 收集並回饋執行結果 |
 | **Steering Loop** | v6.67 | `steering run --phase N` | 根據反饋自動調整策略 |
 | **Self-Correction Engine** | v6.67 | 自動（如果啟用）| 根據錯誤自動修正代碼 |
@@ -352,8 +352,8 @@ python cli.py quality-gate --phase {PHASE}
 # 3. SAB Drift Detection（代碼↔SAD 一致性）
 python cli.py trace-check --phase {PHASE}
 
-# 4. AutoResearch 自動生成測試（TODO: CLI 未實作）
-# python cli.py auto-research --phase {PHASE}
+# 4. AutoResearch 自動生成測試（獨立 Skill）
+# 詳見：skills/auto_research/SKILL.md
 
 # 5. Feedback Loop 收集回饋
 steering run --phase {PHASE}
