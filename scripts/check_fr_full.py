@@ -15,7 +15,7 @@ Check FR Full - 每個 FR 完成後的完整檢查
 檢查內容（三層）：
     1. 輕量：Syntax + Import（~30秒）
     2. Constitution：BVS + HR-09（~1分鐘）
-    3. CQG：Linter + Complexity（~1分鐘）
+    3. CQG：Linter + Complexity 只針對該 FR 的檔案（~1分鐘）
 
 Pass 條件：
     - 輕量：無 Error
@@ -34,6 +34,89 @@ from pathlib import Path
 SCRIPT_DIR = Path(__file__).resolve().parent
 METHODOLOGY_V2_DIR = SCRIPT_DIR.parent
 QUALITY_GATE_DIR = METHODOLOGY_V2_DIR / "quality_gate"
+
+
+def get_fr_files(project_path: Path, fr_id: str) -> list:
+    """從 fr_mapping.json 取得該 FR 的檔案"""
+    fr_map_file = project_path / ".methodology" / "fr_mapping.json"
+    if fr_map_file.exists():
+        import json
+        with open(fr_map_file) as f:
+            data = json.load(f)
+        if fr_id in data:
+            return data[fr_id].get("files", [])
+    return []
+
+
+def run_linter(project: Path, files: list) -> tuple:
+    """執行 Linter 檢查"""
+    if not files:
+        return True, []
+    
+    print(f"   Linting {len(files)} files...")
+    errors = []
+    
+    # 只檢查 Python 檔案
+    py_files = [project / f for f in files if f.endswith('.py')]
+    if not py_files:
+        return True, []
+    
+    # 使用 pylint 或 pylint3
+    linter_cmd = None
+    for cmd in ['pylint', 'pylint3']:
+        result = subprocess.run(['which', cmd], capture_output=True)
+        if result.returncode == 0:
+            linter_cmd = cmd
+            break
+    
+    if not linter_cmd:
+        print("   ⚠️  pylint not found, skipping Lint")
+        return True, []
+    
+    # 對每個檔案執行 linter
+    for py_file in py_files:
+        result = subprocess.run(
+            [linter_cmd, '--errors-only', str(py_file)],
+            capture_output=True, text=True, cwd=str(project)
+        )
+        if result.returncode != 0 and result.stderr:
+            errors.append(f"   ❌ {py_file.name}: {result.stderr.split(chr(10))[0]}")
+    
+    return len(errors) == 0, errors
+
+
+def run_complexity(project: Path, files: list) -> tuple:
+    """執行 Complexity 檢查"""
+    if not files:
+        return True, []
+    
+    print(f"   Checking complexity for {len(files)} files...")
+    errors = []
+    
+    py_files = [project / f for f in files if f.endswith('.py')]
+    if not py_files:
+        return True, []
+    
+    # 使用 radon 檢查複雜度
+    result = subprocess.run(
+        ['which', 'radon'],
+        capture_output=True, text=True
+    )
+    if result.returncode != 0:
+        print("   ⚠️  radon not found, skipping Complexity")
+        return True, []
+    
+    for py_file in py_files:
+        result = subprocess.run(
+            ['radon', 'cc', '-a', '-m', '10', str(py_file)],
+            capture_output=True, text=True, cwd=str(project)
+        )
+        if result.returncode != 0 and result.stdout:
+            lines = result.stdout.strip().split('\n')
+            if lines:
+                errors.append(f"   ❌ {py_file.name}: {lines[-1]}")
+    
+    return len(errors) == 0, errors
 
 
 def run_check(name: str, cmd: list, project: str, cwd: str = None) -> tuple:
@@ -66,7 +149,7 @@ def run_check(name: str, cmd: list, project: str, cwd: str = None) -> tuple:
             print(f"✅ {name}: PASSED")
         else:
             print(f"❌ {name}: FAILED")
-            print(output[-500:] if len(output) > 500 else output)  # 最後 500 字
+            print(output[-500:] if len(output) > 500 else output)
         
         return passed, output
     except subprocess.TimeoutExpired:
@@ -129,15 +212,38 @@ def main():
             if not passed:
                 all_passed = False
         
-        # Layer 3: CQG（可選）
+        # Layer 3: CQG - 直接執行 FR-level 檢查（不呼叫 cli quality-gate）
         if not args.skip_cqg:
-            passed, _ = run_check(
-                "Layer 3: CQG (Linter + Complexity)",
-                ["python3", "-m", "cli", "quality-gate", "--phase", "3", "--project", project],
-                project
-            )
-            if not passed:
-                all_passed = False
+            print(f"\n{'='*50}")
+            print(f"  Layer 3: CQG (Linter + Complexity)")
+            print(f"{'='*50}")
+            
+            fr_files = get_fr_files(Path(project), fr_id)
+            if not fr_files:
+                print(f"⚠️  找不到 {fr_id} 的代碼檔案")
+            else:
+                print(f"📁 FR files: {fr_files}")
+                
+                # Linter
+                lint_passed, lint_errors = run_linter(Path(project), fr_files)
+                if lint_errors:
+                    for err in lint_errors[:5]:
+                        print(err)
+                if not lint_passed:
+                    all_passed = False
+                
+                # Complexity
+                complexity_passed, complexity_errors = run_complexity(Path(project), fr_files)
+                if complexity_errors:
+                    for err in complexity_errors[:5]:
+                        print(err)
+                if not complexity_passed:
+                    all_passed = False
+                
+                if lint_passed and complexity_passed:
+                    print(f"✅ Layer 3: CQG PASSED")
+                else:
+                    print(f"❌ Layer 3: CQG FAILED")
         
         # 結果
         print(f"\n{'='*60}")

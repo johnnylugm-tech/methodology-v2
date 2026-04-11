@@ -1,3 +1,18 @@
+## v7.56 (2026-04-12)
+
+### fix: check_fr_full.py Layer 3 - FR-level only, no Phase-level checks
+
+**UPDATED: scripts/check_fr_full.py**
+- Layer 3 直接執行 Linter + Complexity
+- 不再呼叫 `cli quality-gate`（Phase-level 檢查）
+- 只檢查該 FR 的檔案
+
+**Why:**
+- Phase-level 檢查不應該在 FR 級別執行
+- FR 只需要：Syntax + Import + Linter + Complexity
+
+---
+
 ## v7.55 (2026-04-12)
 
 ### fix: cmd_quality_gate silent exit - add output before sys.exit
