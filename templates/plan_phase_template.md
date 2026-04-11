@@ -330,11 +330,11 @@ pytest --cov=03-development/src/ --cov-report=term -q
 | **BVS** | v6.62 | 自動（Constitution runner）| 驗證 Agent 行為是否符合 Constitution |
 | **HR-09 Claims Verifier** | v6.63 | 自動（Constitution runner）| 驗證 citations 是否有 artifact 支持 |
 | **CQG** | v6.61 | `python cli.py quality-gate` | Linter + Complexity + Coverage 自動檢查 |
-| **AutoResearch** | IMPROVEMENT_P1-3 | `python cli.py auto-research` | 自動生成測試案例 |
+| **AutoResearch** | IMPROVEMENT_P1-3 | ⚠️ TODO | 自動生成測試案例（CLI 未實作） |
 | **Feedback Loop** | v6.29 | 自動（如果啟用）| 收集並回饋執行結果 |
 | **Steering Loop** | v6.67 | `steering run --phase N` | 根據反饋自動調整策略 |
 | **Self-Correction Engine** | v6.67 | 自動（如果啟用）| 根據錯誤自動修正代碼 |
-| **Verify_Agent** | v6.21 | 當 Agent B 超過 20 輪 | 第三方獨立審計 |
+| **Verify_Agent** | v6.21 | ⚠️ TODO | 第三方獨立審計（CLI 未實作） |
 | **SAB Drift Detection** | IMPROVEMENT_P0-3 | `python cli.py trace-check` 或 UnifiedGate | 驗證代碼↔SAD 一致性 |
 
 ### 建議的自動化流程（Phase 3+）
@@ -352,16 +352,16 @@ python cli.py quality-gate --phase {PHASE}
 # 3. SAB Drift Detection（代碼↔SAD 一致性）
 python cli.py trace-check --phase {PHASE}
 
-# 4. AutoResearch 自動生成測試
-python cli.py auto-research --phase {PHASE}
+# 4. AutoResearch 自動生成測試（TODO: CLI 未實作）
+# python cli.py auto-research --phase {PHASE}
 
 # 5. Feedback Loop 收集回饋
 steering run --phase {PHASE}
 
-# 6. Verify_Agent（如需要）
-if [ $AGENT_B_ROUNDS -gt 20 ]; then
-    python cli.py verify-agent --phase {PHASE}
-fi
+# 6. Verify_Agent（如需要）（TODO: CLI 未實作）
+# if [ $AGENT_B_ROUNDS -gt 20 ]; then
+#     python cli.py verify-agent --phase {PHASE}
+# fi
 ```
 
 ### SAB Drift Detection 說明

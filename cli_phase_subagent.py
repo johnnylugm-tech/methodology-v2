@@ -441,10 +441,10 @@ PHASE_ITERATION = {
     3: {
         "name": "代碼實現",
         "four_dimensional": {
-            "規範符合度": {"target": "10/10", "metric": "HR-15 citations + docstring [FR-XX]", "method": "grep -c '\\[FR-' app/**/*.py"},
+            "規範符合度": {"target": "10/10", "metric": "HR-15 citations + docstring [FR-XX]", "method": "grep -c '\\[FR-' 03-development/src/**/*.py"},
             "A/B 協作": {"target": "10/10", "metric": "sessions_spawn.log", "method": "developer + reviewer 各 1 筆記錄"},
             "子代理管理": {"target": "10/10", "metric": "SubagentIsolator", "method": "fresh_messages 隔離"},
-            "測試覆蓋率": {"target": "10/10", "metric": "pytest PASS + coverage ≥80%", "method": "pytest --cov=app/ -v"}
+            "測試覆蓋率": {"target": "10/10", "metric": "pytest PASS + coverage ≥80%", "method": "pytest --cov=03-development/src/ -v"}
         },
         "rounds": [
             {"round": 1, "goal": "基礎實作", "deliverable": "代碼 + 測試 + pytest PASS"},
