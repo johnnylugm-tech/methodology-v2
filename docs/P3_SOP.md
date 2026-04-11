@@ -250,7 +250,7 @@ Sub-agent 執行中：
    **⚡ 當下檢查（v7.42 修正）**
    Reviewer APPROVE 後，執行快速檢查：
    ```bash
-   # 每個 FR 完成後立即檢查（最簡單的命令）
+   # 每個 FR 完成後立即檢查（迭代版本）
    python scripts/check_fr_quality.py --fr FR-01 --loop
    ```
    
@@ -259,12 +259,31 @@ Sub-agent 執行中：
    - Import check
    - （不包含 Constitution/CQG，那些在事後檢查時做）
    
-   **Pass 條件：** 無 Error（Warning 可接受）
+   **迭代修復流程：**
+   ```
+   # 1. 執行檢查
+   python scripts/check_fr_quality.py --fr FR-01 --loop
    
-   **的好處：**
+   # 2. 如果 FAIL：
+   #    ❌ FAILED: Syntax error in src/module_1.py
+   #    🔧 修復問題
+   #    按 Enter 繼續
+   
+   # 3. 再次檢查
+   #    ❌ FAILED: Import error in src/module_1.py
+   #    🔧 修復問題
+   #    按 Enter 繼續
+   
+   # 4. 直到 PASS
+   #    ✅ PASSED: All checks passed
+   #    進入下一個 FR
+   ```
+   
+   **好處：**
    - 只需 30 秒
    - 簡單不易犯錯
    - 問題當下發現當下修
+   - 修復成本低（每次只修一個 FR）
    
    **流程對比：**
    ```
@@ -280,6 +299,28 @@ Sub-agent 執行中：
    # Phase 結束後執行完整檢查
    python quality_gate/constitution/runner.py --type implementation
    python cli.py quality-gate --phase 3
+   ```
+   
+   **兩層檢查完整流程：**
+   ```
+   FR-01 完成
+     → check_fr_quality.py --fr FR-01 --loop
+     → ❌ FAIL → 修復 → 按 Enter → ✅ PASS
+     ↓
+   FR-02 完成
+     → check_fr_quality.py --fr FR-02 --loop
+     → ❌ FAIL → 修復 → 按 Enter → ✅ PASS
+     ↓
+   ...
+   FR-09 完成
+     → check_fr_quality.py --fr FR-09 --loop
+     → ✅ PASS
+     ↓
+   Phase 結束
+     → cli.py quality-gate --phase 3
+     → ✅ PASS → Phase 4
+     或
+     → ❌ FAIL → 修復 → 重新執行 → ✅ PASS → Phase 4
    ```
 ```
 
