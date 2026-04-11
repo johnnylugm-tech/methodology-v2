@@ -1369,6 +1369,26 @@ pip install methodology-v2==5.30.0
 
 # v7.x Releases (2026-04-10)
 
+## v7.45 (2026-04-11)
+
+### docs: P3_SOP.md - Section 10.5 自動化功能整合狀態
+
+**UPDATED: docs/P3_SOP.md**
+- 加入 Section 10.5 自動化功能整合狀態表
+- 說明各功能現有整合程度
+
+**Section 10.5 自動化功能整合狀態：**
+| 功能 | 整合 | 觸發時機 |
+|------|------|----------|
+| check_fr_quality | ✅ 已整合 | 每個 FR 完成後 |
+| Constitution (BVS+HR-09) | ⚠️ 手動 | Reviewer APPROVE 後 |
+| CQG (Linter+Complexity) | ⚠️ 手動 | Reviewer APPROVE 後 |
+| SAB Drift | ❌ 未整合 | Phase 結束後 |
+| Self-Correction | ❌ 未整合 | 待實作 |
+| Feedback Loop | ❌ 未整合 | 待實作 |
+
+---
+
 ## v7.44 (2026-04-11)
 
 ### fix: check_fr_quality.py - 加入迭代修復迴圈

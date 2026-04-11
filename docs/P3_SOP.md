@@ -304,12 +304,13 @@ Sub-agent 執行中：
    **兩層檢查完整流程：**
    ```
    FR-01 完成
-     → check_fr_quality.py --fr FR-01 --loop
-     → ❌ FAIL → 修復 → 按 Enter → ✅ PASS
+     → check_fr_quality.py --fr FR-01 --loop     ← 當下檢查（~30秒）
+     → Constitution runner (BVS + HR-09)            ← 當下觸發（可選）
+     → CQG (Linter + Complexity)                   ← 當下觸發（可選）
      ↓
    FR-02 完成
      → check_fr_quality.py --fr FR-02 --loop
-     → ❌ FAIL → 修復 → 按 Enter → ✅ PASS
+     → Constitution + CQG（如需要）
      ↓
    ...
    FR-09 完成
@@ -317,11 +318,31 @@ Sub-agent 執行中：
      → ✅ PASS
      ↓
    Phase 結束
-     → cli.py quality-gate --phase 3
+     → cli.py quality-gate --phase 3                  ← 完整檢查
      → ✅ PASS → Phase 4
      或
      → ❌ FAIL → 修復 → 重新執行 → ✅ PASS → Phase 4
    ```
+   
+   **當下檢查觸發（Reviewer APPROVE 後）：**
+   ```bash
+   # 當下檢查（輕量）
+   python scripts/check_fr_quality.py --fr FR-01 --loop
+   
+   # 當下檢查（完整，可選）
+   python quality_gate/constitution/runner.py --type implementation
+   python cli.py quality-gate --phase 3
+   ```
+   
+   **Section 10.5 自動化功能整合狀態：**
+   | 功能 | 整合 | 觸發時機 |
+   |------|------|----------|
+   | check_fr_quality | ✅ 已整合 | 每個 FR 完成後 |
+   | Constitution (BVS+HR-09) | ⚠️ 手動 | Reviewer APPROVE 後 |
+   | CQG (Linter+Complexity) | ⚠️ 手動 | Reviewer APPROVE 後 |
+   | SAB Drift | ❌ 未整合 | Phase 結束後 |
+   | Self-Correction | ❌ 未整合 | 待實作 |
+   | Feedback Loop | ❌ 未整合 | 待實作 |
 ```
 
 ### Step 5: 危險把關（PermissionGuard）
