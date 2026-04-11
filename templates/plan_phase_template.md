@@ -487,128 +487,90 @@ tr.register("NewTool", handler)
 
 ---
 
-## 17. Agent 執行流程（v6.102+ 必讀）
+## 17. Agent 執行流程（v7.25+ 含增強功能）
 
 ### ⚠️ 重要：sessions_spawn 由 Agent 直接呼叫
 
 `sessions_spawn` 是 OpenClaw runtime tool，**不是 Python module**。
 cli.py 無法 import，但 **Agent 可以直接呼叫**。
 
-### Agent 執行 Workflow
+### 增強功能整合（Section 10.5）
+
+| 功能 | 整合時機 | 呼叫方式 |
+|------|---------|---------|
+| **BVS** | 每個 FR 審查後 | `constitution/runner.py --type implementation` |
+| **HR-09 Claims Verifier** | 每個 FR 審查後 | `constitution/runner.py --type implementation`（自動）|
+| **CQG** | 每個 FR APPROVE 後 | `cli.py quality-gate --phase {PHASE}` |
+| **SAB Drift Detection** | POST-FLIGHT | `cli.py trace-check --phase {PHASE}` |
+| **Steering Loop** | POST-FLIGHT | `cli.py steering run --phase {PHASE}` |
+| **Phase Truth** | POST-FLIGHT | `cli.py phase-verify --phase {PHASE}` |
+
+### Agent 執行 Workflow（含增強）
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │ Agent: python cli.py run-phase --phase {PHASE}            │
-│   → PRE-FLIGHT checks (FSM, Constitution, Tool Registry)    │
+│   → PRE-FLIGHT (FSM, Constitution, Tool Registry)           │
 └─────────────────────────────────────────────────────────────┘
                               ↓
 ┌─────────────────────────────────────────────────────────────┐
-│ Agent: 派遣 Developer 實作 FR-01                            │
-│                                                             │
-│ sessions_spawn(                                            │
-│     task="""你是 Developer...                                │
-│         1. 讀取 SRS.md (§FR-01), SAD.md                    │
-│         2. 實作代碼                                        │
-│         3. 返回 JSON:                                       │
-│            {{"status": "success",                         │
-│              "files": [                                    │
-│                {{"path": "03-development/...",            │
-│                  "content": "# 完整代碼..."}}             │
-│              ],                                            │
-│              "confidence": 8,                              │
-│              "citations": ["FR-01", "SRS.md#L23"],       │
-│              "summary": "..."}}                            │
-│     """,                                                 │
-│     mode="run",                                           │
-│     runtime="subagent"                                     │
-│ )                                                          │
+│  FR 執行迴圈 (FR-01 ~ FR-{FR_COUNT})                     │
+│                                                            │
+│  ┌─────────────────────────────────────────────────────┐ │
+│  │ 1. Developer 實作 → sessions_spawn(dev)             │ │
+│  │ 2. 解析 JSON → 寫入檔案                              │ │
+│  │ 3. Reviewer 審查 → sessions_spawn(rev)               │ │
+│  │ 4. ✅ Constitution Check（含 BVS + HR-09）          │ │
+│  │ 5. ✅ CQG（Linter + Complexity + Coverage）          │ │
+│  │ 6. HR-12 檢查 → ≥5輪 PAUSE                          │ │
+│  └─────────────────────────────────────────────────────┘ │
 └─────────────────────────────────────────────────────────────┘
                               ↓
 ┌─────────────────────────────────────────────────────────────┐
-│ Agent: 解析 Developer 返回的 JSON，寫入檔案                    │
-│                                                             │
-│ import json                                                │
-│ result = json.loads(dev_response)                           │
-│ for f in result["files"]:                                 │
-│     path = repo_path / f["path"]                          │
-│     path.parent.mkdir(parents=True, exist_ok=True)          │
-│     path.write_text(f["content"])                          │
-│     print(f"✅ {f['path']}")                              │
-└─────────────────────────────────────────────────────────────┘
-                              ↓
-┌─────────────────────────────────────────────────────────────┐
-│ Agent: 派遣 Reviewer 審查 FR-01                              │
-│                                                             │
-│ sessions_spawn(                                            │
-│     task="""你是 Reviewer，審查 FR-01                        │
-│         1. 讀取代碼檔案                                    │
-│         2. 對照 SRS.md §FR-01                              │
-│         3. 返回 JSON:                                       │
-│            {{"status": "success",                         │
-│              "review_status": "APPROVE",                  │
-│              "reason": "...",                              │
-│              "confidence": 9,                             │
-│              "citations": ["FR-01"],                      │
-│              "summary": "..."}}                            │
-│     """,                                                 │
-│     mode="run",                                           │
-│     runtime="subagent"                                     │
-│ )                                                          │
-└─────────────────────────────────────────────────────────────┘
-                              ↓
-┌─────────────────────────────────────────────────────────────┐
-│ Agent: 呼叫 PhaseHooks 記錄結果                              │
-│                                                             │
-│ from phase_hooks import PhaseHooks                           │
-│ hooks = PhaseHooks(project_path, phase={PHASE})             │
-│                                                             │
-│ hooks.monitoring_after_dev("FR-01", dev_result)            │
-│ hooks.monitoring_after_rev("FR-01", rev_result)            │
-│                                                             │
-│ # HR-12 檢查                                               │
-│ if iteration >= 5:                                         │
-│     hooks.monitoring_hr12_check("FR-01", iteration=5)      │
-│     # → PAUSE，通知 Johnny                                  │
-└─────────────────────────────────────────────────────────────┘
-                              ↓
-                    重複執行 FR-02 ~ FR-{FR_COUNT}
-                              ↓
-┌─────────────────────────────────────────────────────────────┐
-│ Agent: python cli.py run-phase --phase {PHASE} --resume      │
-│   → POST-FLIGHT (Constitution, State Update, Summary)        │
+│ POST-FLIGHT                                                │
+│   1. ✅ SAB Drift Detection（代碼↔SAD）                   │
+│   2. ✅ Steering Loop（如啟用）                            │
+│   3. ✅ Phase Truth 驗證（≥70%）                          │
+│   4. ✅ stage-pass + enforce BLOCK                        │
 └─────────────────────────────────────────────────────────────┘
 ```
 
-### 完整 Agent 執行腳本
+### 完整 Agent 執行腳本（含增強功能）
 
 ```python
-# ==========================================
-# Phase {PHASE} FR 執行腳本
-# ==========================================
+#!/usr/bin/env python3
+"""
+Phase {PHASE} FR 執行腳本（含 Section 10.5 增強功能）
+版本: v7.25+
+"""
 
-from phase_hooks import PhaseHooks
+import subprocess
 import json
+from pathlib import Path
 
-PROJECT_PATH = "/path/to/project"
+PROJECT_PATH = Path("/path/to/project")
 PHASE = {PHASE}
 FR_LIST = ["FR-01", "FR-02", ..., "FR-{FR_COUNT}"]
 
-# 初始化 PhaseHooks
-hooks = PhaseHooks(PROJECT_PATH, phase=PHASE)
+def run_cmd(cmd: list, cwd: Path = PROJECT_PATH) -> subprocess.CompletedProcess:
+    """執行 CLI 命令並返回結果"""
+    print(f"   $ {' '.join(cmd)}")
+    result = subprocess.run(cmd, cwd=cwd, capture_output=True, text=True)
+    return result
 
 # ==========================================
-# PRE-FLIGHT（使用 CLI）
+# PRE-FLIGHT
 # ==========================================
-# Agent: python cli.py run-phase --phase {PHASE}
-# （PRE-FLIGHT checks 會自動執行）
+print("🚀 PRE-FLIGHT")
+run_cmd(["python3", "cli.py", "run-phase", "--phase", str(PHASE)])
 
 # ==========================================
 # FR 執行迴圈
 # ==========================================
 for fr_id in FR_LIST:
-    print(f"\n{'='*50}")
+    print(f"\n{'='*60}")
     print(f"📦 執行 {fr_id}")
-    print(f"{'='*50}")
+    print(f"{'='*60}")
     
     iteration = 1
     max_iterations = 5
@@ -616,23 +578,21 @@ for fr_id in FR_LIST:
     while iteration <= max_iterations:
         print(f"\n🔄 {fr_id} Iteration {iteration}/{max_iterations}")
         
-        # ==========================================
         # 1. Developer 實作
-        # ==========================================
         print(f"\n👨💻 [Developer] 實作 {fr_id}")
         
         dev_task = f"""你是 Developer Agent，實作 {fr_id}
 
 任務：
 1. 讀取 SRS.md (§{fr_id}) 和 SAD.md
-2. 實現代碼
-3. 返回 JSON（不要寫入檔案）：
+2. 實現代碼（使用 03-development/src/ 路徑）
+3. 返回 JSON：
 
 {{
   "status": "success",
   "files": [
     {{
-      "path": "03-development/module_{fr_id}/main.py",
+      "path": "03-development/src/.../{fr_id.lower()}.py",
       "content": "# 完整代碼..."
     }}
   ],
@@ -640,37 +600,27 @@ for fr_id in FR_LIST:
   "citations": ["{fr_id}", "SRS.md#L23"],
   "summary": "實作摘要"
 }}
+
+【FORBIDDEN】
+- ❌ app/infrastructure/（已廢除）
+- ❌ docstring 無 [FR-XX]
+- ❌ docstring 無 Citations（含行號）
 """
         
-        # Agent 直接呼叫 sessions_spawn
-        dev_result = sessions_spawn(
-            task=dev_task,
-            mode="run",
-            runtime="subagent"
-        )
+        dev_result = sessions_spawn(task=dev_task, mode="run", runtime="subagent")
         
-        # ==========================================
         # 2. 解析 JSON 並寫入檔案
-        # ==========================================
         print(f"\n📁 寫入檔案...")
-        
         try:
-            # 解析 Developer 返回
-            result_text = dev_result.get("result", "{}")
-            result_text = result_text.strip()
-            
-            # 去除 markdown markers
+            result_text = dev_result.get("result", "{}").strip()
             if result_text.startswith('[SKILL]'):
                 result_text = result_text[6:].strip()
             import re
             match = re.search(r'```(?:json)?\s*([\s\S]*?)```', result_text)
             if match:
                 result_text = match.group(1).strip()
-            
             dev_data = json.loads(result_text)
-            files = dev_data.get("files", [])
-            
-            for f in files:
+            for f in dev_data.get("files", []):
                 file_path = PROJECT_PATH / f["path"]
                 file_path.parent.mkdir(parents=True, exist_ok=True)
                 file_path.write_text(f["content"])
@@ -678,9 +628,7 @@ for fr_id in FR_LIST:
         except Exception as e:
             print(f"   ❌ 檔案寫入失敗: {e}")
         
-        # ==========================================
         # 3. Reviewer 審查
-        # ==========================================
         print(f"\n🔍 [Reviewer] 審查 {fr_id}")
         
         rev_task = f"""你是 Reviewer Agent，審查 {fr_id}
@@ -699,87 +647,84 @@ for fr_id in FR_LIST:
   "summary": "審查摘要"
 }}
 
-【REJECT_IF 新增】
-- ❌ **沒有執行以下命令驗證 Citations 存在**：
- ```bash
-grep -n "Citations:" 03-development/src/xxx.py
- ```
- 就直接宣稱「有 Citations」→「未實際驗證」→「REJECT」
-
-【 Citations 驗證流程】
-
-1. 先執行：
- ```bash
-grep -n "Citations:" 03-development/src/xxx.py
- ```
- 確認有多少處有 Citations
-
-2. 對照 docstring 數量，確認每個函數都有
-
-3. 驗證行號範圍是否合理：
- - 檢查 docstring 內的 `SRS.md#L` 和 `SAD.md#L` 是否落於合理區間
- - 如：SRS.md 總行數 200，但引用 L500 → 不合理 → REJECT
+【REJECT_IF】
+- ❌ docstring 無 [FR-XX] 標記 → REJECT
+- ❌ docstring 無 Citations（含行號）→ REJECT
+- ❌ 缺少 citations 或 citations 無行號 → REJECT（HR-15）
 """
         
-        rev_result = sessions_spawn(
-            task=rev_task,
-            mode="run",
-            runtime="subagent"
-        )
+        rev_result = sessions_spawn(task=rev_task, mode="run", runtime="subagent")
         
-        # ==========================================
-        # 4. 呼叫 PhaseHooks 記錄結果
-        # ==========================================
-        hooks.monitoring_after_dev(fr_id, dev_result)
-        hooks.monitoring_after_rev(fr_id, rev_result)
+        # 4. Constitution Check（含 BVS + HR-09）
+        print(f"\n⚖️ [BVS + HR-09] Constitution Check")
+        result = run_cmd(["python3", "quality_gate/constitution/runner.py", "--type", "implementation"])
+        print(f"   {'✅' if result.returncode == 0 else '⚠️'} Constitution {'PASS' if result.returncode == 0 else '警告'}")
         
-        # ==========================================
-        # 5. 判斷是否通過
-        # ==========================================
+        # 5. CQG（Linter + Complexity + Coverage）
+        print(f"\n🔬 [CQG] Quality Gate Check")
+        result = run_cmd(["python3", "cli.py", "quality-gate", "--phase", str(PHASE)])
+        print(f"   {'✅' if result.returncode == 0 else '⚠️'} CQG {'PASS' if result.returncode == 0 else '警告'}")
+        
+        # 6. 迭代判斷
         review_status = rev_result.get("review_status", None)
-        
         if review_status == "APPROVE":
             print(f"\n✅ {fr_id} APPROVE")
             break
         else:
             print(f"\n🔄 {fr_id} REJECT → 重新實作")
             iteration += 1
-            
-            # HR-12 檢查
             if iteration > max_iterations:
-                print(f"\n⚠️  HR-12 TRIGGERED: > {max_iterations} 輪")
-                print(f"   專案 PAUSE，通知 Johnny")
-                # hooks.monitoring_hr12_check(fr_id, iteration)
+                print(f"\n⚠️ HR-12 TRIGGERED: > {max_iterations} 輪 → PAUSE")
                 break
 
 # ==========================================
-# POST-FLIGHT（使用 CLI）
+# POST-FLIGHT
 # ==========================================
-# Agent: python cli.py run-phase --phase {PHASE} --resume
-# （POST-FLIGHT checks 會自動執行）
+print(f"\n{'='*60}")
+print("🚀 POST-FLIGHT")
+print(f"{'='*60}")
+
+print(f"\n🔍 [SAB Drift] 代碼↔SAD 一致性檢查")
+result = run_cmd(["python3", "cli.py", "trace-check", "--phase", str(PHASE)])
+print(f"   {'✅' if result.returncode == 0 else '⚠️'} SAB Drift {'PASS' if result.returncode == 0 else '警告'}")
+
+print(f"\n🧭 [Steering] Steering Loop")
+result = run_cmd(["python3", "cli.py", "steering", "run", "--phase", str(PHASE)])
+print(f"   {'✅' if result.returncode == 0 else 'ℹ️'} Steering {'完成' if result.returncode == 0 else '未啟用'}")
+
+print(f"\n📊 [Phase Truth] Phase Truth 驗證")
+result = run_cmd(["python3", "cli.py", "phase-verify", "--phase", str(PHASE)])
+print(f"   {'✅' if result.returncode == 0 else '❌'} Phase Truth {'≥70%' if result.returncode == 0 else '<70% → PAUSE'}")
+
+print(f"\n✅ [STAGE_PASS] 執行 stage-pass")
+run_cmd(["python3", "cli.py", "stage-pass", "--phase", str(PHASE)])
+
+print(f"\n✅ Phase {PHASE} 完成！")
 ```
 
-### PhaseHooks 呼叫時機
+### PhaseHooks + 增強功能 呼叫時機
 
-| 時機 | PhaseHook 呼叫 | 用途 |
-|------|---------------|------|
-| PRE-FLIGHT | `hooks.preflight_all()` | 執行所有預檢查 |
-| Developer 執行前 | `hooks.monitoring_before_dev(fr_id)` | 記錄即將開始 |
-| Developer 執行後 | `hooks.monitoring_after_dev(fr_id, dev_result)` | 記錄結果 |
-| Reviewer 執行前 | `hooks.monitoring_before_rev(fr_id)` | 記錄即將開始 |
-| Reviewer 執行後 | `hooks.monitoring_after_rev(fr_id, rev_result)` | 記錄結果 |
-| HR-12 檢查 | `hooks.monitoring_hr12_check(fr_id, iteration)` | 超過 5 輪阻擋 |
-| POST-FLIGHT | `hooks.postflight_all()` | 執行所有後檢查 |
+| 時機 | 呼叫 | 用途 |
+|------|------|------|
+| PRE-FLIGHT | `cli.py run-phase --phase {PHASE}` | FSM + Constitution |
+| Dev 執行後 | `sessions_spawn(dev)` | 實作代碼 |
+| Rev 執行後 | `sessions_spawn(rev)` | 審查代碼 |
+| **Constitution** | `runner.py --type implementation` | **BVS + HR-09** |
+| **CQG** | `cli.py quality-gate` | **Linter + Complexity** |
+| HR-12 | `monitoring_hr12_check()` | ≥5輪 PAUSE |
+| **SAB Drift** | `cli.py trace-check` | **代碼↔SAD** |
+| **Steering** | `cli.py steering run` | **Workflow 控制** |
+| **Phase Truth** | `cli.py phase-verify` | **≥70% 驗證** |
+| POST-FLIGHT | `cli.py run-phase --resume` | Final State |
 
 ### sessions_spawn 呼叫方式
 
 ```python
-# Agent 直接呼叫（不是 import，是 tool 呼叫）
 sessions_spawn(
     task="你是 Developer Agent...",
-    mode="run",           # 或 "session"
-    runtime="subagent",   # 固定值
-    timeout=300,          # 可選，超時秒數
+    mode="run",
+    runtime="subagent",
+    timeout=300,
 )
 ```
 
@@ -790,11 +735,7 @@ sessions_spawn(
   "status": "success",
   "files": [
     {
-      "path": "03-development/module_FR-01/main.py",
-      "content": "# 完整代碼（不要截斷）..."
-    },
-    {
-      "path": "03-development/module_FR-01/utils.py",
+      "path": "03-development/src/processing/lexicon_mapper.py",
       "content": "# 完整代碼..."
     }
   ],
@@ -810,12 +751,12 @@ sessions_spawn(
 {
   "status": "success",
   "review_status": "APPROVE",
-  "reason": "代碼符合 SRS §FR-01 規格，邏輯正確",
+  "reason": "代碼符合 SRS §FR-01 規格",
   "confidence": 9,
   "citations": ["FR-01", "SAD.md#L45-L60"],
   "summary": "審查通過，無違規"
 }
-```
+
 
 ---
 
