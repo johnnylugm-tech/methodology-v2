@@ -1,3 +1,13 @@
+## v7.50 (2026-04-12)
+
+### fix: FR-07 mapping keywords
+
+**UPDATED: generate_fr_mapping.py**
+- FR-07 keywords: add "routes"
+- Now correctly maps FR-07 → routes.py
+
+---
+
 ## v7.49 (2026-04-12)
 
 ### fix: check_fr_quality.py FR mapping + generate_fr_mapping.py

@@ -26,7 +26,7 @@ FR_KEYWORDS = {
     "FR-04": ["synth", "engine", "parallel", "async", "併行"],
     "FR-05": ["circuit", "breaker", "斷路"],
     "FR-06": ["redis", "cache", "快取"],
-    "FR-07": ["cli", "command", "命令行"],
+    "FR-07": ["cli", "command", "routes", "命令行"],
     "FR-08": ["ffmpeg", "audio", "format", "轉換"],
     "FR-09": ["kokoro", "proxy", "client"],
 }
