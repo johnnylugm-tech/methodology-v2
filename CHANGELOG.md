@@ -1369,6 +1369,33 @@ pip install methodology-v2==5.30.0
 
 # v7.x Releases (2026-04-10)
 
+## v7.40 (2026-04-11)
+
+### feat: Requirement Traceability System - FR→SRS→Code→Test Complete Chain
+
+**NEW: requirement_traceability.py (v1.0)**
+- Complete FR→SRS→Code→Test bidirectional traceability
+- Automated completeness verification
+- ASPICE SWE.3.B.SP1/SP2/SP3 compliance
+- CLI with verify, export, aspice format support
+
+**NEW: Phase SOPs Integration**
+- Phase 1: FR→SRS mapping (TH-13)
+- Phase 2: SAD↔Code mapping (TH-16)
+- Phase 3: FR→Code mapping
+- Phase 4: FR↔Test mapping (TH-17 ≥90%)
+- Phase 5: Quality→Test links
+- Phase 6: Quality→Audit links
+
+**UPDATED: Templates**
+- templates/TRACEABILITY_MATRIX.md: Complete structure
+
+**FIXED: Bug fixes**
+- CodeComponent/TestCoverage missing metadata field
+- add_requirement() API signature correction
+
+---
+
 ## v7.18 (2026-04-11)
 
 ### feat: CQG + Phase 4 FR mapping + Phase 1-8 completeness
