@@ -107,10 +107,10 @@ python3 cli.py run-phase --phase {PHASE} --goal "{GOAL}"
 ## Phase {PHASE} 交付物
 
 ### 代碼產出
-- [ ] `app/processing/` - 處理模組
-- [ ] `app/synth/` - 合成模組
-- [ ] `app/infrastructure/` - 基礎設施模組（如有）
-- [ ] `app/api/` - API 路由（如有）
+- [ ] `03-development/src/processing/` - 處理模組
+- [ ] `03-development/src/synth/` - 合成模組
+- [ ] `03-development/src/infrastructure/` - 基礎設施模組（如有）
+- [ ] `03-development/src/api/` - API 路由（如有）
 
 ### 測試產出
 - [ ] `tests/test_fr01*.py` - FR-01 測試
@@ -180,7 +180,7 @@ OUTPUT:
 - {TEST_FILE}
 
 FORBIDDEN:
-- ❌ app/infrastructure/（已廢除）
+- ❌ 03-development/src/infrastructure/（已廢除）
 - ❌ 使用 @covers annotation → 請改用 docstring [FR-XX]
 - ❌ @type: edge → positive/negative/boundary
 - ❌ ... 省略 → 任務失敗
@@ -193,7 +193,7 @@ STEP 1: 讀取 SRS.md §FR-XX 和 SAD.md §對應章節
 
 STEP 2: 用 grep 確認函數的實際行號：
 ```bash
-grep -n "def 函數名\|class 類別名" app/xxx.py
+grep -n "def 函數名\|class 類別名" 03-development/src/xxx.py
 ```
 把輸出的行號記下來（不是估算）
 
@@ -201,7 +201,7 @@ STEP 3: 實作 + 寫 docstring 時用 STEP 2 的實際行號
 
 STEP 4: 寫完後再次 grep 確認：
 ```bash
-grep -A5 "def 函數名" app/xxx.py | grep "Citations:"
+grep -A5 "def 函數名" 03-development/src/xxx.py | grep "Citations:"
 ```
 確認 Citations 確實寫入且行號正確
 
@@ -259,16 +259,16 @@ graph TD
 
 | 維度 | 評估方法 | 目標 |
 |------|---------|------|
-| **規範符合度** | `grep -c '\[FR-' app/**/*.py` | citations ≥ 每函數 1 個 |
+| **規範符合度** | `grep -c '\[FR-' 03-development/src/**/*.py` | citations ≥ 每函數 1 個 |
 | **A/B 協作** | `sessions_spawn.log` 記錄完整 | developer + reviewer 各 1 筆記錄 |
 | **子代理管理** | `SubagentIsolator` 使用正確 | `fresh_messages` 隔離 |
-| **測試覆蓋率** | `pytest --cov=app/ --cov-report=term` | ≥80% |
+| **測試覆蓋率** | `pytest --cov=03-development/src/ --cov-report=term` | ≥80% |
 
 ### 四維度評核命令
 
 ```bash
 # 1. 規範符合度
-grep -r "\[FR-" app/ --include="*.py" | wc -l
+grep -r "\[FR-" 03-development/src/ --include="*.py" | wc -l
 
 # 2. A/B 協作
 cat sessions_spawn.log | grep -c "developer\|reviewer"
@@ -277,7 +277,7 @@ cat sessions_spawn.log | grep -c "developer\|reviewer"
 cat sessions_spawn.log | grep -c "spawn"
 
 # 4. 測試覆蓋率
-pytest --cov=app/ --cov-report=term -q
+pytest --cov=03-development/src/ --cov-report=term -q
 ```
 
 **HR-12（5輪限制）**：
@@ -702,7 +702,7 @@ for fr_id in FR_LIST:
 【REJECT_IF 新增】
 - ❌ **沒有執行以下命令驗證 Citations 存在**：
  ```bash
-grep -n "Citations:" app/xxx.py
+grep -n "Citations:" 03-development/src/xxx.py
  ```
  就直接宣稱「有 Citations」→「未實際驗證」→「REJECT」
 
@@ -710,7 +710,7 @@ grep -n "Citations:" app/xxx.py
 
 1. 先執行：
  ```bash
-grep -n "Citations:" app/xxx.py
+grep -n "Citations:" 03-development/src/xxx.py
  ```
  確認有多少處有 Citations
 
