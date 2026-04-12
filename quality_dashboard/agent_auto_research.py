@@ -208,7 +208,152 @@ class AgentDrivenAutoResearch:
         with open(self.history_file, 'w') as f:
             json.dump(data, f, indent=2)
     
-    def run(self, max_iterations: int = 3) -> Dict:
+
+    # ============================================================================
+    # NEW FEATURES: Iteration Report, Auto-commit, Dashboard Capture
+    # ============================================================================
+
+    def _log_iteration_report(self, iteration: int, baseline: Dict, after: Dict, 
+                              issues_found: List[Dict], issues_fixed: int,
+                              stop_reason: str = ""):
+        """Generate structured iteration report"""
+        report = {
+            "iteration": iteration,
+            "timestamp": datetime.now().isoformat(),
+            "baseline": baseline.copy(),
+            "scores_after": after.copy(),
+            "issues_found": issues_found,
+            "issues_fixed": issues_fixed,
+            "issues_remaining": sum(1 for d, s in after.items() if s < 85),
+            "stop_reason": stop_reason,
+            "dimensions_status": {d: f"{s:.1f}%" for d, s in after.items()}
+        }
+        
+        # Print to console if verbose
+        print(f"""
+{'='*60}
+📊 Iteration {iteration} Report
+{'='*60}
+  Baseline:  {self._format_scores(baseline)}
+  After:     {self._format_scores(after)}
+  Found:     {len(issues_found)} issues
+  Fixed:     {issues_fixed} issues
+  Remaining: {report['issues_remaining']} dimensions <85%
+  Stop:      {stop_reason or 'Continue'}
+{'='*60}""")
+        
+        self.iteration_records.append(report)
+        return report
+
+    def _format_scores(self, scores: Dict) -> str:
+        """Format scores dict for display"""
+        return ", ".join([f"{d}={v:.0f}%" for d, v in scores.items()])
+
+    def _auto_commit(self, iteration: int, stats: Dict):
+        """Auto-commit after each iteration"""
+        if not (self.project_path / ".git").exists():
+            return
+        
+        try:
+            import subprocess
+            stats_str = json.dumps(stats, indent=2)
+            
+            # Stage all changes
+            subprocess.run(['git', 'add', '-A'], cwd=self.project_path, check=False)
+            
+            # Create commit message
+            msg = f"""AutoResearch Iteration {iteration} (v7.74)
+
+Improvement: {stats.get('improvement', 0):.1f}%
+Issues Found: {stats.get('found', 0)}
+Issues Fixed: {stats.get('fixed', 0)}
+Dimensions Fixed: {', '.join(stats.get('fixed_dims', []))}
+
+Scores:
+{stats_str}
+
+[skip ci] AutoResearch automated commit"""
+            
+            result = subprocess.run(['git', 'commit', '-m', msg], 
+                                     cwd=self.project_path, 
+                                     capture_output=True, text=True)
+            
+            if result.returncode == 0:
+                print(f"   ✅ Auto-committed iteration {iteration}")
+            else:
+                print(f"   ⚠️ Auto-commit skipped: {result.stderr[:100]}")
+        except Exception as e:
+            print(f"   ⚠️ Auto-commit failed: {e}")
+
+    def _save_dashboard_html(self, scores: Dict, iteration: int):
+        """Save dashboard HTML snapshot"""
+        dashboard_dir = self.project_path / ".quality_dashboard"
+        dashboard_dir.mkdir(exist_ok=True)
+        
+        html_file = dashboard_dir / f"iteration_{iteration}_dashboard.html"
+        self.dashboard_reports.append(str(html_file))
+        
+        # Generate minimal HTML
+        html = f"""<!DOCTYPE html>
+<html><head><title>AutoResearch Iteration {iteration}</title></head>
+<body>
+<h1>AutoResearch Iteration {iteration}</h1>
+<p>Timestamp: {datetime.now().isoformat()}</p>
+<table border="1">
+<tr><th>Dimension</th><th>Score</th><th>Status</th></tr>
+"""
+        for dim, score in scores.items():
+            status = "✅" if score >= 85 else "⚠️"
+            html += f"<tr><td>{dim}</td><td>{score:.1f}%</td><td>{status}</td></tr>\n"
+        
+        html += "</table></body></html>"
+        
+        html_file.write_text(html)
+        print(f"   📊 Dashboard saved: {html_file.name}")
+
+    def _classify_severity(self, dimension: str, issue: str) -> str:
+        """Classify issue severity"""
+        severity_map = {
+            "D4_Security": "CRITICAL",
+            "D2_TypeSafety": "HIGH",
+            "D5_Complexity": "HIGH",
+            "D1_Linting": "LOW",
+            "D3_Coverage": "MEDIUM",
+            "D6_Architecture": "MEDIUM",
+            "D7_Readability": "LOW",
+            "D8_ErrorHandling": "MEDIUM",
+            "D9_Documentation": "LOW"
+        }
+        
+        # Check for specific patterns
+        if "xml.etree" in issue or "defusedxml" in issue:
+            return "CRITICAL"
+        if "callable" in issue or "type" in issue.lower():
+            return "HIGH"
+        if "CCN" in issue or "complexity" in issue.lower():
+            return "HIGH"
+        
+        return severity_map.get(dimension, "MEDIUM")
+
+    def _should_stop(self, iteration: int, max_iter: int, 
+                     scores: Dict, no_improvement_count: int) -> tuple:
+        """Determine if should stop, with reason"""
+        all_above_85 = all(s >= 85 for s in scores.values())
+        if all_above_85:
+            return True, "All dimensions ≥85%"
+        
+        if iteration >= max_iter:
+            return True, f"Max iterations ({max_iter}) reached"
+        
+        if no_improvement_count >= 2:
+            return True, "No improvement for 2 consecutive iterations"
+        
+        return False, ""
+
+    # ============================================================================
+
+    def run(self, max_iterations: int = 3, auto_commit: bool = True, 
+               save_dashboard: bool = True, verbose: bool = True) -> Dict:
         """
         運行 Agent-Driven AutoResearch Loop
         
