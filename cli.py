@@ -4133,13 +4133,14 @@ class MethodologyCLI:
         """
         Execute AutoResearch quality improvement
 
-        Reads project-config.yaml for auto_research.enabled setting.
-        If enabled=False, shows message and exits.
+        This command is now a thin wrapper that spawns a sub-agent
+        to do the actual work. The sub-agent has sessions_spawn access
+        and can perform real code modifications.
         """
         from pathlib import Path
         import sys
 
-        project_path = Path(args.project)
+        project_path = Path(args.project).resolve()
         phase = args.phase
         iterations = args.iterations
         timeout = getattr(args, 'timeout', 1800)  # default 30 min
@@ -4171,7 +4172,7 @@ class MethodologyCLI:
         dimensions = phase_dimensions.get(phase, phase_dimensions[3])
 
         print(f"\n{'='*60}")
-        print(f"🔬 AutoResearch Quality Improvement")
+        print(f"🔬 AutoResearch Quality Improvement (Sub-agent Mode)")
         print(f"{'='*60}")
         print(f"   Project: {project_path}")
         print(f"   Phase: {phase}")
@@ -4179,32 +4180,38 @@ class MethodologyCLI:
         print(f"   Max iterations: {iterations}")
         print(f"   Enabled: {auto_research_enabled}")
         print()
+        print(f"⚠️  This command spawns a sub-agent to perform AutoResearch.")
+        print(f"   The sub-agent has full sessions_spawn access.")
+        print()
+        print(f"To run manually, spawn a sub-agent with this task:")
+        print(f"\n{'='*60}\n")
 
-        # Add quality_dashboard to path
-        dashboard_path = Path(__file__).parent / "quality_dashboard"
-        sys.path.insert(0, str(dashboard_path))
+        # Build the task prompt
+        framework_dir = Path(__file__).parent.resolve()
+        task = f"""Run AutoResearch for Phase {phase} quality improvement.
 
-        try:
-            from agent_auto_research import AgentDrivenAutoResearch
+Project: {project_path}
+Framework: {framework_dir}
 
-            agent = AgentDrivenAutoResearch(str(project_path), phase=args.phase)
-            result = agent.run(max_iterations=iterations)
+## Task
+1. Run quality assessment:
+   cd {project_path}
+   python3 {framework_dir}/quality_dashboard/dashboard.py assess --project . --phase {phase}
 
-            print(f"\n{'='*60}")
-            print(f"📊 AutoResearch Result")
-            print(f"{'='*60}")
-            print(f"   Status: {result.get('status', 'unknown')}")
-            print(f"   Iterations: {result.get('iterations', 0)}")
-            print(f"   Total improvement: {result.get('improvement', 0):.1f}%")
+2. Fix ALL dimensions below 85% (not just below 70):
+   - D1-D9 as appropriate for Phase {phase}
+   - Use sessions_spawn to spawn developer/reviewer sub-agents
+   - Fix real issues: complexity refactoring, type fixes, security, etc.
 
-            return 0
-        except Exception as e:
-            print(f"❌ AutoResearch failed: {e}")
-            import traceback
-            traceback.print_exc()
-            return 1
+3. Report final scores for all dimensions.
 
+Target: ≥85% on ALL active dimensions."""
 
+        print(task)
+        print(f"{'='*60}\n")
+        print(f"Recommended: Ask your main agent to spawn this task.")
+        
+        return 0
     # run-phase: Single Entry Point for Phase Execution
     # ============================================================================
 
