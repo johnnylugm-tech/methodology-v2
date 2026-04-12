@@ -12,16 +12,16 @@ Logic:
 from pathlib import Path
 from typing import Dict, List
 
-# Phase N 需要的前置產出
+# Phase N 需要的前置產出（ASPICE 目錄結構）
 PHASE_PREREQUISITES = {
     1: [],  # 基本前提（由 FSM 檢查）
-    2: ["SRS.md"],
-    3: ["SRS.md", "SAD.md", "fr_mapping.json"],
-    4: ["SRS.md", "SAD.md", "fr_mapping.json", "SAB.json"],
-    5: ["SRS.md", "SAD.md", "TEST_PLAN.md"],
-    6: ["SRS.md", "SAD.md", "TEST_PLAN.md", "BASELINE.md"],
-    7: ["QUALITY_REPORT.md"],
-    8: ["CONFIG_RECORDS.md", "requirements.lock"],
+    2: ["SRS.md", "01-requirements/SRS.md"],
+    3: ["SRS.md", "01-requirements/SRS.md", "02-architecture/SAD.md", ".methodology/fr_mapping.json"],
+    4: ["SRS.md", "01-requirements/SRS.md", "02-architecture/SAD.md", ".methodology/fr_mapping.json", ".methodology/SAB.json"],
+    5: ["SRS.md", "01-requirements/SRS.md", "02-architecture/SAD.md", ".methodology/fr_mapping.json", "04-testing/TEST_PLAN.md"],
+    6: ["SRS.md", "01-requirements/SRS.md", "02-architecture/SAD.md", "04-testing/TEST_PLAN.md", "05-baseline/BASELINE.md"],
+    7: ["06-reports/QUALITY_REPORT.md"],
+    8: ["07-deployment/CONFIG_RECORDS.md", "07-deployment/requirements.lock"],
 }
 
 def check_phase_prerequisites(phase: int, project_path: Path) -> tuple:
