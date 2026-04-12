@@ -4372,8 +4372,10 @@ class MethodologyCLI:
         print(f"▶ EXECUTE Phase {phase}")
         print(f"{'='*60}\n")
 
-        # Load P{N}_SOP.md
-        sop_path = repo_path / "docs" / f"P{phase}_SOP.md"
+        # Load P{N}_SOP.md from Framework (not Project)
+        # SOPs are Framework artifacts, not Project artifacts
+        METHODOLOGY_DIR = Path(__file__).parent.resolve()
+        sop_path = METHODOLOGY_DIR / "docs" / f"P{phase}_SOP.md"
         if not sop_path.exists():
             print(f"❌ SOP not found: {sop_path}")
             return 1
@@ -5158,9 +5160,10 @@ Full execution script is in templates/plan_phase_template.md Section 17.
         # === PHASE 1: SCAN ===
         print(f"[{datetime.now().strftime('%H:%M:%S')}] SCAN: 讀取相關資料")
 
-        # 1.1 必須掃描
-        skill_md = repo_path / "SKILL.md"
-        sop_path = repo_path / "docs" / f"P{phase}_SOP.md"
+        # 1.1 必須掃描 (Framework artifacts, not Project)
+        METHODOLOGY_DIR = Path(__file__).parent.resolve()
+        skill_md = METHODOLOGY_DIR / "SKILL.md"
+        sop_path = METHODOLOGY_DIR / "docs" / f"P{phase}_SOP.md"
         state_file = repo_path / ".methodology" / "state.json"
         iterations_file = repo_path / ".methodology" / "iterations" / f"phase{phase}.json"
 
