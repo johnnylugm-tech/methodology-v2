@@ -335,6 +335,179 @@ Scores:
         
         return severity_map.get(dimension, "MEDIUM")
 
+
+
+    # ============================================================================
+    # VERIFICATION: Tool Evidence, Before/After Count, Verifiable Severity
+    # ============================================================================
+
+    def _run_tool_capture(self, tool_cmd: List[str], cwd: Path = None) -> tuple:
+        """Run tool and capture output, return (stdout, stderr, returncode)"""
+        if cwd is None:
+            cwd = self.project_path
+        try:
+            result = subprocess.run(
+                tool_cmd,
+                cwd=cwd,
+                capture_output=True,
+                text=True,
+                timeout=120
+            )
+            return result.stdout, result.stderr, result.returncode
+        except Exception as e:
+            return "", str(e), -1
+
+    def _count_issues(self, dimension: str) -> Dict:
+        """Count issues for a dimension using appropriate tool"""
+        counts = {
+            "before": 0,
+            "after": 0,
+            "issue_list": [],
+            "tool_output": ""
+        }
+        
+        if dimension == "D1_Linting":
+            out, err, rc = self._run_tool_capture(["ruff", "check", "03-development/src/"])
+            counts["before"] = len([l for l in out.split('\n') if l.strip() and not l.startswith('#')])
+            counts["issue_list"] = [l for l in out.split('\n') if l.strip() and ':' in l][:10]  # First 10
+            counts["tool_output"] = out[:500]  # First 500 chars
+            
+        elif dimension == "D2_TypeSafety":
+            out, err, rc = self._run_tool_capture(["python3", "-m", "mypy", "03-development/src/"])
+            counts["before"] = len([l for l in out.split('\n') if 'error:' in l or 'warning:' in l])
+            counts["issue_list"] = [l for l in out.split('\n') if 'error:' in l][:10]
+            counts["tool_output"] = out[:500]
+            
+        elif dimension == "D4_Security":
+            out, err, rc = self._run_tool_capture(["bandit", "-r", "03-development/src/", "-f", "json"])
+            try:
+                import json
+                data = json.loads(out)
+                counts["before"] = len(data.get("results", []))
+                counts["issue_list"] = [f"{r['filename']}:{r['line']} {r['issue_text']}" 
+                                       for r in data.get("results", [])[:10]]
+            except:
+                counts["before"] = out.count("CONFIDENCE")
+            counts["tool_output"] = out[:500]
+            
+        elif dimension == "D5_Complexity":
+            out, err, rc = self._run_tool_capture(["lizard", "03-development/src/"])
+            counts["before"] = len([l for l in out.split('\n') if 'CCN' in l])
+            counts["issue_list"] = [l for l in out.split('\n') if 'CCN' in l][:10]
+            counts["tool_output"] = out[:500]
+            
+        else:
+            counts["tool_output"] = "No tool for this dimension"
+            
+        return counts
+
+    def _get_verifiable_severity(self, dimension: str, tool_output: str, issue_list: list) -> str:
+        """Determine severity based on TOOL OUTPUT, not主观"""
+        if dimension == "D4_Security":
+            if any("B314" in o or "xml.etree" in o for o in issue_list):
+                return "CRITICAL"  # XML vulnerability
+            if any("B403" in o or "pickle" in o.lower() for o in issue_list):
+                return "HIGH"
+            return "MEDIUM"
+            
+        elif dimension == "D2_TypeSafety":
+            errors = [o for o in tool_output.split('\n') if 'error:' in o]
+            if len(errors) > 10:
+                return "HIGH"
+            elif len(errors) > 0:
+                return "MEDIUM"
+            return "LOW"
+            
+        elif dimension == "D5_Complexity":
+            high_ccn = [o for o in issue_list if 'CCN=' in o]
+            for item in high_ccn:
+                try:
+                    ccn = int([s for s in item.split() if 'CCN=' in s][0].split('=')[1])
+                    if ccn > 20:
+                        return "HIGH"
+                    elif ccn > 15:
+                        return "MEDIUM"
+                except:
+                    pass
+            return "LOW"
+            
+        elif dimension == "D1_Linting":
+            unused_imports = tool_output.count("F401")
+            if unused_imports > 10:
+                return "MEDIUM"
+            elif unused_imports > 0:
+                return "LOW"
+            return "LOW"
+            
+        return "LOW"
+
+    def _generate_verifiable_commit_msg(self, iteration: int, baseline: Dict, 
+                                        after: Dict, issues_found: List[Dict]) -> str:
+        """Generate commit message with full evidence"""
+        
+        # Build issue summary with tool evidence
+        issue_summary = []
+        for issue in issues_found:
+            sev = issue.get('severity', 'LOW')
+            dim = issue.get('dimension', '?')
+            file = issue.get('file', '?')
+            desc = issue.get('description', issue.get('issue', '?'))
+            tool_out = issue.get('tool_output', '')[:200]
+            
+            issue_summary.append(f"- [{sev}] {dim}: {file} - {desc}")
+            if tool_out:
+                issue_summary.append(f"  Evidence: {tool_out[:150]}...")
+        
+        issues_text = "\n".join(issue_summary) if issue_summary else "No issues found"
+        
+        # Before/After counts
+        fixed_dims = [d for d, s in after.items() if s >= 85 and baseline.get(d, 0) < 85]
+        
+        msg = f"""AutoResearch Iteration {iteration} (v7.74) - VERIFIABLE
+
+=== BEFORE/AFTER ===
+{self._format_scores(baseline)} → {self._format_scores(after)}
+Fixed dimensions: {', '.join(fixed_dims) or 'none'}
+Total improvement: {sum(after.values()) - sum(baseline.values()):.1f}%
+
+=== ISSUES FOUND ({len(issues_found)}) ===
+{issues_text}
+
+=== VERIFICATION ===
+Run these commands to verify:
+- Linting: ruff check 03-development/src/
+- Type: python3 -m mypy 03-development/src/
+- Security: bandit -r 03-development/src/
+- Complexity: lizard 03-development/src/
+
+[skip ci] AutoResearch automated commit"""
+
+        return msg
+
+    def _capture_all_tools_output(self) -> Dict[str, str]:
+        """Capture all tool outputs for transparency"""
+        outputs = {}
+        
+        # Linting
+        out, _, _ = self._run_tool_capture(["ruff", "check", "03-development/src/"])
+        outputs["ruff"] = out[:1000]
+        
+        # Type checking
+        out, _, _ = self._run_tool_capture(["python3", "-m", "mypy", "03-development/src/"])
+        outputs["mypy"] = out[:1000]
+        
+        # Security
+        out, _, _ = self._run_tool_capture(["bandit", "-r", "03-development/src/", "-f", "json"])
+        outputs["bandit"] = out[:1000]
+        
+        # Complexity
+        out, _, _ = self._run_tool_capture(["lizard", "03-development/src/"])
+        outputs["lizard"] = out[:1000]
+        
+        return outputs
+
+    # ============================================================================
+
     def _should_stop(self, iteration: int, max_iter: int, 
                      scores: Dict, no_improvement_count: int) -> tuple:
         """Determine if should stop, with reason"""
