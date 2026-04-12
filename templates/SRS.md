@@ -28,3 +28,36 @@
 | 術語 | 定義 |
 |------|------|
 | {術語} | {定義} |
+
+---
+
+## 6. FR Block（機器可讀格式）
+
+<!-- FR:START -->
+```json
+{
+  "version": "1.0",
+  "created_at": "{YYYY-MM-DD}",
+  "phase": 1,
+  "project": "{專案名}",
+  "functional_requirements": [
+    {
+      "id": "FR-01",
+      "description": "{需求描述}",
+      "implementation_functions": ["{函數名}"],
+      "verification_method": "{驗證方法}"
+    }
+  ],
+  "non_functional_requirements": [
+    {
+      "id": "NFR-01",
+      "type": "performance|security|reliability|maintainability",
+      "description": "{需求描述}",
+      "test_method": "{測試方法}"
+    }
+  ]
+}
+```
+<!-- FR:END -->
+
+**說明**：請填寫上方的 JSON 結構，這用於後續需求可追溯性追蹤。

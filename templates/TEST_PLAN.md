@@ -26,3 +26,34 @@
 | ID | 類型 | 描述 | 預期結果 | 狀態 |
 |----|------|------|---------|------|
 | TC-01 | 正向 | {描述} | {結果} | DRAFT |
+
+---
+
+## 6. Test Block（機器可讀格式）
+
+<!-- TEST:START -->
+```json
+{
+  "version": "1.0",
+  "created_at": "{YYYY-MM-DD}",
+  "phase": 4,
+  "project": "{專案名}",
+  "test_cases": [
+    {
+      "id": "TC-01",
+      "type": "unit|integration|e2e",
+      "description": "{描述}",
+      "expected_result": "{預期結果}",
+      "fr_coverage": ["FR-01", "FR-02"]
+    }
+  ],
+  "test_strategy": {
+    "unit_coverage_target": 80,
+    "branch_coverage_target": 70,
+    "integration_coverage_target": 60
+  }
+}
+```
+<!-- TEST:END -->
+
+**說明**：請填寫上方的 JSON 結構，這用於測試覆蓋率追蹤。
