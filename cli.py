@@ -4142,6 +4142,7 @@ class MethodologyCLI:
         project_path = Path(args.project)
         phase = args.phase
         iterations = args.iterations
+        timeout = getattr(args, 'timeout', 1800)  # default 30 min
 
         # Check project-config.yaml
         config_file = project_path / "project-config.yaml"
@@ -4542,6 +4543,7 @@ Full execution script is in templates/plan_phase_template.md Section 17.
                 }
                 dimensions = phase_dimensions.get(phase, phase_dimensions[3])
                 print(f"   Active dimensions: {', '.join(dimensions)}")
+                print(f"   Timeout: {getattr(args, 'timeout', 1800)}s")
                 
                 # Add quality_dashboard to path and run
                 dashboard_path = Path(__file__).parent / "quality_dashboard"
@@ -6019,6 +6021,7 @@ def main():
     autoresearch_parser.add_argument("--project", "-p", type=str, required=True, help="Project path")
     autoresearch_parser.add_argument("--phase", type=int, default=3, help="Phase number (3-5)")
     autoresearch_parser.add_argument("--iterations", type=int, default=3, help="Max iterations (default: 3)")
+    autoresearch_parser.add_argument("--timeout", type=int, default=1800, help="Timeout in seconds (default: 1800 = 30min)")
     autoresearch_parser.add_argument("--dimensions", type=str, default=None, help="Comma-separated dimensions (default: phase preset)")
 
     # spec-track
