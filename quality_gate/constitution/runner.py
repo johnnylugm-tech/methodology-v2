@@ -186,8 +186,8 @@ def main():
         print(f"Checking: {docs_path}")
         print(f"Check type: {args.type}")
     
-    # 如果是 preflight 模式，先檢查前置條件
-    if args.check_mode == "preflight" and args.current_phase:
+    # 如果是 --check-prerequisites 模式，只檢查前置條件
+    if args.check_prerequisites and args.current_phase:
         passed, missing, ready = check_phase_prerequisites(args.current_phase, base_path)
         if not passed:
             print(format_prerequisite_error(args.current_phase, missing, ready))
@@ -195,6 +195,8 @@ def main():
             sys.exit(1)
         if args.verbose:
             print(f"✅ 前置條件檢查通過: {', '.join(ready)}")
+        print("\n✅ 前置條件檢查通過")
+        sys.exit(0)
 
     # 執行檢查
     result = run_constitution_check(args.type, str(docs_path), args.current_phase, check_mode=args.check_mode)
