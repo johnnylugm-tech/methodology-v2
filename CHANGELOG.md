@@ -1,3 +1,31 @@
+## v7.57 (2026-04-12)
+
+### feat: Phase Prerequisite Checker - 往前檢查設計
+
+**NEW: quality_gate/constitution/phase_prerequisite_checker.py**
+- Phase N 往前檢查 Phase (N-1) 的產出
+- 不是檢查 Phase N 自己的產出
+
+**Logic:**
+```
+Phase 4 Constitution:
+  → 檢查 Phase 1-3 產出（SRS.md, SAD.md, fr_mapping.json）
+  → 不檢查 Phase 4 自己的產出（TEST_PLAN.md）
+```
+
+**PHASE_PREREQUISITES:**
+| Phase | 前置產出 |
+|-------|---------|
+| 2 | SRS.md |
+| 3 | SRS.md, SAD.md, fr_mapping.json |
+| 4 | SRS.md, SAD.md, fr_mapping.json, SAB.json |
+| 5 | SRS.md, SAD.md, TEST_PLAN.md |
+| 6 | SRS.md, SAD.md, TEST_PLAN.md, BASELINE.md |
+| 7 | QUALITY_REPORT.md |
+| 8 | CONFIG_RECORDS.md, requirements.lock |
+
+---
+
 ## v7.56 (2026-04-12)
 
 ### fix: check_fr_full.py Layer 3 - FR-level only, no Phase-level checks
