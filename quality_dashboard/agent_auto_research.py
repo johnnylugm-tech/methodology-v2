@@ -245,7 +245,7 @@ class AgentDrivenAutoResearch:
             
             print(f"\n📊 當前分數:")
             for dim, score in sorted(current_scores.items()):
-                target_met = "✅" if score >= 70 else "⚠️"
+                target_met = "✅" if score >= 85 else "⚠️"
                 print(f"   {target_met} {dim}: {score:.1f}%")
             
             total_score = sum(current_scores.values()) / len(current_scores)
@@ -257,7 +257,7 @@ class AgentDrivenAutoResearch:
                 break
             
             # Step 3: 識別需要改進的維度
-            low_dims = [(d, s) for d, s in current_scores.items() if s < 70]
+            low_dims = [(d, s) for d, s in current_scores.items() if s < 85]
             low_dims.sort(key=lambda x: x[1])  # 按分數排序，最低分優先
             
             if not low_dims:
@@ -271,7 +271,7 @@ class AgentDrivenAutoResearch:
             # Step 4: 為每個維度調用 Agent
             agent_results = []
             
-            for dim, score in low_dims[:2]:  # 每次最多處理 2 個維度
+            for dim, score in low_dims:  # 所有低於目標的維度都處理
                 print(f"\n{'─' * 50}")
                 print(f"🤖 Agent 處理: {dim}")
                 print(f"{'─' * 50}")
