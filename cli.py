@@ -4257,29 +4257,26 @@ class MethodologyCLI:
                 print(f"    Current phase: {current_phase}, target: {phase}")
                 print(f"    Use --step to continue from a specific step.")
 
-        # 3. Constitution Check
-        print(f"\n[{datetime.now().strftime('%H:%M:%S')}] PRE-FLIGHT: Constitution Check")
-        phase_type_map = {1: "srs", 2: "sad", 3: "implementation", 4: "test_plan",
-                          5: "verification", 6: "quality_report", 7: "risk_management", 8: "configuration"}
-        phase_type = phase_type_map.get(phase, "srs")
-
-        from quality_gate.constitution import run_constitution_check
+        # 3. Phase-Aware Constitution Check (Pre-flight)
+        print(f"\n[{datetime.now().strftime('%H:%M:%S')}] PRE-FLIGHT: Constitution Check (Phase {phase})")
         
-        # v6.102: Import PhaseHooks for monitoring
-        try:
-            from phase_hooks import PhaseHooks
-            HOOKS_AVAILABLE = True
-        except ImportError:
-            HOOKS_AVAILABLE = False
-        result = run_constitution_check(phase_type, docs_path=str(repo_path / "docs"), current_phase=phase)
+        from quality_gate.phase_aware_constitution import run_phase_constitution
+        from pathlib import Path
+        
+        # Pre-flight: 只檢查 Phase (N-1) 的前置產出
+        result = run_phase_constitution(phase, "preflight", Path(repo_path))
 
-        if result.score < 80:
-            print(f"❌ Constitution score {result.score:.0f}% < 80% (required)")
-            print(f"   Violations: {result.violations}")
-            print(f"   Recommendations: {result.recommendations}")
-            print(f"\n⚠️  Run 'python cli.py constitution check --type {phase_type}' for details")
+        if not result.passed:
+            print(f"❌ Phase {phase} Pre-flight Check FAILED")
+            print(f"   Missing prerequisites:")
+            for m in result.missing:
+                print(f"     - {m}")
+            print(f"   Score: {result.score:.0f}%")
+            print(f"\n💡 Complete Phase {phase - 1} before starting Phase {phase}")
             return 1
-        print(f"✅ Constitution score: {result.score:.0f}%")
+        print(f"✅ Phase {phase} Pre-flight Check PASSED")
+        print(f"   Ready artifacts: {len(result.ready)}")
+        print(f"   Score: {result.score:.0f}%")
 
         # 4. Tool Registry Check
         print(f"\n[{datetime.now().strftime('%H:%M:%S')}] PRE-FLIGHT: Tool Registry Check")
