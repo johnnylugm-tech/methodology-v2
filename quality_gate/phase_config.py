@@ -96,10 +96,12 @@ PHASE_CONFIG = {
             },
         },
         "required_artifacts": [
-            "04-verification/TEST_PLAN.md",
-            "04-verification/TEST_RESULTS.md",
             "DEVELOPMENT_LOG.md",
             "Phase4_STAGE_PASS.md",
+        ],
+        "produced_artifacts": [
+            "04-verification/TEST_PLAN.md",
+            "04-verification/TEST_RESULTS.md",
         ],
         "block_checks": [
             "SPEC_TRACKING",

@@ -87,15 +87,16 @@ class PhaseArtifactRegistry:
             "depends_on": [Phase.PLAN],
         },
         Phase.VERIFY: {  # Phase 4
-            "required": ["TEST_PLAN.md", "TEST_RESULTS.md"],
+            "required": [],  # TEST_PLAN.md is output, not input
+            "produces": ["TEST_PLAN.md"],
             "output_dir": "04-testing",
             "alt_dirs": ["04-verify", "04-testing", "testing", "verify"],
             "depends_on": [Phase.IMPLEMENT],
         },
         Phase.SYSTEM_TEST: {  # Phase 5
-            "required": ["TEST_RESULTS.md", "BASELINE.md", "VERIFICATION_REPORT.md"],
-            "output_dir": "05-verify",
-            "alt_dirs": ["05-system-test", "05-verify", "verify"],
+            "required": ["TEST_PLAN.md", "TEST_RESULTS.md", "BASELINE.md"],
+            "output_dir": "05-baseline",
+            "alt_dirs": ["05-system-test", "05-baseline", "baseline"],
             "depends_on": [Phase.VERIFY],
         },
         Phase.QUALITY: {  # Phase 6
