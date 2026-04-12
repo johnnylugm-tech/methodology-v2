@@ -451,7 +451,10 @@ class IntegratedStagePassGenerator:
             f"**pytest**: {'✅ 通過' if test_evidence.get('pytest_passed') else '❌ 未通過'}",
             f"**Coverage**: {'✅ 達標' if test_evidence.get('coverage_passed') else '❌ 未達標'}",
             f"",
-            f"**分數理由**: {self.results.get('confidence_reason', '')}",
+            # v6.21 格式：confidence (1-10) + summary (50字內)
+        confidence = self.results.get('confidence_score', 0) or 0
+        summary = self.results.get('confidence_reason', '')[:50]
+        f"**Confidence**: {confidence}/10 | **Summary**: {summary}",
             f"",
             f"---",
             f"",

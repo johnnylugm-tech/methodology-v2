@@ -51,7 +51,9 @@ class ExecutionLogger:
         """
         從 sessions_spawn.log 收集執行日誌
         sessions_spawn.log 格式：
-        {"timestamp": "...", "role": "...", "task": "...", "session_id": "...", "status": "...", ...}
+        {"timestamp": "...", "role": "qa|architect|reviewer", "task": "...", "session_id": "...", ...}
+        
+        HR-10 規定：role 欄位必須是 qa / architect / review，禁止 developer / manager
         """
         log_path = self.project_path / ".methodology" / "sessions_spawn.log"
         if not log_path.exists():

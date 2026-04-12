@@ -46,10 +46,10 @@ class IterationResult:
 # TOOL-DRIVEN EVALUATORS
 # ============================================================================
 
-def run_tool(cmd: List[str], timeout: int = 30) -> tuple:
+def run_tool(cmd: List[str], timeout: int = 30, cwd: str = None) -> tuple:
     """執行工具並返回 (stdout, stderr, returncode)"""
     try:
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout, cwd=cwd)
         return result.stdout, result.stderr, result.returncode
     except Exception as e:
         return "", str(e), 1
@@ -59,7 +59,7 @@ class LintingEvaluator:
     weight = 0.10
     
     def evaluate(self, project_path: str) -> DimensionScore:
-        stdout, _, rc = run_tool(["ruff", "check", project_path, "--ignore=D100,E501,F401"])
+        stdout, _, rc = run_tool(["ruff", "check", f"{project_path}/03-development/src", "--ignore=D100,E501,F401"])
         error_count = len([l for l in stdout.split('\n') if l.strip() and l.startswith('F')])
         score = max(0, 100 - error_count * 5)
         issues = [l.strip() for l in stdout.split('\n') if l.strip() and l.startswith('F')][:5]
@@ -70,7 +70,7 @@ class TypeSafetyEvaluator:
     weight = 0.15
     
     def evaluate(self, project_path: str) -> DimensionScore:
-        stdout, _, rc = run_tool(["mypy", project_path, "--ignore-missing-imports", "--no-error-summary"], timeout=60)
+        stdout, _, rc = run_tool(["mypy", f"{project_path}/03-development/src", "--ignore-missing-imports", "--no-error-summary"], timeout=60)
         error_count = stdout.count(": error:")
         score = max(0, 100 - error_count * 10)
         issues = [l.strip() for l in stdout.split('\n') if ': error:' in l][:5]
@@ -81,8 +81,10 @@ class CoverageEvaluator:
     weight = 0.20
     
     def evaluate(self, project_path: str) -> DimensionScore:
-        stdout, _, rc = run_tool(["python3", "-m", "pytest", f"{project_path}/tests", 
-                                 "--cov=app", "--cov-report=term-missing", "--tb=no", "-q"], timeout=60)
+        # Use 03-development/tests (not project-root/tests symlink) to avoid duplicate collection
+        stdout, _, rc = run_tool(["python3", "-m", "pytest", f"{project_path}/03-development/tests",
+                                 "--cov=src", "--cov-report=term-missing", "--tb=no", "-q"],
+                                timeout=60, cwd=project_path)
         coverage = 0
         for line in stdout.split('\n'):
             if 'TOTAL' in line:
@@ -99,7 +101,7 @@ class SecurityEvaluator:
     weight = 0.15
     
     def evaluate(self, project_path: str) -> DimensionScore:
-        stdout, _, rc = run_tool(["bandit", "-r", project_path, "-f", "json", "-ll"], timeout=60)
+        stdout, _, rc = run_tool(["bandit", "-r", f"{project_path}/03-development/src", "-f", "json", "-ll"], timeout=60)
         try:
             data = json.loads(stdout)
             high = data["metrics"]["_totals"]["SEVERITY.HIGH"]
@@ -116,7 +118,9 @@ class ComplexityEvaluator:
     weight = 0.10
     
     def evaluate(self, project_path: str) -> DimensionScore:
-        stdout, _, rc = run_tool(["lizard", project_path, "-L", "15"], timeout=30)
+        # Only analyze src, not tests
+        src_path = f"{project_path}/03-development/src"
+        stdout, _, rc = run_tool(["lizard", src_path, "-L", "15"], timeout=30)
         hotspots = {}
         for line in stdout.split('\n'):
             if '.py' in line and 'location' not in line and line.strip():
@@ -124,9 +128,11 @@ class ComplexityEvaluator:
                 if len(parts) >= 5:
                     try:
                         cc = int(parts[1])
-                        loc = parts[-1]
-                        file_path = '/'.join(loc.split('@')[1].split('/')[:-1])
-                        if cc > 10:
+                        loc = parts[-1]  # e.g. func@110-255@path/to/file.py
+                        # Extract file path: parts[-1].split('@')[-1] = path/to/file.py
+                        # We want just the module path like src/processing/ssml_parser.py
+                        file_path = '/'.join(loc.split('@')[-1].split('/')[3:])  # skip 03-development/src/
+                        if cc > 15:
                             hotspots[file_path] = cc
                     except:
                         continue
@@ -144,8 +150,10 @@ class ArchitectureEvaluator:
     weight = 0.10
     
     def evaluate(self, project_path: str) -> DimensionScore:
-        stdout, _, rc = run_tool(["radon", "cc", project_path, "-a"], timeout=30)
-        # 修復：只計算 C/D/E 作為問題，A/B 是好品質不應懲罰
+        # Only analyze src, not tests
+        src_path = f"{project_path}/03-development/src"
+        stdout, _, rc = run_tool(["radon", "cc", src_path, "-a"], timeout=30)
+        # Only calculate C/D/E as issues, A/B are good quality
         issues = [l.strip() for l in stdout.split('\n') if ' - C' in l or ' - D' in l or ' - E' in l][:3]
         score = max(0, 100 - len(issues) * 10)
         return DimensionScore(self.name, score, self.weight, issues if issues else ["No major issues"], False, "radon")

@@ -31,7 +31,7 @@ Phase Reset → **docs/CLI_REFERENCE.md**
 | HR-12 | A/B 審查 > 5 輪 → PAUSE 通知 Johnny | — |
 | HR-13 | Phase 執行 > 預估 ×3 → PAUSE checkpoint | — |
 | HR-14 | Integrity < 40 → FREEZE 全面審計 | — |
-| HR-15 | citations 必須含行號 + `artifact_verification` | -15 |
+| HR-15 | citations 格式：`檔案#L行號` 或 `檔案#L起始-L結束`，兩者皆可 + `artifact_verification` | -15 |
 
 ## 2. A/B 協作
 **禁止**：自寫自審(HR-01) · HybridWorkflow=OFF(HR-04) · sessions_spawn.log 缺失(HR-10) · 程式碼省略號`...`→任務失敗
