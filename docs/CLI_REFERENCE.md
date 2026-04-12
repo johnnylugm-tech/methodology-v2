@@ -358,4 +358,87 @@ python -m methodology-v2.requirement_traceability \
 
 ---
 
-*最後更新: 2026-04-11*
+## 15. FR Quality 檢查腳本（v7.43-v7.56）
+
+### check_fr_quality.py - FR 快速檢查
+
+```bash
+# 單次檢查
+python scripts/check_fr_quality.py --fr FR-01 --project /path/to/project
+
+# 迭代檢查
+python scripts/check_fr_quality.py --fr FR-01 --project /path/to/project --loop
+```
+
+**用途**：每個 FR 完成後，快速檢查 Syntax + Import
+
+---
+
+### check_fr_full.py - FR 完整檢查
+
+```bash
+# 完整檢查（三層）
+python scripts/check_fr_full.py --fr FR-01 --project /path/to/project --loop
+
+# 只做 Layer 1
+python scripts/check_fr_full.py --fr FR-01 --project /path --skip-constitution --skip-cqg
+```
+
+**三層檢查**：
+| Layer | 檢查 | 時間 |
+|-------|------|------|
+| Layer 1 | Syntax + Import | ~30秒 |
+| Layer 2 | Constitution (BVS + HR-09) | ~1分鐘 |
+| Layer 3 | CQG (Linter + Complexity) | ~1分鐘 |
+
+---
+
+## 16. FR Mapping 腳本（v7.49-v7.51）
+
+### generate_fr_mapping.py
+
+```bash
+python scripts/generate_fr_mapping.py --project /path/to/project
+```
+
+**產出**：`.methodology/fr_mapping.json`
+
+**掃描策略**：FR Tag 解析 > Keyword 匹配
+
+---
+
+## 17. SAB 生成腳本（v7.47-v7.48）
+
+### generate_sab.py
+
+```bash
+python scripts/generate_sab.py --project /path/to/project
+```
+
+**產出**：`.methodology/SAB.json`
+
+---
+
+## 18. Phase Prerequisite Checker（v7.57-v7.60）
+
+### phase_prerequisite_checker.py
+
+```bash
+python -m quality_gate.constitution.runner --check-prerequisites --current-phase 3 --path /path -v
+```
+
+**用途**：Phase N 執行前，檢查 Phase (N-1) 產出是否 Ready
+
+**前置產出表**：
+
+| Phase | 前置產出 | 路徑 |
+|-------|---------|------|
+| 2 | SRS.md | `01-requirements/SRS.md` |
+| 3 | SAD.md, fr_mapping.json | `02-architecture/SAD.md`, `.methodology/fr_mapping.json` |
+| 4 | SAB.json | `.methodology/SAB.json` |
+| 5 | TEST_PLAN.md | `04-testing/TEST_PLAN.md` |
+| 6 | BASELINE.md | `05-baseline/BASELINE.md` |
+
+---
+
+*最後更新: 2026-04-12*
