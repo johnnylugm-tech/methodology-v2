@@ -27,15 +27,16 @@ PHASE_PREREQUISITES = {
     8: ["07-deployment/CONFIG_RECORDS.md", "07-deployment/requirements.lock"],
 }
 
-# Phase N 的產出（Post-flight 檢查）
+# Phase N 的 Essential Deliverables（Post-flight 檢查）
+# 不包含 Audit Documents（sessions_spawn.log, state.json, SPEC_TRACKING.md）
 PHASE_OUTPUTS = {
-    1: ["SRS.md", "01-requirements/SRS.md", ".methodology/SPEC_TRACKING.md"],
-    2: ["SAD.md", "02-architecture/SAD.md", ".methodology/fr_mapping.json", ".methodology/SAB.json"],
-    3: [".methodology/state.json", "sessions_spawn.log"],
-    4: ["04-testing/TEST_PLAN.md", "04-testing/TEST_RESULTS.md"],
-    5: ["05-baseline/BASELINE.md", "05-baseline/MONITORING_PLAN.md"],
-    6: ["06-reports/QUALITY_REPORT.md"],
-    7: ["07-deployment/CONFIG_RECORDS.md", "07-deployment/requirements.lock"],
+    1: ["SRS.md", "01-requirements/SRS.md"],  # 需求規格
+    2: ["SAD.md", "02-architecture/SAD.md"],  # 架構設計
+    3: [".methodology/fr_mapping.json"],      # FR→Code 映射
+    4: ["04-testing/TEST_PLAN.md"],           # 測試計畫（主要產物）
+    5: ["05-baseline/BASELINE.md"],          # 基準線
+    6: ["06-reports/QUALITY_REPORT.md"],      # 品質報告
+    7: ["07-deployment/CONFIG_RECORDS.md", "07-deployment/requirements.lock"],  # 配置記錄
     8: [],  # Phase 8 是最後階段
 }
 
