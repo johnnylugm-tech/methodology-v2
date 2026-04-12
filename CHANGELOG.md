@@ -1,4 +1,4 @@
-## v7.58 (2026-04-12)
+## v7.59 (2026-04-12)
 
 ### fix: Phase Prerequisite Checker 整合進 runner.py
 
