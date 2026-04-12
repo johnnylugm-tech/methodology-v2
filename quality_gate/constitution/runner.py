@@ -30,6 +30,7 @@ from quality_gate.constitution import (
     ConstitutionCheckResult,
     CONSTITUTION_THRESHOLDS
 )
+from quality_gate.constitution.phase_prerequisite_checker import check_phase_prerequisites, format_prerequisite_error
 
 
 def format_result_text(result: ConstitutionCheckResult) -> str:
@@ -136,6 +137,11 @@ def main():
         action="store_true",
         help="Verbose output"
     )
+    parser.add_argument(
+        "--check-prerequisites",
+        action="store_true",
+        help="只檢查 Phase 前置條件，不執行 Constitution 檢查"
+    )
     
     args = parser.parse_args()
     
@@ -180,6 +186,16 @@ def main():
         print(f"Checking: {docs_path}")
         print(f"Check type: {args.type}")
     
+    # 如果是 preflight 模式，先檢查前置條件
+    if args.check_mode == "preflight" and args.current_phase:
+        passed, missing, ready = check_phase_prerequisites(args.current_phase, base_path)
+        if not passed:
+            print(format_prerequisite_error(args.current_phase, missing, ready))
+            print("\n❌ 前置條件檢查失敗，請先完成前置 Phase")
+            sys.exit(1)
+        if args.verbose:
+            print(f"✅ 前置條件檢查通過: {', '.join(ready)}")
+
     # 執行檢查
     result = run_constitution_check(args.type, str(docs_path), args.current_phase, check_mode=args.check_mode)
     

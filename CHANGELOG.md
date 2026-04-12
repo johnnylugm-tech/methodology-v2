@@ -1,3 +1,27 @@
+## v7.58 (2026-04-12)
+
+### fix: Phase Prerequisite Checker 整合進 runner.py
+
+**UPDATED: quality_gate/constitution/runner.py**
+- 新增 `--check-prerequisites` flag
+- preflight 模式會先檢查 Phase 前置條件
+- 整合 phase_prerequisite_checker
+
+**使用方式：**
+```bash
+# Phase 4 執行前檢查 Phase 1-3 產出
+python runner.py --check-prerequisites --current-phase 4 -v
+```
+
+**測試結果：**
+```
+❌ Phase 3 前置條件檢查失敗
+✅ 已就緒: SRS.md
+❌ 缺失: SAD.md, fr_mapping.json
+```
+
+---
+
 ## v7.57 (2026-04-12)
 
 ### feat: Phase Prerequisite Checker - 往前檢查設計
