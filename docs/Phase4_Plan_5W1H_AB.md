@@ -429,9 +429,26 @@ methodology quality
 
 ## 6. HOW — 如何執行？（完整 SOP）
 
-### Step 0：前置確認（Agent A）
+### Step 0：前置確認（Agent A）- 實地驗證 ⚠️
 
 ```bash
+# 【NEW】實地驗證 Phase 3 產出（不只是看 Plan 假設）
+echo "=== Phase 3 產出實地驗證 ==="
+ls -la 03-development/src/  # 確認代碼存在
+ls -la .methodology/sessions_spawn.log  # 確認日誌存在
+cat SRS.md | grep "FR-" | wc -l  # 確認 FR 數量
+
+# 若有任何產出不存在，Plan 需更新，不能假設 ✅
+if [ ! -d "03-development/src/" ]; then
+    echo "❌ Phase 3 代碼不存在，Plan 狀態需更新"
+    exit 1
+fi
+
+# 確認 Phase 3 完成狀態（非假設）
+if ! grep -q "APPROVE" sessions_spawn.log; then
+    echo "⚠️ sessions_spawn.log 無 APPROVE 記錄，Phase 3 可能未完成"
+fi
+
 # 確認 Phase 3 已完成
 python3 quality_gate/phase_artifact_enforcer.py
 
