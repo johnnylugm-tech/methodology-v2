@@ -31,3 +31,36 @@
 | 技術 | 理由 |
 |------|------|
 | {技術} | {理由} |
+
+---
+
+## 5. SAB Block（機器可讀格式）
+
+<!-- SAB:START -->
+```json
+{
+  "version": "1.0",
+  "created_at": "{YYYY-MM-DD}",
+  "phase": 2,
+  "project": "{專案名}",
+  "layers": [
+    {
+      "name": "{layer_name}",
+      "modules": ["FR-XX", "..."],
+      "allowed_dependencies": ["{other_layer}"]
+    }
+  ],
+  "dependencies": {
+    "{layer_A}": ["{layer_B}"],
+    "{layer_B}": ["{layer_C}"]
+  },
+  "quality_targets": {
+    "max_complexity": 15,
+    "min_coverage": 80,
+    "max_coupling": 0.3
+  }
+}
+```
+<!-- SAB:END -->
+
+**說明**：請填寫上方的 JSON 結構，這用於後續 Drift Detection。

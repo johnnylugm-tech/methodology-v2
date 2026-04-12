@@ -41,13 +41,15 @@ def main():
     # Import SabParser
     sys.path.insert(0, str(project / "skills" / "methodology-v2"))
     try:
-        from quality_gate.sab_parser import SabParser
+        from quality_gate.sab_parser import SabParser, extract_sab_from_sad
     except ImportError:
-        from sab_parser import SabParser
+        from sab_parser import SabParser, extract_sab_from_sad
     
     # Parse SAD.md
-    parser = SabParser()
-    sab_spec = parser.parse(sad_file)
+    sab_spec = extract_sab_from_sad(sad_file)
+    if sab_spec is None:
+        print(f"❌ Failed to parse SAD.md - no SAB block found")
+        return 1
     
     if sab_spec is None:
         print(f"❌ Failed to parse SAD.md")
