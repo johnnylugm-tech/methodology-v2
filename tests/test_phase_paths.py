@@ -204,6 +204,10 @@ class PathContractTest:
         for filepath in constitution_checkers:
             content = filepath.read_text()
             
+            # Skip implementation_constitution_checker.py - it uses glob(*.py) for code discovery
+            if filepath.name == "implementation_constitution_checker.py":
+                continue
+            
             # If it has glob, it should also have PHASE_ARTIFACT_PATHS
             if "glob(" in content and "PHASE_ARTIFACT_PATHS" not in content:
                 issues.append(f"{filepath.name}: uses glob() without PHASE_ARTIFACT_PATHS")
