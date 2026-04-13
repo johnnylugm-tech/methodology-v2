@@ -37,7 +37,7 @@ PHASE_WHERE_PATTERNS = {
 
 # Expected artifacts per phase (from Phase Plans)
 PHASE_ARTIFACTS = {
-    5: ["BASELINE.md", "TEST_RESULTS.md", "VERIFICATION_REPORT.md", "TEST_PLAN.md"],
+    5: ["BASELINE.md", "VERIFICATION_REPORT.md"],  # Only Phase 5 artifacts
     6: ["QUALITY_REPORT.md", "MONITORING_PLAN.md"],
     7: ["RISK_ASSESSMENT.md", "RISK_REGISTER.md"],
     8: ["CONFIG_RECORDS.md", "requirements.lock"],
