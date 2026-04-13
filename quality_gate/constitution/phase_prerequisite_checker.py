@@ -31,11 +31,11 @@ PHASE_PREREQUISITES = {
         "02-architecture/SAD.md",
         ".methodology/SAB.json",
         # Phase 5 outputs - check both locations
-        ("05-baseline/BASELINE.md", "05-verify/BASELINE.md"),  # BASELINE.md alternate paths
+        ("05-verify/BASELINE.md", "05-verify/BASELINE.md"),  # BASELINE.md alternate paths
         ("04-testing/TEST_RESULTS.md", "05-verify/TEST_RESULTS.md"),  # TEST_RESULTS alternate paths
     ],
-    7: ["06-reports/QUALITY_REPORT.md"],
-    8: ["07-deployment/CONFIG_RECORDS.md", "07-deployment/requirements.lock"],
+    7: ["06-quality/QUALITY_REPORT.md"],
+    8: ["08-config/CONFIG_RECORDS.md", "08-config/requirements.lock"],
 }
 
 

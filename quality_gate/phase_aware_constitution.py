@@ -22,9 +22,9 @@ PHASE_PREREQUISITES = {
     3: ["SRS.md", "01-requirements/SRS.md", "02-architecture/SAD.md", ".methodology/fr_mapping.json"],
     4: ["SRS.md", "01-requirements/SRS.md", "02-architecture/SAD.md", ".methodology/fr_mapping.json", ".methodology/SAB.json"],
     5: ["SRS.md", "01-requirements/SRS.md", "02-architecture/SAD.md", ".methodology/SAB.json", "04-testing/TEST_PLAN.md", "05-verify/BASELINE.md", "05-verify/TEST_RESULTS.md"],
-    6: ["SRS.md", "01-requirements/SRS.md", "02-architecture/SAD.md", ".methodology/SAB.json", "04-testing/TEST_PLAN.md", "05-baseline/BASELINE.md"],
-    7: ["06-reports/QUALITY_REPORT.md"],
-    8: ["07-deployment/CONFIG_RECORDS.md", "07-deployment/requirements.lock"],
+    6: ["SRS.md", "01-requirements/SRS.md", "02-architecture/SAD.md", ".methodology/SAB.json", "04-testing/TEST_PLAN.md", "05-verify/BASELINE.md"],
+    7: ["06-quality/QUALITY_REPORT.md"],
+    8: ["08-config/CONFIG_RECORDS.md", "08-config/requirements.lock"],
 }
 
 # Phase N 的 Essential Deliverables（Post-flight 檢查）
@@ -36,7 +36,7 @@ PHASE_OUTPUTS = {
     4: ["04-testing/TEST_PLAN.md"],           # 測試計畫（主要產物）
     5: ["05-verify/BASELINE.md"],          # 基準線
     6: ["05-verify/QUALITY_REPORT.md"],      # 品質報告
-    7: ["07-deployment/CONFIG_RECORDS.md", "07-deployment/requirements.lock"],  # 配置記錄
+    7: ["08-config/CONFIG_RECORDS.md", "08-config/requirements.lock"],  # 配置記錄
     8: [],  # Phase 8 是最後階段
 }
 
