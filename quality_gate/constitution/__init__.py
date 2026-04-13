@@ -146,20 +146,37 @@ def load_constitution_documents(docs_path: str, current_phase: int = 0) -> Dict[
             documents["sad"] = matches[0].read_text(encoding="utf-8")
             break
     # 若在 docs_path 找不到 02-architecture/SAD，搜 docs_path 本身
+    # 優先搜尋精確的 SAD.md，避免匹配到 SAD_COMPARISON_REPORT.md 等
     if not documents["sad"]:
-        for pattern in ["SAD*.md", "*SAD*.md", "*架構*.md", "*ARCHITECTURE*.md"]:
-            matches = list(docs_dir.glob(pattern))
-            if matches:
-                documents["sad"] = matches[0].read_text(encoding="utf-8")
-                break
+        # 先搜尋精確的 SAD.md（不在 02-architecture/ 的）
+        exact_matches = list(docs_dir.glob("SAD.md"))
+        if exact_matches:
+            documents["sad"] = exact_matches[0].read_text(encoding="utf-8")
+        else:
+            # 再搜尋 02-architecture/SAD.md
+            for pattern in ["02-architecture/SAD.md", "SAD*.md", "*SAD*.md", "*架構*.md", "*ARCHITECTURE*.md"]:
+                matches = list(docs_dir.glob(pattern))
+                # 過濾掉 Comparison/Report 等非主要 SAD 的檔案
+                valid_matches = [m for m in matches if m.name in ["SAD.md", "SAD_v1.md", "SAD_v2.md"] or "SAD.md" in m.name]
+                if valid_matches:
+                    documents["sad"] = valid_matches[0].read_text(encoding="utf-8")
+                    break
     # 若在 docs/ 找不到，索性搜 parent 目錄
+    # 同樣優先精確匹配 SAD.md
     if not documents["sad"]:
         parent_dir = docs_dir.parent
-        for pattern in ["SAD.md", "SAD*.md", "SoftwareArchitecture.md", "*SAD*.md", "*架構*.md", "*ARCHITECTURE*.md", "02-architecture/SAD.md"]:
-            matches = list(parent_dir.glob(pattern))
-            if matches:
-                documents["sad"] = matches[0].read_text(encoding="utf-8")
-                break
+        # 先搜尋精確的 SAD.md
+        exact_matches = list(parent_dir.glob("SAD.md"))
+        if exact_matches:
+            documents["sad"] = exact_matches[0].read_text(encoding="utf-8")
+        else:
+            for pattern in ["02-architecture/SAD.md", "SAD.md", "SAD*.md", "SoftwareArchitecture.md", "*SAD*.md", "*架構*.md", "*ARCHITECTURE*.md"]:
+                matches = list(parent_dir.glob(pattern))
+                # 過濾掉 Comparison/Report 等
+                valid_matches = [m for m in matches if "COMPARISON" not in m.name and "REPORT" not in m.name and "DIFF" not in m.name]
+                if valid_matches:
+                    documents["sad"] = valid_matches[0].read_text(encoding="utf-8")
+                    break
     
     # 搜尋 Test Plan
     for pattern in ["TEST*.md", "*測試*.md", "*TEST_PLAN*.md"]:
