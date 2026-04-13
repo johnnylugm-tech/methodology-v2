@@ -242,6 +242,7 @@ def check_srs_constitution(docs_path: str) -> ConstitutionCheckResult:
     
     # 計算分數
     total_checks = 14
+    # Count passed checks (only defined fields)
     passed_checks = sum([
         checklist.functional_requirements_complete,
         checklist.non_functional_requirements,
@@ -255,7 +256,6 @@ def check_srs_constitution(docs_path: str) -> ConstitutionCheckResult:
         checklist.requirements_modular,
         checklist.clear_dependencies,
         checklist.version_info,
-        checklist.review_status,
     ])
     
     score = (passed_checks / total_checks) * 100
