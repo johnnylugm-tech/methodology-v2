@@ -126,25 +126,46 @@ def load_constitution_documents(docs_path: str, current_phase: int = 0) -> Dict[
                 elif key == "test_results":
                     documents["test_results"] = (project_dir / path).read_text(encoding="utf-8")
     
-    # 搜尋 SRS
-    for pattern in ["SRS*.md", "*SRS*.md", "*需求*.md", "*REQUIREMENT*.md"]:
-        matches = list(docs_dir.glob(pattern))
-        if matches:
-            documents["srs"] = matches[0].read_text(encoding="utf-8")
-            break
-    
-    # 搜尋 SAD (先搜 02-architecture/，再搜 docs_path，若找不到再搜 parent)
-    # Phase 2 SKILL.md 規範 SAD.md 在 02-architecture/ 目錄
-    phase2_sad_paths = [
-        "02-architecture/SAD.md",
-        "02-architecture/SAD*.md",
-        "02-architecture/*ARCHITECTURE*.md",
+    # 搜尋 SRS - 優先精確匹配
+    # Phase 1 SKILL.md 規範 SRS.md 在 01-requirements/ 目錄
+    srs_locations = [
+        ("01-requirements/SRS.md", docs_dir),  # Standard location
+        ("SRS.md", docs_dir),  # Root docs/
+        ("SRS.md", docs_dir.parent),  # Project root
     ]
-    for pattern in phase2_sad_paths:
-        matches = list(docs_dir.glob(pattern))
-        if matches:
-            documents["sad"] = matches[0].read_text(encoding="utf-8")
+    for path_str, search_dir in srs_locations:
+        exact = list(search_dir.glob(path_str))
+        if exact:
+            documents["srs"] = exact[0].read_text(encoding="utf-8")
             break
+    # Fallback with filtering (avoid SRS_COMPARISON_REPORT.md etc)
+    if not documents["srs"]:
+        for pattern in ["01-requirements/SRS.md", "SRS.md", "SRS*.md", "*SRS*.md"]:
+            matches = list(docs_dir.glob(pattern))
+            valid = [m for m in matches if "COMPARISON" not in m.name and "REPORT" not in m.name and m.name == "SRS.md" or "SRS.md" in m.name]
+            if valid:
+                documents["srs"] = valid[0].read_text(encoding="utf-8")
+                break
+    
+    # 搜尋 SAD - 優先精確匹配
+    # Phase 2 SKILL.md 規範 SAD.md 在 02-architecture/ 目錄
+    sad_locations = [
+        ("02-architecture/SAD.md", docs_dir),
+        ("SAD.md", docs_dir),
+        ("SAD.md", docs_dir.parent),
+    ]
+    for path_str, search_dir in sad_locations:
+        exact = list(search_dir.glob(path_str))
+        if exact:
+            documents["sad"] = exact[0].read_text(encoding="utf-8")
+            break
+    # Fallback with filtering (avoid SAD_COMPARISON_REPORT.md etc)
+    if not documents["sad"]:
+        for pattern in ["02-architecture/SAD.md", "SAD.md"]:
+            exact = list(docs_dir.glob(pattern))
+            if exact:
+                documents["sad"] = exact[0].read_text(encoding="utf-8")
+                break
     # 若在 docs_path 找不到 02-architecture/SAD，搜 docs_path 本身
     # 優先搜尋精確的 SAD.md，避免匹配到 SAD_COMPARISON_REPORT.md 等
     if not documents["sad"]:
@@ -178,20 +199,45 @@ def load_constitution_documents(docs_path: str, current_phase: int = 0) -> Dict[
                     documents["sad"] = valid_matches[0].read_text(encoding="utf-8")
                     break
     
-    # 搜尋 Test Plan
-    for pattern in ["TEST*.md", "*測試*.md", "*TEST_PLAN*.md"]:
-        matches = list(docs_dir.glob(pattern))
-        if matches:
-            documents["test_plan"] = matches[0].read_text(encoding="utf-8")
+    # 搜尋 Test Plan - 優先精確匹配
+    # Phase 4 Plan WHERE: 04-testing/TEST_PLAN.md
+    test_plan_locations = [
+        ("04-testing/TEST_PLAN.md", docs_dir),
+        ("TEST_PLAN.md", docs_dir),
+        ("TEST_PLAN.md", docs_dir.parent),
+    ]
+    for path_str, search_dir in test_plan_locations:
+        exact = list(search_dir.glob(path_str))
+        if exact:
+            documents["test_plan"] = exact[0].read_text(encoding="utf-8")
             break
+    # Fallback with filtering (avoid TEST_RESULTS_COMPARISON.md etc)
+    if not documents["test_plan"]:
+        for pattern in ["04-testing/TEST_PLAN.md", "TEST_PLAN.md", "TEST*.md"]:
+            matches = list(docs_dir.glob(pattern))
+            valid = [m for m in matches if "COMPARISON" not in m.name and "REPORT" not in m.name and ("TEST_PLAN" in m.name or m.name == "TEST_PLAN.md")]
+            if valid:
+                documents["test_plan"] = valid[0].read_text(encoding="utf-8")
+                break
     
-    # 搜尋 Constitution
-    const_patterns = ["CONSTITUTION*.md", "*品質監控*.md"]
-    for pattern in const_patterns:
-        matches = list(docs_dir.glob(pattern))
-        if matches:
-            documents["constitution"] = matches[0].read_text(encoding="utf-8")
+    # 搜尋 Constitution - 優先精確匹配
+    const_locations = [
+        ("CONSTITUTION.md", docs_dir),
+        ("constitution/CONSTITUTION.md", docs_dir),
+    ]
+    for path_str, search_dir in const_locations:
+        exact = list(search_dir.glob(path_str))
+        if exact:
+            documents["constitution"] = exact[0].read_text(encoding="utf-8")
             break
+    # Fallback with filtering
+    if not documents["constitution"]:
+        for pattern in ["CONSTITUTION*.md", "*CONSTITUTION*.md"]:
+            matches = list(docs_dir.glob(pattern))
+            valid = [m for m in matches if "COMPARISON" not in m.name and "REPORT" not in m.name]
+            if valid:
+                documents["constitution"] = valid[0].read_text(encoding="utf-8")
+                break
     
     return documents
 
