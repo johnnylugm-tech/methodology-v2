@@ -103,11 +103,36 @@ def check_implementation_constitution(
     test_files = list(path_obj.rglob("test_*.py")) + list(path_obj.rglob("*_test.py"))
     checklist.test_coverage = len(test_files) > 0
     
+    # 4. Security 檢查（v7.97: Phase 3 implementation security）
+    security_keywords = {
+        "input_validation": ["validate", "sanitize", "InputValidator", "input_validation", "輸入驗證"],
+        "secure_dependencies": ["requirements.txt", "package.json", "pip install", "npm install", "dependency"],
+        "secrets_management": ["getenv", "os.environ", "secret", "API_KEY", "password", "密鑰", "密碼"],
+        "auth_implementation": ["AuthMiddleware", "authenticate", "login", "登入", "認證"],
+        "error_handling_security": ["try:", "except:", "raise", "catch", "finally:"],
+    }
+    
+    # 讀取代碼內容進行關鍵字檢查
+    code_content = ""
+    for f in code_files[:10]:
+        try:
+            code_content += f.read_text(errors="ignore") + "\n"
+        except:
+            continue
+    
+    for check_name, keywords in security_keywords.items():
+        if any(kw.lower() in code_content.lower() for kw in keywords):
+            setattr(checklist, check_name, True)
+    
     # 評分
     checks = [
         checklist.code_documentation,
         checklist.error_handling_complete,
         checklist.test_coverage,
+        checklist.input_validation,
+        checklist.secure_dependencies,
+        checklist.secrets_management,
+        checklist.auth_implementation,
     ]
     score = (sum(checks) / len(checks)) * 100 if checks else 0
     
