@@ -96,13 +96,13 @@ class PhaseArtifactRegistry:
         Phase.SYSTEM_TEST: {  # Phase 5
             "required": ["TEST_PLAN.md", "TEST_RESULTS.md", "BASELINE.md"],
             "output_dir": "05-baseline",
-            "alt_dirs": ["05-system-test", "05-baseline", "baseline"],
+            "alt_dirs": ["05-system-test", "05-baseline", "baseline", "05-verify"],  # 05-verify for Phase 5/6 consistency
             "depends_on": [Phase.VERIFY],
         },
         Phase.QUALITY: {  # Phase 6
             "required": ["QUALITY_REPORT.md", "MONITORING_PLAN.md"],
             "output_dir": "06-quality",
-            "alt_dirs": ["06-quality", "quality"],
+            "alt_dirs": ["06-quality", "quality", "05-verify"],  # 05-verify for Phase 5/6 consistency
             "depends_on": [Phase.SYSTEM_TEST],
         },
         Phase.RISK: {  # Phase 7
