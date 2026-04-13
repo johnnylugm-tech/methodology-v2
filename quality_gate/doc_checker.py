@@ -112,24 +112,49 @@ class DocumentChecker:
         self.results: List[CheckResult] = []
         
     def find_documentation_files(self) -> List[Path]:
-        """找出所有文檔檔案"""
-        docs = []
-        docs_dir = self.base_path / "docs"
+        """找出所有文檔檔案（Phase 1-8 全部支援）
         
+        搜尋所有 Phase 目錄：
+        - 01-requirements/ (Phase 1 SRS)
+        - 02-architecture/ (Phase 2 SAD, ADR)
+        - 03-development/ (Phase 3 FR mapping)
+        - 04-testing/ (Phase 4 TEST_PLAN, TEST_RESULTS)
+        - 05-verify/ (Phase 5 BASELINE, VERIFICATION_REPORT)
+        - 06-quality/ (Phase 6 QUALITY_REPORT, MONITORING_PLAN)
+        - 07-risk/ (Phase 7 RISK_*)
+        - 08-config/ (Phase 8 CONFIG_*)
+        - docs/ (額外文檔)
+        - 根目錄 (SRS.md, SAD.md 等)
+        """
+        docs = []
+        
+        # 搜尋所有 Phase 目錄
+        phase_dirs = [
+            "01-requirements",
+            "02-architecture",
+            "03-development",
+            "04-testing",
+            "05-verify",
+            "06-quality",
+            "07-risk",
+            "08-config",
+        ]
+        
+        for phase_dir in phase_dirs:
+            dir_path = self.base_path / phase_dir
+            if dir_path.exists():
+                for ext in ['.md', '.txt']:
+                    docs.extend(dir_path.rglob(f"*{ext}"))
+        
+        # 遞迴搜尋 docs 目錄
+        docs_dir = self.base_path / "docs"
         if docs_dir.exists():
-            # 遞迴搜尋 docs 目錄
             for ext in ['.md', '.txt', '.rst']:
                 docs.extend(docs_dir.rglob(f"*{ext}"))
         
         # 檢查根目錄
         for ext in ['.md', '.txt']:
             docs.extend(self.base_path.glob(f"*{ext}"))
-        
-        # 檢查 02-architecture/ 目錄 (Phase 2 SAD + ADR)
-        arch_dir = self.base_path / "02-architecture"
-        if arch_dir.exists():
-            for ext in ['.md', '.txt']:
-                docs.extend(arch_dir.rglob(f"*{ext}"))
         
         return docs
     
