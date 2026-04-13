@@ -86,16 +86,20 @@ class ConstitutionCheckResult:
     recommendations: List[str]
 
 
-def load_constitution_documents(docs_path: str) -> Dict[str, Optional[str]]:
+def load_constitution_documents(docs_path: str, current_phase: int = 0) -> Dict[str, Optional[str]]:
     """載入所有 Constitution 相關文檔
+    
+    Uses centralized PHASE_ARTIFACT_PATHS for consistent path resolution.
     
     Args:
         docs_path: docs 目錄路徑
+        current_phase: 當前 Phase（用於判斷 Phase 5 產出路徑）
         
     Returns:
         Dict[doc_type, content]
     """
     docs_dir = Path(docs_path)
+    project_dir = docs_dir.parent  # Usually the project root
     
     documents = {
         "srs": None,
@@ -110,6 +114,17 @@ def load_constitution_documents(docs_path: str) -> Dict[str, Optional[str]]:
         "baseline": None,  # BASELINE.md for Phase 5
         "test_results": None,  # TEST_RESULTS.md for Phase 5
     }
+    
+    # Use centralized path system for Phase 5 artifacts
+    if current_phase >= 5:
+        for artifact_name in ["BASELINE.md", "TEST_RESULTS.md", "VERIFICATION_REPORT.md"]:
+            exists, path = check_artifact_exists(project_dir, 5, artifact_name)
+            if exists:
+                key = artifact_name.lower().replace(".md", "").replace("_", "_")
+                if key == "baseline":
+                    documents["baseline"] = (project_dir / path).read_text(encoding="utf-8")
+                elif key == "test_results":
+                    documents["test_results"] = (project_dir / path).read_text(encoding="utf-8")
     
     # 搜尋 SRS
     for pattern in ["SRS*.md", "*SRS*.md", "*需求*.md", "*REQUIREMENT*.md"]:
@@ -255,7 +270,6 @@ def _check_sab_drift(phase: int, docs_path: str = "docs") -> dict:
         project_path = str(project_path_obj)
 
         # Check if SAB baseline exists
-        from pathlib import Path
         sab_path = Path(project_path) / ".methodology" / "sab_spec.json"
         if not sab_path.exists():
             return {
@@ -311,7 +325,6 @@ def _check_cqg(phase: int, docs_path: str = "docs") -> dict:
 
     try:
         # Calculate project root from docs_path
-        from pathlib import Path
         docs_path_obj = Path(docs_path)
         if docs_path_obj.is_file():
             project_path_obj = docs_path_obj.parent
@@ -520,7 +533,6 @@ def run_constitution_check(
         if current_phase is not None and current_phase == 4:
             try:
                 from quality_gate.unified_gate import UnifiedGate
-                from pathlib import Path
                 project_path = str(Path(docs_path).parent)
                 gate = UnifiedGate(project_path)
                 fr_result = gate._check_fr_coverage_only()
