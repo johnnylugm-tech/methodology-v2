@@ -322,17 +322,26 @@ class IntegratedStagePassGenerator:
         test_evidence = self.results.get("test_evidence", {})
         
         # 5W1H 狀態推斷
-        who_pass = block_result.get("passed") and log_result.get("passed")
-        what_pass = test_evidence.get("pytest_passed")
+        # Constitution 必須通過才是真正的 PASS（Hard Blocker）
+        constitution_blocker = const_passed  # TH-02: Constitution 總分 ≥80% 或 TH-04: Security=100%
+        
+        who_pass = block_result.get("passed") and log_result.get("passed") and constitution_blocker
+        what_pass = test_evidence.get("pytest_passed") and constitution_blocker
         when_pass = True  # 時序由流程保證
-        where_pass = block_result.get("passed")
-        why_pass = block_result.get("passed")
-        how_pass = block_result.get("passed")
+        where_pass = block_result.get("passed") and constitution_blocker
+        why_pass = block_result.get("passed") and constitution_blocker
+        how_pass = block_result.get("passed") and constitution_blocker
         
         # 從 framework_enforcer 取得 Constitution 分數
         const_result = self.results.get("framework_results", {}).get("CONSTITUTION", {})
         const_score = const_result.get("score", 0)
         const_passed = const_result.get("passed", False)
+        
+        # 如果 Constitution 未通過，整體視為失敗
+        overall_pass = all([who_pass, what_pass, when_pass, where_pass, why_pass, how_pass])
+        
+        if not const_passed:
+            overall_pass = False
         
         lines = [
             f"# Phase {self.phase} STAGE_PASS",
@@ -343,6 +352,10 @@ class IntegratedStagePassGenerator:
             f"",
             f"### Phase Completion Summary",
             f"> （本階段完成摘要，包括目標達成情況、關鍵產出、執行時間等）",
+            f"",
+            f"## ⚠️ CONSTITUTION FAILURE - {'❌ BLOCKED' if not const_passed else '✅ PASSED'}",
+            f"> Constitution Score: {const_score:.1f}% (Threshold: ≥80% for TH-02, =100% for TH-04)",
+            f"> Phase {self.phase} {'BLOCKED' if not const_passed else 'PROCEEDING'}",
             f"",
             f"## Agent A 自評",
             f"",
@@ -452,9 +465,7 @@ class IntegratedStagePassGenerator:
             f"**Coverage**: {'✅ 達標' if test_evidence.get('coverage_passed') else '❌ 未達標'}",
             f"",
             # v6.21 格式：confidence (1-10) + summary (50字內)
-        confidence = self.results.get('confidence_score', 0) or 0
-        summary = self.results.get('confidence_reason', '')[:50]
-        f"**Confidence**: {confidence}/10 | **Summary**: {summary}",
+            f"**Confidence**: {self.results.get('confidence_score', 0) or 0}/10 | **Summary**: {self.results.get('confidence_reason', '')[:50]}",
             f"",
             f"---",
             f"",

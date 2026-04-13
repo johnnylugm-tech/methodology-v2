@@ -57,10 +57,10 @@ Phase Reset → **docs/CLI_REFERENCE.md**
 ## 4. Phase 路由
 | Ph | 名稱 | Agent A/B | 關鍵交付物 | EXIT |
 |----|------|-----------|-----------|------|
-| 1 | 需求規格 | architect/reviewer | SRS, SPEC_TRACKING, TRACEABILITY | TH-01,03,14; APPROVE |
+| 1 | 需求規格 | architect/reviewer | SRS, SPEC_TRACKING, TRACEABILITY | TH-01,03,04,14; APPROVE |
 | 2 | 架構設計 | architect/reviewer | SAD, ADR | TH-01,03,04,05; APPROVE |
-| 3 | 代碼實現 | developer/reviewer | 03-development/src/, 03-development/tests/ | TH-06,08,10,11,16; APPROVE |
-| 4 | 測試 | qa/reviewer | TEST_PLAN, TEST_RESULTS | TH-01,03,06,10,12,17 |
+| 3 | 代碼實現 | developer/reviewer | 03-development/src/, 03-development/tests/ | TH-04,06,08,10,11,16; APPROVE |
+| 4 | 測試 | qa/reviewer | TEST_PLAN, TEST_RESULTS | TH-01,03,04,05,06,10,12,17; APPROVE |
 | 5 | 驗證交付 | devops/architect | BASELINE, MONITORING_PLAN | TH-02,07; APPROVE |
 | 6 | 品質保證 | qa/architect | QUALITY_REPORT | TH-02,07; APPROVE |
 | 7 | 風險管理 | qa/devops/architect | RISK_REGISTER | TH-07; Decision Gate 100%; APPROVE |
