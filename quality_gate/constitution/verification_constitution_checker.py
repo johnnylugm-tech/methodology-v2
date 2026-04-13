@@ -47,13 +47,24 @@ def check_verification_constitution(path: str) -> ConstitutionCheckResult:
     recommendations = []
     checklist = VerificationChecklist()
     
-    # 檢查測試結果
-    test_results = list(path_obj.glob("TEST_RESULTS*"))
-    checklist.test_results_documented = len(test_results) > 0
+    # 使用集中化路徑搜尋 Phase 5 產出
+    project_root = path_obj.parent  # path is typically docs/, go up to project root
     
-    # 檢查基線
-    baseline = list(path_obj.glob("BASELINE*"))
-    checklist.baseline_established = len(baseline) > 0
+    # 檢查 TEST_RESULTS.md（Phase 5）- 使用 PHASE_ARTIFACT_PATHS
+    test_results_found = False
+    for artifact_path in PHASE_ARTIFACT_PATHS.get(5, {}).get("TEST_RESULTS.md", []):
+        if (project_root / artifact_path).exists():
+            test_results_found = True
+            break
+    checklist.test_results_documented = test_results_found
+
+    # 檢查 BASELINE.md（Phase 5）- 使用 PHASE_ARTIFACT_PATHS
+    baseline_found = False
+    for artifact_path in PHASE_ARTIFACT_PATHS.get(5, {}).get("BASELINE.md", []):
+        if (project_root / artifact_path).exists():
+            baseline_found = True
+            break
+    checklist.baseline_established = baseline_found
     
     # 評分
     checks = [
