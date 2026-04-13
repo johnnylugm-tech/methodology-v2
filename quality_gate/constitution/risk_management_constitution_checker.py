@@ -17,6 +17,7 @@ Usage:
 """
 
 from pathlib import Path
+from quality_gate.phase_paths import PHASE_ARTIFACT_PATHS
 from typing import Dict, List
 from dataclasses import dataclass
 
@@ -41,11 +42,21 @@ def check_risk_management_constitution(path: str) -> ConstitutionCheckResult:
     checklist = RiskManagementChecklist()
     
     # 檢查風險評估
-    risk_assessments = list(path_obj.glob("RISK_ASSESSMENT*"))
+    # 使用集中化路徑搜尋 RISK_ASSESSMENT（Phase 7）
+    risk_assessments = []
+    for artifact_path in PHASE_ARTIFACT_PATHS.get(7, {}).get("RISK_ASSESSMENT.md", []):
+        full_path = path_obj.parent / artifact_path
+        if full_path.exists():
+            risk_assessments.append(full_path)
     checklist.risk_assessment_exists = len(risk_assessments) > 0
     
     # 檢查風險登記表
-    risk_registers = list(path_obj.glob("RISK_REGISTER*"))
+    # 使用集中化路徑搜尋 RISK_REGISTER（Phase 7）
+    risk_registers = []
+    for artifact_path in PHASE_ARTIFACT_PATHS.get(7, {}).get("RISK_REGISTER.md", []):
+        full_path = path_obj.parent / artifact_path
+        if full_path.exists():
+            risk_registers.append(full_path)
     checklist.risk_register_exists = len(risk_registers) > 0
     
     # 檢查緩解計劃

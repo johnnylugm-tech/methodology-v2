@@ -17,6 +17,7 @@ Usage:
 """
 
 from pathlib import Path
+from quality_gate.phase_paths import PHASE_ARTIFACT_PATHS
 from typing import Dict, List
 from dataclasses import dataclass
 
@@ -41,8 +42,14 @@ def check_quality_report_constitution(path: str) -> ConstitutionCheckResult:
     checklist = QualityReportChecklist()
     
     # 檢查品質報告
-    quality_reports = list(path_obj.glob("QUALITY_REPORT*"))
-    checklist.quality_report_exists = len(quality_reports) > 0
+    # 使用集中化路徑搜尋 QUALITY_REPORT（Phase 6）
+    quality_reports_found = []
+    for artifact_path in PHASE_ARTIFACT_PATHS.get(6, {}).get("QUALITY_REPORT.md", []):
+        full_path = path_obj.parent / artifact_path
+        if full_path.exists():
+            quality_reports_found.append(full_path)
+    checklist.quality_report_exists = len(quality_reports_found) > 0
+    quality_reports = quality_reports_found
     
     if checklist.quality_report_exists:
         try:

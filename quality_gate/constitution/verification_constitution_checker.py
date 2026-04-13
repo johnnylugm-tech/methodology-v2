@@ -18,6 +18,7 @@ Usage:
 
 import os
 from pathlib import Path
+from quality_gate.phase_paths import PHASE_ARTIFACT_PATHS, check_artifact_exists
 from typing import Dict, List, Optional
 from dataclasses import dataclass
 

@@ -17,6 +17,7 @@ Usage:
 """
 
 from pathlib import Path
+from quality_gate.phase_paths import PHASE_ARTIFACT_PATHS
 from typing import Dict, List
 from dataclasses import dataclass
 
@@ -43,13 +44,23 @@ def check_configuration_constitution(path: str) -> ConstitutionCheckResult:
     checklist = ConfigurationChecklist()
 
     # 檢查配置記錄表
-    config_records = list(path_obj.glob("CONFIG_RECORDS*"))
+    # 使用集中化路徑搜尋 CONFIG_RECORDS（Phase 8）
+    config_records = []
+    for artifact_path in PHASE_ARTIFACT_PATHS.get(8, {}).get("CONFIG_RECORDS.md", []):
+        full_path = path_obj.parent / artifact_path
+        if full_path.exists():
+            config_records.append(full_path)
     checklist.config_records_exists = len(config_records) > 0
     if not checklist.config_records_exists:
         violations.append("CONFIG_RECORDS.md 不存在")
 
     # 檢查基準線文件
-    baselines = list(path_obj.glob("BASELINE*"))
+    # 使用集中化路徑搜尋 BASELINE（Phase 5）
+    baselines = []
+    for artifact_path in PHASE_ARTIFACT_PATHS.get(5, {}).get("BASELINE.md", []):
+        full_path = path_obj.parent / artifact_path
+        if full_path.exists():
+            baselines.append(full_path)
     checklist.baseline_exists = len(baselines) > 0
     if not checklist.baseline_exists:
         violations.append("BASELINE.md 不存在")
