@@ -21,7 +21,7 @@ Unified Quality Gate
     result = gate.check_all(phase=1, phase_enforcement=True)
 """
 
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass, asdict, field
 from typing import List, Dict, Optional, Any
 from pathlib import Path
 from datetime import datetime, timezone
@@ -187,12 +187,15 @@ except ImportError as _sab_e:
 
 @dataclass
 class CheckResult:
-    """單項檢查結果"""
+    """單項檢查結果
+    passed: True = 通過, False = 失敗, None = 跳過(工具不可用)
+    score: 0-100, None = 不適用(工具不可用)
+    """
     name: str
-    passed: bool
-    score: float
-    violations: List[str]
-    details: Dict
+    passed: Optional[bool] = None  # True/False/None
+    score: Optional[float] = None  # 0-100 or None for skipped
+    violations: List[str] = field(default_factory=list)
+    details: Dict = field(default_factory=dict)
 
 
 @dataclass
@@ -778,8 +781,8 @@ class UnifiedGate:
         if not getattr(self, 'cqg_available', False) or self.linter is None:
             return CheckResult(
                 name="CQG: Linter",
-                passed=True,
-                score=100,
+                passed=None,  # Skipped - not passed
+                score=0,      # No score for skipped
                 violations=[],
                 details={"status": "skipped", "reason": "CQG tools not available"}
             )
@@ -813,8 +816,8 @@ class UnifiedGate:
         if not getattr(self, 'cqg_available', False) or self.complexity is None:
             return CheckResult(
                 name="CQG: Complexity",
-                passed=True,
-                score=100,
+                passed=None,
+                score=0,
                 violations=[],
                 details={"status": "skipped", "reason": "CQG tools not available"}
             )
@@ -850,8 +853,8 @@ class UnifiedGate:
         if not getattr(self, 'cqg_available', False) or self.coverage_analyzer is None:
             return CheckResult(
                 name="CQG: Coverage Gap",
-                passed=True,
-                score=100,
+                passed=None,
+                score=0,
                 violations=[],
                 details={"status": "skipped", "reason": "CQG tools not available"}
             )
@@ -884,8 +887,8 @@ class UnifiedGate:
         if not getattr(self, 'cqg_available', False) or self.fitness is None:
             return CheckResult(
                 name="CQG: Fitness Functions",
-                passed=True,
-                score=100,
+                passed=None,
+                score=0,
                 violations=[],
                 details={"status": "skipped", "reason": "CQG tools not available"}
             )
@@ -934,8 +937,8 @@ class UnifiedGate:
         if not SENSORS_AVAILABLE:
             return CheckResult(
                 name="CQG: Computational Sensors",
-                passed=True,
-                score=100,
+                passed=None,
+                score=0,
                 violations=[],
                 details={"status": "skipped", "reason": "ComputationalSensors not available"}
             )
@@ -982,8 +985,8 @@ class UnifiedGate:
         if current_phase is not None and current_phase < 3:
             return CheckResult(
                 name="CQG: Baseline Drift",
-                passed=True,
-                score=100,
+                passed=None,
+                score=0,
                 violations=[],
                 details={"status": "skipped", "reason": f"Only runs Phase 3+ (current: Phase {current_phase})"}
             )
@@ -991,8 +994,8 @@ class UnifiedGate:
         if not SAB_AVAILABLE:
             return CheckResult(
                 name="CQG: Baseline Drift",
-                passed=True,
-                score=100,
+                passed=None,
+                score=0,
                 violations=[],
                 details={"status": "skipped", "reason": "BaselineManager not available"}
             )
@@ -1015,8 +1018,8 @@ class UnifiedGate:
             if not current_metrics:
                 return CheckResult(
                     name="CQG: Baseline Drift",
-                    passed=True,
-                    score=100,
+                    passed=None,
+                    score=0,
                     violations=[],
                     details={"status": "skipped", "reason": "No metrics available for comparison"}
                 )
@@ -1257,8 +1260,8 @@ class UnifiedGate:
         if not SPEC_LOGIC_CHECKER_AVAILABLE:
             return CheckResult(
                 name="Logic Correctness",
-                passed=True,
-                score=100,
+                passed=None,
+                score=0,
                 violations=[],
                 details={"status": "skipped", "reason": "spec_logic_checker not available"}
             )
@@ -1300,8 +1303,8 @@ class UnifiedGate:
         if not FR_ID_TRACKER_AVAILABLE:
             return CheckResult(
                 name="FR-ID Tracking",
-                passed=True,
-                score=100,
+                passed=None,
+                score=0,
                 violations=[],
                 details={"status": "skipped", "reason": "fr_id_tracker not available"}
             )
@@ -1339,8 +1342,8 @@ class UnifiedGate:
         if not THREAT_ANALYZER_AVAILABLE:
             return CheckResult(
                 name="Threat Analysis",
-                passed=True,
-                score=100,
+                passed=None,
+                score=0,
                 violations=[],
                 details={"status": "skipped", "reason": "threat_analyzer not available"}
             )
@@ -1379,8 +1382,8 @@ class UnifiedGate:
         if not COVERAGE_CHECKER_AVAILABLE:
             return CheckResult(
                 name="Test Coverage",
-                passed=True,
-                score=100,
+                passed=None,
+                score=0,
                 violations=[],
                 details={"status": "skipped", "reason": "coverage_checker not available"}
             )
@@ -1418,8 +1421,8 @@ class UnifiedGate:
         if not ISSUE_TRACKER_AVAILABLE:
             return CheckResult(
                 name="Issue Tracking",
-                passed=True,
-                score=100,
+                passed=None,
+                score=0,
                 violations=[],
                 details={"status": "skipped", "reason": "issue_tracker not available"}
             )
@@ -1458,8 +1461,8 @@ class UnifiedGate:
         if not RISK_STATUS_CHECKER_AVAILABLE:
             return CheckResult(
                 name="Risk Status",
-                passed=True,
-                score=100,
+                passed=None,
+                score=0,
                 violations=[],
                 details={"status": "skipped", "reason": "risk_status_checker not available"}
             )
@@ -1642,8 +1645,8 @@ class UnifiedGate:
         if not FR_VERIFICATION_METHOD_CHECKER_AVAILABLE:
             return CheckResult(
                 name="FR Verification Method",
-                passed=True,
-                score=100,
+                passed=None,
+                score=0,
                 violations=[],
                 details={"status": "skipped", "reason": "fr_verification_method_checker not available"}
             )
@@ -1677,8 +1680,8 @@ class UnifiedGate:
         if not FR_COVERAGE_CHECKER_AVAILABLE:
             return CheckResult(
                 name="FR Coverage",
-                passed=True,
-                score=100,
+                passed=None,
+                score=0,
                 violations=[],
                 details={"status": "skipped", "reason": "fr_coverage_checker not available"}
             )
@@ -1712,8 +1715,8 @@ class UnifiedGate:
         if not ERROR_HANDLING_CHECKER_AVAILABLE:
             return CheckResult(
                 name="Error Handling",
-                passed=True,
-                score=100,
+                passed=None,
+                score=0,
                 violations=[],
                 details={"status": "skipped", "reason": "error_handling_checker not available"}
             )
@@ -1747,8 +1750,8 @@ class UnifiedGate:
         if not MODULE_TRACKING_CHECKER_AVAILABLE:
             return CheckResult(
                 name="Module Tracking",
-                passed=True,
-                score=100,
+                passed=None,
+                score=0,
                 violations=[],
                 details={"status": "skipped", "reason": "module_tracking_checker not available"}
             )
@@ -1782,8 +1785,8 @@ class UnifiedGate:
         if not COMPLIANCE_MATRIX_CHECKER_AVAILABLE:
             return CheckResult(
                 name="Compliance Matrix",
-                passed=True,
-                score=100,
+                passed=None,
+                score=0,
                 violations=[],
                 details={"status": "skipped", "reason": "compliance_matrix_checker not available"}
             )
@@ -1817,8 +1820,8 @@ class UnifiedGate:
         if not NEGATIVE_TEST_CHECKER_AVAILABLE:
             return CheckResult(
                 name="Negative Test",
-                passed=True,
-                score=100,
+                passed=None,
+                score=0,
                 violations=[],
                 details={"status": "skipped", "reason": "negative_test_checker not available"}
             )
@@ -1852,8 +1855,8 @@ class UnifiedGate:
         if not TC_TRACE_CHECKER_AVAILABLE:
             return CheckResult(
                 name="TC Trace",
-                passed=True,
-                score=100,
+                passed=None,
+                score=0,
                 violations=[],
                 details={"status": "skipped", "reason": "tc_trace_checker not available"}
             )
@@ -1887,8 +1890,8 @@ class UnifiedGate:
         if not TC_DERIVATION_CHECKER_AVAILABLE:
             return CheckResult(
                 name="TC Derivation",
-                passed=True,
-                score=100,
+                passed=None,
+                score=0,
                 violations=[],
                 details={"status": "skipped", "reason": "tc_derivation_checker not available"}
             )
@@ -1922,8 +1925,8 @@ class UnifiedGate:
         if not PYTEST_RESULT_CHECKER_AVAILABLE:
             return CheckResult(
                 name="Pytest Result",
-                passed=True,
-                score=100,
+                passed=None,
+                score=0,
                 violations=[],
                 details={"status": "skipped", "reason": "pytest_result_checker not available"}
             )
@@ -1957,8 +1960,8 @@ class UnifiedGate:
         if not ROOT_CAUSE_CHECKER_AVAILABLE:
             return CheckResult(
                 name="Root Cause Analysis",
-                passed=True,
-                score=100,
+                passed=None,
+                score=0,
                 violations=[],
                 details={"status": "skipped", "reason": "root_cause_checker not available"}
             )
@@ -2034,8 +2037,8 @@ class UnifiedGate:
         if not FOLDER_STRUCTURE_CHECKER_AVAILABLE:
             return CheckResult(
                 name=f"Folder Structure (Phase {phase})",
-                passed=True,
-                score=100,
+                passed=None,
+                score=0,
                 violations=[],
                 details={"status": "skipped", "reason": "folder_structure_checker not available"}
             )
@@ -2077,8 +2080,8 @@ class UnifiedGate:
         if not PHASE_ENFORCER_AVAILABLE or self.phase_checker is None:
             return CheckResult(
                 name=f"Phase Enforcement (Phase {phase})",
-                passed=True,
-                score=100,
+                passed=None,
+                score=0,
                 violations=[],
                 details={"status": "skipped", "reason": "phase_enforcer not available"}
             )
@@ -2132,8 +2135,8 @@ class UnifiedGate:
         if current_phase is not None and current_phase != 2:
             return CheckResult(
                 name="SAB Establishment (Phase 2)",
-                passed=True,
-                score=100,
+                passed=None,
+                score=0,
                 violations=[],
                 details={"status": "skipped", "reason": f"Only runs in Phase 2 (current: Phase {current_phase})"}
             )
@@ -2141,8 +2144,8 @@ class UnifiedGate:
         if not SAB_AVAILABLE:
             return CheckResult(
                 name="SAB Establishment (Phase 2)",
-                passed=True,
-                score=100,
+                passed=None,
+                score=0,
                 violations=[],
                 details={"status": "skipped", "reason": "SAB tools not available"}
             )

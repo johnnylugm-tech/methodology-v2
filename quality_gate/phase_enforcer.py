@@ -21,7 +21,7 @@ PhaseEnforcer - Phase 自動化檢查系統
 
 import json
 import sys
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass, asdict, field
 from pathlib import Path
 from typing import List, Dict, Optional, Tuple
 
@@ -92,12 +92,15 @@ class ContentCheckResult:
 
 @dataclass
 class CodeQualityCheckResult:
-    """代碼品質檢查結果（L3）"""
-    score: float
-    files_scanned: int
-    issues: List[Dict]
-    passed: bool
-    details: Dict
+    """代碼品質檢查結果（L3）
+    passed: True = 通過, False = 失敗, None = 跳過
+    score: 0-100, None = 不適用
+    """
+    score: Optional[float] = None
+    files_scanned: int = 0
+    issues: List[Dict] = field(default_factory=list)
+    passed: Optional[bool] = None
+    details: Dict = field(default_factory=dict)
 
     def to_dict(self) -> Dict:
         return {
@@ -244,10 +247,10 @@ class PhaseEnforcer:
             code_quality_result = self._check_code_quality(phase)
         else:
             code_quality_result = CodeQualityCheckResult(
-                score=100.0,
+                score=0,
                 files_scanned=0,
                 issues=[],
-                passed=True,
+                passed=None,  # Skipped - not passed
                 details={"skipped": True}
             )
         
