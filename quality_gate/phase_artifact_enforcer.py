@@ -95,8 +95,8 @@ class PhaseArtifactRegistry:
         },
         Phase.SYSTEM_TEST: {  # Phase 5
             "required": ["TEST_PLAN.md", "TEST_RESULTS.md", "BASELINE.md"],
-            "output_dir": "05-baseline",
-            "alt_dirs": ["05-system-test", "05-baseline", "baseline", "05-verify"],  # 05-verify for Phase 5/6 consistency
+            "output_dir": "05-verify",  # Phase5_Plan WHERE
+            "alt_dirs": ["05-system-test", "05-baseline", "baseline", "05-verify", "04-testing"],  # Support both
             "depends_on": [Phase.VERIFY],
         },
         Phase.QUALITY: {  # Phase 6
