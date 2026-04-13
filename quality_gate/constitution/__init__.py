@@ -107,6 +107,8 @@ def load_constitution_documents(docs_path: str) -> Dict[str, Optional[str]]:
         "risk_management": None,
         "configuration": None,
         "constitution": None,
+        "baseline": None,  # BASELINE.md for Phase 5
+        "test_results": None,  # TEST_RESULTS.md for Phase 5
     }
     
     # 搜尋 SRS
