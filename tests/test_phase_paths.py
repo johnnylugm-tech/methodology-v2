@@ -110,6 +110,10 @@ class PathContractTest:
             if "PHASE_ARTIFACT_PATHS" in content:
                 continue
             
+            # Skip implementation_constitution_checker.py - it uses glob for code discovery (*.py), not artifact paths
+            if filepath.name == "implementation_constitution_checker.py":
+                continue
+            
             for pattern in hardcoded_patterns:
                 matches = re.findall(f'{pattern}[^"]*"', content)
                 if matches:
