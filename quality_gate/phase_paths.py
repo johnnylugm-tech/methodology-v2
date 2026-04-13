@@ -35,6 +35,7 @@ PHASE_ARTIFACT_PATHS = {
         ],
         "TEST_PLAN.md": [
             "04-testing/TEST_PLAN.md",
+            "05-verify/TEST_PLAN.md",
             "docs/04-testing/TEST_PLAN.md",
         ],
     },

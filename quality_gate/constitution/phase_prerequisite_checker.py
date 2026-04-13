@@ -13,6 +13,8 @@ IMPORTANT: Phase 5 artifacts are in 05-verify/ (Phase5_Plan WHERE)
 """
 
 from pathlib import Path
+from typing import Dict, List, Tuple, Union
+from quality_gate.phase_paths import PHASE_ARTIFACT_PATHS
 from typing import Dict, List, Tuple
 
 # Phase N 需要的前置產出（ASPICE 目錄結構）

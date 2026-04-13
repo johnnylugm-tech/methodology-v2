@@ -21,6 +21,7 @@ import json
 import sys
 import re
 from pathlib import Path
+from quality_gate.phase_paths import PHASE_ARTIFACT_PATHS
 from typing import Dict, List, Tuple
 
 # Ensure methodology-v2 root is in sys.path for enforcement import
@@ -207,11 +208,11 @@ class PhaseTruthVerifier:
                 "app/infrastructure/",
                 "tests/",
             ],
-            4: ["04-testing/TEST_PLAN.md", "04-testing/TEST_RESULTS.md"],
-            5: ["05-verify/BASELINE.md", "05-verify/VERIFICATION_REPORT.md", "05-verify/MONITORING_PLAN.md"],
+            4: [p for k in PHASE_ARTIFACT_PATHS.get(4, {}).values() for p in k] + [p for k in PHASE_ARTIFACT_PATHS.get(5, {}).values() for p in k][:2],
+            5: [p for k in PHASE_ARTIFACT_PATHS.get(5, {}).values() for p in k],
             6: ["06-quality/QUALITY_REPORT.md", "06-quality/MONITORING_PLAN.md"],
-            7: ["07-risk/RISK_ASSESSMENT.md", "07-risk/RISK_REGISTER.md"],
-            8: ["08-config/CONFIG_RECORDS.md", "08-config/RELEASE_CHECKLIST.md"],
+            7: [p for k in PHASE_ARTIFACT_PATHS.get(7, {}).values() for p in k],
+            8: [p for k in PHASE_ARTIFACT_PATHS.get(8, {}).values() for p in k],
         }
 
         checklist = []

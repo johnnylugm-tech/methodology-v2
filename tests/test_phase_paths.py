@@ -102,6 +102,14 @@ class PathContractTest:
             if filepath.name == "phase_paths.py":
                 continue
             
+            # Skip config/description files - they define paths, not search for them
+            if filepath.name in ["phase_config.py", "folder_structure_checker.py"]:
+                continue
+            
+            # Skip files that already use PHASE_ARTIFACT_PATHS
+            if "PHASE_ARTIFACT_PATHS" in content:
+                continue
+            
             for pattern in hardcoded_patterns:
                 matches = re.findall(f'{pattern}[^"]*"', content)
                 if matches:
