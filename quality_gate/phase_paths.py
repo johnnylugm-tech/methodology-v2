@@ -39,35 +39,17 @@ PHASE_ARTIFACT_PATHS = {
             "docs/04-testing/TEST_PLAN.md",
         ],
     },
-    6: {  # Phase 6 (QUALITY)
-        "QUALITY_REPORT.md": [
-            "06-quality/QUALITY_REPORT.md",  # Phase6_Plan WHERE
-            "docs/06-quality/QUALITY_REPORT.md",
-        ],
-        "MONITORING_PLAN.md": [
-            "06-quality/MONITORING_PLAN.md",
-            "docs/06-quality/MONITORING_PLAN.md",
-        ],
+    6: {  # Phase 6 (QUALITY) - Phase6_Plan WHERE: 06-quality/
+        "QUALITY_REPORT.md": "06-quality/QUALITY_REPORT.md",
+        "MONITORING_PLAN.md": "06-quality/MONITORING_PLAN.md",
     },
-    7: {  # Phase 7 (RISK)
-        "RISK_ASSESSMENT.md": [
-            "07-risk/RISK_ASSESSMENT.md",   # Phase7_Plan WHERE
-            "docs/07-risk/RISK_ASSESSMENT.md",
-        ],
-        "RISK_REGISTER.md": [
-            "07-risk/RISK_REGISTER.md",
-            "docs/07-risk/RISK_REGISTER.md",
-        ],
+    7: {  # Phase 7 (RISK) - Phase7_Plan WHERE: 07-risk/
+        "RISK_ASSESSMENT.md": "07-risk/RISK_ASSESSMENT.md",
+        "RISK_REGISTER.md": "07-risk/RISK_REGISTER.md",
     },
-    8: {  # Phase 8 (DEPLOYMENT)
-        "CONFIG_RECORDS.md": [
-            "08-config/CONFIG_RECORDS.md",   # Phase8_Plan WHERE
-            "docs/08-config/CONFIG_RECORDS.md",
-        ],
-        "requirements.lock": [
-            "08-config/requirements.lock",
-            "docs/08-config/requirements.lock",
-        ],
+    8: {  # Phase 8 (DEPLOYMENT) - Phase8_Plan WHERE: 08-config/
+        "CONFIG_RECORDS.md": "08-config/CONFIG_RECORDS.md",
+        "requirements.lock": "08-config/requirements.lock",
     },
 }
 

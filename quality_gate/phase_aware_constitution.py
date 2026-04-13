@@ -11,7 +11,6 @@ Phase N 的 Constitution 分為 Pre-flight 和 Post-flight
 """
 
 from pathlib import Path
-from quality_gate.phase_paths import PHASE_ARTIFACT_PATHS
 from typing import Dict, List, Optional, Tuple
 from dataclasses import dataclass, field
 
@@ -22,10 +21,10 @@ PHASE_PREREQUISITES = {
     2: ["SRS.md", "01-requirements/SRS.md"],
     3: ["SRS.md", "01-requirements/SRS.md", "02-architecture/SAD.md", ".methodology/fr_mapping.json"],
     4: ["SRS.md", "01-requirements/SRS.md", "02-architecture/SAD.md", ".methodology/fr_mapping.json", ".methodology/SAB.json"],
-    5: ["SRS.md", "01-requirements/SRS.md", "02-architecture/SAD.md", ".methodology/SAB.json"] + list(PHASE_ARTIFACT_PATHS.get(5, {}).keys()),
-    6: ["SRS.md", "01-requirements/SRS.md", "02-architecture/SAD.md", ".methodology/SAB.json"] + list(PHASE_ARTIFACT_PATHS.get(5, {}).keys()),
-    7: list(PHASE_ARTIFACT_PATHS.get(6, {}).keys()),
-    8: list(PHASE_ARTIFACT_PATHS.get(8, {}).keys()),
+    5: ["SRS.md", "01-requirements/SRS.md", "02-architecture/SAD.md", ".methodology/SAB.json", "05-verify/BASELINE.md", "05-verify/VERIFICATION_REPORT.md"],
+    6: ["SRS.md", "01-requirements/SRS.md", "02-architecture/SAD.md", ".methodology/SAB.json", "05-verify/BASELINE.md", "05-verify/VERIFICATION_REPORT.md"],
+    7: ["06-quality/QUALITY_REPORT.md", "06-quality/MONITORING_PLAN.md"],
+    8: ["07-risk/RISK_ASSESSMENT.md", "07-risk/RISK_REGISTER.md", "08-config/CONFIG_RECORDS.md", "08-config/requirements.lock"],
 }
 
 # Phase N 的 Essential Deliverables（Post-flight 檢查）

@@ -17,7 +17,6 @@ Usage:
 """
 
 from pathlib import Path
-from quality_gate.phase_paths import PHASE_ARTIFACT_PATHS
 from typing import Dict, List
 from dataclasses import dataclass
 
