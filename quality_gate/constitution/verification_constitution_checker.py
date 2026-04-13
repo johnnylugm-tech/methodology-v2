@@ -32,12 +32,7 @@ class VerificationChecklist:
     """Verification 檢查清單"""
     # 正確性
     test_results_documented: bool = False
-    verification_methods_defined: bool = False
-    pass_criteria_met: bool = False
-    
-    # 可維護性
     baseline_established: bool = False
-    change_log_maintained: bool = False
     
     # 安全性（v7.97）
     security_verification: bool = False

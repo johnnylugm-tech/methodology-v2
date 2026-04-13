@@ -48,7 +48,6 @@ class SRSChecklist:
     
     # 其他
     version_info: bool = False
-    review_status: bool = False
 
 
 def _count_requirements(content: str) -> Dict[str, int]:

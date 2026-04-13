@@ -31,22 +31,15 @@ from . import (
 class ImplementationChecklist:
     """Implementation 檢查清單"""
     # 正確性
-    code_matches_sad: bool = False
-    module_responsibilities_clear: bool = False
+    code_documentation: bool = False
     error_handling_complete: bool = False
+    test_coverage: bool = False
     
-    # 安全性
+    # 安全性（v7.97）
     input_validation: bool = False
     secure_dependencies: bool = False
     secrets_management: bool = False
-    
-    # 可維護性
-    code_documentation: bool = False
-    clear_naming: bool = False
-    test_coverage: bool = False
-    
-    # 其他
-    version_info: bool = False
+    auth_implementation: bool = False
 
 def check_implementation_constitution(
     path: str,
