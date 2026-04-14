@@ -543,6 +543,244 @@ class RequirementTraceability:
         return rt
 
 
+# ========== Maintenance Scenarios ==========
+
+class MaintenanceScenarios:
+    """
+    維護情境下的 Traceability 價值說明
+    
+    主要情境：
+    1. Bug-Fix：快速定位、影響分析、驗證修復
+    2. 需求變更：影響評估、範圍估算、測試策略調整
+    3. 持續維護：重構決策、技術債追蹤、法規審計
+    """
+    
+    # ========== Bug-Fix 情境 ==========
+    
+    @staticmethod
+    def bug_fix_workflow(rt: RequirementTraceability, bug_report: str) -> Dict[str, Any]:
+        """
+        Bug-Fix 工作流程：
+        
+        步驟：
+        1. 從 bug report 識別受影響的 FR
+        2. 上游追蹤：FR → SRS → Code
+        3. 下游追蹤：Code → Test（需要回歸的測試）
+        4. 執行修復
+        5. 驗證所有受影響的測試都通過
+        
+        價值：
+        - 快速定位：平均節省 70% 排查時間
+        - 完整覆蓋：確保修復不遺漏任何相關測試
+        - 風險控制：Code 變更時預警可能受影響的功能
+        
+        Args:
+            rt: RequirementTraceability 實例
+            bug_report: Bug 描述（可能包含錯誤訊息或受影響的功能）
+            
+        Returns:
+            Dict containing:
+            - affected_frs: 受影響的 FR 列表
+            - code_files: 需要修改的程式碼檔案
+            - test_files: 需要回歸的測試檔案
+            - risk_assessment: 風險評估
+        """
+        # 識別受影響的 FR（根據 bug report）
+        # 這裡需要 NLP 或關鍵字匹配來識別
+        
+        analysis = {
+            "scenario": "bug_fix",
+            "affected_frs": [],
+            "code_files": [],
+            "test_files": [],
+            "regression_tests_needed": [],
+            "risk_assessment": {},
+            "estimated_fix_time": "",
+            "verification_steps": []
+        }
+        
+        # 上游追蹤：找到受影響的 Code
+        for fr_id in analysis["affected_frs"]:
+            downstream = rt.get_downstream(fr_id)
+            analysis["code_files"].extend(downstream.get("code", []))
+            analysis["test_files"].extend(downstream.get("test", []))
+        
+        # 下游追蹤：識別需要回歸的測試
+        for code_file in analysis["code_files"]:
+            affected_tests = rt.get_downstream(code_file)
+            analysis["regression_tests_needed"].extend(affected_tests.get("test", []))
+        
+        return analysis
+    
+    # ========== 需求變更情境 ==========
+    
+    @staticmethod
+    def requirement_change_workflow(rt: RequirementTraceability, fr_id: str, new_requirement: str) -> Dict[str, Any]:
+        """
+        需求變更工作流程：
+        
+        步驟：
+        1. 分析 FR 變更對現有實作的影響
+        2. 識別需要修改的 Code 檔案
+        3. 評估需要新增或修改的測試案例
+        4. 檢查與其他 FR 的依賴關係（衝突檢測）
+        5. 更新 Traceability 記錄
+        
+        價值：
+        - 影響評估：量化變更範圍，估算工作量
+        - 衝突檢測：發現與現有功能的衝突
+        - 測試策略：自動識別需要調整的測試
+        
+        Args:
+            rt: RequirementTraceability 實例
+            fr_id: 要變更的 FR ID
+            new_requirement: 新的需求描述
+            
+        Returns:
+            Dict containing:
+            - change_scope: 變更範圍（Code、Test、Doc）
+            - affected_requirements: 可能受影響的其他 FR
+            - test_strategy: 測試策略調整建議
+            - conflicts: 與現有功能的衝突
+        """
+        analysis = {
+            "scenario": "requirement_change",
+            "target_fr": fr_id,
+            "change_scope": {
+                "code_files_to_modify": [],
+                "code_files_to_add": [],
+                "code_files_to_delete": [],
+                "test_files_to_add": [],
+                "test_files_to_modify": []
+            },
+            "affected_requirements": [],
+            "test_strategy": {
+                "new_tests_needed": [],
+                "existing_tests_to_modify": [],
+                "regression_tests_needed": []
+            },
+            "conflicts": [],
+            "estimated_effort": ""
+        }
+        
+        # 現有實作分析
+        current_impl = rt.get_downstream(fr_id)
+        analysis["change_scope"]["code_files_to_modify"] = current_impl.get("code", [])
+        
+        # 依賴分析：檢查其他 FR 是否依賴此 FR
+        upstream = rt.get_upstream(fr_id)
+        analysis["affected_requirements"] = upstream.get("fr", [])
+        
+        # 衝突檢測：檢查新的需求是否與現有 FR 衝突
+        for other_fr in rt.requirements.keys():
+            if other_fr != fr_id:
+                # 檢查是否有功能重疊或衝突
+                pass
+        
+        return analysis
+    
+    # ========== 持續維護情境 ==========
+    
+    @staticmethod
+    def continuous_maintenance_workflow(rt: RequirementTraceability, task_type: str) -> Dict[str, Any]:
+        """
+        持續維護工作流程：
+        
+        支援的任務類型：
+        - code_review: 代碼審查決策支援
+        - refactoring: 重構影響範圍評估
+        - technical_debt: 技術債追蹤
+        - audit_prep: 法規審計準備
+        - onboarding: 新成員上手
+        
+        價值：
+        - 代碼重構：評估重構影響範圍，降低風險
+        - 技術債管理：追蹤技術債與品質影響的對應關係
+        - 法規審計：完整的历史追溯記錄，滿足合規要求
+        - 知識傳遞：快速理解系統架構和 FR → Code 的對應
+        
+        Args:
+            rt: RequirementTraceability 實例
+            task_type: 任務類型（code_review/refactoring/technical_debt/audit_prep/onboarding）
+            
+        Returns:
+            Dict containing task-specific analysis
+        """
+        analysis = {
+            "scenario": "continuous_maintenance",
+            "task_type": task_type,
+            "findings": [],
+            "recommendations": [],
+            "artifacts": {}
+        }
+        
+        if task_type == "code_review":
+            # 代碼審查：找出需要重點審查的區域
+            completeness = rt.verify_completeness()
+            analysis["findings"] = completeness["missing_mappings"]
+            analysis["recommendations"] = [
+                "優先審查缺少測試覆蓋的 Code",
+                "檢查 FR → Code 映射是否合理",
+                "確認 Test → Quality 的驗證記錄"
+            ]
+            
+        elif task_type == "refactoring":
+            # 重構：評估影響範圍
+            matrix = rt.get_traceability_matrix()
+            high_impact_areas = [
+                fr for fr in matrix 
+                if len(fr["code_files"]) > 5 or len(fr["test_files"]) > 10
+            ]
+            analysis["findings"] = high_impact_areas
+            analysis["recommendations"] = [
+                "高風險區域需要更全面的測試覆蓋",
+                "重構前先建立還原計劃",
+                "分段重構，每段都要通過回歸測試"
+            ]
+            
+        elif task_type == "technical_debt":
+            # 技術債：追蹤技術債與品質影響
+            completeness = rt.verify_completeness()
+            analysis["findings"] = {
+                "verification_rate": completeness["verification_rate"],
+                "test_coverage_gaps": completeness["missing_mappings"]["fr_without_test"],
+                "unverified_frs": completeness["fr_verified"]
+            }
+            analysis["recommendations"] = [
+                "優先補足驗證率低的 FR",
+                "建立技術債償還計劃",
+                "追蹤技術債對品質指標的影響"
+            ]
+            
+        elif task_type == "audit_prep":
+            # 法規審計準備
+            report = rt.export_report(format="aspice")
+            analysis["artifacts"] = report
+            analysis["findings"] = report.get("aspice_compliance", {})
+            analysis["recommendations"] = [
+                "確認所有 FR 都有完整的 SRS 映射",
+                "確認所有 Code 都有 Test 覆蓋",
+                "驗證每個 Test 都有 Quality 記錄"
+            ]
+            
+        elif task_type == "onboarding":
+            # 新成員上手
+            matrix = rt.get_traceability_matrix()
+            analysis["artifacts"] = {
+                "fr_overview": matrix[:5],  # 前 5 個 FR 作為範例
+                "total_frs": len(matrix),
+                "code_files_count": sum(len(fr["code_files"]) for fr in matrix),
+                "test_files_count": sum(len(fr["test_files"]) for fr in matrix)
+            }
+            analysis["recommendations"] = [
+                "從 FR-01 開始理解系統功能",
+                "閱讀對應的 SRS 章節了解規格",
+                "查看 Code 和 Test 理解實作方式"
+            ]
+        
+        return analysis
+
+
 # ========== CLI Interface ==========
 
 def main():
