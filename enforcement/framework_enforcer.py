@@ -124,11 +124,11 @@ class FrameworkEnforcer:
                 1: {"type": "srs", "dir": "01-requirements"},
                 2: {"type": "sad", "dir": "02-architecture"},
                 3: {"type": "implementation", "dir": "03-development"},
-                4: {"type": "testing", "dir": "04-testing"},
-                5: {"type": "verify", "dir": "05-verify"},
+                4: {"type": "test_plan", "dir": "04-testing"},
+                5: {"type": "verification", "dir": "05-verify"},
                 6: {"type": "srs", "dir": "06-quality"},  # Phase 6 checks SRS/SAD/Implementation (completed phases)
-                7: {"type": "risk", "dir": "07-risk"},
-                8: {"type": "config", "dir": "08-config"},
+                7: {"type": "risk_management", "dir": "07-risk"},
+                8: {"type": "configuration", "dir": "08-config"},
             }
             phase_info = phase_info_map.get(getattr(self, 'phase', 1), {"type": "srs", "dir": "docs"})
             const_type = phase_info["type"]
