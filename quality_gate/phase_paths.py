@@ -40,16 +40,16 @@ PHASE_ARTIFACT_PATHS = {
         ],
     },
     6: {  # Phase 6 (QUALITY) - Phase6_Plan WHERE: 06-quality/
-        "QUALITY_REPORT.md": "06-quality/QUALITY_REPORT.md",
-        "MONITORING_PLAN.md": "06-quality/MONITORING_PLAN.md",
+        "QUALITY_REPORT.md": ["06-quality/QUALITY_REPORT.md"],
+        "MONITORING_PLAN.md": ["06-quality/MONITORING_PLAN.md"],
     },
     7: {  # Phase 7 (RISK) - Phase7_Plan WHERE: 07-risk/
-        "RISK_ASSESSMENT.md": "07-risk/RISK_ASSESSMENT.md",
-        "RISK_REGISTER.md": "07-risk/RISK_REGISTER.md",
+        "RISK_ASSESSMENT.md": ["07-risk/RISK_MITIGATION_PLANS.md"],
+        "RISK_REGISTER.md": ["07-risk/RISK_REGISTER.md"],
     },
     8: {  # Phase 8 (DEPLOYMENT) - Phase8_Plan WHERE: 08-config/
-        "CONFIG_RECORDS.md": "08-config/CONFIG_RECORDS.md",
-        "requirements.lock": "08-config/requirements.lock",
+        "CONFIG_RECORDS.md": ["08-config/CONFIG_RECORDS.md"],
+        "requirements.lock": ["08-config/requirements.lock"],
     },
 }
 
