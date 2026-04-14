@@ -17,6 +17,7 @@ Usage:
 """
 
 from pathlib import Path
+from quality_gate.phase_paths import PHASE_ARTIFACT_PATHS, check_artifact_exists
 from typing import Dict, List
 from dataclasses import dataclass
 
@@ -44,22 +45,18 @@ def check_configuration_constitution(path: str) -> ConstitutionCheckResult:
 
     # 檢查配置記錄表
     # 使用集中化路徑搜尋 CONFIG_RECORDS（Phase 8）
-    config_records = []
-    for artifact_path in PHASE_ARTIFACT_PATHS.get(8, {}).get("CONFIG_RECORDS.md", []):
-        full_path = path_obj.parent / artifact_path
-        if full_path.exists():
-            config_records.append(full_path)
+    # CONFIG_RECORDS.md - Phase8_Plan WHERE: 08-config/
+    config_path = path_obj.parent / "08-config/CONFIG_RECORDS.md"
+    config_records = [config_path] if config_path.exists() else []
     checklist.config_records_exists = len(config_records) > 0
     if not checklist.config_records_exists:
         violations.append("CONFIG_RECORDS.md 不存在")
 
     # 檢查基準線文件
     # 使用集中化路徑搜尋 BASELINE（Phase 5）
-    baselines = []
-    for artifact_path in PHASE_ARTIFACT_PATHS.get(5, {}).get("BASELINE.md", []):
-        full_path = path_obj.parent / artifact_path
-        if full_path.exists():
-            baselines.append(full_path)
+    # BASELINE.md - Phase5_Plan WHERE: 05-verify/
+    baseline_path = path_obj.parent / "05-verify/BASELINE.md"
+    baselines = [baseline_path] if baseline_path.exists() else []
     checklist.baseline_exists = len(baselines) > 0
     if not checklist.baseline_exists:
         violations.append("BASELINE.md 不存在")
@@ -93,11 +90,12 @@ def check_configuration_constitution(path: str) -> ConstitutionCheckResult:
         violations.append(f"配置完整性 {score:.0f}% < 100%")
 
     return ConstitutionCheckResult(
-        phase="Phase 8",
-        checklist=checklist.__dict__,
+        check_type="configuration",
+        passed=score >= 60,
+        score=score,
         violations=violations,
+        details={"checklist": checklist.__dict__},
         recommendations=recommendations,
-        score=score
     )
 
 

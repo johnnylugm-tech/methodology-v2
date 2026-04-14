@@ -126,7 +126,7 @@ class FrameworkEnforcer:
                 3: {"type": "implementation", "dir": "03-development"},
                 4: {"type": "testing", "dir": "04-testing"},
                 5: {"type": "verify", "dir": "05-verify"},
-                6: {"type": "quality", "dir": "06-quality"},
+                6: {"type": "all", "dir": "06 quality"},  # Phase 6 checks all previous phases
                 7: {"type": "risk", "dir": "07-risk"},
                 8: {"type": "config", "dir": "08-config"},
             }
@@ -134,7 +134,7 @@ class FrameworkEnforcer:
             const_type = phase_info["type"]
             
             # Constitution 檢查使用專案根目錄，由 runner 自行決定檢查路徑
-            docs_path = self.project_root
+            docs_path = self.project_root / 'docs'
             if not docs_path.exists():
                 return {"score": 0, "passed": False, "error": f"Phase {self.phase} directory not found: {phase_info['dir']}"}
 
@@ -365,7 +365,7 @@ class FrameworkEnforcer:
             3: "03-development",
             4: "04-testing",
             5: "05-verify",
-            6: "06-quality",
+            6: "06 quality",
             7: "07-risk",
             8: "08-config",
         }
