@@ -5337,25 +5337,61 @@ Full execution script is in templates/plan_phase_template.md Section 17.
             plan = plan.replace('{REVIEWER_PROMPT}', reviewer_prompt)
             
             plan = plan.replace('{FR_COUNT}', str(len(frs)))
-            # Only insert FR table for Phase 3
+            # Phase-specific content for §3 FR-by-FR table
             if phase == 3:
                 plan = plan.replace('{FR_TABLE_ROWS}', fr_table_rows)
+            elif phase == 6:
+                plan = plan.replace('{FR_TABLE_ROWS}', '*（Phase 6 不需要 FR table，專注品質評估）*')
             else:
-                plan = plan.replace('{FR_TABLE_ROWS}', '')
+                plan = plan.replace('{FR_TABLE_ROWS}', '*（此 Phase 不需要 FR table）*')
             plan = plan.replace('{QG_COMMANDS}', qg_commands)
             plan = plan.replace('{SESSION_LOG_EXAMPLE}', log_format)
             plan = plan.replace('{TOTAL_RECORDS}', str(len(frs) * 2))
             plan = plan.replace('{PREFLIGHT_RESULTS}', pf_note)
             
-            # Generate deliverable structure from modules
-            deliverable_structure = self._generate_deliverable_structure(frs, modules)
+            # Phase-specific deliverable structure
+            if phase == 6:
+                q6 = "### Phase 6 產出結構\n\n"
+                q6 += "```\n06-quality/\n"
+                q6 += "├── QUALITY_REPORT.md      # 品質報告\n"
+                q6 += "└── MONITORING_PLAN.md    # 監控計畫\n```\n\n"
+                q6 += "### Phase 6 交付物檢查清單\n\n"
+                q6 += "- [ ] `06-quality/QUALITY_REPORT.md` - 品質維度評估報告\n"
+                q6 += "- [ ] `06-quality/MONITORING_PLAN.md` - 監控計畫\n"
+                q6 += "- [ ] Constitution 分數 >= 80%\n"
+                q6 += "- [ ] 邏輯正確性 >= 90\n"
+                q6 += "- [ ] Phase Truth >= 70%\n"
+                deliverable_structure = q6
+            else:
+                deliverable_structure = self._generate_deliverable_structure(frs, modules)
             plan = plan.replace('{DELIVERABLE_STRUCTURE}', deliverable_structure)
             
-            # FR detailed tasks: placeholder only if not --detailed
-            if not getattr(args, 'detailed', False):
+            # Phase-specific §5 content
+            if phase == 6:
+                q6 = "## 5. 品質評估任務（共 4 項）\n\n"
+                q6 += "### 5.1 品質維度定義\n\n"
+                q6 += "| 維度 | 指標 | 目標值 | 驗證方法 |\n"
+                q6 += "|------|------|--------|---------|\n"
+                q6 += "| 可維護性 | Constitution 分數 | >= 80% | constitution runner |\n"
+                q6 += "| 邏輯正確性 | 邏輯正確性分數 | >= 90 | phase-verify |\n"
+                q6 += "| 測試覆蓋率 | Coverage | >= 80% | pytest --cov |\n"
+                q6 += "| Phase Truth | Phase Truth 分數 | >= 70% | phase-verify |\n\n"
+                q6 += "### 5.2 品質評估任務\n\n"
+                q6 += "| 任務 | 負責 | 輸入 | 輸出 |\n"
+                q6 += "|------|------|------|------|\n"
+                q6 += "| 品質維度數據蒐集 | Agent A (qa) | TEST_RESULTS.md, BASELINE.md | 品質數據 |\n"
+                q6 += "| Constitution 檢查 | Agent A (qa) | 所有 Phase 產出 | 檢查報告 |\n"
+                q6 += "| 邏輯正確性驗證 | Agent B (architect) | 代碼, TEST_RESULTS | 驗證報告 |\n"
+                q6 += "| QUALITY_REPORT 撰寫 | Agent A (qa) | 所有檢查結果 | QUALITY_REPORT.md |\n\n"
+                q6 += "### 5.3 品質閾值\n\n"
+                q6 += "| TH | 指標 | 門檻 | 驗證命令 |\n"
+                q6 += "|----|------|------|---------|\n"
+                q6 += "| TH-02 | Constitution 總分 | >= 80% | `constitution/runner.py --type all` |\n"
+                q6 += "| TH-07 | 邏輯正確性 | >= 90 | `phase-verify` |\n"
+                plan = plan.replace('{FR_DETAILED_TASKS}', q6)
+            elif not getattr(args, 'detailed', False):
                 plan = plan.replace('{FR_DETAILED_TASKS}', self._generate_fr_detailed_tasks_placeholder(frs, modules, phase))
             else:
-                # Remove placeholder line, will be replaced by merge later
                 plan = plan.replace('{FR_DETAILED_TASKS}', '')
             
             plan = plan.replace('{TH_THRESHOLDS_TABLE}', self._generate_thresholds_table(phase))
