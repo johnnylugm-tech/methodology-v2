@@ -5271,8 +5271,12 @@ Full execution script is in templates/plan_phase_template.md Section 17.
         qg_commands = self._generate_quality_gate_commands(phase)
         # === PHASE 3: GENERATE PLAN FROM TEMPLATE ===
         print(f"\n[{datetime.now().strftime('%H:%M:%S')}] TEMPLATE: 讀取 plan_phase_template.md")
-        # Read template
-        template_path = Path(__file__).parent / "templates" / "plan_phase_template.md"
+        # Read template - use phase-specific template if available
+        if phase == 6:
+            template_path = Path(__file__).parent / "templates" / "plan_phase_6_template.md"
+        else:
+            template_path = Path(__file__).parent / "templates" / "plan_phase_template.md"
+        
         if not template_path.exists():
             print(f"⚠️  Template not found, using inline generation")
             template_content = None
