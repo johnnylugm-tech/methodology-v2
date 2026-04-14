@@ -5266,8 +5266,8 @@ Full execution script is in templates/plan_phase_template.md Section 17.
         }
         agent_a, agent_b = role_map.get(phase, ("developer", "reviewer"))
 
-        # Generate FR-by-FR table
-        fr_table = self._generate_fr_table(frs, modules)
+        # Generate FR-by-FR table (only for Phase 3)
+        fr_table = self._generate_fr_table(frs, modules) if phase == 3 else ""
         qg_commands = self._generate_quality_gate_commands(phase)
         # === PHASE 3: GENERATE PLAN FROM TEMPLATE ===
         print(f"\n[{datetime.now().strftime('%H:%M:%S')}] TEMPLATE: 讀取 plan_phase_template.md")
@@ -5280,7 +5280,8 @@ Full execution script is in templates/plan_phase_template.md Section 17.
             template_content = template_path.read_text(encoding='utf-8')
         
         # Generate supporting data
-        fr_table_rows = self._generate_fr_table(frs, modules)
+        # Generate FR table rows only for Phase 3
+        fr_table_rows = self._generate_fr_table(frs, modules) if phase == 3 else ""
         log_format = self._generate_sessions_spawn_log_format(frs, phase)
         subagent_mgmt = self._generate_subagent_management(phase)
         
@@ -5336,7 +5337,11 @@ Full execution script is in templates/plan_phase_template.md Section 17.
             plan = plan.replace('{REVIEWER_PROMPT}', reviewer_prompt)
             
             plan = plan.replace('{FR_COUNT}', str(len(frs)))
-            plan = plan.replace('{FR_TABLE_ROWS}', fr_table_rows)
+            # Only insert FR table for Phase 3
+            if phase == 3:
+                plan = plan.replace('{FR_TABLE_ROWS}', fr_table_rows)
+            else:
+                plan = plan.replace('{FR_TABLE_ROWS}', '')
             plan = plan.replace('{QG_COMMANDS}', qg_commands)
             plan = plan.replace('{SESSION_LOG_EXAMPLE}', log_format)
             plan = plan.replace('{TOTAL_RECORDS}', str(len(frs) * 2))
