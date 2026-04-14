@@ -182,7 +182,10 @@ class FrameworkEnforcer:
         DEFAULT_THRESHOLD = 70  # 70%
 
         # 嘗試讀取 coverage 報告
+        # Look for coverage.xml in project root and 03-development/
         coverage_file = self.project_root / "coverage.xml"
+        if not coverage_file.exists():
+            coverage_file = self.project_root / "03-development" / "coverage.xml"
         if not coverage_file.exists():
             coverage_file = self.project_root / "htmlcov" / "coverage.xml"
 
