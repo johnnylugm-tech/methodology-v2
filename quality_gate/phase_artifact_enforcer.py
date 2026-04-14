@@ -65,8 +65,8 @@ class PhaseArtifactRegistry:
     PHASE_ARTIFACTS = {
         Phase.CONSTITUTION: {
             "required": ["CONSTITUTION.md", "constitution/"],
-            "output_dir": "constitution",
-            "alt_dirs": ["constitution"],
+            "output_dir": ".methodology/constitution",
+            "alt_dirs": [".methodology/constitution", "constitution"],
         },
         Phase.SPECIFY: {  # Phase 1
             "required": ["SRS.md", "SPEC_TRACKING.md", "TRACEABILITY_MATRIX.md"],
@@ -82,8 +82,8 @@ class PhaseArtifactRegistry:
         },
         Phase.IMPLEMENT: {  # Phase 3
             "required": ["src/", "tests/"],
-            "output_dir": "03-implementation",
-            "alt_dirs": ["03-implement", "03-implementation", "implementation", "src", "app"],
+            "output_dir": "03-development",
+            "alt_dirs": ["03-development", "03-implementation", "03-implement", "03-implementation", "implementation", "src", "app"],
             "depends_on": [Phase.PLAN],
         },
         Phase.VERIFY: {  # Phase 4

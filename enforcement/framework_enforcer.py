@@ -126,7 +126,7 @@ class FrameworkEnforcer:
                 3: {"type": "implementation", "dir": "03-development"},
                 4: {"type": "testing", "dir": "04-testing"},
                 5: {"type": "verify", "dir": "05-verify"},
-                6: {"type": "all", "dir": "06 quality"},  # Phase 6 checks all previous phases
+                6: {"type": "srs", "dir": "06-quality"},  # Phase 6 checks SRS/SAD/Implementation (completed phases)
                 7: {"type": "risk", "dir": "07-risk"},
                 8: {"type": "config", "dir": "08-config"},
             }
@@ -368,7 +368,7 @@ class FrameworkEnforcer:
             3: "03-development",
             4: "04-testing",
             5: "05-verify",
-            6: "06 quality",
+            6: "06-quality",
             7: "07-risk",
             8: "08-config",
         }
