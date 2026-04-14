@@ -151,9 +151,28 @@ python3 cli.py run-phase --phase {PHASE} --goal "{GOAL}"
 
 ---
 
-## 7. Developer Prompt 模板（On Demand）
+## 7. Agent Prompt 模板
 
-### Agent A（Developer）
+### Agent A（依 Phase 而定）
+Agent A 的角色根據 Phase 決定：
+- Phase 1: requirements
+- Phase 2-3: architect/developer
+- Phase 4: tester
+- Phase 5: devops
+- Phase 6: qa
+- Phase 7: risk
+- Phase 8: devops
+
+### Agent B（依 Phase 而定）
+Agent B 的角色根據 Phase 決定：
+- Phase 1-2: architect/reviewer
+- Phase 3: reviewer
+- Phase 4: reviewer
+- Phase 5-6: architect
+- Phase 7: architect
+- Phase 8: reviewer
+
+詳細 prompts 見各 Phase 的產出文件。
 
 ```
 {DEVELOPER_PROMPT}
