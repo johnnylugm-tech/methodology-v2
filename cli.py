@@ -4326,7 +4326,14 @@ Target: ≥85% on ALL active dimensions."""
             # P2-1: Auto-create sessions_spawn.log with validation
             sessions_spawn_log.parent.mkdir(parents=True, exist_ok=True)
             if not sessions_spawn_log.exists():
-                sessions_spawn_log.write_text("")
+                # Use Ralph's schema to create properly formatted log
+                import json
+                try:
+                    from ralph_mode.schema_validator import SessionsSpawnLogValidator
+                    validator = SessionsSpawnLogValidator()
+                    sessions_spawn_log.write_text(json.dumps(validator.create_empty_log(), indent=2))
+                except ImportError:
+                    sessions_spawn_log.write_text("{}")
                 print(f"✅ [PRE-FLIGHT] Created sessions_spawn.log")
             else:
                 # Validate existing log format
@@ -4374,6 +4381,50 @@ Target: ≥85% on ALL active dimensions."""
                 print(f"⚠️  [PRE-FLIGHT] ToolRegistry not available")
         except Exception as e:
             print(f"⚠️  SubagentIsolator hook verification failed: {e}")
+
+        # === RALPH MODE LIFECYCLE (v1.1) ===
+        # Ralph Mode provides background monitoring for Phase execution
+        _ralph_manager = None
+        try:
+            from ralph_mode import RalphLifecycleManager
+            from ralph_mode.schema_validator import SessionsSpawnLogValidator
+            
+            rlm = RalphLifecycleManager(repo_path)
+            
+            # Check if Ralph is already running for this phase (MVP: default to reuse)
+            existing = rlm.get_running_ralph(phase)
+            if existing:
+                print(f"⚠️  Phase {phase} Ralph already running: {existing.task_id}")
+                print(f"   Defaulting to continue monitoring (MVP reuse behavior)")
+                rlm._current_task_id = existing.task_id
+                rlm._current_state = existing
+            else:
+                # Parse FR list from SOP for estimated duration
+                fr_patterns = []
+                import re
+                fr_matches = re.findall(r'\b(FR-\d+)\b', sop_content)
+                seen = set()
+                for fr in fr_matches:
+                    if fr not in seen:
+                        fr_patterns.append(fr)
+                        seen.add(fr)
+                
+                # Estimate duration: 10 minutes per FR
+                estimated_minutes = max(30, len(fr_patterns) * 10)
+                
+                # Start Ralph
+                task_id = rlm.start(phase=phase, estimated_minutes=estimated_minutes)
+                print(f"✅ [RALPH] Started: {task_id}")
+                print(f"   Estimated duration: {estimated_minutes} minutes")
+                print(f"   HR-13 threshold: {estimated_minutes * 3} minutes")
+            
+            _ralph_manager = rlm
+        except ImportError as e:
+            print(f"⚠️  [RALPH] Ralph Mode not available: {e}")
+            rlm = None
+        except Exception as e:
+            print(f"⚠️  [RALPH] Failed to start: {e}")
+            rlm = None
 
         # === EXECUTE ===
         print(f"\n{'='*60}")
@@ -4597,6 +4648,21 @@ Full execution script is in templates/plan_phase_template.md Section 17.
             print(f"   approved: {approved}/{total}, constitution: {result_final.score:.0f}%")
 
         write_log("EXECUTE_COMPLETE", f"Phase {phase} completed - score: {result_final.score:.0f}%")
+
+        # === RALPH MODE STOP (v1.1) ===
+        # Stop Ralph based on execution result
+        if _ralph_manager is not None:
+            try:
+                if approved >= total and result_final.score >= 80:
+                    # M1: All FR completed + Constitution passed → STOP + SUCCESS
+                    _ralph_manager.stop(reason="completed")
+                    print(f"✅ [RALPH] Stopped: phase completed successfully")
+                else:
+                    # Constitution failed → Ralph continues monitoring (user decides)
+                    print(f"⚠️  [RALPH] Constitution failed - Ralph continues monitoring")
+                    print(f"   User can manually stop with: ralph stop {_ralph_manager._current_task_id}")
+            except Exception as e:
+                print(f"⚠️  [RALPH] Failed to stop: {e}")
 
         # Summary
         success = (approved >= total and result_final.score >= 80)
