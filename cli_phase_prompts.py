@@ -235,7 +235,7 @@ TASK_ID: task-{fr_num}-review
 3. 測試覆蓋率 ≥70%
 4. pytest 100% 通過
 5. 無邏輯錯誤或安全漏洞
-6. Constitution 代碼分數 >90%（TH-06）
+6. Constitution 測試覆蓋率 >90%（TH-06）
 
 【REJECT_IF】
 - ❌ docstring 無 [FR-XX] 標記 → REJECT
@@ -280,7 +280,7 @@ TASK_ID: task-p4
 - COVERAGE_REPORT.md：覆蓋率報告
 
 【驗證標準】
-- Constitution 測試覆蓋率 >80%
+- Constitution 測試覆蓋率 >90%（TH-06）
 - FR↔測試 映射率 ≥90%
 - 整合測試 100% 通過
 - 效能測試達標（如有）
