@@ -301,12 +301,15 @@ class RalphLifecycleManager:
         
         # 計算 FR 狀態
         entries = log_content.get("entries", [])
-        fr_status = self._aggregate_fr_status(entries)
+        expected_frs = state.metadata.get("hr_list", [])
+        fr_status = self._aggregate_fr_status(entries, expected_frs)
         
         fr_completed = fr_status["completed"]
         fr_failed = fr_status["failed"]
         fr_pending = fr_status["pending"]
-        fr_total = len(fr_status["frs"])
+        
+        # Use state's fr_total if set, otherwise count from log
+        fr_total = state.fr_total if state.fr_total > 0 else len(fr_status["frs"])
         
         progress = (fr_completed / fr_total * 100) if fr_total > 0 else 0
         
@@ -367,15 +370,30 @@ class RalphLifecycleManager:
         except:
             return {"schema_version": "1.0", "entries": []}
     
-    def _aggregate_fr_status(self, entries: List[Dict]) -> Dict[str, Any]:
-        """聚合 FR 狀態"""
+    def _aggregate_fr_status(self, entries: List[Dict], expected_frs: List[str] = None) -> Dict[str, Any]:
+        """
+        聚合 FR 狀態
+        
+        Args:
+            entries: log entries
+            expected_frs: 預期的 FR 列表（從 start() 時傳入的 fr_list）
+        """
+        # Initialize tracking for all expected FRs
         frs = {}
+        if expected_frs:
+            for fr in expected_frs:
+                frs[fr] = {"completed": 0, "failed": 0, "pending": 0, "seen": False}
+        
+        # Process log entries
         for entry in entries:
             fr = entry.get("fr", "UNKNOWN")
             status = entry.get("status", "UNKNOWN")
             
+            # Initialize FR if not seen before
             if fr not in frs:
-                frs[fr] = {"pending": 0, "completed": 0, "failed": 0}
+                frs[fr] = {"completed": 0, "failed": 0, "pending": 0}
+            
+            frs[fr]["seen"] = True
             
             if status == "COMPLETED":
                 frs[fr]["completed"] += 1
@@ -384,11 +402,14 @@ class RalphLifecycleManager:
             else:
                 frs[fr]["pending"] += 1
         
-        # 每個 FR 只有一個最終狀態
+        # Count final states (each FR has only ONE final state)
         result = {"frs": [], "completed": 0, "failed": 0, "pending": 0}
         for fr, counts in frs.items():
             result["frs"].append(fr)
-            if counts["completed"] > 0:
+            if not counts["seen"]:
+                # FR was initialized but never appeared in log → pending
+                result["pending"] += 1
+            elif counts["completed"] > 0:
                 result["completed"] += 1
             elif counts["failed"] > 0:
                 result["failed"] += 1
