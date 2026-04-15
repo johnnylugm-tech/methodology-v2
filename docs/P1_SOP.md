@@ -178,6 +178,7 @@ plan-phase（生成計畫） → Johnny 審核 → run-phase（執行）
 ## Exit 條件
 
 - ✅ Constitution TH-03=100%, TH-04=100%
+- ✅ TH-01 >80%（ASPICE）
 - ✅ TH-14 ≥90%
 - ✅ Agent B APPROVE
 - ✅ sessions_spawn.log 有記錄（HR-10）

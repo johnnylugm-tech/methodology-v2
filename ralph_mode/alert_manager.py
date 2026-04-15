@@ -88,9 +88,33 @@ class TelegramChannel(AlertChannel):
     """Telegram 頻道"""
     
     def __init__(self, bot_token: str = None, chat_id: str = None):
+        # Priority: init args > env vars > config file
         self.bot_token = bot_token or os.getenv("TELEGRAM_BOT_TOKEN")
         self.chat_id = chat_id or os.getenv("TELEGRAM_CHAT_ID")
+        
+        # Fallback to config file if not set
+        if not self.bot_token or not self.chat_id:
+            config = self._load_config()
+            if config and config.get("telegram", {}).get("enabled"):
+                self.bot_token = self.bot_token or config["telegram"].get("bot_token")
+                self.chat_id = self.chat_id or config["telegram"].get("chat_id")
+        
         self.enabled = bool(self.bot_token and self.chat_id)
+    
+    def _load_config(self) -> dict:
+        """Load config from file"""
+        possible_paths = [
+            Path.home() / ".ralph_alert_config.json",  # Home directory first
+            Path(__file__).parent / "alert_config.json",  # Same dir as module
+            Path(".") / "ralph_mode" / "alert_config.json",  # Current working dir
+        ]
+        for config_path in possible_paths:
+            try:
+                if config_path.exists():
+                    return json.loads(config_path.read_text())
+            except Exception as e:
+                pass
+        return None
     
     def send(self, alert: AlertMessage) -> bool:
         if not self.enabled:

@@ -28,7 +28,7 @@ python cli.py run-phase --phase 3 --step 3.1 --task "FR-01 實作"
 │                                                             │
 │  1. FSM State Check → FREEZE/PAUSED 阻擋                    │
 │  2. Phase Sequence → 不可跳過 Phase                          │
-│  3. Constitution Check → <80% 阻擋                           │
+│  3. Constitution Check → TH-04=100%, TH-06>80% 阻擋        │
 │  4. Tool Registry Check → 工具狀態                            │
 │  5. Session Save → Pre-flight 存檔                           │
 └─────────────────────────────────────────────────────────────┘
@@ -581,7 +581,8 @@ except MethodologyError as e:
 
 | Threshold | 標準 | 工具 | 備註 |
 |-----------|------|------|------|
-| TH-06 | Constitution ≥ 80% | constitution runner | Phase 3 Constitution 門檻 |
+| TH-04 | Constitution 安全性 =100% | constitution runner | Phase 3 Constitution 門檻 |
+| TH-06 | Constitution 測試覆蓋率 >80% | constitution runner | Phase 3 Constitution 門檻 |
 | TH-09 | AgentEvaluator 嚴格 ≥90 | agent_evaluator | Phase 3-8 嚴格標準（TH-09，非 TH-08）|
 | TH-10 | 測試通過率 =100% | pytest | Phase 3-8 統一門檻 |
 | TH-11 | 單元測試覆蓋率 ≥70% | pytest --cov | Phase 3 模組覆蓋 |

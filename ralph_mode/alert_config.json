@@ -1,0 +1,11 @@
+{
+    "telegram": {
+        "enabled": true,
+        "bot_token": "8788841675:AAFwjQLOHn1lSSRYofuir5532xX4RgWNSIo",
+        "chat_id": "7550668951"
+    },
+    "feishu": {
+        "enabled": false,
+        "webhook_url": ""
+    }
+}
