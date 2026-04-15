@@ -4893,7 +4893,7 @@ Full execution script is in templates/plan_phase_template.md Section 17.
                 ("TH-03", "Constitution 正確性", "=100%", "constitution/runner.py --type srs"),
                 ("TH-04", "Constitution 安全性", "=100%", "constitution/runner.py --type srs"),
                 ("TH-08", "AgentEvaluator 標準", "≥80", "phase-verify"),
-                ("TH-14", "規格完整性", "≥90%", "trace-check"),
+                ("TH-14", "規格完整性", "=100%", "trace-check"),
                 ("TH-15", "Phase Truth", "≥70%", "phase-verify"),
             ],
             2: [
@@ -5069,7 +5069,7 @@ Full execution script is in templates/plan_phase_template.md Section 17.
             1: [
                 ("# 1. TH-03 Constitution 正確性 =100%", "python3 quality_gate/constitution/runner.py --type srs"),
                 ("# 2. TH-04 Constitution 安全性 =100%", "python3 quality_gate/constitution/runner.py --type srs"),
-                ("# 3. TH-14 規格完整性 ≥90%", "python3 quality_gate/doc_checker.py"),
+                ("# 3. TH-14 規格完整性 =100%", "python3 quality_gate/doc_checker.py"),
             ],
             2: [
                 ("# 1. TH-03 Constitution 正確性 =100%", "python3 quality_gate/constitution/runner.py --type sad"),

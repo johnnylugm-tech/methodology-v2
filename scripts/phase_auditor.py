@@ -72,7 +72,7 @@ PHASE_SPEC = {
         "thresholds": {
             "TH-01": ("ASPICE 合規率", ">80%"),
             "TH-03": ("Constitution 正確性", "=100%"),
-            "TH-14": ("規格完整性", "≥90%"),
+            "TH-14": ("規格完整性", "=100%"),
         },
         # SRS 最低 FR 數
         "min_fr_count": 3,

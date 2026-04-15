@@ -110,7 +110,7 @@ plan-phase（生成計畫） → Johnny 審核 → run-phase（執行）
 |------|------|
 | **工具** | SubagentIsolator（Agent A: architect）|
 | **Prompt** | 使用 `templates/SRS.md` 模板 |
-| **驗證** | TH-14 ≥90% |
+| **驗證** | TH-14 =100% |
 
 ### Step 1.3: A/B 審查（HR-01）
 
@@ -130,7 +130,7 @@ plan-phase（生成計畫） → Johnny 審核 → run-phase（執行）
 | TH-03 | Constitution 正確性 =100% | constitution runner |
 | TH-04 | Constitution 安全性 =100% | constitution runner |
 | TH-08 | AgentEvaluator ≥80 | agent_evaluator |
-| TH-14 | 規格完整性 ≥90% | doc_checker |
+| TH-14 | 規格完整性 =100% | doc_checker |
 | TH-15 | Phase Truth ≥70% | phase-verify |
 
 ---
@@ -150,7 +150,7 @@ plan-phase（生成計畫） → Johnny 審核 → run-phase（執行）
 
 | 交付物 | 模板 | 驗證 |
 |--------|------|------|
-| SRS.md | `templates/SRS.md` | TH-14 ≥90% |
+| SRS.md | `templates/SRS.md` | TH-14 =100% |
 | SPEC_TRACKING.md | `templates/SPEC_TRACKING.md` | TH-01 >80% |
 | TRACEABILITY_MATRIX.md | `templates/TRACEABILITY_MATRIX.md` | TH-15 ≥70% |
 
@@ -179,7 +179,7 @@ plan-phase（生成計畫） → Johnny 審核 → run-phase（執行）
 
 - ✅ Constitution TH-03=100%, TH-04=100%
 - ✅ TH-01 >80%（ASPICE）
-- ✅ TH-14 ≥90%
+- ✅ TH-14 =100%
 - ✅ Agent B APPROVE
 - ✅ sessions_spawn.log 有記錄（HR-10）
 - ✅ DEVELOPMENT_LOG 有 session_id（HR-07）

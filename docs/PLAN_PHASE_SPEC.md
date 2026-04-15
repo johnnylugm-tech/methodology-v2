@@ -82,7 +82,7 @@ def check_fsm_state(phase: int) -> CheckResult:
 
 | Phase | 進入條件 |
 |-------|---------|
-| P1 | SRS.md 存在且完整度 ≥90%（TH-14）|
+| P1 | SRS.md 存在且完整度 =100%（TH-14）|
 | P2 | SRS.md 存在；TH-01 ASPICE >80% |
 | P3 | SAD.md 存在；Phase 2 APPROVE |
 | P4 | 代碼存在；Phase 3 APPROVE |
