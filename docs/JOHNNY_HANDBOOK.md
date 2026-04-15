@@ -32,7 +32,32 @@
 
 ---
 
-## 2. 執行流程：plan-phase → Johnny 審核 → run-phase
+## 2. 快速開始（初始化）
+
+### 新專案初始化（第一次）
+
+```
+對 Agent 說：
+「請根據 TASK_INITIALIZATION_PROMPT.md 初始化專案」
+```
+
+#### 執行內容
+
+| 動作 | 說明 |
+|------|------|
+| 初始化 state.json | 建立專案狀態追蹤 |
+| 初始化 .methodology 目錄 | 建立 framework 所需目錄結構 |
+| 建立 sessions_spawn.log | 記錄所有 subagent spawn 軌跡 |
+
+#### 範例 prompt
+
+```
+請根據 TASK_INITIALIZATION_PROMPT.md 初始化本專案，設定好 framework 目錄結構與 state.json
+```
+
+---
+
+## 3. 執行流程：plan-phase → Johnny 審核 → run-phase
 
 > ⚠️ **所有 Phase 執行必須經過此流程**，不可繞過。
 
