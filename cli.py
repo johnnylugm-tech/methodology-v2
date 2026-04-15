@@ -4878,6 +4878,83 @@ Full execution script is in templates/plan_phase_template.md Section 17.
         
         return '\n'.join(lines)
 
+    def _build_deliverable_checklist(self, phase: int, frs: list, modules: list) -> str:
+        """根據 Phase 產生對應的交付物檢查清單（Phase-specific artifacts）。"""
+        lines = [f"## Phase {phase} 交付物\n"]
+
+        if phase == 1:
+            lines.append("### 規格產出")
+            lines.append("- [ ] `SRS.md` - 軟體需求規格")
+            lines.append("- [ ] `SPEC_TRACKING.md` - 規格追蹤矩陣")
+            lines.append("- [ ] `TRACEABILITY_MATRIX.md` - 需求追溯矩陣")
+            lines.append("\n### 文檔產出")
+            lines.append("- [ ] `AB_COLLABORATION.md` - Developer+Reviewer 協作記錄")
+            lines.append("- [ ] `sessions_spawn.log` - A/B session 完整記錄")
+
+        elif phase == 2:
+            lines.append("### 架構產出")
+            lines.append("- [ ] `SAD.md` - 軟體架構文件")
+            lines.append("- [ ] `ADR.md` - 架構決策記錄")
+            lines.append("\n### 文檔產出")
+            lines.append("- [ ] `AB_COLLABORATION.md` - Developer+Reviewer 協作記錄")
+            lines.append("- [ ] `sessions_spawn.log` - A/B session 完整記錄")
+
+        elif phase == 3:
+            lines.append("### 代碼產出")
+            for m in modules:
+                mod_name = m.get('module', str(m))
+                lines.append(f"- [ ] `{mod_name}` - 模組實作")
+            lines.append("\n### 測試產出")
+            for fr in frs[:5]:
+                fr_num = fr['fr'].lower().replace('-', '').replace('fr', '')
+                lines.append(f"- [ ] `tests/test_fr{fr_num}*.py` - FR-{fr_num} 測試")
+            if len(frs) > 5:
+                lines.append(f"- [ ] ...（共 {len(frs)} 個 FR）")
+            lines.append("\n### 驗證產出")
+            lines.append("- [ ] pytest 所有測試 PASS")
+            lines.append("- [ ] coverage ≥80%")
+            lines.append("- [ ] Phase Truth >90%")
+            lines.append("\n### Git 產出")
+            lines.append("- [ ] git push 完成")
+
+        elif phase == 4:
+            lines.append("### 測試產出")
+            lines.append("- [ ] `docs/TEST_PLAN.md` - 測試計劃")
+            lines.append("- [ ] `docs/TEST_RESULTS.md` - 測試結果")
+            lines.append("\n### 追溯產出")
+            lines.append("- [ ] FR↔測試映射率 ≥90%")
+            lines.append("- [ ] 所有失敗測試已記錄並修復")
+
+        elif phase == 5:
+            lines.append("### 交付產出")
+            lines.append("- [ ] `05-verify/BASELINE.md` - 效能基線")
+            lines.append("- [ ] `06-quality/MONITORING_PLAN.md` - 監控計劃")
+            lines.append("\n### 文檔產出")
+            lines.append("- [ ] 監控閾值已設定")
+            lines.append("- [ ] 應急預案已定義")
+
+        elif phase == 7:
+            lines.append("### 風險產出")
+            lines.append("- [ ] `07-risk/RISK_REGISTER.md` - 風險登記表")
+            lines.append("- [ ] `07-risk/RISK_MITIGATION_PLANS.md` - 緩解計劃")
+            lines.append("- [ ] `07-risk/RISK_STATUS_REPORT.md` - 狀態報告")
+            lines.append("\n### 決策產出")
+            lines.append("- [ ] Decision Gate = 100% (所有 High/Critical 已處理)")
+
+        elif phase == 8:
+            lines.append("### 配置產出")
+            lines.append("- [ ] `08-config/CONFIG_RECORDS.md` - 配置記錄")
+            lines.append("- [ ] `requirements.txt` 或 `pyproject.toml` - 依賴鎖定")
+            lines.append("- [ ] `.env.example` - 環境變數範例")
+            lines.append("\n### 版本產出")
+            lines.append("- [ ] Git Tag 已建立並推送")
+            lines.append("- [ ] 版本文件已更新")
+
+        else:
+            lines.append("- [ ] （此 Phase 無標準交付物）")
+
+        return '\n'.join(lines)
+
     def _generate_thresholds_table(self, phase: int) -> str:
         """
         產生 TH 閾值表格。
@@ -5446,11 +5523,12 @@ Full execution script is in templates/plan_phase_template.md Section 17.
                 q6 += "- [ ] `06-quality/MONITORING_PLAN.md` - 監控計畫\n"
                 q6 += "- [ ] Constitution 分數 >= 80%\n"
                 q6 += "- [ ] 邏輯正確性 >= 90\n"
-                q6 += "- [ ] Phase Truth >= 70%\n"
+                q6 += "- [ ] Phase Truth >90%\n"
                 deliverable_structure = q6
             else:
                 deliverable_structure = self._generate_deliverable_structure(frs, modules)
             plan = plan.replace('{DELIVERABLE_STRUCTURE}', deliverable_structure)
+            plan = plan.replace('{DELIVERABLE_CHECKLIST}', self._build_deliverable_checklist(phase, frs, modules))
             
             # Phase-specific §5 content
             if phase == 6:
@@ -5461,7 +5539,7 @@ Full execution script is in templates/plan_phase_template.md Section 17.
                 q6 += "| 可維護性 | Constitution 分數 | >= 80% | constitution runner |\n"
                 q6 += "| 邏輯正確性 | 邏輯正確性分數 | >= 90 | phase-verify |\n"
                 q6 += "| 測試覆蓋率 | Coverage | >= 80% | pytest --cov |\n"
-                q6 += "| Phase Truth | Phase Truth 分數 | >= 70% | phase-verify |\n\n"
+                q6 += "| Phase Truth | Phase Truth 分數 | >90% | phase-verify |\n\n"
                 q6 += "### 5.2 品質評估任務\n\n"
                 q6 += "| 任務 | 負責 | 輸入 | 輸出 |\n"
                 q6 += "|------|------|------|------|\n"

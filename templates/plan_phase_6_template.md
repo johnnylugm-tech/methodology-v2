@@ -110,7 +110,7 @@ HR-01 | HR-07 | HR-08 | HR-10
 ### 驗證產出
 - [ ] Constitution 分數 >= 80%
 - [ ] 邏輯正確性 >= 90
-- [ ] Phase Truth >= 70%
+- [ ] Phase Truth >90%
 
 ### 文檔產出
 - [ ] `sessions_spawn.log` - A/B session 完整記錄
@@ -128,7 +128,7 @@ HR-01 | HR-07 | HR-08 | HR-10
 | 可維護性 | Constitution 分數 | >= 80% | constitution runner |
 | 邏輯正確性 | 邏輯正確性分數 | >= 90 | phase-verify |
 | 測試覆蓋率 | Coverage | >= 80% | pytest --cov |
-| Phase Truth | Phase Truth 分數 | >= 70% | phase-verify |
+| Phase Truth | Phase Truth 分數 | >90% | phase-verify |
 
 ### 5.2 品質評估任務
 

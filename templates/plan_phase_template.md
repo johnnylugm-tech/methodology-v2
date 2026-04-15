@@ -104,33 +104,7 @@ python3 cli.py run-phase --phase {PHASE} --goal "{GOAL}"
 ### 交付物檢查清單
 
 ```markdown
-## Phase {PHASE} 交付物
-
-### 代碼產出
-- [ ] `03-development/src/processing/` - 處理模組
-- [ ] `03-development/src/synth/` - 合成模組
-- [ ] `03-development/src/infrastructure/` - 基礎設施模組（如有）
-- [ ] `03-development/src/api/` - API 路由（如有）
-
-### 測試產出
-- [ ] `tests/test_fr01*.py` - FR-01 測試
-- [ ] `tests/test_fr02*.py` - FR-02 測試
-- [ ] ...（共 {FR_COUNT} 個 FR）
-
-### 文檔產出
-- [ ] `AB_COLLABORATION.md` - Developer+Reviewer 協作記錄
-- [ ] `sessions_spawn.log` - A/B session 完整記錄
-- [ ] `docs/TOOL_HOOK_LOG.md` - 工具鉤子使用記錄（可選）
-- [ ] `docs/OPTIMIZATION_REPORT.md` - 四維度評核報告（可選）
-
-### 驗證產出
-- [ ] pytest 所有測試 PASS
-- [ ] coverage ≥80%
-- [ ] Phase Truth >90%
-
-### Git 產出
-- [ ] git push 完成
-- [ ] remote 同步驗證
+{DELIVERABLE_CHECKLIST}
 ```
 
 ---
