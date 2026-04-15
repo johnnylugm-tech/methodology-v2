@@ -113,7 +113,7 @@ class RalphLifecycleManager:
         self.log_path = self.repo_path / ".methodology" / "sessions_spawn.log"
         
         self.validator = SessionsSpawnLogValidator()
-        self.alert_mgr = get_default_manager()
+        self.alert_mgr = AlertManager()  # Always create fresh instance with current env vars
         self.output_verifier = OutputVerifier(self.repo_path)
         
         self._current_task_id: Optional[str] = None
