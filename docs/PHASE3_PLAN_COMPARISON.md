@@ -192,7 +192,7 @@ HR-15 強制執行：citations 必須包含「檔名#L行號」格式
 ### Original (v6.45)
 
 ```bash
-# 1. TH-06 Constitution 測試覆蓋率 >80%
+# 1. TH-06 Constitution 測試覆蓋率 >90%
 python3 quality_gate/constitution/runner.py --type implementation
 
 # 2. TH-10 測試通過率 =100%

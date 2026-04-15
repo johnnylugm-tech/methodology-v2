@@ -29,7 +29,7 @@ python cli.py run-phase --phase 4
 |--------|------|---------|
 | FSM State | 非 FREEZE/PAUSED | ❌ 停在 Pre-flight |
 | Phase Sequence | Phase 3 APPROVE → Phase 4 | ❌ HR-03 阻擋 |
-| Constitution | TH-03=100%, TH-04=100%, TH-05>70%, TH-06>80% | ❌ HR-08 阻擋 |
+| Constitution | TH-03=100%, TH-04=100%, TH-05>90%, TH-06>90% | ❌ HR-08 阻擋 |
 | 前置交付物 | 代碼存在於 `app/` | ❌ 停在 Pre-flight |
 | Tool Registry | 6 核心工具就緒 | ⚠️ 警告 |
 
@@ -99,7 +99,7 @@ python cli.py run-phase --phase 4
 | 項目 | 內容 |
 |------|------|
 | **工具** | SubagentIsolator（Agent B: reviewer）|
-| **驗證** | Constitution TH-03=100%, TH-04=100%, TH-05>70%, TH-06>80% |
+| **驗證** | Constitution TH-03=100%, TH-04=100%, TH-05>90%, TH-06>90% |
 | **產出** | APPROVE 或 REJECT |
 
 ---
@@ -111,8 +111,8 @@ python cli.py run-phase --phase 4
 | TH-01 | ASPICE >80% | ASPICE check |
 | TH-03 | Constitution 正確性 =100% | constitution runner |
 | TH-04 | Constitution 安全性 =100% | constitution runner |
-| TH-05 | Constitution 可維護性 >70% | constitution runner |
-| TH-06 | Constitution 測試覆蓋率 >80% | constitution runner |
+| TH-05 | Constitution 可維護性 >90% | constitution runner |
+| TH-06 | Constitution 測試覆蓋率 >90% | constitution runner |
 | TH-10 | 測試通過率 =100% | pytest |
 | TH-12 | 單元測試覆蓋率 ≥80% | pytest --cov |
 | TH-13 | SRS FR 覆蓋率 =100% | trace-check |
@@ -135,14 +135,14 @@ python cli.py run-phase --phase 4
 
 | 交付物 | 模板 | 驗證 |
 |--------|------|------|
-| TEST_PLAN.md | `templates/TEST_PLAN.md` | TH-06>80%, TH-17 ≥90% |
+| TEST_PLAN.md | `templates/TEST_PLAN.md` | TH-06>90%, TH-17 ≥90% |
 | TEST_RESULTS.md | `templates/TEST_RESULTS.md` | TH-10=100%, TH-12 ≥80% |
 
 ---
 
 ## Exit 條件
 
-- ✅ Constitution TH-03=100%, TH-04=100%, TH-05>70%, TH-06>80%
+- ✅ Constitution TH-03=100%, TH-04=100%, TH-05>90%, TH-06>90%
 - ✅ TH-10=100%, TH-12 ≥80%
 - ✅ TH-13=100%, TH-17 ≥90%
 - ✅ Agent B 兩次 APPROVE

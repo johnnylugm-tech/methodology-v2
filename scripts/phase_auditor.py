@@ -105,7 +105,7 @@ PHASE_SPEC = {
         "thresholds": {
             "TH-01": ("ASPICE 合規率", ">80%"),
             "TH-03": ("Constitution 正確性", "=100%"),
-            "TH-05": ("Constitution 可維護性", ">70%"),
+            "TH-05": ("Constitution 可維護性", ">90%"),
         },
         "min_duration_minutes": 10,
     },

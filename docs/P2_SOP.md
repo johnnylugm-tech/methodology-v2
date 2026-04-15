@@ -29,7 +29,7 @@ python cli.py run-phase --phase 2
 |--------|------|---------|
 | FSM State | 非 FREEZE/PAUSED | ❌ 停在 Pre-flight |
 | Phase Sequence | Phase 1 APPROVE → Phase 2 | ❌ HR-03 阻擋 |
-| Constitution | TH-03=100%, TH-04=100%, TH-05>70% | ❌ HR-08 阻擋 |
+| Constitution | TH-03=100%, TH-04=100%, TH-05>90% | ❌ HR-08 阻擋 |
 | 前置交付物 | SRS.md 存在且完整 | ❌ 停在 Pre-flight |
 | Tool Registry | 6 核心工具就緒 | ⚠️ 警告 |
 
@@ -84,7 +84,7 @@ python cli.py run-phase --phase 2
 |------|------|
 | **工具** | SubagentIsolator（Agent A: architect）|
 | **Prompt** | 使用 `templates/SAD.md` 模板 |
-| **驗證** | TH-05 >70% |
+| **驗證** | TH-05 >90% |
 
 ### Step 2.2: ADR 決策記錄
 
@@ -99,7 +99,7 @@ python cli.py run-phase --phase 2
 | 項目 | 內容 |
 |------|------|
 | **工具** | SubagentIsolator（Agent B: reviewer）|
-| **驗證** | Constitution TH-03=100%, TH-04=100%, TH-05>70% |
+| **驗證** | Constitution TH-03=100%, TH-04=100%, TH-05>90% |
 | **產出** | APPROVE 或 REJECT |
 
 ---
@@ -111,7 +111,7 @@ python cli.py run-phase --phase 2
 | TH-01 | ASPICE >80% | ASPICE check |
 | TH-03 | Constitution 正確性 =100% | constitution runner |
 | TH-04 | Constitution 安全性 =100% | constitution runner |
-| TH-05 | Constitution 可維護性 >70% | constitution runner |
+| TH-05 | Constitution 可維護性 >90% | constitution runner |
 | TH-08 | AgentEvaluator ≥80 | agent_evaluator |
 | TH-15 | Phase Truth ≥70% | phase-verify |
 
@@ -132,14 +132,14 @@ python cli.py run-phase --phase 2
 
 | 交付物 | 模板 | 驗證 |
 |--------|------|------|
-| SAD.md | `templates/SAD.md` | TH-03=100%, TH-04=100%, TH-05>70% |
+| SAD.md | `templates/SAD.md` | TH-03=100%, TH-04=100%, TH-05>90% |
 | ADR.md | `templates/ADR.md` | 架構決策記錄完整 |
 
 ---
 
 ## Exit 條件
 
-- ✅ Constitution TH-03=100%, TH-04=100%, TH-05>70%
+- ✅ Constitution TH-03=100%, TH-04=100%, TH-05>90%
 - ✅ TH-01 >80%
 - ✅ Agent B APPROVE
 - ✅ sessions_spawn.log 有記錄（HR-10）

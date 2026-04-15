@@ -4900,13 +4900,13 @@ Full execution script is in templates/plan_phase_template.md Section 17.
                 ("TH-01", "FSM State", "RUNNING", "state.json"),
                 ("TH-03", "Constitution 正確性", "=100%", "constitution/runner.py --type sad"),
                 ("TH-04", "Constitution 安全性", "=100%", "constitution/runner.py --type sad"),
-                ("TH-05", "Constitution 可維護性", ">70%", "constitution/runner.py --type sad"),
+                ("TH-05", "Constitution 可維護性", ">90%", "constitution/runner.py --type sad"),
                 ("TH-08", "AgentEvaluator 標準", "≥80", "phase-verify"),
                 ("TH-15", "Phase Truth", "≥70%", "phase-verify"),
             ],
             3: [
                 ("TH-04", "Constitution 安全性", "=100%", "constitution/runner.py --type implementation"),
-                ("TH-06", "Constitution 測試覆蓋率", ">80%", "constitution/runner.py --type implementation"),
+                ("TH-06", "Constitution 測試覆蓋率", ">90%", "constitution/runner.py --type implementation"),
                 ("TH-08", "AgentEvaluator 嚴格", "≥90", "phase-verify"),
                 ("TH-10", "測試通過率", "=100%", "pytest tests/ -v"),
                 ("TH-11", "單元測試覆蓋率", "≥70%", "pytest --cov=03-development/src/ -v"),
@@ -4917,8 +4917,8 @@ Full execution script is in templates/plan_phase_template.md Section 17.
                 ("TH-01", "ASPICE 合規率", ">80%", "doc_checker.py"),
                 ("TH-03", "Constitution 正確性", "=100%", "constitution/runner.py --type test_plan"),
                 ("TH-04", "Constitution 安全性", "=100%", "constitution/runner.py --type test_plan"),
-                ("TH-05", "Constitution 可維護性", ">70%", "constitution/runner.py --type test_plan"),
-                ("TH-06", "Constitution 測試覆蓋率", ">80%", "constitution/runner.py --type test_plan"),
+                ("TH-05", "Constitution 可維護性", ">90%", "constitution/runner.py --type test_plan"),
+                ("TH-06", "Constitution 測試覆蓋率", ">90%", "constitution/runner.py --type test_plan"),
                 ("TH-10", "測試通過率", "=100%", "pytest tests/ -v"),
                 ("TH-12", "單元測試覆蓋率", "≥80%", "pytest --cov=03-development/src/ -v"),
                 ("TH-13", "SRS FR 覆蓋率", "=100%", "trace-check"),
@@ -5052,7 +5052,7 @@ Full execution script is in templates/plan_phase_template.md Section 17.
         """根據 Phase 產生 Quality Gate 命令"""
         commands = {
             3: [
-                ("# 1. TH-06 Constitution 測試覆蓋率 >80%", "python3 quality_gate/constitution/runner.py --type implementation"),
+                ("# 1. TH-06 Constitution 測試覆蓋率 >90%", "python3 quality_gate/constitution/runner.py --type implementation"),
                 ("# 2. TH-10 測試通過率 =100%", "pytest tests/ -v"),
                 ("# 3. TH-11 覆蓋率 ≥70%", "pytest --cov=03-development/src/ -v"),
                 ("# 4. TH-16 代碼↔SAD =100%", "python3 cli.py trace-check"),
@@ -5074,7 +5074,7 @@ Full execution script is in templates/plan_phase_template.md Section 17.
             2: [
                 ("# 1. TH-03 Constitution 正確性 =100%", "python3 quality_gate/constitution/runner.py --type sad"),
                 ("# 2. TH-04 Constitution 安全性 =100%", "python3 quality_gate/constitution/runner.py --type sad"),
-                ("# 3. TH-05 Constitution 可維護性 >70%", "python3 quality_gate/constitution/runner.py --type sad"),
+                ("# 3. TH-05 Constitution 可維護性 >90%", "python3 quality_gate/constitution/runner.py --type sad"),
             ],
         }
         

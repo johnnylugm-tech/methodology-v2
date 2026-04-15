@@ -113,8 +113,8 @@ def check_constitution(phase: int) -> CheckResult:
     threshold_map = {
         1: 100,  # TH-03, TH-04 = 100%
         2: 100,  # TH-03, TH-04 = 100%
-        3: 80,   # TH-06 >80%
-        4: 80,
+        3: 90,   # TH-06 >90%
+        4: 90,   # TH-05 >90%, TH-06 >90%
         5: 80,   # TH-02 ≥80%
         6: 80,
         7: 80,

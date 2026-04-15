@@ -47,8 +47,8 @@ Phase Reset → **docs/CLI_REFERENCE.md**
 | TH-02 | Constitution 總分 | ≥80% | 5-8 | TH-11 | 單元測試覆蓋率 | ≥70% | 3 |
 | TH-03 | Constitution 正確性 | =100% | 1-4 | TH-12 | 單元測試覆蓋率 | ≥80% | 4-8 |
 | TH-04 | Constitution 安全性 | =100% | 1-4 | TH-13 | SRS FR 覆蓋率 | =100% | 4-8 |
-| TH-05 | Constitution 可維護性 | >70% | 2-4 | TH-14 | 規格完整性 | ≥90% | 1 |
-| TH-06 | Constitution 測試覆蓋率 | >80% | 3-4 | TH-15 | Phase Truth | ≥70% | 1-8 |
+| TH-05 | Constitution 可維護性 | >90% | 2-4 | TH-14 | 規格完整性 | ≥90% | 1 |
+| TH-06 | Constitution 測試覆蓋率 | >90% | 3-4 | TH-15 | Phase Truth | ≥70% | 1-8 |
 | TH-07 | 邏輯正確性分數 | ≥90 | 5-8 | TH-16 | 代碼↔SAD 映射率 | =100% | 3 |
 | TH-08 | AgentEvaluator 標準 | ≥80 | 1-2 | TH-17 | FR↔測試映射率 | ≥90% | 4 |
 | TH-09 | AgentEvaluator 嚴格 | ≥90 | 3-8 | | | | |

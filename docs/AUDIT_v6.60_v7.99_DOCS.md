@@ -167,7 +167,7 @@ All markdown files have valid syntax ✅
 | TH-02 (Phase 5-8) | Constitution ≥80% | ✅ | ✅ |
 | TH-03 (Phase 1-4) | Correctness = 100% | ✅ | ✅ |
 | TH-04 (Phase 1-4) | Security = 100% | ✅ | ✅ |
-| TH-05 (Phase 2-4) | Maintainability >70% | ✅ | ✅ |
+| TH-05 (Phase 2-4) | Maintainability >90% | ✅ | ✅ |
 
 ### 4.4 Hard Blocker Consistency
 
