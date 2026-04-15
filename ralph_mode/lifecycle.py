@@ -361,12 +361,13 @@ class RalphLifecycleManager:
             print(f"[Ralph] Created sessions_spawn.log with schema {self.validator.CURRENT_SCHEMA}")
     
     def _read_log(self) -> Dict[str, Any]:
-        """讀取 sessions_spawn.log"""
+        """讀取 sessions_spawn.log（支援新舊格式）"""
         if not self.log_path.exists():
             return {"schema_version": "1.0", "entries": []}
         
         try:
-            return json.loads(self.log_path.read_text())
+            content = self.log_path.read_text()
+            return self.validator.parse_content(content)
         except:
             return {"schema_version": "1.0", "entries": []}
     

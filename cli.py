@@ -4382,6 +4382,23 @@ Target: ≥85% on ALL active dimensions."""
         except Exception as e:
             print(f"⚠️  SubagentIsolator hook verification failed: {e}")
 
+            rlm = None
+
+        # === EXECUTE ===
+        print(f"\n{'='*60}")
+        print(f"▶ EXECUTE Phase {phase}")
+        print(f"{'='*60}\n")
+
+        # Load P{N}_SOP.md from Framework (not Project)
+        # SOPs are Framework artifacts, not Project artifacts
+        METHODOLOGY_DIR = Path(__file__).parent.resolve()
+        sop_path = METHODOLOGY_DIR / "docs" / f"P{phase}_SOP.md"
+        if not sop_path.exists():
+            print(f"❌ SOP not found: {sop_path}")
+            return 1
+
+        print(f"📋 Loading SOP: docs/P{phase}_SOP.md")
+        sop_content = sop_path.read_text()
         # === RALPH MODE LIFECYCLE (v1.1) ===
         # Ralph Mode provides background monitoring for Phase execution
         _ralph_manager = None
@@ -4424,23 +4441,6 @@ Target: ≥85% on ALL active dimensions."""
             rlm = None
         except Exception as e:
             print(f"⚠️  [RALPH] Failed to start: {e}")
-            rlm = None
-
-        # === EXECUTE ===
-        print(f"\n{'='*60}")
-        print(f"▶ EXECUTE Phase {phase}")
-        print(f"{'='*60}\n")
-
-        # Load P{N}_SOP.md from Framework (not Project)
-        # SOPs are Framework artifacts, not Project artifacts
-        METHODOLOGY_DIR = Path(__file__).parent.resolve()
-        sop_path = METHODOLOGY_DIR / "docs" / f"P{phase}_SOP.md"
-        if not sop_path.exists():
-            print(f"❌ SOP not found: {sop_path}")
-            return 1
-
-        print(f"📋 Loading SOP: docs/P{phase}_SOP.md")
-        sop_content = sop_path.read_text()
         print(f"✅ SOP loaded ({len(sop_content)} chars)\n")
 
         # Execute steps from SOP
