@@ -113,7 +113,7 @@ python cli.py run-phase --phase 2
 | TH-04 | Constitution 安全性 =100% | constitution runner |
 | TH-05 | Constitution 可維護性 >90% | constitution runner |
 | TH-08 | AgentEvaluator ≥80 | agent_evaluator |
-| TH-15 | Phase Truth ≥70% | phase-verify |
+| TH-15 | Phase Truth >90% | phase-verify |
 
 ---
 

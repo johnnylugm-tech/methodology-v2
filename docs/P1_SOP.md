@@ -131,7 +131,7 @@ plan-phase（生成計畫） → Johnny 審核 → run-phase（執行）
 | TH-04 | Constitution 安全性 =100% | constitution runner |
 | TH-08 | AgentEvaluator ≥80 | agent_evaluator |
 | TH-14 | 規格完整性 =100% | doc_checker |
-| TH-15 | Phase Truth ≥70% | phase-verify |
+| TH-15 | Phase Truth >90% | phase-verify |
 
 ---
 
@@ -152,7 +152,7 @@ plan-phase（生成計畫） → Johnny 審核 → run-phase（執行）
 |--------|------|------|
 | SRS.md | `templates/SRS.md` | TH-14 =100% |
 | SPEC_TRACKING.md | `templates/SPEC_TRACKING.md` | TH-01 >80% |
-| TRACEABILITY_MATRIX.md | `templates/TRACEABILITY_MATRIX.md` | TH-15 ≥70% |
+| TRACEABILITY_MATRIX.md | `templates/TRACEABILITY_MATRIX.md` | TH-15 >90% |
 
 ---
 

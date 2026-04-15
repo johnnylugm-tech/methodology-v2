@@ -170,7 +170,7 @@ python -c "from quality_gate.claims_verifier import ClaimsVerifier; print(Claims
 | TH-11 | 單元測試覆蓋率 ≥ 70% |
 | TH-12 | 單元測試覆蓋率 ≥ 80% |
 | TH-14 | 規格完整性 ≥ 90% |
-| TH-15 | Phase Truth 分數 ≥ 70% |
+| TH-15 | Phase Truth 分數 >90% |
 
 ---
 

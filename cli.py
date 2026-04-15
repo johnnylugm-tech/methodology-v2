@@ -4894,7 +4894,7 @@ Full execution script is in templates/plan_phase_template.md Section 17.
                 ("TH-04", "Constitution 安全性", "=100%", "constitution/runner.py --type srs"),
                 ("TH-08", "AgentEvaluator 標準", "≥80", "phase-verify"),
                 ("TH-14", "規格完整性", "=100%", "trace-check"),
-                ("TH-15", "Phase Truth", "≥70%", "phase-verify"),
+                ("TH-15", "Phase Truth", ">90%", "phase-verify"),
             ],
             2: [
                 ("TH-01", "FSM State", "RUNNING", "state.json"),
@@ -4902,7 +4902,7 @@ Full execution script is in templates/plan_phase_template.md Section 17.
                 ("TH-04", "Constitution 安全性", "=100%", "constitution/runner.py --type sad"),
                 ("TH-05", "Constitution 可維護性", ">90%", "constitution/runner.py --type sad"),
                 ("TH-08", "AgentEvaluator 標準", "≥80", "phase-verify"),
-                ("TH-15", "Phase Truth", "≥70%", "phase-verify"),
+                ("TH-15", "Phase Truth", ">90%", "phase-verify"),
             ],
             3: [
                 ("TH-04", "Constitution 安全性", "=100%", "constitution/runner.py --type implementation"),
@@ -4910,7 +4910,7 @@ Full execution script is in templates/plan_phase_template.md Section 17.
                 ("TH-08", "AgentEvaluator 嚴格", "≥90", "phase-verify"),
                 ("TH-10", "測試通過率", "=100%", "pytest tests/ -v"),
                 ("TH-11", "單元測試覆蓋率", "≥70%", "pytest --cov=03-development/src/ -v"),
-                ("TH-15", "Phase Truth", "≥70%", "phase-verify"),
+                ("TH-15", "Phase Truth", ">90%", "phase-verify"),
                 ("TH-16", "代碼↔SAD 映射率", "=100%", "trace-check"),
             ],
             4: [
@@ -4922,22 +4922,22 @@ Full execution script is in templates/plan_phase_template.md Section 17.
                 ("TH-10", "測試通過率", "=100%", "pytest tests/ -v"),
                 ("TH-12", "單元測試覆蓋率", "≥80%", "pytest --cov=03-development/src/ -v"),
                 ("TH-13", "SRS FR 覆蓋率", "=100%", "trace-check"),
-                ("TH-15", "Phase Truth", "≥70%", "phase-verify"),
+                ("TH-15", "Phase Truth", ">90%", "phase-verify"),
                 ("TH-17", "FR↔測試映射率", "≥90%", "trace-check"),
             ],
             5: [
                 ("TH-02", "Constitution 總分", "≥80%", "constitution/runner.py --type verification"),
                 ("TH-07", "邏輯正確性分數", "≥90", "phase-verify"),
-                ("TH-15", "Phase Truth", "≥70%", "phase-verify"),
+                ("TH-15", "Phase Truth", ">90%", "phase-verify"),
             ],
             6: [
                 ("TH-02", "Constitution 總分", "≥80%", "constitution/runner.py --type quality_report"),
                 ("TH-07", "邏輯正確性分數", "≥90", "phase-verify"),
-                ("TH-15", "Phase Truth", "≥70%", "phase-verify"),
+                ("TH-15", "Phase Truth", ">90%", "phase-verify"),
             ],
             7: [
                 ("TH-07", "邏輯正確性分數", "≥90", "phase-verify"),
-                ("TH-15", "Phase Truth", "≥70%", "phase-verify"),
+                ("TH-15", "Phase Truth", ">90%", "phase-verify"),
             ],
             8: [
                 ("pip freeze", "依賴鎖定", "存在於 repo root", "ls requirements*.txt / pip freeze"),
@@ -5056,7 +5056,7 @@ Full execution script is in templates/plan_phase_template.md Section 17.
                 ("# 2. TH-10 測試通過率 =100%", "pytest tests/ -v"),
                 ("# 3. TH-11 覆蓋率 ≥70%", "pytest --cov=03-development/src/ -v"),
                 ("# 4. TH-16 代碼↔SAD =100%", "python3 cli.py trace-check"),
-                ("# 5. TH-15 Phase Truth ≥70%", "python3 cli.py phase-verify --phase 3"),
+                ("# 5. TH-15 Phase Truth >90%", "python3 cli.py phase-verify --phase 3"),
                 ("# 6. HR-08 stage-pass", "python3 cli.py stage-pass --phase 3"),
                 ("# 7. HR-02 FrameworkEnforcer BLOCK", "python3 cli.py enforce --level BLOCK"),
             ],

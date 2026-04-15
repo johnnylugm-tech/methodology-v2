@@ -204,7 +204,7 @@ pytest --cov=app/ -v
 # 4. TH-16 代碼↔SAD =100%
 python3 cli.py trace-check
 
-# 5. TH-15 Phase Truth ≥70%
+# 5. TH-15 | Phase Truth | >90%
 python3 cli.py phase-verify --phase 3
 
 # 6. HR-08 stage-pass

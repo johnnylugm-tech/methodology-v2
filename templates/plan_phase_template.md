@@ -126,7 +126,7 @@ python3 cli.py run-phase --phase {PHASE} --goal "{GOAL}"
 ### 驗證產出
 - [ ] pytest 所有測試 PASS
 - [ ] coverage ≥80%
-- [ ] Phase Truth ≥70%
+- [ ] Phase Truth >90%
 
 ### Git 產出
 - [ ] git push 完成
@@ -551,7 +551,7 @@ cli.py 無法 import，但 **Agent 可以直接呼叫**。
 │ POST-FLIGHT                                                │
 │   1. ✅ SAB Drift Detection（代碼↔SAD）                   │
 │   2. ✅ Steering Loop（如啟用）                            │
-│   3. ✅ Phase Truth 驗證（≥70%）                          │
+│   3. ✅ Phase Truth 驗證（>90%）                          │
 │   4. ✅ AutoResearch 品質改進（Phase-aware scoring）     │
 │   5. ✅ stage-pass + enforce BLOCK                        │
 └─────────────────────────────────────────────────────────────┘
@@ -729,7 +729,7 @@ print(f"   {'✅' if result.returncode == 0 else 'ℹ️'} Steering {'完成' if
 
 print(f"\n📊 [Phase Truth] Phase Truth 驗證")
 result = run_cmd(["python3", "cli.py", "phase-verify", "--phase", str(PHASE)])
-print(f"   {'✅' if result.returncode == 0 else '❌'} Phase Truth {'≥70%' if result.returncode == 0 else '<70% → PAUSE'}")
+print(f"   {'✅' if result.returncode == 0 else '❌'} Phase Truth {'>90%' if result.returncode == 0 else '<70% → PAUSE'}")
 
 print(f"\n🔬 [AutoResearch] Phase-aware 品質改進 ({PHASE})")
 result = run_cmd(["python3", "cli.py", "auto-research", "--project", str(REPO), "--phase", str(PHASE)])
@@ -753,7 +753,7 @@ print(f"\n✅ Phase {PHASE} 完成！")
 | HR-12 | `monitoring_hr12_check()` | ≥5輪 PAUSE |
 | **SAB Drift** | `cli.py trace-check` | **代碼↔SAD** |
 | **Steering** | `cli.py steering run` | **Workflow 控制** |
-| **Phase Truth** | `cli.py phase-verify` | **≥70% 驗證** |
+| **Phase Truth** | `cli.py phase-verify` | **>90% 驗證** |
 | **AutoResearch** | `cli.py auto-research` | **Phase-aware 品質改進** |
 | POST-FLIGHT | `cli.py run-phase --resume` | Final State |
 

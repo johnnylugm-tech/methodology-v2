@@ -431,7 +431,7 @@ python cli.py integrity --project .
 | TH-12 | 單元測試覆蓋率 ≥80% | 4-8 |
 | TH-13 | SRS FR 覆蓋率 =100% | 4-8 |
 | TH-14 | 規格完整性 =100% | 1 |
-| TH-15 | Phase Truth ≥70% | 1-8 |
+| TH-15 | Phase Truth >90% | 1-8 |
 | TH-16 | 代碼↔SAD 映射率 =100% | 3 |
 | TH-17 | FR↔測試映射率 ≥90% | 4 |
 

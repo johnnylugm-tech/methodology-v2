@@ -71,7 +71,7 @@ HR-01 | HR-07 | HR-08 | HR-10
 |----|------|------|---------|
 | TH-02 | Constitution 總分 | ≥80% | `constitution/runner.py --type all` |
 | TH-07 | 邏輯正確性 | ≥90 | `phase-verify` |
-| TH-15 | Phase Truth | ≥70% | `phase-verify` |
+| TH-15 | Phase Truth | >90% | `phase-verify` |
 
 ### A/B 角色（Phase 6）
 

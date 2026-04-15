@@ -586,7 +586,7 @@ except MethodologyError as e:
 | TH-09 | AgentEvaluator 嚴格 ≥90 | agent_evaluator | Phase 3-8 嚴格標準（TH-09，非 TH-08）|
 | TH-10 | 測試通過率 =100% | pytest | Phase 3-8 統一門檻 |
 | TH-11 | 單元測試覆蓋率 ≥70% | pytest --cov | Phase 3 模組覆蓋 |
-| TH-15 | Phase Truth ≥70% | phase-verify | HR-11 進階條件 |
+| TH-15 | Phase Truth >90% | phase-verify | HR-11 進階條件 |
 | TH-16 | SAD↔代碼映射 =100% | trace-check | Phase 3 SAD→代碼對照 |
 
 ---
