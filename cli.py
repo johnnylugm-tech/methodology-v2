@@ -28,6 +28,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from progress_dashboard import ProgressDashboard
 from gantt_chart import GanttChart, ResourceGanttChart
 from message_bus import MessageBus
+from orchestration import run_constitution_check_with_feedback
 from sprint_planner import SprintPlanner
 from pm_terminology import PMTerminologyMapper
 from resource_dashboard import ResourceDashboard
@@ -4235,6 +4236,7 @@ Target: ≥85% on ALL active dimensions."""
         from datetime import datetime
 
         phase = args.phase
+        phase_type = getattr(args, 'type', None)  # Get from args.type if available
         repo_path = Path(args.repo or Path.cwd())
 
         # === PRE-FLIGHT CHECKS ===
@@ -4563,12 +4565,16 @@ Full execution script is in templates/plan_phase_template.md Section 17.
         write_log("EXECUTE_FR_COMPLETE", f"Phase {phase}: {approved}/{total} FRs approved")
 
         # === POST-FLIGHT ===
+        # Default phase_type if not set
+        if not phase_type:
+            check_type = "QUALITY_REPORT"  # Default for Phase 6
+        
         print(f"\n{'='*60}")
         print(f"✓ POST-FLIGHT: Final Constitution Check")
         print(f"{'='*60}\n")
 
         # === v6.86 fix: use run_constitution_check directly (runner was never defined) ===
-        result_final = run_constitution_check(phase_type, docs_path=str(repo_path / "docs"), current_phase=phase, check_mode="postflight")
+        result_final = run_constitution_check_with_feedback(check_type, docs_path=str(repo_path / "docs"), current_phase=phase)
         if result_final.score < 80:
             print(f"⚠️  Final Constitution score {result_final.score:.0f}% < 80%")
             print(f"   Violations: {result_final.violations}")
@@ -4576,7 +4582,7 @@ Full execution script is in templates/plan_phase_template.md Section 17.
             print(f"✅ Final Constitution score: {result_final.score:.0f}%")
 
         # === AutoResearch Quality Check (v7.35) ===
-        if not args.no_autoresearch:
+        if not getattr(args, 'no_autoresearch', False):
             # Check project-config.yaml for auto_research.enabled
             config_file = repo_path / "project-config.yaml"
             auto_research_enabled = True  # default
