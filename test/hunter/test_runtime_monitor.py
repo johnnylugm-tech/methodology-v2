@@ -147,3 +147,35 @@ class TestRuntimeMonitor:
             self.monitor.record_access("agent_big", f"source_{i}")
         # Should not exceed window_max
         assert len(self.monitor._access_window["agent_big"]) <= self.monitor._window_max
+
+    def test_validate_read_invalid_anomaly_threshold(self):
+        """Test validate_read with anomaly at threshold triggers HITL."""
+        # Pre-populate access window to trigger anomaly
+        import time
+        for i in range(25):
+            self.monitor.record_access("agent_anomaly", f"source_{i}")
+        
+        # Now validate with mismatched hash
+        result = self.monitor.validate_read(
+            "agent_anomaly", 
+            "some_source", 
+            "wrong_hash"
+        )
+        assert result.is_valid == False
+        assert result.requires_hitl == True
+
+    def test_anomaly_sliding_window_maintains_limit(self):
+        """Test sliding window maintains max limit."""
+        for i in range(1500):  # Exceed window_max
+            self.monitor.record_access("agent_window", f"source_{i}")
+        
+        # Access _access_window directly to verify limit
+        window = self.monitor._access_window.get("agent_window", [])
+        assert len(window) <= 1000
+
+    def test_anomaly_with_aggressive_burst_access(self):
+        """Test anomaly detection with aggressive burst (30+ accesses)."""
+        for i in range(30):
+            self.monitor.record_access("agent_burst", f"source_{i}")
+        anomaly = self.monitor.detect_anomaly("agent_burst")
+        assert anomaly >= 0.3

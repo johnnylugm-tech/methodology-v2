@@ -127,3 +127,35 @@ class TestRuleCompliance:
     def test_whitespace_agent_id(self):
         tools = self.compliance.get_allowed_tools("   ")
         assert tools == []
+
+    def test_reload_whitelist_no_error(self):
+        """Test reload_whitelist completes without error."""
+        # Should not raise
+        self.compliance.reload_whitelist()
+        # Still works after reload
+        tools = self.compliance.get_allowed_tools("planner")
+        assert "read" in tools
+
+    def test_check_whitelist_returns_abuse_result_with_severity(self):
+        """Test check_whitelist returns AbuseResult with severity set."""
+        result = self.compliance.check_whitelist("planner", "sudo")
+        assert result.is_abused == True
+        assert result.severity == Severity.HIGH
+        assert result.tool_name == "sudo"
+        assert "sudo" in result.requested_permissions
+
+    def test_get_allowed_tools_planner_complete(self):
+        """Test planner has complete tool set."""
+        tools = self.compliance.get_allowed_tools("planner")
+        expected = ["read", "write", "plan", "execute"]
+        for tool in expected:
+            assert tool in tools
+
+    def test_custom_manifest_overrides_defaults(self):
+        """Test custom manifest completely replaces defaults."""
+        custom = {"developer": ["read", "write", "debug"]}
+        compliance = RuleCompliance(manifest=custom)
+        tools = compliance.get_allowed_tools("developer")
+        assert tools == ["read", "write", "debug"]
+        # Default agents should not exist
+        assert compliance.get_allowed_tools("planner") == []

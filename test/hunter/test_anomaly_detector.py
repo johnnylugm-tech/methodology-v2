@@ -200,3 +200,38 @@ class TestAnomalyDetector:
         )
         result = self.detector.detect_poisoning(fact, auth)
         assert result.source == "planner"
+
+    def test_extract_claims_with_fabrication_keyword(self):
+        """Test extract_claims finds fabrication keywords."""
+        content = "as I mentioned earlier, we should proceed with X"
+        claims = self.detector.extract_claims(content)
+        assert len(claims) >= 1
+
+    def test_extract_claims_no_keyword(self):
+        """Test extract_claims returns empty for normal content."""
+        content = "I think we should try a different approach"
+        claims = self.detector.extract_claims(content)
+        assert len(claims) == 0
+
+    def test_extract_claims_multiple_keywords(self):
+        """Test extract_claims with multiple keywords."""
+        content = "as I said earlier, we agreed on X. Also as you requested, Y"
+        claims = self.detector.extract_claims(content)
+        assert len(claims) >= 1
+
+    def test_query_audit_cache_miss(self):
+        """Test _query_audit returns None for missing conversation."""
+        result = self.detector._query_audit("nonexistent_conv")
+        assert result is None
+
+    def test_query_audit_cache_hit(self):
+        """Test _query_audit returns cached value."""
+        self.detector._audit_cache["conv_123"] = "found_in_audit"
+        result = self.detector._query_audit("conv_123")
+        assert result == "found_in_audit"
+
+    def test_detect_fabrication_empty_claim(self):
+        """Test detect_fabrication with empty claim."""
+        result = self.detector.detect_fabrication("agent_1", "", "conv_123")
+        assert result.is_fabricated == False
+        assert result.confidence == 0.0
