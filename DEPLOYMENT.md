@@ -84,7 +84,7 @@ pytest test/hunter/ -v
 
 ### Run with Coverage
 ```bash
-pytest test/hunter/ --cov=implement.hunter --cov-report=term-missing
+pytest test/hunter/ --cov=implement/hunter --cov-report=term-missing
 ```
 
 ### Coverage Target

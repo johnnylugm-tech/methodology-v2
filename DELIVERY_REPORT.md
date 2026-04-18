@@ -28,7 +28,7 @@
 | runtime_monitor.py | 117 | 100% | 24 |
 | hunter_agent.py | 139 | 100% | 26 |
 | __init__.py | 67 | 100% | - |
-| **TOTAL** | **872** | **100%** | **217** |
+| **TOTAL** | **872** | **100%** | **228** |
 
 ### 2.2 Functional Requirements Coverage
 | FR | Requirement | Status |
