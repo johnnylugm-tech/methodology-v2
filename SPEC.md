@@ -1,273 +1,282 @@
-# SPEC.md — Feature #5: LLM Cascade
+# SPEC.md — methodology-v2 v3.0 System Overview
 
-## 1. Feature Overview
-
-### Feature Name
-LLM Cascade (Multi-Model Routing)
-
-### Core Functionality
-Automatic fallback routing across LLM models — when primary model fails, times out, or returns low confidence, system transparently escalates to backup models in priority order until successful response or cascade exhausted.
-
-### Target Response Time
-< 3 seconds for cascade decision (excluding model inference time)
-
-### Cost Philosophy
-**"Use expensive models only when necessary"** — route to cheaper models for simple tasks, escalate to premium models only when required. Same task, better margin.
+**Document Version:** 3.0
+**Date:** 2026-04-19
+**Status:** System Specification
 
 ---
 
-## 2. Problem Statement
+## 1. System Overview
 
-### Why Static Model Selection Fails
-- **Single point of failure**: If one model API goes down, entire system fails
-- **No latency optimization**: Expensive premium model used even for simple tasks
-- **Cost inefficiency**: GPT-4 class models billed for tasks BERT-class models could handle
-- **Provider rate limits**: High-volume usage hits rate limits with no fallback
-- **Silent failures**: Model returns error or malformed output with no recovery
-- **No confidence awareness**: System treats model outputs as equally trustworthy regardless of actual quality
+### System Name
+methodology-v2 v3.0 — AI Agent Collaboration Framework
 
-### Why Existing Routing Is Insufficient
-- **Round-robin is not intelligent**: Doesn't consider task complexity or model capability match
-- **Hardcoded fallbacks are fragile**: Static retry with same model = same failure
-- **No cost-aware routing**: No concept of cost-per-task optimization
-- **No confidence scoring**: Doesn't use uncertainty quantification to trigger escalation
+### Core Purpose
+A framework for orchestrating multi-agent AI systems with governance, security, reliability, and intelligent routing.
 
-### Cost of Not Having Cascade
-- **Downstream failures**: Primary model failure cascades to dependent workflows
-- **Budget overruns**: Expensive models used unnecessarily, margin erosion
-- **User experience degradation**: Slow responses or failures on complex tasks
-- **Operational blindness**: No visibility into model-level reliability metrics
+### Version Summary
+
+| Feature | Name | Layer | Purpose |
+|---------|------|-------|---------|
+| #1 | MCP + SAIF 2.0 | 1.5 | Identity propagation across agent calls |
+| #2 | Prompt Shields | 1.7 | Input security: injection, PII, jailbreak detection |
+| #3 | Tiered Governance | 2.0 | Tiered oversight: HOTL / HITL / HOOTL |
+| #4 | Kill-Switch | 2.0 | Circuit breaker for runaway agents |
+| #5 | LLM Cascade | 3.0 | Multi-model routing with fallback and cost control |
 
 ---
 
-## 3. User Stories
+## 2. Feature Specifications
 
-### Operator Stories
+### Feature #1: MCP + SAIF 2.0 Identity Propagation
 
-**US-LC-1: Transparent Fallback**
-> As an **operator**, I want **automatic model fallback when primary fails** so that **end users experience seamless continuity even when a model provider has issues**.
+**Module:** `implement/mcp/`
 
-**US-LC-2: Cost-Optimized Routing**
-> As an **operator**, I want **system to route easy tasks to cheaper models** so that **my LLM bill is optimized without manual task classification**.
+**Purpose:** Propagate agent identity and authorization context across all tool calls and agent invocations.
 
-**US-LC-3: Cascade Visibility**
-> As an **operator**, I want **dashboard showing which models were used per request** so that **I can audit cost attribution and diagnose routing issues**.
+**Key Components:**
+- `saif_identity_middleware.py` — SAIF 2.0 middleware for identity injection
+- `data_perimeter.py` — PII detection and deidentification
 
-### Developer Stories
+**Responsibilities:**
+- Inject identity headers into all MCP tool calls
+- Track agent lineage through call chain
+- Enforce data perimeter boundaries
+- Auto-detect and deidentify PII fields
 
-**US-LC-4: Configurable Cascade Chains**
-> As a **developer**, I want to **define custom cascade chains per task type** so that **different workflows can have different model priority orders**.
-
-**US-LC-5: Confidence Threshold Triggers**
-> As a **developer**, I want **system to escalate to next model when confidence falls below threshold** so that **low-quality outputs are caught and improved automatically**.
-
-**US-LC-6: Timeout-Aware Routing**
-> As a **developer**, I want **system to timeout primary and fallback within configurable window** so that **users don't wait forever for a hanging model**.
-
-### System Stories
-
-**US-LC-7: Latency Budget Management**
-> As the **system**, I want to **enforce total latency budget across cascade** so that **slow models are skipped if they would exceed overall SLA**.
-
-**US-LC-8: Rate Limit Handling**
-> As the **system**, I want to **detect provider rate limits and skip to next model in chain** so that **system remains available even when usage spikes**.
-
-**US-LC-9: Provider Health Tracking**
-> As the **system**, I want to **track per-provider reliability metrics (success rate, latency, errors)** so that **routing decisions are data-driven, not static**.
-
-**US-LC-10: Cost Cap Enforcement**
-> As the **system**, I want to **stop cascade if cost累积 exceeds budget** so that ** runaway cascades don't multiply costs unexpectedly**.
-
----
-
-## 4. Functional Requirements
-
-| FR-ID | Description | Acceptance Criteria |
-|-------|-------------|---------------------|
-| **FR-LC-1** | Cascade Router | System shall route requests through configured model chain in priority order until success or chain exhausted |
-| **FR-LC-2** | Failure Mode Handling | System shall treat the following as cascade triggers: API errors, timeout, malformed response, rate limit (429), server error (500-599) |
-| **FR-LC-3** | Confidence-Based Escalation | System shall compute confidence score on model output; if score < configured threshold, escalate to next model |
-| **FR-LC-4** | Configurable Cascade Chains | Operator shall be able to define cascade chains as ordered lists: `[primary, fallback1, fallback2, ...]` per task type |
-| **FR-LC-5** | Latency Budget | Total time from request to final response shall not exceed configured `latency_budget_ms`; if exceeded, return last available response or error |
-| **FR-LC-6** | Cost Tracking | System shall record per-request cost (sum of token costs across all cascade attempts) and expose via metrics API |
-| **FR-LC-7** | Provider Health Metrics | System shall track rolling success rate, median latency, error types per provider; expose as `ProviderHealth` struct |
-| **FR-LC-8** | Rate Limit Detection | Upon HTTP 429 from provider, immediately skip to next model; do not retry same provider within `cooldown_seconds` |
-| **FR-LC-9** | Confidence Scoring | System shall compute output confidence as normalized score 0-1 based on: token entropy, repetition patterns, length sanity, parse validity |
-| **FR-LC-10** | Cascade Exhausted Handling | When all models in chain fail/return low confidence/exceed latency budget, return error with `cascade_failure` reason and attempted models list |
-| **FR-LC-11** | Request-Level Isolation | Each cascade request shall be independent; failures in one request shall not affect concurrent requests |
-
----
-
-## 5. Cascade Strategy Table
-
-| Strategy Name | Trigger Condition | Fallback Model | Degraded Behavior |
-|---------------|-------------------|----------------|-------------------|
-| **Fast-Fail** | Primary returns error immediately | Next in chain | Return last valid response or error |
-| **Confidence-Gated** | Output confidence < threshold | Next in chain | Return lowest-confidence valid response |
-| **Latency-Budgeted** | Cumulative latency > budget | Stop cascade | Return best response so far or timeout error |
-| **Cost-Capped** | Cumulative cost > cap | Stop cascade | Return cheapest valid response or error |
-| **Rate-Limit-Aware** | HTTP 429 received | Skip provider, try next | Skip provider for `cooldown_seconds` |
-| **Health-Based** | Provider success rate < 80% | Next healthy provider | Route away from unhealthy providers |
-
-### Default Cascade Chain
-```
-Claude Opus → Claude Sonnet → GPT-4o → GPT-4o-mini → Gemini-Pro
-```
-(Most capable → Most cost-effective, left-to-right priority)
-
----
-
-## 6. Success Metrics
-
-| Metric | Target | Measurement |
-|--------|--------|-------------|
-| End-to-End Success Rate | > 99.5% | (Successful responses / Total requests), counting cascade as success if any model succeeds |
-| Cost Reduction | > 30% vs single premium model | (Baseline single-model cost - Actual cascade cost) / Baseline |
-| Cascade Hit Rate | 15-40% | Percentage of requests that used at least one fallback |
-| Average Cascade Depth | 1.2-1.8 models | Mean number of models attempted per request |
-| P99 Latency | < 10 seconds | Time from request start to final response including all retries |
-| Confidence Accuracy | > 85% | Correlation between low-confidence flag and actual output quality issues |
-| Cost Attribution Error | < 1% | Variance between logged cost and provider billing |
-
----
-
-## 7. Out of Scope
-
-- **Model fine-tuning**: Cascade selects from pre-trained models, does not train or fine-tune
-- **Multi-modal routing**: This spec covers text-only models; images/audio handled by separate system
-- **Batch request optimization**: Cascade is per-request; batch scheduling is separate
-- **Model-specific prompt engineering**: Prompt templates are external; cascade just routes to models
-
----
-
-## 8. Dependencies
-
-| Dependency | Source | Purpose |
-|------------|--------|---------|
-| **Model Provider APIs** | External | Claude, OpenAI, Google Gemini — abstraction via standard HTTP+JSON interface |
-| **Feature #1: MCP/SAIF** | v3/mcp-saif | Identity propagation ensures model calls carry correct attribution |
-| **Feature #2: Prompt Shields** | v3/prompt-shields | Input validation before cascade; output validation after cascade |
-| **Feature #3: Tiered Governance** | v3/tiered-governance | Governance triggers when cascade behavior suggests policy concern |
-| **Configuration Store** | Core | Stores cascade chains, thresholds, latency budgets per task type |
-| **Metrics Infrastructure** | Core | Exposes provider health, cascade stats to observability layer |
-
----
-
-## 9. Architecture Diagram
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                      LLM Cascade Router                        │
-│  ┌─────────────┐  ┌──────────────┐  ┌────────────────────────┐  │
-│  │ Router      │  │ Health Track │  │ Cost Tracker           │  │
-│  │ (orchestrate)│ │ (per provider)│  │ (per request + cumul.) │  │
-│  └──────┬──────┘  └──────┬───────┘  └───────────┬────────────┘  │
-│         │                │                      │               │
-│         ▼                ▼                      ▼               │
-│  ┌─────────────────────────────────────────────────────────┐    │
-│  │                   Cascade Engine                         │    │
-│  │  ┌─────────┐   ┌─────────┐   ┌─────────┐   ┌─────────┐  │    │
-│  │  │ Model 1 │──▶│ Model 2 │──▶│ Model 3 │──▶│ Model N │  │    │
-│  │  │(primary)│   │(fallback)│   │(fallback)│   │(last)   │  │    │
-│  │  └────┬────┘   └────┬────┘   └────┬────┘   └────┬────┘  │    │
-│  │       │             │             │             │        │    │
-│  │       ▼             ▼             ▼             ▼        │    │
-│  │  [Confidence Check] [Latency Budget] [Cost Cap]  [Error]   │    │
-│  └─────────────────────────────────────────────────────────┘    │
-└─────────────────────────────────────────────────────────────────┘
-         │                │                │
-         ▼                ▼                ▼
-   ┌──────────┐    ┌──────────┐    ┌──────────┐
-   │ Claude   │    │ OpenAI   │    │ Gemini   │
-   └──────────┘    └──────────┘    └──────────┘
-```
-
-### Cascade Flow
-
-```
-Request → Router.select_model()
-         │
-         ▼
-    Model #1 (primary)
-         │
-    ┌────┼────┐
-    │    │    │
- success failure timeout
-    │    │    │
-    │    ▼    ▼
-    │  Retry / Timeout → Model #2
-    │    │
-    │    ▼
-    │  [Confidence Check]
-    │    │
-    │  confidence < threshold?
-    │    │yes         │no
-    │    ▼            ▼
-    │  Model #2   [Return Response]
-    │    │
-    └────┘
-         │
-    All models exhausted?
-         │yes              │no
-         ▼                  ▼
-   [Return Error]     [Return Response]
-```
-
----
-
-## 10. State Definitions
-
-| State | Description |
-|-------|-------------|
-| **IDLE** | No active request; system monitoring provider health |
-| **ROUTING** | Selecting model based on health/cost/priority |
-| **MODEL_CALL** | Active call to selected model |
-| **CASCADE_CHECK** | Evaluating success/failure/confidence/latency/cost |
-| **EXHAUSTED** | All models tried; preparing error response |
-
----
-
-## 11. Key Interfaces
-
+**Interface:**
 ```python
-@dataclass
-class CascadeConfig:
-    chain: List[ModelConfig]           # Ordered model list
-    latency_budget_ms: int = 10000     # Max total time
-    cost_cap_usd: float = 0.50         # Max cost per request
-    confidence_threshold: float = 0.7  # Min acceptable confidence
+# Agent registers identity context
+middleware = SAIFIdentityMiddleware(agents_config)
+middleware.create(agent_id="agent-1", scopes=["read", "write"])
 
-@dataclass
-class CascadeResult:
-    response: str
-    model_used: str
-    cascade_depth: int                  # Which model in chain succeeded
-    total_cost_usd: float
-    latency_ms: int
-    confidence: float
-    attempt_history: List[AttemptRecord]
-
-@dataclass
-class ProviderHealth:
-    provider: str
-    success_rate: float                # Rolling 24h
-    median_latency_ms: int
-    error_types: Dict[str, int]
-    rate_limit_count: int              # 429s in rolling window
+# All subsequent calls auto-propagate identity
+middleware.check(operation="tool.use", scopes_needed=["write"])
 ```
 
 ---
 
-## 12. Acceptance Test Scenarios
+### Feature #2: Prompt Shields (Input Security)
 
-| Scenario | Expected Result |
-|----------|-----------------|
-| Primary model returns 200 with high confidence | Return immediately, no fallback |
-| Primary model returns 500 error | Cascade to fallback, record error |
-| Primary model times out | Cascade to fallback, record timeout |
-| Output confidence = 0.5 (< threshold) | Cascade to next model |
-| All models in chain fail | Return error with `cascade_failure` and attempt list |
-| Latency budget exceeded mid-cascade | Return best response so far or timeout error |
-| Total cost exceeds cap | Stop cascade, return cheapest valid response |
-| Provider has 5 consecutive 429s | Skip provider, route to next healthy model |
-| Concurrent requests to same provider | Independent cascades, no shared state mutation |
+**Module:** `implement/security/`
+
+**Purpose:** Security layer for all agent inputs — detect injection attacks, PII leakage, jailbreak attempts.
+
+**Key Components:**
+- `prompt_shield.py` — Main shield with verdict logic
+- `detection_modes.py` — Detection mode configurations
+- `shield_enums.py` — Verdict, ScanResult, PatternMatch
+
+**Responsibilities:**
+- Scan all prompts for injection patterns (SQL, XSS, command)
+- Detect jailbreak attempts and prompt leakage
+- Apply PII redaction before forwarding
+- Return structured verdict: ALLOW / DENY / ESCALATE
+
+**Interface:**
+```python
+shield = PromptShield()
+verdict = shield.check(prompt=raw_input)
+# verdict.action in [Verdict.ALLOW, Verdict.DENY, Verdict.ESCALATE]
+```
+
+---
+
+### Feature #3: Tiered Governance (HOTL / HITL / HOOTL)
+
+**Module:** `implement/governance/`
+
+**Purpose:** Classify every agent operation into exactly one governance tier and enforce the appropriate oversight level.
+
+**Key Components:**
+- `tier_classifier.py` — Core classification engine
+- `governance_trigger.py` — Trigger evaluation for workflows
+- `override_manager.py` — Human override authority
+- `escalation_engine.py` — Tier escalation/de-escalation logic
+- `audit_logger.py` — Immutable audit trail
+
+**Responsibilities:**
+- Classify operation into: HOTL (Human On The Loop), HITL (Human In The Loop), HOOTL (Human Out Of The Loop)
+- Trigger governance workflows based on data classification and risk level
+- Support human escalation and override
+- Maintain immutable audit log with hash chain verification
+
+**Interface:**
+```python
+classifier = TierClassifier(rules=classification_rules)
+decision = classifier.classify_operation(
+    operation=op,
+    risk_level=RiskLevel.HIGH,
+    data_classification=DataClassification.RESTRICTED
+)
+# decision.tier in [Tier.HOTL, Tier.HITL, Tier.HOOTL, Tier.BLOCK]
+```
+
+---
+
+### Feature #4: Kill-Switch Circuit Breaker
+
+**Module:** `implement/kill_switch/`
+
+**Purpose:** Detect runaway agents and forcibly interrupt them before resource exhaustion.
+
+**Key Components:**
+- `kill_switch.py` — Main facade
+- `circuit_breaker.py` — Circuit state machine
+- `interrupt_engine.py` — OS-level interrupt execution
+- `health_monitor.py` — Resource health monitoring
+- `state_manager.py` — Persistent circuit state
+
+**Responsibilities:**
+- Monitor agent health (CPU, memory, latency, error rate)
+- Open circuit when thresholds exceeded
+- Execute OS-level interrupt (SIGTERM → SIGKILL → process termination)
+- Maintain circuit state across restarts
+
+**Interface:**
+```python
+ks = KillSwitch(config=kill_switch_config)
+ks.start_monitoring(agent_id="agent-1")
+health = ks.get_agent_health(agent_id="agent-1")
+ks.manual_trigger(agent_id="agent-1", reason="user_requested")
+```
+
+---
+
+### Feature #5: LLM Cascade (Multi-Model Routing)
+
+**Module:** `implement/llm_cascade/`
+
+**Purpose:** Route LLM requests across multiple providers with fallback, cost optimization, and health-aware selection.
+
+**Key Components:**
+- `cascade_engine.py` — Main execution engine
+- `cascade_router.py` — Provider selection logic
+- `api_clients/` — Provider-specific API clients (OpenAI, Anthropic, Google)
+- `confidence_scorer.py` — Response quality scoring
+- `health_tracker.py` — Provider health tracking
+- `cost_tracker.py` — Cost budget management
+
+**Responsibilities:**
+- Route requests to primary provider based on config
+- Fallback to secondary/tertiary on failure or health degradation
+- Score response confidence; escalate if below threshold
+- Track cost per provider; enforce budget limits
+- Emit provider health events for governance integration
+
+**Interface:**
+```python
+cascade = CascadeEngine(config=llm_cascade_config)
+result = await cascade.execute_chain(messages=[...])
+# result.state in [CascadeState.PRIMARY_SUCCESS, CascadeState.FALLBACK, CascadeState.EXHAUSTED]
+```
+
+---
+
+## 3. Feature Integration
+
+### Data Flow
+
+```
+User Input
+    │
+    ▼
+┌─────────────────────────────────────────┐
+│ Feature #2: Prompt Shields              │
+│ (Security scan before processing)        │
+└─────────────────────────────────────────┘
+    │ ALLOW
+    ▼
+┌─────────────────────────────────────────┐
+│ Feature #1: MCP + SAIF Identity         │
+│ (Inject identity context)               │
+└─────────────────────────────────────────┘
+    │
+    ▼
+┌─────────────────────────────────────────┐
+│ Feature #3: Tiered Governance          │
+│ (Classify operation tier)               │
+│ HOTL → auto-proceed                     │
+│ HITL → wait for human approval          │
+│ HOOTL → enhanced monitoring             │
+│ BLOCK → reject                          │
+└─────────────────────────────────────────┘
+    │ APPROVED
+    ▼
+┌─────────────────────────────────────────┐
+│ Feature #5: LLM Cascade                │
+│ (Route to provider, track cost/health) │
+└─────────────────────────────────────────┘
+    │
+    ▼
+┌─────────────────────────────────────────┐
+│ Feature #4: Kill-Switch               │
+│ (Monitor health, interrupt if needed)   │
+└─────────────────────────────────────────┘
+    │
+    ▼
+Response
+```
+
+### Cross-Feature Dependencies
+
+| From | To | Dependency Type |
+|------|-----|----------------|
+| Feature #2 (Prompt Shields) | Feature #1 (Identity) | Pre-condition: input must be clean |
+| Feature #1 (Identity) | Feature #3 (Governance) | Governance needs identity to classify |
+| Feature #3 (Governance) | Feature #5 (LLM Cascade) | Governance result affects routing decision |
+| Feature #5 (LLM Cascade) | Feature #4 (Kill-Switch) | Kill-switch monitors LLM health metrics |
+| Feature #5 (LLM Cascade) | Feature #3 (Governance) | LLM health events trigger governance |
+
+---
+
+## 4. Non-Functional Requirements
+
+### Performance
+- LLM Cascade latency overhead: <50ms per request (excluding model latency)
+- Kill-Switch interrupt latency: <100ms from threshold breach to signal
+- Prompt Shield scan: <10ms per prompt
+
+### Reliability
+- Kill-Switch circuit must survive agent crash (state persisted)
+- Governance audit log must be immutable (hash chain verification)
+- LLM Cascade must guarantee at-least-once delivery with fallback
+
+### Security
+- All agent identities cryptographically verifiable
+- Prompt injection zero-day coverage via pattern learning
+- No PII in logs (auto-redaction enabled)
+- Zero hardcoded credentials (detect-secrets baseline maintained)
+
+### Compatibility
+- OpenClaw Gateway plugin interface compatible
+- MCP protocol support for SAIF 2.0 identity propagation
+- REST API for health and governance queries
+
+---
+
+## 5. Quality Gates (v3.0)
+
+| Gate | Threshold | Status |
+|------|-----------|--------|
+| D1 Linting | 100% | ✅ Pass |
+| D2 Type Safety | 100% | ✅ Pass |
+| D3 Test Coverage | ≥85% | ✅ Pass (88%) |
+| D4 Secrets | 100% | ✅ Pass |
+| D5 Complexity | ≤85% | ✅ Pass |
+| D6 Architecture | Clean deps | ✅ Pass |
+| D7 Readability | 100% | ✅ Pass |
+| D8 Error Handling | 100% | ✅ Pass |
+| D9 Documentation | 100% | ✅ Pass |
+
+---
+
+## 6. Future Features (Roadmap)
+
+| # | Feature | Branch | Status |
+|---|---------|--------|--------|
+| #6 | Hunter Agent | v3/hunter-agent | Planned |
+| #7 | UQLM + Probes | v3/uqlm-probes | Planned |
+| #8 | Gap Detection | v3/gap-detector | Planned |
+| #9 | Risk Assessment | v3/risk-engine | Planned |
+| #10 | LangGraph Integration | v3/langgraph | Planned |
