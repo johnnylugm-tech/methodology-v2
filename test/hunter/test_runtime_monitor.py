@@ -179,3 +179,22 @@ class TestRuntimeMonitor:
             self.monitor.record_access("agent_burst", f"source_{i}")
         anomaly = self.monitor.detect_anomaly("agent_burst")
         assert anomaly >= 0.3
+
+    def test_detect_anomaly_below_threshold_returns_zero(self):
+        """Test else branch when anomaly < 0.3 (line 103)."""
+        # Add some but not enough accesses to trigger threshold
+        for i in range(10):
+            self.monitor.record_access("agent_low", f"source_{i}")
+        
+        anomaly = self.monitor.detect_anomaly("agent_low")
+        # With < 20 accesses in 1 second, anomaly should be 0.0
+        assert anomaly == 0.0
+
+    def test_detect_anomaly_few_records_returns_zero(self):
+        """Test line 103: branch when len(records) < 5."""
+        # Add only 3 records (less than 5)
+        for i in range(3):
+            self.monitor.record_access("agent_few", f"source_{i}")
+        
+        anomaly = self.monitor.detect_anomaly("agent_few")
+        assert anomaly == 0.0

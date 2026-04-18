@@ -235,3 +235,17 @@ class TestAnomalyDetector:
         result = self.detector.detect_fabrication("agent_1", "", "conv_123")
         assert result.is_fabricated == False
         assert result.confidence == 0.0
+
+    def test_detect_fabrication_claim_found_in_audit(self):
+        """Test else branch when audit_ref is not None (line 58)."""
+        # Pre-populate cache to trigger else branch
+        self.detector._audit_cache["conv_existing"] = "found_reference"
+        result = self.detector.detect_fabrication(
+            "agent_1",
+            "as I said earlier we agreed on X",  # Suspicious keyword
+            "conv_existing"  # This conversation exists in cache
+        )
+        # audit_ref exists, so is_fabricated should be False
+        assert result.is_fabricated == False
+        assert result.audit_reference == "found_reference"
+        assert result.confidence == 0.9
