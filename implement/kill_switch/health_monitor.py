@@ -6,10 +6,9 @@ memory, output rate, responsiveness).
 """
 
 import random
-import time
 from datetime import datetime, timezone
 from threading import Lock
-from typing import Dict, List, Optional
+from typing import Dict, List
 
 from .exceptions import AgentNotFoundError, MetricsUnavailableError
 from .models import HealthMetrics, MonitorConfig

@@ -12,7 +12,7 @@ See ARCHITECTURE.md Section 9 for dependency mapping.
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, List, Optional, TYPE_CHECKING
+from typing import Any, Dict, Optional, TYPE_CHECKING
 
 from .models import (
     CascadeConfig,

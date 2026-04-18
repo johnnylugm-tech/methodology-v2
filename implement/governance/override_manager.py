@@ -13,7 +13,6 @@ from typing import Dict, List, Optional
 from .enums import (
     AuthorizedRole,
     Tier,
-    TIER_ORDER,
 )
 from .exceptions import (
     UnauthorizedOverrideError,
@@ -22,7 +21,6 @@ from .models import (
     OverrideRecord,
     OverrideResult,
     ReviewFlagStatus,
-    TierDecision,
 )
 
 

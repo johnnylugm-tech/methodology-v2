@@ -7,7 +7,7 @@ when thresholds are exceeded.
 
 from datetime import datetime, timezone
 from threading import Lock
-from typing import Dict, Optional
+from typing import Dict
 
 from .enums import CircuitState
 from .exceptions import AgentNotFoundError

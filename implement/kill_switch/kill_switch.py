@@ -9,7 +9,7 @@ from typing import List, Optional
 
 from .circuit_breaker import CircuitBreaker
 from .enums import CircuitState, KillReason
-from .exceptions import AgentNotFoundError, InterruptInProgressError
+from .exceptions import InterruptInProgressError
 from .health_monitor import HealthMonitor
 from .interrupt_engine import InterruptEngine
 from .models import InterruptEvent, MonitorConfig

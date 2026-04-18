@@ -7,7 +7,6 @@ until explicitly re-enabled.
 
 import json
 import logging
-import os
 import shutil
 from pathlib import Path
 from threading import Lock
@@ -198,7 +197,7 @@ class StateManager:
         Returns:
             CircuitBreakerState: Deserialized state.
         """
-        from datetime import datetime, timezone
+        from datetime import datetime
 
         def parse_dt(value: Optional[str]) -> Optional[datetime]:
             if value is None:

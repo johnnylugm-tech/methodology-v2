@@ -7,10 +7,9 @@ import hmac
 import json
 import time
 import uuid
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
-from enum import Enum
-from typing import Any, Callable, Optional
+from typing import Callable, Optional
 
 import yaml
 

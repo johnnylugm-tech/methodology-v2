@@ -15,7 +15,6 @@ from .cascade_engine import CascadeEngine
 from .cascade_router import CascadeRouter
 from .confidence_scorer import ConfidenceScorer
 from .cost_tracker import CostTracker
-from .enums import CascadeStateEnum
 from .health_tracker import HealthTracker
 from .models import (
     AttemptCost,
@@ -25,7 +24,6 @@ from .models import (
     LLMCascadeConfig,
     ModelConfig,
     ProviderHealth,
-    ModelCallResult,
 )
 
 

@@ -15,9 +15,8 @@ Pricing defaults from ARCHITECTURE.md Section 2.3:
 from __future__ import annotations
 
 import threading
-from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional
 
 from .models import (
     AttemptCost,

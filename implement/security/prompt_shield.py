@@ -1,7 +1,7 @@
 """Direct injection shield for user prompts."""
 import hashlib
 import time
-from .shield_enums import Verdict, ScanResult, PatternMatch, ScannerUnavailableError
+from .shield_enums import Verdict, ScanResult
 from .detection_modes import DetectionModes
 
 class PromptShield:

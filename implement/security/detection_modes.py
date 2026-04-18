@@ -1,6 +1,5 @@
 """Detection modes and threshold rules."""
 import re
-from typing import Optional
 from .shield_enums import Verdict, ScanResult, PatternMatch
 
 class DetectionModes:

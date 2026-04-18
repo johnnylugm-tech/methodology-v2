@@ -10,7 +10,6 @@ from typing import Any, Dict, List, Optional
 from .enums import (
     ApprovalStatus,
     AuthorizedRole,
-    GovernanceDecision,
     OperationScope,
     OperationType,
     RiskLevel,

@@ -21,10 +21,7 @@ from .enums import (
 from .exceptions import TierClassificationError
 from .models import (
     GovernanceContext,
-    Identity,
-    OperationSummary,
     TierDecision,
-    TierOverride,
 )
 
 

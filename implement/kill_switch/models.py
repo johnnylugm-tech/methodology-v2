@@ -4,7 +4,7 @@ Kill-Switch Circuit Breaker Data Models.
 Defines all dataclass models used by the Kill-Switch system.
 """
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime
 from typing import Optional
 

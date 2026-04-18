@@ -6,9 +6,6 @@ All dataclass definitions as specified in ARCHITECTURE.md.
 
 from __future__ import annotations
 
-import math
-import re
-from collections import Counter
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum, auto

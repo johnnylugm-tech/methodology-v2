@@ -9,10 +9,9 @@ See ARCHITECTURE.md Section 9 for external API endpoints.
 
 from __future__ import annotations
 
-import asyncio
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 from ..models import ModelConfig
 
