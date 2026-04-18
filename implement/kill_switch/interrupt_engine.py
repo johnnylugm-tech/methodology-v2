@@ -6,7 +6,6 @@ verify termination.
 """
 
 import logging
-import signal
 import time
 import uuid
 from datetime import datetime, timezone
@@ -14,13 +13,10 @@ from threading import Lock
 from typing import Dict, List, Optional
 
 from .enums import InterruptOutcome, KillSwitchEventType
-from .exceptions import AgentNotFoundError, InterruptInProgressError
+from .exceptions import InterruptInProgressError
 from .models import InterruptEvent, KillReason
 
 logger = logging.getLogger(__name__)
-
-# Re-export AuditLogger from Feature #3
-from implement.governance.audit_logger import AuditLogger  # noqa: F401, E402
 
 
 class InterruptEngine:
