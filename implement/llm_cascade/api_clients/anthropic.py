@@ -18,7 +18,6 @@ Supported models:
 from __future__ import annotations
 
 import os
-import time
 from typing import Any, Dict, Optional
 
 from .base import (
@@ -177,7 +176,7 @@ class AnthropicAPIClient(APIClient):
             "stream": stream,
         }
 
-    def _parse_response(self, response: httpx.Response) -> APIResponse:
+    def _parse_response(self, response: httpx.Response) -> APIResponse:  # noqa: F821
         """
         Parse the Anthropic API response into APIResponse format.
         """

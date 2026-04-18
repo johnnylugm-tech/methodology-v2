@@ -300,7 +300,7 @@ class GovernanceTrigger:
         Raises:
             GovernanceError: If the workflow type is unrecognized.
         """
-        workflow_id = f"wf_{operation.operation_id}"
+        _workflow_id = f"wf_{operation.operation_id}"
 
         if decision == GovernanceDecision.AUTO_APPROVE:
             handle = self._fire_hotl_workflow(operation, context)

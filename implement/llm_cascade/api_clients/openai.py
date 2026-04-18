@@ -164,7 +164,7 @@ class OpenAIAPIClient(APIClient):
             "stream": stream,
         }
 
-    def _parse_response(self, response: httpx.Response) -> APIResponse:
+    def _parse_response(self, response: httpx.Response) -> APIResponse:  # noqa: F821
         """
         Parse the OpenAI API response into APIResponse format.
         """

@@ -171,7 +171,7 @@ class GoogleAPIClient(APIClient):
             },
         }
 
-    def _parse_response(self, response: httpx.Response) -> APIResponse:
+    def _parse_response(self, response: httpx.Response) -> APIResponse:  # noqa: F821
         """
         Parse the Gemini API response into APIResponse format.
         """
