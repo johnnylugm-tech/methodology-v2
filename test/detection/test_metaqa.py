@@ -96,7 +96,8 @@ class TestSigmoidScale:
     def test_custom_x0(self):
         s1 = sigmoid_scale(1.0, k=1.0, x0=0.0)
         s2 = sigmoid_scale(1.0, k=1.0, x0=1.0)
-        assert abs(s1 - 0.5) < abs(s2 - 0.5)
+        # x0 shifts the sigmoid; s1=0.731 is farther from 0.5 than s2=0.5
+        assert abs(s1 - 0.5) > abs(s2 - 0.5)
 
 
 class TestMetaQADetectorInit:

@@ -67,8 +67,8 @@ def apply_lora(
     Returns:
         Adapted weight matrix
     """
-    # Compute BA and scale
-    lora_delta = lora_b @ lora_a
+    # Compute AB and scale (AB gives hidden_dim x hidden_dim for broadcasting)
+    lora_delta = lora_a @ lora_b
     return original + lora_delta * alpha
 
 
@@ -186,7 +186,7 @@ class TinyLoRA:
         # Validate dimensions
         if X.shape[1] != self.config.hidden_dim:
             raise DataInsufficientError(
-                message=f"Hidden dim mismatch: expected {self.config.hidden_dim}, "
+                message=f"Hidden dimension mismatch: expected {self.config.hidden_dim}, "
                 f"got {X.shape[1]}",
                 provided_count=X.shape[1],
                 required_count=self.config.hidden_dim,
@@ -224,7 +224,7 @@ class TinyLoRA:
 
             # Track best loss
             if loss < best_loss:
-                best_loss = loss
+                best_loss = float(loss)
                 no_improve_count = 0
             else:
                 no_improve_count += 1

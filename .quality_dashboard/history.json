@@ -1,0 +1,1055 @@
+[
+  {
+    "iteration": 1,
+    "timestamp": "2026-04-17T22:21:23.471509",
+    "dimensions": {
+      "D1_Linting": {
+        "name": "Linting",
+        "score": 0,
+        "weight": 0.1,
+        "issues": [
+          "F541 [*] f-string without any placeholders",
+          "F601 Dictionary key literal `\"ResourceType\"` repeated",
+          "F811 Redefinition of unused `Task` from line 333",
+          "F811 Redefinition of unused `ResourceType` from line 354",
+          "F541 [*] f-string without any placeholders"
+        ],
+        "tool_driven": true,
+        "tool_name": "ruff"
+      },
+      "D2_TypeSafety": {
+        "name": "Type Safety",
+        "score": 100,
+        "weight": 0.15,
+        "issues": [],
+        "tool_driven": true,
+        "tool_name": "mypy"
+      },
+      "D3_TestCoverage": {
+        "name": "Test Coverage",
+        "score": 0,
+        "weight": 0.2,
+        "issues": [
+          "Coverage 0% < 70%"
+        ],
+        "tool_driven": true,
+        "tool_name": "pytest-cov"
+      },
+      "D4_Security": {
+        "name": "Security",
+        "score": 100,
+        "weight": 0.15,
+        "issues": [
+          "No issues found"
+        ],
+        "tool_driven": true,
+        "tool_name": "bandit"
+      },
+      "D5_Complexity": {
+        "name": "Complexity",
+        "score": 45,
+        "weight": 0.1,
+        "issues": [
+          "CC > 15: "
+        ],
+        "tool_driven": false,
+        "tool_name": "lizard"
+      },
+      "D6_Architecture": {
+        "name": "Architecture",
+        "score": 70,
+        "weight": 0.1,
+        "issues": [
+          "M 247:4 StructuredOutputEngine.parse - B",
+          "M 373:4 StructuredOutputEngine._extract_kv - B",
+          "M 398:4 StructuredOutputEngine.validate_output - B"
+        ],
+        "tool_driven": false,
+        "tool_name": "radon"
+      },
+      "D7_Readability": {
+        "name": "Readability",
+        "score": 100,
+        "weight": 0.1,
+        "issues": [
+          "7772/499 files with docstrings (estimate)"
+        ],
+        "tool_driven": false,
+        "tool_name": "agent"
+      },
+      "D8_ErrorHandling": {
+        "name": "Error Handling",
+        "score": 100,
+        "weight": 0.05,
+        "issues": [
+          "852 try-except blocks found"
+        ],
+        "tool_driven": false,
+        "tool_name": "agent"
+      },
+      "D9_Documentation": {
+        "name": "Documentation",
+        "score": 95.79158316633266,
+        "weight": 0.05,
+        "issues": [
+          "478/499 files with docstrings"
+        ],
+        "tool_driven": false,
+        "tool_name": "agent"
+      }
+    },
+    "total_score": 61.289579158316634,
+    "technical_debt": 38.710420841683366,
+    "hotspots": {},
+    "improvements": [],
+    "agent_actions": []
+  },
+  {
+    "iteration": 2,
+    "timestamp": "2026-04-17T22:50:19.886010",
+    "dimensions": {
+      "D1_Linting": {
+        "name": "Linting",
+        "score": 0,
+        "weight": 0.1,
+        "issues": [
+          "F541 [*] f-string without any placeholders",
+          "F601 Dictionary key literal `\"ResourceType\"` repeated",
+          "F811 Redefinition of unused `Task` from line 333",
+          "F811 Redefinition of unused `ResourceType` from line 354",
+          "F541 [*] f-string without any placeholders"
+        ],
+        "tool_driven": true,
+        "tool_name": "ruff"
+      },
+      "D2_TypeSafety": {
+        "name": "Type Safety",
+        "score": 100,
+        "weight": 0.15,
+        "issues": [],
+        "tool_driven": true,
+        "tool_name": "mypy"
+      },
+      "D3_TestCoverage": {
+        "name": "Test Coverage",
+        "score": 0,
+        "weight": 0.2,
+        "issues": [
+          "Coverage 0% < 70%"
+        ],
+        "tool_driven": true,
+        "tool_name": "pytest-cov"
+      },
+      "D4_Security": {
+        "name": "Security",
+        "score": 100,
+        "weight": 0.15,
+        "issues": [
+          "No issues found"
+        ],
+        "tool_driven": true,
+        "tool_name": "bandit"
+      },
+      "D5_Complexity": {
+        "name": "Complexity",
+        "score": 45,
+        "weight": 0.1,
+        "issues": [
+          "CC > 15: "
+        ],
+        "tool_driven": false,
+        "tool_name": "lizard"
+      },
+      "D6_Architecture": {
+        "name": "Architecture",
+        "score": 70,
+        "weight": 0.1,
+        "issues": [
+          "M 247:4 StructuredOutputEngine.parse - B",
+          "M 373:4 StructuredOutputEngine._extract_kv - B",
+          "M 398:4 StructuredOutputEngine.validate_output - B"
+        ],
+        "tool_driven": false,
+        "tool_name": "radon"
+      },
+      "D7_Readability": {
+        "name": "Readability",
+        "score": 100,
+        "weight": 0.1,
+        "issues": [
+          "7772/499 files with docstrings (estimate)"
+        ],
+        "tool_driven": false,
+        "tool_name": "agent"
+      },
+      "D8_ErrorHandling": {
+        "name": "Error Handling",
+        "score": 100,
+        "weight": 0.05,
+        "issues": [
+          "852 try-except blocks found"
+        ],
+        "tool_driven": false,
+        "tool_name": "agent"
+      },
+      "D9_Documentation": {
+        "name": "Documentation",
+        "score": 95.79158316633266,
+        "weight": 0.05,
+        "issues": [
+          "478/499 files with docstrings"
+        ],
+        "tool_driven": false,
+        "tool_name": "agent"
+      }
+    },
+    "total_score": 61.289579158316634,
+    "technical_debt": 38.710420841683366,
+    "hotspots": {},
+    "improvements": [],
+    "agent_actions": []
+  },
+  {
+    "iteration": 3,
+    "timestamp": "2026-04-17T23:15:37.423554",
+    "dimensions": {
+      "D1_Linting": {
+        "name": "Linting",
+        "score": 65,
+        "weight": 0.1,
+        "issues": [
+          "F821 Undefined name `GovernanceContext`",
+          "F841 Local variable `workflow_id` is assigned to but never used",
+          "Found 2 errors.",
+          "F821 Undefined name `httpx`",
+          "F821 Undefined name `httpx`"
+        ],
+        "tool_driven": true,
+        "tool_name": "ruff"
+      },
+      "D2_TypeSafety": {
+        "name": "Type Safety",
+        "score": 100,
+        "weight": 0.15,
+        "issues": [],
+        "tool_driven": true,
+        "tool_name": "mypy"
+      },
+      "D3_TestCoverage": {
+        "name": "Test Coverage",
+        "score": 87.4,
+        "weight": 0.2,
+        "issues": [],
+        "tool_driven": true,
+        "tool_name": "pytest-cov"
+      },
+      "D4_Security": {
+        "name": "Security",
+        "score": 0,
+        "weight": 0.15,
+        "issues": [
+          "Critical: 4",
+          "Warning: 22",
+          "Info: 5"
+        ],
+        "tool_driven": true,
+        "tool_name": "agent-quality-guard"
+      },
+      "D5_Complexity": {
+        "name": "Complexity",
+        "score": 20,
+        "weight": 0.1,
+        "issues": [
+          "CC > 15: .openclaw/workspace-musk/skills/methodology-v2/implement/governance/audit_logger.py"
+        ],
+        "tool_driven": false,
+        "tool_name": "lizard"
+      },
+      "D6_Architecture": {
+        "name": "Architecture",
+        "score": 70,
+        "weight": 0.1,
+        "issues": [
+          "M 320:4 AuditLogger.query - D",
+          "M 379:4 AuditLogger.get_health_report - C",
+          "M 71:4 CascadeEngine.execute_chain - C"
+        ],
+        "tool_driven": false,
+        "tool_name": "radon"
+      },
+      "D7_Readability": {
+        "name": "Readability",
+        "score": 100,
+        "weight": 0.1,
+        "issues": [
+          "7772/499 files with docstrings (estimate)"
+        ],
+        "tool_driven": false,
+        "tool_name": "agent"
+      },
+      "D8_ErrorHandling": {
+        "name": "Error Handling",
+        "score": 100,
+        "weight": 0.05,
+        "issues": [
+          "852 try-except blocks found"
+        ],
+        "tool_driven": false,
+        "tool_name": "agent"
+      },
+      "D9_Documentation": {
+        "name": "Documentation",
+        "score": 95.79158316633266,
+        "weight": 0.05,
+        "issues": [
+          "478/499 files with docstrings"
+        ],
+        "tool_driven": false,
+        "tool_name": "agent"
+      }
+    },
+    "total_score": 67.76957915831663,
+    "technical_debt": 32.23042084168337,
+    "hotspots": {
+      "CC > 15: .openclaw/workspace-musk/skills/methodology-v2/implement/governance/audit_logger.py": 80
+    },
+    "improvements": [],
+    "agent_actions": []
+  },
+  {
+    "iteration": 4,
+    "timestamp": "2026-04-17T23:16:55.040506",
+    "dimensions": {
+      "D1_Linting": {
+        "name": "Linting",
+        "score": 65,
+        "weight": 0.1,
+        "issues": [
+          "F821 Undefined name `GovernanceContext`",
+          "F841 Local variable `workflow_id` is assigned to but never used",
+          "Found 2 errors.",
+          "F821 Undefined name `httpx`",
+          "F821 Undefined name `httpx`"
+        ],
+        "tool_driven": true,
+        "tool_name": "ruff"
+      },
+      "D2_TypeSafety": {
+        "name": "Type Safety",
+        "score": 100,
+        "weight": 0.15,
+        "issues": [],
+        "tool_driven": true,
+        "tool_name": "mypy"
+      },
+      "D3_TestCoverage": {
+        "name": "Test Coverage",
+        "score": 87.4,
+        "weight": 0.2,
+        "issues": [],
+        "tool_driven": true,
+        "tool_name": "pytest-cov"
+      },
+      "D4_Security": {
+        "name": "Security",
+        "score": 0,
+        "weight": 0.15,
+        "issues": [
+          "Critical: 4",
+          "Warning: 22",
+          "Info: 5"
+        ],
+        "tool_driven": true,
+        "tool_name": "agent-quality-guard"
+      },
+      "D5_Complexity": {
+        "name": "Complexity",
+        "score": 20,
+        "weight": 0.1,
+        "issues": [
+          "CC > 15: .openclaw/workspace-musk/skills/methodology-v2/implement/governance/audit_logger.py"
+        ],
+        "tool_driven": false,
+        "tool_name": "lizard"
+      },
+      "D6_Architecture": {
+        "name": "Architecture",
+        "score": 70,
+        "weight": 0.1,
+        "issues": [
+          "M 320:4 AuditLogger.query - D",
+          "M 379:4 AuditLogger.get_health_report - C",
+          "M 71:4 CascadeEngine.execute_chain - C"
+        ],
+        "tool_driven": false,
+        "tool_name": "radon"
+      },
+      "D7_Readability": {
+        "name": "Readability",
+        "score": 100,
+        "weight": 0.1,
+        "issues": [
+          "7772/499 files with docstrings (estimate)"
+        ],
+        "tool_driven": false,
+        "tool_name": "agent"
+      },
+      "D8_ErrorHandling": {
+        "name": "Error Handling",
+        "score": 100,
+        "weight": 0.05,
+        "issues": [
+          "852 try-except blocks found"
+        ],
+        "tool_driven": false,
+        "tool_name": "agent"
+      },
+      "D9_Documentation": {
+        "name": "Documentation",
+        "score": 95.79158316633266,
+        "weight": 0.05,
+        "issues": [
+          "478/499 files with docstrings"
+        ],
+        "tool_driven": false,
+        "tool_name": "agent"
+      }
+    },
+    "total_score": 67.76957915831663,
+    "technical_debt": 32.23042084168337,
+    "hotspots": {
+      "CC > 15: .openclaw/workspace-musk/skills/methodology-v2/implement/governance/audit_logger.py": 80
+    },
+    "improvements": [],
+    "agent_actions": []
+  },
+  {
+    "iteration": 5,
+    "timestamp": "2026-04-17T23:23:39.066278",
+    "dimensions": {
+      "D1_Linting": {
+        "name": "Linting",
+        "score": 65,
+        "weight": 0.1,
+        "issues": [
+          "F821 Undefined name `GovernanceContext`",
+          "F841 Local variable `workflow_id` is assigned to but never used",
+          "Found 2 errors.",
+          "F821 Undefined name `httpx`",
+          "F821 Undefined name `httpx`"
+        ],
+        "tool_driven": true,
+        "tool_name": "ruff"
+      },
+      "D2_TypeSafety": {
+        "name": "Type Safety",
+        "score": 100,
+        "weight": 0.15,
+        "issues": [],
+        "tool_driven": true,
+        "tool_name": "mypy"
+      },
+      "D3_TestCoverage": {
+        "name": "Test Coverage",
+        "score": 87.4,
+        "weight": 0.2,
+        "issues": [],
+        "tool_driven": true,
+        "tool_name": "pytest-cov"
+      },
+      "D4_Security": {
+        "name": "Security",
+        "score": 53.5,
+        "weight": 0.15,
+        "issues": [
+          "Warning: 22",
+          "Info: 5"
+        ],
+        "tool_driven": true,
+        "tool_name": "agent-quality-guard"
+      },
+      "D5_Complexity": {
+        "name": "Complexity",
+        "score": 20,
+        "weight": 0.1,
+        "issues": [
+          "CC > 15: .openclaw/workspace-musk/skills/methodology-v2/implement/governance/audit_logger.py"
+        ],
+        "tool_driven": false,
+        "tool_name": "lizard"
+      },
+      "D6_Architecture": {
+        "name": "Architecture",
+        "score": 70,
+        "weight": 0.1,
+        "issues": [
+          "M 320:4 AuditLogger.query - D",
+          "M 379:4 AuditLogger.get_health_report - C",
+          "M 71:4 CascadeEngine.execute_chain - C"
+        ],
+        "tool_driven": false,
+        "tool_name": "radon"
+      },
+      "D7_Readability": {
+        "name": "Readability",
+        "score": 100,
+        "weight": 0.1,
+        "issues": [
+          "7772/499 files with docstrings (estimate)"
+        ],
+        "tool_driven": false,
+        "tool_name": "agent"
+      },
+      "D8_ErrorHandling": {
+        "name": "Error Handling",
+        "score": 100,
+        "weight": 0.05,
+        "issues": [
+          "852 try-except blocks found"
+        ],
+        "tool_driven": false,
+        "tool_name": "agent"
+      },
+      "D9_Documentation": {
+        "name": "Documentation",
+        "score": 95.79158316633266,
+        "weight": 0.05,
+        "issues": [
+          "478/499 files with docstrings"
+        ],
+        "tool_driven": false,
+        "tool_name": "agent"
+      }
+    },
+    "total_score": 75.79457915831664,
+    "technical_debt": 24.205420841683363,
+    "hotspots": {
+      "CC > 15: .openclaw/workspace-musk/skills/methodology-v2/implement/governance/audit_logger.py": 80
+    },
+    "improvements": [],
+    "agent_actions": []
+  },
+  {
+    "iteration": 6,
+    "timestamp": "2026-04-17T23:33:12.280600",
+    "dimensions": {
+      "D1_Linting": {
+        "name": "Linting",
+        "score": 65,
+        "weight": 0.1,
+        "issues": [
+          "F821 Undefined name `GovernanceContext`",
+          "F841 Local variable `workflow_id` is assigned to but never used",
+          "Found 2 errors.",
+          "F821 Undefined name `httpx`",
+          "F821 Undefined name `httpx`"
+        ],
+        "tool_driven": true,
+        "tool_name": "ruff"
+      },
+      "D2_TypeSafety": {
+        "name": "Type Safety",
+        "score": 100,
+        "weight": 0.15,
+        "issues": [],
+        "tool_driven": true,
+        "tool_name": "mypy"
+      },
+      "D3_TestCoverage": {
+        "name": "Test Coverage",
+        "score": 87.4,
+        "weight": 0.2,
+        "issues": [],
+        "tool_driven": true,
+        "tool_name": "pytest-cov"
+      },
+      "D4_Security": {
+        "name": "Security",
+        "score": 53.5,
+        "weight": 0.15,
+        "issues": [
+          "Warning: 22",
+          "Info: 5"
+        ],
+        "tool_driven": true,
+        "tool_name": "agent-quality-guard"
+      },
+      "D5_Complexity": {
+        "name": "Complexity",
+        "score": 20,
+        "weight": 0.1,
+        "issues": [
+          "CC > 15: .openclaw/workspace-musk/skills/methodology-v2/implement/governance/audit_logger.py"
+        ],
+        "tool_driven": false,
+        "tool_name": "lizard"
+      },
+      "D6_Architecture": {
+        "name": "Architecture",
+        "score": 70,
+        "weight": 0.1,
+        "issues": [
+          "M 320:4 AuditLogger.query - D",
+          "M 379:4 AuditLogger.get_health_report - C",
+          "M 71:4 CascadeEngine.execute_chain - C"
+        ],
+        "tool_driven": false,
+        "tool_name": "radon"
+      },
+      "D7_Readability": {
+        "name": "Readability",
+        "score": 100,
+        "weight": 0.1,
+        "issues": [
+          "7772/499 files with docstrings (estimate)"
+        ],
+        "tool_driven": false,
+        "tool_name": "agent"
+      },
+      "D8_ErrorHandling": {
+        "name": "Error Handling",
+        "score": 100,
+        "weight": 0.05,
+        "issues": [
+          "852 try-except blocks found"
+        ],
+        "tool_driven": false,
+        "tool_name": "agent"
+      },
+      "D9_Documentation": {
+        "name": "Documentation",
+        "score": 95.79158316633266,
+        "weight": 0.05,
+        "issues": [
+          "478/499 files with docstrings"
+        ],
+        "tool_driven": false,
+        "tool_name": "agent"
+      }
+    },
+    "total_score": 75.79457915831664,
+    "technical_debt": 24.205420841683363,
+    "hotspots": {
+      "CC > 15: .openclaw/workspace-musk/skills/methodology-v2/implement/governance/audit_logger.py": 80
+    },
+    "improvements": [],
+    "agent_actions": []
+  },
+  {
+    "iteration": 7,
+    "timestamp": "2026-04-17T23:43:10.267429",
+    "dimensions": {
+      "D1_Linting": {
+        "name": "Linting",
+        "score": 65,
+        "weight": 0.1,
+        "issues": [
+          "F821 Undefined name `GovernanceContext`",
+          "F841 Local variable `workflow_id` is assigned to but never used",
+          "Found 2 errors.",
+          "F821 Undefined name `httpx`",
+          "F821 Undefined name `httpx`"
+        ],
+        "tool_driven": true,
+        "tool_name": "ruff"
+      },
+      "D2_TypeSafety": {
+        "name": "Type Safety",
+        "score": 100,
+        "weight": 0.15,
+        "issues": [],
+        "tool_driven": true,
+        "tool_name": "mypy"
+      },
+      "D3_TestCoverage": {
+        "name": "Test Coverage",
+        "score": 87.4,
+        "weight": 0.2,
+        "issues": [],
+        "tool_driven": true,
+        "tool_name": "pytest-cov"
+      },
+      "D4_Security": {
+        "name": "Security",
+        "score": 53.5,
+        "weight": 0.15,
+        "issues": [
+          "Warning: 22",
+          "Info: 5"
+        ],
+        "tool_driven": true,
+        "tool_name": "agent-quality-guard"
+      },
+      "D5_Complexity": {
+        "name": "Complexity",
+        "score": 20,
+        "weight": 0.1,
+        "issues": [
+          "CC > 15: .openclaw/workspace-musk/skills/methodology-v2/implement/governance/audit_logger.py"
+        ],
+        "tool_driven": false,
+        "tool_name": "lizard"
+      },
+      "D6_Architecture": {
+        "name": "Architecture",
+        "score": 70,
+        "weight": 0.1,
+        "issues": [
+          "M 320:4 AuditLogger.query - D",
+          "M 379:4 AuditLogger.get_health_report - C",
+          "M 71:4 CascadeEngine.execute_chain - C"
+        ],
+        "tool_driven": false,
+        "tool_name": "radon"
+      },
+      "D7_Readability": {
+        "name": "Readability",
+        "score": 100,
+        "weight": 0.1,
+        "issues": [
+          "7772/499 files with docstrings (estimate)"
+        ],
+        "tool_driven": false,
+        "tool_name": "agent"
+      },
+      "D8_ErrorHandling": {
+        "name": "Error Handling",
+        "score": 100,
+        "weight": 0.05,
+        "issues": [
+          "852 try-except blocks found"
+        ],
+        "tool_driven": false,
+        "tool_name": "agent"
+      },
+      "D9_Documentation": {
+        "name": "Documentation",
+        "score": 95.79158316633266,
+        "weight": 0.05,
+        "issues": [
+          "478/499 files with docstrings"
+        ],
+        "tool_driven": false,
+        "tool_name": "agent"
+      }
+    },
+    "total_score": 75.79457915831664,
+    "technical_debt": 24.205420841683363,
+    "hotspots": {
+      "CC > 15: .openclaw/workspace-musk/skills/methodology-v2/implement/governance/audit_logger.py": 80
+    },
+    "improvements": [],
+    "agent_actions": []
+  },
+  {
+    "iteration": 8,
+    "timestamp": "2026-04-17T23:44:39.738183",
+    "dimensions": {
+      "D1_Linting": {
+        "name": "Linting",
+        "score": 0,
+        "weight": 0.1,
+        "issues": [
+          "F541 [*] f-string without any placeholders",
+          "F601 Dictionary key literal `\"ResourceType\"` repeated",
+          "F811 Redefinition of unused `Task` from line 333",
+          "F811 Redefinition of unused `ResourceType` from line 354",
+          "F541 [*] f-string without any placeholders"
+        ],
+        "tool_driven": true,
+        "tool_name": "ruff"
+      },
+      "D2_TypeSafety": {
+        "name": "Type Safety",
+        "score": 100,
+        "weight": 0.15,
+        "issues": [],
+        "tool_driven": true,
+        "tool_name": "mypy"
+      },
+      "D3_TestCoverage": {
+        "name": "Test Coverage",
+        "score": 0,
+        "weight": 0.2,
+        "issues": [
+          "Coverage 0% < 70%"
+        ],
+        "tool_driven": true,
+        "tool_name": "pytest-cov"
+      },
+      "D4_Security": {
+        "name": "Security",
+        "score": 100,
+        "weight": 0.15,
+        "issues": [
+          "No issues found"
+        ],
+        "tool_driven": true,
+        "tool_name": "bandit"
+      },
+      "D5_Complexity": {
+        "name": "Complexity",
+        "score": 45,
+        "weight": 0.1,
+        "issues": [
+          "CC > 15: "
+        ],
+        "tool_driven": false,
+        "tool_name": "lizard"
+      },
+      "D6_Architecture": {
+        "name": "Architecture",
+        "score": 70,
+        "weight": 0.1,
+        "issues": [
+          "M 247:4 StructuredOutputEngine.parse - B",
+          "M 373:4 StructuredOutputEngine._extract_kv - B",
+          "M 398:4 StructuredOutputEngine.validate_output - B"
+        ],
+        "tool_driven": false,
+        "tool_name": "radon"
+      },
+      "D7_Readability": {
+        "name": "Readability",
+        "score": 100,
+        "weight": 0.1,
+        "issues": [
+          "7772/499 files with docstrings (estimate)"
+        ],
+        "tool_driven": false,
+        "tool_name": "agent"
+      },
+      "D8_ErrorHandling": {
+        "name": "Error Handling",
+        "score": 100,
+        "weight": 0.05,
+        "issues": [
+          "852 try-except blocks found"
+        ],
+        "tool_driven": false,
+        "tool_name": "agent"
+      },
+      "D9_Documentation": {
+        "name": "Documentation",
+        "score": 95.79158316633266,
+        "weight": 0.05,
+        "issues": [
+          "478/499 files with docstrings"
+        ],
+        "tool_driven": false,
+        "tool_name": "agent"
+      }
+    },
+    "total_score": 61.289579158316634,
+    "technical_debt": 38.710420841683366,
+    "hotspots": {},
+    "improvements": [],
+    "agent_actions": []
+  },
+  {
+    "iteration": 9,
+    "timestamp": "2026-04-17T23:59:31.211516",
+    "dimensions": {
+      "D1_Linting": {
+        "name": "Linting",
+        "score": 65,
+        "weight": 0.1,
+        "issues": [
+          "F821 Undefined name `GovernanceContext`",
+          "F841 Local variable `workflow_id` is assigned to but never used",
+          "Found 2 errors.",
+          "F821 Undefined name `httpx`",
+          "F821 Undefined name `httpx`"
+        ],
+        "tool_driven": true,
+        "tool_name": "ruff"
+      },
+      "D2_TypeSafety": {
+        "name": "Type Safety",
+        "score": 100,
+        "weight": 0.15,
+        "issues": [],
+        "tool_driven": true,
+        "tool_name": "mypy"
+      },
+      "D3_TestCoverage": {
+        "name": "Test Coverage",
+        "score": 87.4,
+        "weight": 0.2,
+        "issues": [],
+        "tool_driven": true,
+        "tool_name": "pytest-cov"
+      },
+      "D4_Security": {
+        "name": "Security",
+        "score": 53.5,
+        "weight": 0.15,
+        "issues": [
+          "Warning: 22",
+          "Info: 5"
+        ],
+        "tool_driven": true,
+        "tool_name": "agent-quality-guard"
+      },
+      "D5_Complexity": {
+        "name": "Complexity",
+        "score": 20,
+        "weight": 0.1,
+        "issues": [
+          "CC > 15: .openclaw/workspace-musk/skills/methodology-v2/implement/governance/audit_logger.py"
+        ],
+        "tool_driven": false,
+        "tool_name": "lizard"
+      },
+      "D6_Architecture": {
+        "name": "Architecture",
+        "score": 70,
+        "weight": 0.1,
+        "issues": [
+          "M 320:4 AuditLogger.query - D",
+          "M 379:4 AuditLogger.get_health_report - C",
+          "M 71:4 CascadeEngine.execute_chain - C"
+        ],
+        "tool_driven": false,
+        "tool_name": "radon"
+      },
+      "D7_Readability": {
+        "name": "Readability",
+        "score": 100,
+        "weight": 0.1,
+        "issues": [
+          "7772/499 files with docstrings (estimate)"
+        ],
+        "tool_driven": false,
+        "tool_name": "agent"
+      },
+      "D8_ErrorHandling": {
+        "name": "Error Handling",
+        "score": 100,
+        "weight": 0.05,
+        "issues": [
+          "852 try-except blocks found"
+        ],
+        "tool_driven": false,
+        "tool_name": "agent"
+      },
+      "D9_Documentation": {
+        "name": "Documentation",
+        "score": 95.79158316633266,
+        "weight": 0.05,
+        "issues": [
+          "478/499 files with docstrings"
+        ],
+        "tool_driven": false,
+        "tool_name": "agent"
+      }
+    },
+    "total_score": 75.79457915831664,
+    "technical_debt": 24.205420841683363,
+    "hotspots": {
+      "CC > 15: .openclaw/workspace-musk/skills/methodology-v2/implement/governance/audit_logger.py": 80
+    },
+    "improvements": [],
+    "agent_actions": []
+  },
+  {
+    "iteration": 10,
+    "timestamp": "2026-04-18T00:01:18.558572",
+    "dimensions": {
+      "D1_Linting": {
+        "name": "Linting",
+        "score": 100,
+        "weight": 0.1,
+        "issues": [],
+        "tool_driven": true,
+        "tool_name": "ruff"
+      },
+      "D2_TypeSafety": {
+        "name": "Type Safety",
+        "score": 100,
+        "weight": 0.15,
+        "issues": [],
+        "tool_driven": true,
+        "tool_name": "mypy"
+      },
+      "D3_TestCoverage": {
+        "name": "Test Coverage",
+        "score": 90.0,
+        "weight": 0.2,
+        "issues": [],
+        "tool_driven": true,
+        "tool_name": "pytest-cov"
+      },
+      "D4_Security": {
+        "name": "Security",
+        "score": 53.5,
+        "weight": 0.15,
+        "issues": [
+          "Warning: 22",
+          "Info: 5"
+        ],
+        "tool_driven": true,
+        "tool_name": "agent-quality-guard"
+      },
+      "D5_Complexity": {
+        "name": "Complexity",
+        "score": 20,
+        "weight": 0.1,
+        "issues": [
+          "CC > 15: .openclaw/workspace-musk/skills/methodology-v2/implement/governance/audit_logger.py"
+        ],
+        "tool_driven": false,
+        "tool_name": "lizard"
+      },
+      "D6_Architecture": {
+        "name": "Architecture",
+        "score": 70,
+        "weight": 0.1,
+        "issues": [
+          "M 318:4 AuditLogger.query - D",
+          "M 377:4 AuditLogger.get_health_report - C",
+          "M 64:4 CascadeEngine.execute_chain - C"
+        ],
+        "tool_driven": false,
+        "tool_name": "radon"
+      },
+      "D7_Readability": {
+        "name": "Readability",
+        "score": 100,
+        "weight": 0.1,
+        "issues": [
+          "7772/499 files with docstrings (estimate)"
+        ],
+        "tool_driven": false,
+        "tool_name": "agent"
+      },
+      "D8_ErrorHandling": {
+        "name": "Error Handling",
+        "score": 100,
+        "weight": 0.05,
+        "issues": [
+          "851 try-except blocks found"
+        ],
+        "tool_driven": false,
+        "tool_name": "agent"
+      },
+      "D9_Documentation": {
+        "name": "Documentation",
+        "score": 95.79158316633266,
+        "weight": 0.05,
+        "issues": [
+          "478/499 files with docstrings"
+        ],
+        "tool_driven": false,
+        "tool_name": "agent"
+      }
+    },
+    "total_score": 79.81457915831663,
+    "technical_debt": 20.185420841683367,
+    "hotspots": {
+      "CC > 15: .openclaw/workspace-musk/skills/methodology-v2/implement/governance/audit_logger.py": 80
+    },
+    "improvements": [],
+    "agent_actions": []
+  }
+]

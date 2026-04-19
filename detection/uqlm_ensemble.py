@@ -55,13 +55,14 @@ class BaseScorer(ABC):
         name: Unique identifier for this scorer
     """
 
-    def __init__(self, name: str) -> None:
-        """Initialize BaseScorer with name.
+    def __init__(self, name: str = None) -> None:
+        """Initialize BaseScorer with optional name.
 
         Args:
-            name: Unique identifier for the scorer
+            name: Unique identifier for the scorer (optional for subclasses)
         """
-        self.name = name
+        if name is not None:
+            self.name = name
 
     @abstractmethod
     def score(
@@ -109,7 +110,8 @@ class SemanticEntropyScorer(BaseScorer):
 
     def __init__(self) -> None:
         """Initialize SemanticEntropyScorer."""
-        super().__init__("semantic_entropy")
+        super().__init__()
+        self.name = "semantic_entropy"
 
     def score(
         self,
@@ -158,7 +160,8 @@ class SemanticDensityScorer(BaseScorer):
 
     def __init__(self) -> None:
         """Initialize SemanticDensityScorer."""
-        super().__init__("semantic_density")
+        super().__init__()
+        self.name = "semantic_density"
 
     def score(
         self,
@@ -211,7 +214,8 @@ class SelfConsistencyScorer(BaseScorer):
 
     def __init__(self) -> None:
         """Initialize SelfConsistencyScorer."""
-        super().__init__("self_consistency")
+        super().__init__()
+        self.name = "self_consistency"
 
     def score(
         self,
@@ -266,7 +270,8 @@ class TokenNLLEvaluator(BaseScorer):
 
     def __init__(self) -> None:
         """Initialize TokenNLLEvaluator."""
-        super().__init__("token_nll")
+        super().__init__()
+        self.name = "token_nll"
 
     def score(
         self,

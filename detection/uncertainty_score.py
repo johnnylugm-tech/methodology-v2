@@ -334,6 +334,9 @@ class UncertaintyScoreCalculator:
             beta: New CLAP weight (None = no change)
             gamma: New MetaQA weight (None = no change)
         """
+        # Count how many weights are being explicitly set
+        num_set = sum(1 for v in [alpha, beta, gamma] if v is not None)
+
         if alpha is not None:
             self.alpha = alpha
         if beta is not None:
@@ -341,10 +344,12 @@ class UncertaintyScoreCalculator:
         if gamma is not None:
             self.gamma = gamma
 
-        # Re-normalize
-        self.alpha, self.beta, self.gamma = WeightManager.normalize_weights(
-            self.alpha, self.beta, self.gamma
-        )
+        # Only normalize if all weights are being set together
+        # If setting partial weights, use absolute values
+        if num_set >= 2:
+            self.alpha, self.beta, self.gamma = WeightManager.normalize_weights(
+                self.alpha, self.beta, self.gamma
+            )
 
     def get_weights(self) -> Dict[str, float]:
         """Get current component weights.

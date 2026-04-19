@@ -70,9 +70,9 @@ def sigmoid(x: float) -> float:
         Sigmoid value in (0, 1)
     """
     # Prevent overflow
-    if x < -700:
+    if x <= -700:
         return 0.0
-    if x > 700:
+    if x >= 700:
         return 1.0
     return 1.0 / (1.0 + math.exp(-x))
 

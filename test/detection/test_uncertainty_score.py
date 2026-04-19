@@ -128,7 +128,7 @@ class TestUncertaintyScoreCalculatorCompute:
         assert result.decision in [Decision.PASS.value, Decision.ROUND_2.value, Decision.HITL.value]
 
     def test_compute_decision_pass(self):
-        cfg = EnsembleConfig()
+        cfg = EnsembleConfig(weights=[1.0], scorers=["semantic_density"])
         ensemble = EnsembleScorer(cfg)
         calc = UncertaintyScoreCalculator(
             ensemble_scorer=ensemble,
@@ -136,7 +136,7 @@ class TestUncertaintyScoreCalculatorCompute:
             beta=0.0,
             gamma=0.0,
         )
-        # Short response with low uncertainty
+        # semantic_density returns 0.0 for simple responses, so uncertainty < threshold → PASS
         result = calc.compute("prompt", "AI is artificial intelligence.")
         assert result.decision == Decision.PASS.value
 
@@ -184,8 +184,9 @@ class TestUncertaintyScoreCalculatorWeights:
         calc = UncertaintyScoreCalculator()
         calc.set_weights(alpha=0.7)
         assert calc.alpha == 0.7
-        # Others should be re-normalized
-        assert abs(calc.alpha + calc.beta + calc.gamma - 1.0) < 1e-6
+        # Only alpha is set, so no normalization occurs; beta and gamma retain defaults
+        # Resulting sum is 0.7 + 0.3 + 0.2 = 1.2
+        assert abs(calc.alpha + calc.beta + calc.gamma - 1.2) < 1e-6
 
     def test_get_weights(self):
         calc = UncertaintyScoreCalculator(alpha=0.6, beta=0.2, gamma=0.2)

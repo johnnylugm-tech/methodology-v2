@@ -194,9 +194,11 @@ class TestEnsembleScorer:
     def test_add_duplicate_raises(self):
         scorer = EnsembleScorer()
         custom = SemanticEntropyScorer()
-        scorer.add_scorer("semantic_entropy", custom)
+        # Use a name that doesn't conflict with default scorers
+        scorer.add_scorer("custom_entropy", custom)
+        assert "custom_entropy" in scorer._scorers
         with pytest.raises(ValueError, match="already exists"):
-            scorer.add_scorer("semantic_entropy", custom)
+            scorer.add_scorer("custom_entropy", custom)
 
     def test_remove_scorer(self):
         scorer = EnsembleScorer()
@@ -275,11 +277,20 @@ class TestEnsembleScorer:
         assert got.weights == [0.5, 0.5]
         assert got.scorers == ["a", "b"]
 
-    def test_async_score(self):
+    @pytest.mark.asyncio
+    async def test_async_score(self):
         cfg = EnsembleConfig()
         scorer = EnsembleScorer(cfg)
         # Async version calls sync score internally
-        result = scorer.async_score("prompt", "response", 5)
+        result = await scorer.async_score("prompt", "response", 5)
+        assert isinstance(result, EnsembleResult)
+        assert 0.0 <= result.uaf_score <= 1.0
+
+    @pytest.mark.asyncio
+    async def test_async_score_awaited(self):
+        cfg = EnsembleConfig()
+        scorer = EnsembleScorer(cfg)
+        result = await scorer.async_score("prompt", "response", 5)
         assert isinstance(result, EnsembleResult)
         assert 0.0 <= result.uaf_score <= 1.0
 

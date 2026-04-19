@@ -1,0 +1,11 @@
+{
+  "scan_paths": [
+    "implement/governance",
+    "implement/kill_switch",
+    "implement/llm_cascade",
+    "implement/mcp",
+    "implement/security"
+  ],
+  "target_score": 85,
+  "pass_score": 70
+}

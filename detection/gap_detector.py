@@ -259,16 +259,15 @@ class EmptyCatchVisitor(ast.NodeVisitor):
             )
         elif len(node.body) == 1:
             first_stmt = node.body[0]
-            if isinstance(first_stmt, (ast.Pass, ast.Constant)):
-                # Also check for ellipsis (...)
-                if isinstance(first_stmt, ast.Constant) and first_stmt.value is ...:
-                    self.findings.append(
-                        self._create_finding(node.lineno if node.lineno else 0)
-                    )
-                elif isinstance(first_stmt, ast.Pass):
-                    self.findings.append(
-                        self._create_finding(node.lineno if node.lineno else 0)
-                    )
+            if isinstance(first_stmt, ast.Pass):
+                self.findings.append(
+                    self._create_finding(node.lineno if node.lineno else 0)
+                )
+            elif isinstance(first_stmt, ast.Expr) and isinstance(first_stmt.value, ast.Constant) and first_stmt.value.value is ...:
+                # Ellipsis case: Expr(value=Constant(value=Ellipsis))
+                self.findings.append(
+                    self._create_finding(node.lineno if node.lineno else 0)
+                )
         else:
             # Check if body is only comments/docstrings
             meaningful_stmts = [
@@ -392,8 +391,9 @@ class GapDetector:
         Args:
             rules: List of GapRule objects to use
         """
-        self.rules = {rule.gap_type: rule for rule in (rules or [])}
-        if not self.rules:
+        if rules is not None:
+            self.rules = {rule.gap_type: rule for rule in rules}
+        else:
             # Use default rules
             self.rules = GAP_RULES.copy()
         self._findings: List[GapFinding] = []
