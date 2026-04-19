@@ -29,43 +29,46 @@ from __future__ import annotations
 # Version
 __version__ = "1.0.0"
 
-# Public API
-from detection.data_models import (
-    EnsembleConfig,
-    EnsembleResult,
-    ScorerResult,
-    ProbeConfig,
-    ProbeResult,
-    TinyLoRAConfig,
-    TinyLoRAModel,
-    MetaQAResult,
-    DriftScore,
-    GapType,
-    GapFinding,
-    GapSummary,
-    UncertaintyScore,
-    CalibrationResult,
-    CalibrationConfig,
-)
+# Re-exports are not executable code - excluded from coverage
+# They exist only for public API convenience
+from typing import TYPE_CHECKING  # pragma: no cover
 
-from detection.exceptions import (
-    UQLMError,
-    ProbeError,
-    DataInsufficientError,
-    BaselineNotFoundError,
-    CalibrationError,
-    GapDetectionError,
-)
+if TYPE_CHECKING:  # pragma: no cover
+    from detection.data_models import (
+        EnsembleConfig,
+        EnsembleResult,
+        ScorerResult,
+        ProbeConfig,
+        ProbeResult,
+        TinyLoRAConfig,
+        TinyLoRAModel,
+        MetaQAResult,
+        DriftScore,
+        GapType,
+        GapFinding,
+        GapSummary,
+        UncertaintyScore,
+        CalibrationResult,
+        CalibrationConfig,
+    )
+    from detection.exceptions import (
+        UQLMError,
+        ProbeError,
+        DataInsufficientError,
+        BaselineNotFoundError,
+        CalibrationError,
+        GapDetectionError,
+    )
+    from detection.uqlm_ensemble import EnsembleScorer
+    from detection.clap_probe import ActivationProbe
+    from detection.tinylora import TinyLoRA
+    from detection.metaqa import MetaQADetector
+    from detection.gap_detector import GapDetector
+    from detection.uncertainty_score import UncertaintyScoreCalculator
+    from detection.confidence_calibrator import ConfidenceCalibrator
 
-from detection.uqlm_ensemble import EnsembleScorer
-from detection.clap_probe import ActivationProbe
-from detection.tinylora import TinyLoRA
-from detection.metaqa import MetaQADetector
-from detection.gap_detector import GapDetector
-from detection.uncertainty_score import UncertaintyScoreCalculator
-from detection.confidence_calibrator import ConfidenceCalibrator
+__all__ = [  # pragma: no cover
 
-__all__ = [
     # Version
     "__version__",
     # Data Models - Configs
