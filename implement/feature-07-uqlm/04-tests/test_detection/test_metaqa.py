@@ -36,6 +36,12 @@ class TestComputeTokenDistribution:
         assert dist.tokens == []
         assert dist.probabilities == []
 
+    def test_whitespace_only_texts(self):
+        """Test compute_token_distribution with whitespace-only texts (all_tokens empty)."""
+        dist = compute_token_distribution(["   ", "\n\t", "  "])
+        assert dist.tokens == []
+        assert dist.probabilities == []
+
     def test_single_text(self):
         dist = compute_token_distribution(["hello hello world"])
         assert "hello" in dist.tokens
@@ -213,6 +219,26 @@ class TestMetaQADetectorFindDriftedTokens:
         )
         drifted = detector._find_drifted_tokens(dist, dist)
         assert drifted == []
+
+    def test_tokens_exceed_threshold(self):
+        """Test that tokens with z_score > threshold are detected as drifted."""
+        detector = MetaQADetector()
+        # Baseline with small std (all probability on one token)
+        baseline = TokenDistribution(
+            tokens=["a", "b"],
+            probabilities=[0.99, 0.01],
+            version="",
+        )
+        # Current with very different distribution
+        current = TokenDistribution(
+            tokens=["a", "b"],
+            probabilities=[0.01, 0.99],
+            version="",
+        )
+        # With threshold=1.5, the z_score of ~2.0 should exceed it
+        drifted = detector._find_drifted_tokens(baseline, current, threshold=1.5)
+        # Both tokens should drift due to the extreme distribution shift
+        assert len(drifted) == 2
 
 
 class TestMetaQADetectorGetters:

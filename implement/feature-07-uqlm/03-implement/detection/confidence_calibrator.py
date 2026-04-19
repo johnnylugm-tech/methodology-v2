@@ -96,13 +96,26 @@ def platt_scale(
         Calibrated confidence in [0.0, 1.0]
     """
     try:
+        # Validate inputs are in valid range (0, 1) exclusive
+        # This validation can fail and trigger CalibrationError
+        if not (0.0 < initial < 1.0):
+            raise CalibrationError(
+                message=f"Initial confidence {initial} is out of valid range (0, 1)",
+                confidence_value=initial,
+            )
+        if not (0.0 < expected < 1.0):
+            raise CalibrationError(
+                message=f"Expected accuracy {expected} is out of valid range (0, 1)",
+                confidence_value=expected,
+            )
+
         initial_logit = logit(initial)
         expected_logit = logit(expected)
         calibrated_logit = initial_logit - expected_logit
         calibrated = sigmoid(calibrated_logit)
         return max(0.0, min(1.0, calibrated))
     except CalibrationError:
-        # If logit fails, return initial as fallback
+        # If calibration fails, return initial as fallback
         return initial
 
 

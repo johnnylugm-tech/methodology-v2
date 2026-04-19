@@ -65,6 +65,32 @@ class TestWeightManager:
         assert abs(alpha - 0.6) < 1e-6
         assert abs(beta - 0.4) < 1e-6
 
+    def test_normalize_uqlm_metaqa_no_clap(self):
+        """Test UQLM + MetaQA only (beta == 0)."""
+        # Use values that don't sum to 1.0 to avoid early return
+        alpha, beta, gamma = WeightManager.normalize_weights(0.6, 0.0, 0.3)
+        # Should redistribute: alpha=0.6/0.9, beta=0, gamma=0.3/0.9
+        assert abs(alpha - 0.6666666667) < 1e-6
+        assert beta == 0.0
+        assert abs(gamma - 0.3333333333) < 1e-6
+
+    def test_normalize_clap_metaqa_no_uqlm(self):
+        """Test CLAP + MetaQA only (alpha == 0)."""
+        # Use values that don't sum to 1.0 to avoid early return
+        alpha, beta, gamma = WeightManager.normalize_weights(0.0, 0.4, 0.4)
+        # Should redistribute: alpha=0, beta=0.4/0.8, gamma=0.4/0.8
+        assert alpha == 0.0
+        assert abs(beta - 0.5) < 1e-6
+        assert abs(gamma - 0.5) < 1e-6
+
+    def test_normalize_all_present_not_sum_to_one(self):
+        """Test all present but not sum to 1.0 (else branch)."""
+        alpha, beta, gamma = WeightManager.normalize_weights(0.2, 0.3, 0.3)
+        # Sum is 0.8, so should normalize to 0.25, 0.375, 0.375
+        assert abs(alpha - 0.25) < 1e-6
+        assert abs(beta - 0.375) < 1e-6
+        assert abs(gamma - 0.375) < 1e-6
+
 
 class TestUncertaintyScoreCalculatorInit:
     def test_default_weights(self):
@@ -170,6 +196,70 @@ class TestUncertaintyScoreCalculatorCompute:
         # CLAP probe exists but no hidden states
         result = calc.compute("prompt", "response", hidden_states=None)
         assert "clap" not in result.components
+
+    def test_compute_with_ensemble_exception(self):
+        """Test compute() when ensemble_scorer raises exception but other components succeed."""
+        cfg = EnsembleConfig()
+        ensemble = EnsembleScorer(cfg)
+        probe_cfg = ProbeConfig(model_type="llama-3.3")
+        probe = ActivationProbe(probe_cfg)
+        calc = UncertaintyScoreCalculator(
+            ensemble_scorer=ensemble,
+            clap_probe=probe,
+            metaqa_detector=None,
+        )
+        # Mock the score method to raise
+        original_score = ensemble.score
+        ensemble.score = MagicMock(side_effect=RuntimeError("UQLM error"))
+        # Also mock clap to ensure it works
+        probe.predict = MagicMock(return_value=ProbeResult(
+            p_hallucinate=0.5,
+            confidence=0.8,
+            layer_used=-1,
+            model_type="llama-3.3",
+            metadata={},
+        ))
+        try:
+            result = calc.compute("prompt", "response", hidden_states=np.random.randn(5, 10))
+            # Should still work with score 0.0 for UQLM
+            assert result.score >= 0.0
+        finally:
+            ensemble.score = original_score
+
+    def test_compute_with_clap_exception(self):
+        """Test compute() when clap_probe raises exception but other components succeed."""
+        cfg = EnsembleConfig()
+        ensemble = EnsembleScorer(cfg)
+        probe_cfg = ProbeConfig(model_type="llama-3.3")
+        probe = ActivationProbe(probe_cfg)
+        calc = UncertaintyScoreCalculator(
+            ensemble_scorer=ensemble,
+            clap_probe=probe,
+            metaqa_detector=None,
+        )
+        # Mock the predict method to raise
+        probe.predict = MagicMock(side_effect=RuntimeError("CLAP error"))
+        result = calc.compute("prompt", "response", hidden_states=np.random.randn(5, 10))
+        # Should still work with score 0.0 for CLAP
+        assert result.score >= 0.0
+
+    def test_compute_with_metaqa_exception(self):
+        """Test compute() when metaqa_detector raises exception but other components succeed."""
+        cfg = EnsembleConfig()
+        ensemble = EnsembleScorer(cfg)
+        probe_cfg = ProbeConfig(model_type="llama-3.3")
+        probe = ActivationProbe(probe_cfg)
+        metaqa_detector = MetaQADetector()
+        calc = UncertaintyScoreCalculator(
+            ensemble_scorer=ensemble,
+            clap_probe=probe,
+            metaqa_detector=metaqa_detector,
+        )
+        # Mock the detect_drift method to raise
+        metaqa_detector.detect_drift = MagicMock(side_effect=RuntimeError("MetaQA error"))
+        result = calc.compute("prompt", "response", hidden_states=np.random.randn(5, 10))
+        # Should still work with score 0.0 for MetaQA
+        assert result.score >= 0.0
 
 
 class TestUncertaintyScoreCalculatorWeights:

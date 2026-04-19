@@ -129,6 +129,13 @@ class ActivationProbe:
                 data_type="training",
             )
 
+        # Check sklearn availability
+        if LogisticRegression is None:
+            raise ProbeError(
+                message="sklearn is required for CLAP probe but is not installed",
+                model_type=self.config.model_type,
+            )
+
         # Check label distribution
         labels = [label for _, label in training_data]
         unique_labels = set(labels)

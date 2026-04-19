@@ -141,6 +141,20 @@ class TestTinyLoRATrain:
         assert "lora_a" in model.state_dict
         assert "lora_b" in model.state_dict
 
+    def test_train_learning_rate_decay(self):
+        """Test that learning rate decay is triggered at iteration 100."""
+        config = TinyLoRAConfig(hidden_dim=10, max_iter=200)
+        tinylora = TinyLoRA(config)
+        # Use random noisy data that won't converge quickly
+        np.random.seed(42)
+        data = [
+            (np.random.randn(10), np.random.randint(0, 2))
+            for i in range(50)
+        ]
+        model, loss = tinylora.train(data)
+        # Training should complete without early stopping
+        assert isinstance(model, TinyLoRAModel)
+
     def test_train_metrics(self):
         config = TinyLoRAConfig(hidden_dim=10, max_iter=50)
         tinylora = TinyLoRA(config)

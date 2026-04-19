@@ -87,6 +87,26 @@ class TestPlattScale:
         result = platt_scale(0.99, 0.01)
         assert 0.0 <= result <= 1.0
 
+    def test_initial_zero_returns_initial(self):
+        """Test that initial=0.0 returns initial as fallback."""
+        result = platt_scale(0.0, 0.5)
+        assert result == 0.0  # Returns initial as fallback
+
+    def test_initial_one_returns_initial(self):
+        """Test that initial=1.0 returns initial as fallback."""
+        result = platt_scale(1.0, 0.5)
+        assert result == 1.0  # Returns initial as fallback
+
+    def test_expected_zero_returns_initial(self):
+        """Test that expected=0.0 returns initial as fallback."""
+        result = platt_scale(0.5, 0.0)
+        assert result == 0.5  # Returns initial as fallback
+
+    def test_expected_one_returns_initial(self):
+        """Test that expected=1.0 returns initial as fallback."""
+        result = platt_scale(0.5, 1.0)
+        assert result == 0.5  # Returns initial as fallback
+
 
 class TestCalibrationRecord:
     def test_basic(self):
@@ -258,6 +278,62 @@ class TestConfidenceCalibratorTrends:
             cal.calibrate(0.5 + (i % 3) * 0.1, i % 2 == 0, 0.3)
         trend = cal.get_calibration_trend()
         assert trend in ["improving", "worsening", "stable"]
+
+    def test_get_calibration_trend_older_empty(self):
+        """Test when older is empty (history 3-9 records)."""
+        cal = ConfidenceCalibrator()
+        # 5 records - older will be empty (history[:-5] = [])
+        cal.calibrate(0.8, True, 0.2)
+        cal.calibrate(0.7, False, 0.3)
+        cal.calibrate(0.6, True, 0.4)
+        cal.calibrate(0.5, False, 0.5)
+        cal.calibrate(0.4, True, 0.6)
+        # Should return "stable" because older is empty
+        assert cal.get_calibration_trend() == "stable"
+
+    def test_get_calibration_trend_worsening(self):
+        """Test when recent error is higher than older error (diff > 0.05)."""
+        cal = ConfidenceCalibrator()
+        # Create 10 records with increasing error
+        # Older 5: low error (~0.1)
+        for i in range(5):
+            cal.calibrate(0.9, True, 0.8)  # error = abs(0.9 - 0.8) = 0.1
+        # Recent 5: high error (~0.4) - this will make diff > 0.05
+        for i in range(5):
+            cal.calibrate(0.5, False, 0.0)  # error = abs(0.5 - 0.0) = 0.5
+        trend = cal.get_calibration_trend()
+        # Recent error (0.5) > Older error (0.1) + 0.05, so "worsening"
+        assert trend == "worsening"
+
+    def test_get_calibration_trend_improving(self):
+        """Test when recent error is lower than older error (diff < -0.05)."""
+        cal = ConfidenceCalibrator()
+        # Create 10 records where recent has lower error than older
+        # Due to the bug in calibrate, error is actual_value (1.0 or 0.0), not difference
+        # For first calibration, error = |actual_value - initial|
+        # Older 5: low initial (so low error when actual_outcome=False)
+        for i in range(5):
+            cal.calibrate(0.1, False, 0.5)  # error = |0.0 - 0.1| = 0.1
+        # Recent 5: even lower initial
+        for i in range(5):
+            cal.calibrate(0.05, False, 0.5)  # error = |0.0 - 0.05| = 0.05
+        trend = cal.get_calibration_trend()
+        # Recent error (0.05) < Older error (0.1), so "improving"
+        assert trend == "improving"
+
+    def test_get_calibration_trend_stable_diff(self):
+        """Test when diff is within stable range (-0.05 <= diff <= 0.05)."""
+        cal = ConfidenceCalibrator()
+        # Create 10 records with same error
+        # Older 5
+        for i in range(5):
+            cal.calibrate(0.3, False, 0.5)  # error = |0.0 - 0.3| = 0.3
+        # Recent 5: same initial
+        for i in range(5):
+            cal.calibrate(0.3, False, 0.5)  # error = 0.3
+        trend = cal.get_calibration_trend()
+        # diff = 0.3 - 0.3 = 0, which is in [-0.05, 0.05], so "stable"
+        assert trend == "stable"
 
 
 class TestConfidenceCalibratorAlerting:

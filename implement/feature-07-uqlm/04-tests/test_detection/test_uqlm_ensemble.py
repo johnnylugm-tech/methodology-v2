@@ -87,6 +87,12 @@ class TestSemanticDensityScorer:
         score = scorer.score("", text, 5)
         assert 0.0 <= score <= 1.0
 
+    def test_repr(self):
+        scorer = SemanticDensityScorer()
+        r = repr(scorer)
+        assert "SemanticDensityScorer" in r
+        assert "semantic_density" in r
+
 
 class TestSelfConsistencyScorer:
     def test_empty_response(self):
@@ -124,6 +130,12 @@ class TestTokenNLLEvaluator:
     def test_name(self):
         scorer = TokenNLLEvaluator()
         assert scorer.name == "token_nll"
+
+    def test_repr(self):
+        scorer = TokenNLLEvaluator()
+        r = repr(scorer)
+        assert "TokenNLLEvaluator" in r
+        assert "token_nll" in r
 
 
 class TestScorerFactory:
