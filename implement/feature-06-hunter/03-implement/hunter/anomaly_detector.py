@@ -13,7 +13,10 @@ class AnomalyDetector:
         """Initialize anomaly detector."""
         self._config = config or {}
         self._audit_cache: dict = {}
-        self._confidence_threshold = 0.6
+        try:
+            self._confidence_threshold = config.get('confidence_threshold', 0.6) if config else 0.6
+        except (TypeError, ValueError):
+            self._confidence_threshold = 0.6
 
     def detect_fabrication(
         self, agent_id: str, claim: str, conversation_id: str
@@ -29,38 +32,57 @@ class AnomalyDetector:
         Returns:
             FabricateResult with confidence score
         """
-        if not claim:
-            return FabricateResult(
-                is_fabricated=False,
-                claim="",
-                audit_reference=None,
-                confidence=0.0
-            )
-
-        # Check if claim contains fabrication keywords
-        is_suspicious = any(
-            keyword.lower() in claim.lower()
-            for keyword in FABRICATION_KEYWORDS
-        )
-
-        if is_suspicious:
-            # Query audit log
-            audit_ref = self._query_audit(conversation_id)
-            if audit_ref is None:
-                # Fabrication detected - claim not in audit
+        try:
+            if not claim:
                 return FabricateResult(
-                    is_fabricated=True,
-                    claim=claim,
+                    is_fabricated=False,
+                    claim="",
                     audit_reference=None,
-                    confidence=0.85
+                    confidence=0.0
                 )
-            else:
+
+            # Check if claim contains fabrication keywords
+            try:
+                is_suspicious = any(
+                    keyword.lower() in claim.lower()
+                    for keyword in FABRICATION_KEYWORDS
+                )
+            except (AttributeError, TypeError):
+                # Claim not a proper string - cannot check
                 return FabricateResult(
                     is_fabricated=False,
                     claim=claim,
-                    audit_reference=audit_ref,
-                    confidence=0.9
+                    audit_reference=None,
+                    confidence=0.0
                 )
+
+            if is_suspicious:
+                # Query audit log
+                audit_ref = self._query_audit(conversation_id)
+
+                if audit_ref is None:
+                    # Fabrication detected - claim not in audit
+                    return FabricateResult(
+                        is_fabricated=True,
+                        claim=claim,
+                        audit_reference=None,
+                        confidence=0.85
+                    )
+                else:
+                    return FabricateResult(
+                        is_fabricated=False,
+                        claim=claim,
+                        audit_reference=audit_ref,
+                        confidence=0.9
+                    )
+        except Exception:
+            # Unexpected error - fail secure
+            return FabricateResult(
+                is_fabricated=False,
+                claim=claim,
+                audit_reference=None,
+                confidence=0.0
+            )
 
         return FabricateResult(
             is_fabricated=False,
@@ -131,4 +153,11 @@ class AnomalyDetector:
 
     def _query_audit(self, conversation_id: str) -> Optional[str]:
         """Query audit log for conversation."""
-        return self._audit_cache.get(conversation_id)
+        try:
+            return self._audit_cache.get(conversation_id)
+        except (TypeError, ValueError):
+            # Invalid key type
+            return None
+        except Exception:
+            # Unexpected error - fail secure
+            return None

@@ -94,4 +94,9 @@ class IntegrityValidator:
 
     def _compute_hash(self, content: str) -> str:
         """Compute SHA-256 hash."""
-        return hashlib.sha256(content.encode()).hexdigest()
+        try:
+            return hashlib.sha256(content.encode()).hexdigest()
+        except (TypeError, UnicodeEncodeError):
+            return ""
+        except Exception:
+            return ""
