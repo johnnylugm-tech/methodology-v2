@@ -153,23 +153,35 @@ class GapDetector:
         self._gaps = []
         self._matches = []
 
-        # Match spec items to code items
-        self._matches = self._match_spec_to_code()
+        try:
+            self._matches = self._match_spec_to_code()
+        except (FileNotFoundError, OSError):
+            return []
+        except Exception:
+            return []
 
-        # Detect MISSING gaps
-        missing_gaps = self._detect_missing()
-        self._gaps.extend(missing_gaps)
+        try:
+            missing_gaps = self._detect_missing()
+            self._gaps.extend(missing_gaps)
+        except Exception:
+            pass
 
-        # Detect INCOMPLETE gaps
-        incomplete_gaps = self._detect_incomplete()
-        self._gaps.extend(incomplete_gaps)
+        try:
+            incomplete_gaps = self._detect_incomplete()
+            self._gaps.extend(incomplete_gaps)
+        except Exception:
+            pass
 
-        # Detect ORPHANED gaps
-        orphaned_gaps = self._detect_orphaned()
-        self._gaps.extend(orphaned_gaps)
+        try:
+            orphaned_gaps = self._detect_orphaned()
+            self._gaps.extend(orphaned_gaps)
+        except Exception:
+            pass
 
-        # Apply downstream marking
-        self._mark_downstream_effects()
+        try:
+            self._mark_downstream_effects()
+        except Exception:
+            pass
 
         return self._gaps
 

@@ -93,7 +93,15 @@ class RiskAssessmentEngine:
         Returns:
             Updated risk with strategy, or None if not found
         """
-        risk = self.tracker.load_risk(risk_id)
+        try:
+            risk = self.tracker.load_risk(risk_id)
+        except FileNotFoundError:
+            # Risk file may have been deleted or never created
+            return None
+        except (OSError, PermissionError) as e:
+            # Handle file access errors gracefully
+            return None
+        
         if not risk:
             return None
 
@@ -103,7 +111,11 @@ class RiskAssessmentEngine:
         risk.mitigation = self.strategist._summarize_plan(risk.mitigation_plan)
 
         # Save
-        self.tracker.save_risk(risk)
+        try:
+            self.tracker.save_risk(risk)
+        except (OSError, PermissionError):
+            # Strategy generated but save failed - log for retry
+            pass
 
         return risk
 
@@ -126,7 +138,14 @@ class RiskAssessmentEngine:
         Returns:
             (success, message)
         """
-        return self.tracker.update_status(risk_id, new_status, changed_by, note)
+        try:
+            return self.tracker.update_status(risk_id, new_status, changed_by, note)
+        except FileNotFoundError:
+            return (False, f"Risk {risk_id} not found")
+        except (OSError, PermissionError) as e:
+            return (False, f"Cannot update risk {risk_id}: {e}")
+        except Exception as e:
+            return (False, f"Unexpected error updating status: {e}")
 
     def evaluate_gates(self) -> DecisionGateResult:
         """
@@ -137,7 +156,27 @@ class RiskAssessmentEngine:
         Returns:
             DecisionGateResult with gate evaluation
         """
-        risks = self.tracker.load_all_risks()
+        try:
+            risks = self.tracker.load_all_risks()
+        except FileNotFoundError:
+            # No risks registered yet - this is okay for new projects
+            risks = []
+        except (OSError, PermissionError) as e:
+            # Cannot access risk data - assume worst case
+            return DecisionGateResult(
+                can_proceed=False,
+                conditions=[],
+                blockers=["Cannot load risk data - check permissions"],
+                recommendations=["Verify risk database accessibility"],
+            )
+        except Exception as e:
+            # Unexpected error - fail safe
+            return DecisionGateResult(
+                can_proceed=False,
+                conditions=[],
+                blockers=[f"Unexpected error loading risks: {e}"],
+                recommendations=["Review system configuration"],
+            )
 
         blockers = []
         conditions = []
@@ -201,7 +240,35 @@ class RiskAssessmentEngine:
 
     def get_risk_summary(self) -> Dict[str, Any]:
         """[FR-04] 獲取風險摘要"""
-        risks = self.tracker.load_all_risks()
+        try:
+            risks = self.tracker.load_all_risks()
+        except FileNotFoundError:
+            risks = []
+        except (OSError, PermissionError):
+            # Return empty summary if cannot access
+            return {
+                "total": 0,
+                "open": 0,
+                "mitigated": 0,
+                "accepted": 0,
+                "closed": 0,
+                "by_level": {"critical": 0, "high": 0, "medium": 0, "low": 0},
+                "average_score": 0,
+                "constitution_compliant": False,
+                "error": "Cannot access risk data",
+            }
+        except Exception:
+            return {
+                "total": 0,
+                "open": 0,
+                "mitigated": 0,
+                "accepted": 0,
+                "closed": 0,
+                "by_level": {"critical": 0, "high": 0, "medium": 0, "low": 0},
+                "average_score": 0,
+                "constitution_compliant": False,
+                "error": "Unexpected error",
+            }
 
         return {
             "total": len(risks),

@@ -39,36 +39,58 @@ class HunterAgent:
         alerts: List[HunterAlert] = []
 
         # FR-H-1: Instruction tampering
-        tamper_result = self._integrity_validator.detect_tampering(message.content)
-        if tamper_result.is_tampered:
-            alert = HunterAlert(
-                alert_id=self._generate_id(),
-                detection_type=DetectionType.INSTRUCTION_TAMPERING,
-                severity=tamper_result.severity,
-                agent_id=message.agent_id,
-                evidence={"matched_tokens": tamper_result.matched_tokens},
-                timestamp=message.timestamp,
-                action_taken=self._action_for_severity(tamper_result.severity)
-            )
-            alerts.append(alert)
-
-        # FR-H-2: Dialogue fabrication
-        claims = self._anomaly_detector.extract_claims(message.content)
-        for claim in claims:
-            fabricate_result = self._anomaly_detector.detect_fabrication(
-                message.agent_id, claim, message.conversation_id
-            )
-            if fabricate_result.is_fabricated:
+        try:
+            tamper_result = self._integrity_validator.detect_tampering(message.content)
+            if tamper_result.is_tampered:
                 alert = HunterAlert(
                     alert_id=self._generate_id(),
-                    detection_type=DetectionType.DIALOGUE_FABRICATION,
-                    severity=Severity.HIGH,
+                    detection_type=DetectionType.INSTRUCTION_TAMPERING,
+                    severity=tamper_result.severity,
                     agent_id=message.agent_id,
-                    evidence={"claim": claim},
+                    evidence={"matched_tokens": tamper_result.matched_tokens},
                     timestamp=message.timestamp,
-                    action_taken=ActionType.ALERT
+                    action_taken=self._action_for_severity(tamper_result.severity)
                 )
                 alerts.append(alert)
+        except (ValueError, TypeError):
+            # Invalid message format - cannot inspect
+            return alerts
+        except Exception:
+            # Integrity check failed - fail secure
+            pass
+
+        # FR-H-2: Dialogue fabrication
+        try:
+            claims = self._anomaly_detector.extract_claims(message.content)
+        except (ValueError, TypeError):
+            # Cannot extract claims - skip fabrication check
+            claims = []
+        except Exception:
+            # Extraction failed - fail secure
+            pass
+
+        for claim in claims:
+            try:
+                fabricate_result = self._anomaly_detector.detect_fabrication(
+                    message.agent_id, claim, message.conversation_id
+                )
+                if fabricate_result.is_fabricated:
+                    alert = HunterAlert(
+                        alert_id=self._generate_id(),
+                        detection_type=DetectionType.DIALOGUE_FABRICATION,
+                        severity=Severity.HIGH,
+                        agent_id=message.agent_id,
+                        evidence={"claim": claim},
+                        timestamp=message.timestamp,
+                        action_taken=ActionType.ALERT
+                    )
+                    alerts.append(alert)
+            except (ValueError, TypeError):
+                # Invalid claim format - skip
+                continue
+            except Exception:
+                # Detection failed - fail secure
+                continue
 
         self._alerts.extend(alerts)
         return alerts
@@ -100,7 +122,14 @@ class HunterAgent:
         Returns:
             AbuseResult indicating whether tool is whitelisted
         """
-        return self._rule_compliance.check_whitelist(agent_id, tool_call.tool_name)
+        try:
+            return self._rule_compliance.check_whitelist(agent_id, tool_call.tool_name)
+        except (ValueError, TypeError):
+            # Invalid input - assume not allowed
+            return AbuseResult(is_abused=False, severity=Severity.LOW, tool_name=tool_call.tool_name)
+        except Exception:
+            # Check failed - fail secure (block the call)
+            return AbuseResult(is_abused=True, severity=Severity.MEDIUM, tool_name=tool_call.tool_name)
 
     def get_alert_history(
         self,

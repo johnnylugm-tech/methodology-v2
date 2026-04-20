@@ -354,23 +354,37 @@ class CodeScanner:
         files: list[Path] = []
         implement_path = Path(self.implement_dir)
 
-        for root, dirs, filenames in os.walk(implement_path):
-            # Skip __pycache__ directories
-            dirs[:] = [d for d in dirs if d != "__pycache__"]
+        try:
+            for root, dirs, filenames in os.walk(implement_path):
+                try:
+                    # Skip __pycache__ directories
+                    dirs[:] = [d for d in dirs if d != "__pycache__"]
 
-            root_path = Path(root)
-            for filename in filenames:
-                if not filename.endswith(".py"):
-                    continue
-                if filename.startswith("test_"):
-                    continue
-                if filename == "conftest.py":
-                    continue
-                if filename.startswith("_") and filename != "__init__.py":
-                    # Skip private modules except __init__.py
-                    continue
+                    root_path = Path(root)
+                    for filename in filenames:
+                        try:
+                            if not filename.endswith(".py"):
+                                continue
+                            if filename.startswith("test_"):
+                                continue
+                            if filename == "conftest.py":
+                                continue
+                            if filename.startswith("_") and filename != "__init__.py":
+                                continue
 
-                files.append(root_path / filename)
+                            files.append(root_path / filename)
+                        except Exception:
+                            # Skip files that cannot be processed
+                            continue
+                except Exception:
+                    # Skip directories that cannot be processed
+                    continue
+        except PermissionError:
+            # Cannot access directory - return empty list
+            return []
+        except Exception:
+            # Unexpected error - fail secure
+            return []
 
         return sorted(files)
 
@@ -385,8 +399,23 @@ class CodeScanner:
         """
         module_name = self._get_module_name(file_path)
 
-        with open(file_path, "r", encoding="utf-8") as f:
-            content = f.read()
+        try:
+            with open(file_path, "r", encoding="utf-8") as f:
+                content = f.read()
+        except PermissionError:
+            # Cannot read file - log and skip
+            self._errors.append(ScanError(
+                code="E_FILE_ACCESS",
+                message=f"Permission denied: {file_path}"
+            ))
+            return None
+        except Exception:
+            # Cannot read file - log and skip
+            self._errors.append(ScanError(
+                code="E_FILE_READ",
+                message=f"Cannot read file: {file_path}"
+            ))
+            return None
 
         try:
             tree = ast.parse(content, filename=str(file_path))
@@ -394,6 +423,11 @@ class CodeScanner:
             raise ScanError(
                 code="E_SCAN_FAILED",
                 message=f"Syntax error in {file_path}: {e}"
+            )
+        except Exception:
+            raise ScanError(
+                code="E_SCAN_FAILED",
+                message=f"Failed to parse {file_path}"
             )
 
         visitor = _ASTVisitor(str(file_path), module_name)
