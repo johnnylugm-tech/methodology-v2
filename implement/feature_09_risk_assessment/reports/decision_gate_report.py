@@ -9,7 +9,7 @@ from typing import List
 from datetime import datetime
 import sqlite3
 
-from engine.engine import DecisionGateResult
+from ..engine.engine import DecisionGateResult
 
 
 class DecisionGateReportGenerator:
@@ -114,7 +114,7 @@ class DecisionGateReportGenerator:
 
         # Get risk summary from tracker
         try:
-            from engine.tracker import RiskTracker
+            from ..engine.tracker import RiskTracker
             tracker = RiskTracker(str(self.project_root))
             summary = tracker.export_to_register()
 

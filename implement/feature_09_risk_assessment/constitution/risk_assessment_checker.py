@@ -169,7 +169,7 @@ class RiskAssessmentConstitutionChecker:
     def _check_mitigation_plans(self) -> bool:
         """檢查所有風險是否有緩解措施"""
         # Check if we can read risk data
-        from engine.tracker import RiskTracker
+        from ..engine.tracker import RiskTracker
 
         try:
             tracker = RiskTracker(str(self.project_root))
@@ -219,7 +219,7 @@ class RiskAssessmentConstitutionChecker:
 
     def _check_status_tracking(self) -> bool:
         """檢查狀態追蹤完整性"""
-        from engine.tracker import RiskTracker
+        from ..engine.tracker import RiskTracker
 
         try:
             tracker = RiskTracker(str(self.project_root))
@@ -267,4 +267,4 @@ class RiskAssessmentConstitutionChecker:
 
 
 # Import RiskLevel for _check_mitigation_plans
-from models.enums import RiskLevel
+from ..models.enums import RiskLevel

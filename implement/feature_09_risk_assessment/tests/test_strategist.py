@@ -6,9 +6,9 @@ test_strategist.py - Tests for Risk Strategist
 
 import pytest
 
-from engine.strategist import RiskStrategist
-from models.risk import Risk, MitigationPlan
-from models.enums import RiskDimension, RiskLevel, StrategyType
+from implement.feature_09_risk_assessment.engine.strategist import RiskStrategist
+from implement.feature_09_risk_assessment.models.risk import Risk, MitigationPlan
+from implement.feature_09_risk_assessment.models.enums import RiskDimension, RiskLevel, StrategyType
 
 
 class TestRiskStrategist:

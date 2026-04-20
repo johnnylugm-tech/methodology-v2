@@ -7,8 +7,8 @@ strategist.py - Risk Response Strategy Generator
 from typing import List, Optional
 from datetime import datetime
 
-from models.risk import Risk, MitigationPlan
-from models.enums import StrategyType, RiskLevel
+from ..models.risk import Risk, MitigationPlan
+from ..models.enums import StrategyType, RiskLevel
 
 
 class RiskStrategist:

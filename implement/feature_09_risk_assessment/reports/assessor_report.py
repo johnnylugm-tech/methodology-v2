@@ -8,8 +8,8 @@ from pathlib import Path
 from typing import List, Optional
 from datetime import datetime
 
-from models.risk import Risk, RiskAssessmentResult
-from models.enums import RiskLevel, RiskStatus, RiskDimension
+from ..models.risk import Risk, RiskAssessmentResult
+from ..models.enums import RiskLevel, RiskStatus, RiskDimension
 
 
 class RiskAssessmentReportGenerator:

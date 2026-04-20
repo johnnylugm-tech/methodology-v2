@@ -9,9 +9,9 @@ import tempfile
 import shutil
 from pathlib import Path
 
-from engine.assessor import RiskAssessor, RiskScorer
-from models.risk import Risk
-from models.enums import RiskDimension, RiskLevel
+from implement.feature_09_risk_assessment.engine.assessor import RiskAssessor, RiskScorer
+from implement.feature_09_risk_assessment.models.risk import Risk
+from implement.feature_09_risk_assessment.models.enums import RiskDimension, RiskLevel
 
 
 class TestRiskScorer:

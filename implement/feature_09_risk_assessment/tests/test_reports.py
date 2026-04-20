@@ -11,11 +11,11 @@ from pathlib import Path
 from datetime import datetime
 
 # Import modules - conftest.py already adds feature dir to sys.path
-from reports.assessor_report import RiskAssessmentReportGenerator
-from reports.decision_gate_report import DecisionGateReportGenerator
-from engine.engine import DecisionGateResult
-from models.risk import Risk, RiskAssessmentResult, MitigationPlan
-from models.enums import RiskLevel, RiskStatus, RiskDimension, StrategyType
+from implement.feature_09_risk_assessment.reports.assessor_report import RiskAssessmentReportGenerator
+from implement.feature_09_risk_assessment.reports.decision_gate_report import DecisionGateReportGenerator
+from implement.feature_09_risk_assessment.engine.engine import DecisionGateResult
+from implement.feature_09_risk_assessment.models.risk import Risk, RiskAssessmentResult, MitigationPlan
+from implement.feature_09_risk_assessment.models.enums import RiskLevel, RiskStatus, RiskDimension, StrategyType
 
 
 @pytest.fixture

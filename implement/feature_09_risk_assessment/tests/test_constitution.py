@@ -10,38 +10,13 @@ import shutil
 from pathlib import Path
 from datetime import datetime
 
-# Import modules using direct file imports to avoid namespace conflict
-import sys
-feature_dir = Path(__file__).parent.parent
-if str(feature_dir) not in sys.path:
-    sys.path.insert(0, str(feature_dir))
-
-# Direct import bypassing __init__
-import importlib.util
-
-def import_from_file(module_name, file_path):
-    spec = importlib.util.spec_from_file_location(module_name, str(file_path))
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
-
-# Import constitution checker directly
-constitution_module = import_from_file(
-    "risk_assessment_checker",
-    feature_dir / "constitution" / "risk_assessment_checker.py"
+# Import modules using package path
+from implement.feature_09_risk_assessment.constitution.risk_assessment_checker import (
+    RiskAssessmentConstitutionChecker,
+    ConstitutionCheckResult,
+    CONSTITUTION_THRESHOLDS,
 )
-RiskAssessmentConstitutionChecker = constitution_module.RiskAssessmentConstitutionChecker
-ConstitutionCheckResult = constitution_module.ConstitutionCheckResult
-CONSTITUTION_THRESHOLDS = constitution_module.CONSTITUTION_THRESHOLDS
-
-# Import enums directly
-enums_module = import_from_file(
-    "enums",
-    feature_dir / "models" / "enums.py"
-)
-RiskLevel = enums_module.RiskLevel
-RiskStatus = enums_module.RiskStatus
-RiskDimension = enums_module.RiskDimension
+from implement.feature_09_risk_assessment.models.enums import RiskLevel, RiskStatus, RiskDimension
 
 
 @pytest.fixture

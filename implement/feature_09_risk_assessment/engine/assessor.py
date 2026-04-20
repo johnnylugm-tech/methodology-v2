@@ -10,8 +10,8 @@ from pathlib import Path
 from typing import List, Dict, Optional, Tuple
 from datetime import datetime
 
-from models.risk import Risk, RiskAssessmentResult
-from models.enums import RiskDimension, RiskLevel, RiskStatus
+from ..models.risk import Risk, RiskAssessmentResult
+from ..models.enums import RiskDimension, RiskLevel, RiskStatus
 
 
 class RiskScorer:

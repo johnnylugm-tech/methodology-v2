@@ -11,11 +11,11 @@ from typing import List, Optional, Dict, Any
 from datetime import datetime
 from dataclasses import dataclass, field
 
-from engine.assessor import RiskAssessor, RiskScorer
-from engine.strategist import RiskStrategist
-from engine.tracker import RiskTracker
-from models.risk import Risk, RiskAssessmentResult
-from models.enums import RiskStatus, RiskLevel, StrategyType
+from .assessor import RiskAssessor, RiskScorer
+from .strategist import RiskStrategist
+from .tracker import RiskTracker
+from ..models.risk import Risk, RiskAssessmentResult
+from ..models.enums import RiskStatus, RiskLevel, StrategyType
 
 
 @dataclass

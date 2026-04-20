@@ -11,8 +11,8 @@ from typing import List, Optional, Dict, Any, Tuple
 from datetime import datetime
 from dataclasses import dataclass
 
-from models.risk import Risk
-from models.enums import RiskStatus, RiskLevel
+from ..models.risk import Risk
+from ..models.enums import RiskStatus, RiskLevel
 
 
 @dataclass
@@ -279,8 +279,8 @@ class RiskTracker:
 
     def _row_to_risk(self, row: tuple) -> Risk:
         """將資料庫 row 轉換為 Risk 物件"""
-        from models.risk import MitigationPlan
-        from models.enums import RiskDimension, RiskLevel, RiskStatus, StrategyType
+        from ..models.risk import MitigationPlan
+        from ..models.enums import RiskDimension, RiskLevel, RiskStatus, StrategyType
 
         return Risk(
             id=row[0],

@@ -2,9 +2,8 @@
 import sys
 from pathlib import Path
 
-# Add the feature package directory to sys.path
-# so that "from engine.xxx" and "from models.xxx" imports work
-feature_dir = Path(__file__).parent.parent
-if str(feature_dir) not in sys.path:
-    sys.path.insert(0, str(feature_dir))
-
+# Add implement/ parent to sys.path so that
+# "from implement.feature_09_risk_assessment.xxx" style imports work
+implement_parent = Path(__file__).parent.parent.parent
+if str(implement_parent) not in sys.path:
+    sys.path.insert(0, str(implement_parent))
