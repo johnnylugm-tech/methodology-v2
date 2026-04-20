@@ -38,7 +38,7 @@ class MitigationPlan:
 class Risk:
     """
     風險記錄 dataclass
-    
+
     [FR-01] Risk identification - id, title, description, dimension
     [FR-02] Risk evaluation - probability, impact, score
     [FR-03] Risk response strategy - strategy, mitigation
@@ -47,12 +47,12 @@ class Risk:
     title: str
     description: str
     dimension: RiskDimension
-    
+
     # Evaluation
     probability: float = 0.5
     impact: int = 3
     detectability_factor: float = 1.0
-    
+
     # Metadata
     id: str = field(default_factory=lambda: f"R-{uuid.uuid4().hex[:8].upper()}")
     level: RiskLevel = field(default=RiskLevel.MEDIUM)
@@ -61,23 +61,23 @@ class Risk:
     strategy: StrategyType = field(default=StrategyType.ACCEPT)
     mitigation: str = ""
     mitigation_plan: MitigationPlan = field(default_factory=MitigationPlan)
-    
+
     # Timestamps
     created_at: datetime = field(default_factory=datetime.now)
     updated_at: datetime = field(default_factory=datetime.now)
     closed_at: Optional[datetime] = None
-    
+
     # Evidence
     evidence: List[str] = field(default_factory=list)
-    
+
     # Computed
     _score: float = field(init=False, repr=False)
-    
+
     def __post_init__(self):
         self._score = self.calculate_score()
         if self.level == RiskLevel.MEDIUM and self._score > 0:
             self.level = RiskLevel.from_score(self._score)
-    
+
     def calculate_score(self) -> float:
         """[FR-02] 計算風險分數: Probability × Impact × Detectability_Factor"""
         try:
@@ -87,12 +87,12 @@ class Risk:
             return round(prob * imp * det / 5, 3)  # Normalized to 0-1
         except (TypeError, ValueError):
             return 0.3  # Default to MEDIUM
-    
+
     @property
     def score(self) -> float:
         """風險分數（唯讀）"""
         return self._score
-    
+
     def to_dict(self) -> Dict[str, Any]:
         """轉換為字典"""
         return {
@@ -115,7 +115,7 @@ class Risk:
             "closed_at": self.closed_at.isoformat() if isinstance(self.closed_at, datetime) else self.closed_at,
             "evidence": self.evidence,
         }
-    
+
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "Risk":
         """從字典還原"""
@@ -124,31 +124,31 @@ class Risk:
         level = RiskLevel(data.get("level", "medium"))
         status = RiskStatus(data.get("status", "open"))
         strategy = StrategyType(data.get("strategy", "accept"))
-        
+
         # Parse timestamps
         created_at = data.get("created_at")
         if isinstance(created_at, str):
             created_at = datetime.fromisoformat(created_at)
         elif created_at is None:
             created_at = datetime.now()
-        
+
         updated_at = data.get("updated_at")
         if isinstance(updated_at, str):
             updated_at = datetime.fromisoformat(updated_at)
         elif updated_at is None:
             updated_at = datetime.now()
-        
+
         closed_at = data.get("closed_at")
         if isinstance(closed_at, str):
             closed_at = datetime.fromisoformat(closed_at)
-        
+
         # Parse mitigation plan
         mitigation_plan_data = data.get("mitigation_plan", {})
         if isinstance(mitigation_plan_data, dict):
             mitigation_plan = MitigationPlan.from_dict(mitigation_plan_data)
         else:
             mitigation_plan = MitigationPlan()
-        
+
         return cls(
             id=data.get("id", f"R-{uuid.uuid4().hex[:8].upper()}"),
             title=data.get("title", ""),
@@ -168,18 +168,18 @@ class Risk:
             closed_at=closed_at,
             evidence=data.get("evidence", []),
         )
-    
+
     def update_status(self, new_status: RiskStatus) -> bool:
         """[FR-04] 更新風險狀態"""
         if not self.status.can_transition_to(new_status):
             return False
-        
+
         self.status = new_status
         self.updated_at = datetime.now()
-        
+
         if new_status == RiskStatus.CLOSED:
             self.closed_at = datetime.now()
-        
+
         return True
 
 
@@ -194,7 +194,7 @@ class RiskAssessmentResult:
     constitution_compliant: bool = False
     generated_at: datetime = field(default_factory=datetime.now)
     recommendations: List[str] = field(default_factory=list)
-    
+
     def to_dict(self) -> Dict[str, Any]:
         return {
             "project_name": self.project_name,
@@ -206,27 +206,27 @@ class RiskAssessmentResult:
             "generated_at": self.generated_at.isoformat() if isinstance(self.generated_at, datetime) else self.generated_at,
             "recommendations": self.recommendations,
         }
-    
+
     @property
     def critical_count(self) -> int:
         return len([r for r in self.risks if r.level == RiskLevel.CRITICAL])
-    
+
     @property
     def high_count(self) -> int:
         return len([r for r in self.risks if r.level == RiskLevel.HIGH])
-    
+
     @property
     def medium_count(self) -> int:
         return len([r for r in self.risks if r.level == RiskLevel.MEDIUM])
-    
+
     @property
     def low_count(self) -> int:
         return len([r for r in self.risks if r.level == RiskLevel.LOW])
-    
+
     @property
     def open_count(self) -> int:
         return len([r for r in self.risks if r.status == RiskStatus.OPEN])
-    
+
     @property
     def closed_count(self) -> int:
         return len([r for r in self.risks if r.status == RiskStatus.CLOSED])

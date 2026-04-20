@@ -8,35 +8,35 @@ from pathlib import Path
 from typing import List, Optional
 from datetime import datetime
 
-from ..models.risk import Risk, RiskAssessmentResult
-from ..models.enums import RiskLevel, RiskStatus, RiskDimension
+from models.risk import Risk, RiskAssessmentResult
+from models.enums import RiskLevel, RiskStatus, RiskDimension
 
 
 class RiskAssessmentReportGenerator:
     """
     [FR-01, FR-02, FR-03, FR-04] Generate risk assessment reports
-    
+
     Generates:
     - RISK_ASSESSMENT.md
     - RISK_REGISTER.md
     """
-    
+
     def __init__(self, project_root: str):
         self.project_root = Path(project_root)
-    
+
     def generate(self, result: RiskAssessmentResult) -> None:
         """
         生成風險評估報告
-        
+
         Args:
             result: RiskAssessmentResult from engine.assess()
         """
         # Generate RISK_ASSESSMENT.md
         self._generate_assessment_report(result)
-        
+
         # Generate RISK_REGISTER.md
         self._generate_register(result.risks)
-    
+
     def _generate_assessment_report(self, result: RiskAssessmentResult) -> None:
         """生成 RISK_ASSESSMENT.md"""
         lines = [
@@ -60,7 +60,7 @@ class RiskAssessmentReportGenerator:
             f"- Closed: {result.closed_count}",
             "",
         ]
-        
+
         # Risk level legend
         lines.extend([
             "### Risk Level Legend",
@@ -72,7 +72,7 @@ class RiskAssessmentReportGenerator:
             "| 🟢 LOW | < 0.3 | Monitor in backlog |",
             "",
         ])
-        
+
         # Risk register table
         lines.extend([
             "## Risk Register",
@@ -80,7 +80,7 @@ class RiskAssessmentReportGenerator:
             "| ID | Title | Dimension | Level | Score | Status | Owner |",
             "|----|-------|-----------|-------|-------|--------|-------|",
         ])
-        
+
         for risk in sorted(result.risks, key=lambda r: r.score, reverse=True):
             level_icon = self._level_icon(risk.level)
             lines.append(
@@ -88,18 +88,18 @@ class RiskAssessmentReportGenerator:
                 f"{level_icon} {risk.level.value.upper()} | {risk.score:.3f} | "
                 f"{risk.status.value.upper()} | {risk.owner or '-'} |"
             )
-        
+
         lines.append("")
-        
+
         # Detailed assessments
         lines.extend([
             "## Detailed Assessments",
             "",
         ])
-        
+
         for risk in sorted(result.risks, key=lambda r: r.score, reverse=True):
             lines.extend(self._format_risk_detail(risk))
-        
+
         # Recommendations
         if result.recommendations:
             lines.extend([
@@ -109,11 +109,11 @@ class RiskAssessmentReportGenerator:
             for rec in result.recommendations:
                 lines.append(f"- {rec}")
             lines.append("")
-        
+
         # Write file
         output_path = self.project_root / "RISK_ASSESSMENT.md"
         output_path.write_text("\n".join(lines), encoding="utf-8")
-    
+
     def _generate_register(self, risks: List[Risk]) -> None:
         """生成 RISK_REGISTER.md"""
         lines = [
@@ -126,7 +126,7 @@ class RiskAssessmentReportGenerator:
             "| ID | 風險描述 | 維度 | 等級 | 概率 | 影響 | 緩解措施 | 狀態 |",
             "|----|----------|------|------|------|------|---------|------|",
         ]
-        
+
         for risk in risks:
             prob_pct = f"{risk.probability * 100:.0f}%"
             lines.append(
@@ -134,9 +134,9 @@ class RiskAssessmentReportGenerator:
                 f"{risk.level.value.upper()} | {prob_pct} | {risk.impact} | "
                 f"{risk.mitigation[:30] if risk.mitigation else '-'} | {risk.status.value} |"
             )
-        
+
         lines.append("")
-        
+
         # Decision Gate section
         lines.extend([
             "## Decision Gate 確認",
@@ -147,14 +147,14 @@ class RiskAssessmentReportGenerator:
             "---",
             "*本文件由 Risk Assessment Engine 自動生成*",
         ])
-        
+
         output_path = self.project_root / "RISK_REGISTER.md"
         output_path.write_text("\n".join(lines), encoding="utf-8")
-    
+
     def _format_risk_detail(self, risk: Risk) -> List[str]:
         """格式化單一風險的詳細資訊"""
         level_icon = self._level_icon(risk.level)
-        
+
         lines = [
             f"### {risk.id}: {risk.title}",
             "",
@@ -169,51 +169,51 @@ class RiskAssessmentReportGenerator:
             f"**Description**: {risk.description}",
             "",
         ]
-        
+
         if risk.evidence:
             lines.append("**Evidence**:")
             for e in risk.evidence:
                 lines.append(f"- {e}")
             lines.append("")
-        
+
         if risk.mitigation_plan:
             plan = risk.mitigation_plan
             lines.append("**Mitigation Plan**:")
-            
+
             if plan.immediate:
                 lines.append("- Immediate (24h):")
                 for a in plan.immediate:
                     lines.append(f"  - {a}")
-            
+
             if plan.short_term:
                 lines.append("- Short-term (1 week):")
                 for a in plan.short_term:
                     lines.append(f"  - {a}")
-            
+
             if plan.long_term:
                 lines.append("- Long-term (1 month):")
                 for a in plan.long_term:
                     lines.append(f"  - {a}")
-            
+
             if plan.fallback:
                 lines.append("- Fallback:")
                 for a in plan.fallback:
                     lines.append(f"  - {a}")
-            
+
             lines.append("")
-        
+
         lines.append(f"**Created**: {risk.created_at.strftime('%Y-%m-%d %H:%M')}")
         lines.append(f"**Updated**: {risk.updated_at.strftime('%Y-%m-%d %H:%M')}")
-        
+
         if risk.closed_at:
             lines.append(f"**Closed**: {risk.closed_at.strftime('%Y-%m-%d %H:%M')}")
-        
+
         lines.append("")
         lines.append("---")
         lines.append("")
-        
+
         return lines
-    
+
     def _level_icon(self, level: RiskLevel) -> str:
         """返回風險等級的表情符號"""
         icons = {

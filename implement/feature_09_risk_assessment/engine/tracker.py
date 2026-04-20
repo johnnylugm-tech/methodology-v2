@@ -29,22 +29,22 @@ class RiskHistoryEntry:
 class RiskTracker:
     """
     [FR-04] Risk tracking with history persistence
-    
+
     Manages risk lifecycle state transitions and maintains audit trail.
     """
-    
+
     def __init__(self, project_root: str):
         self.project_root = Path(project_root)
         self.db_path = self.project_root / ".methodology" / "risk_assessment.db"
         self._init_database()
-    
+
     def _init_database(self) -> None:
         """初始化 SQLite 資料庫"""
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
-        
+
         conn = sqlite3.connect(str(self.db_path))
         cursor = conn.cursor()
-        
+
         # Risks table
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS risks (
@@ -67,7 +67,7 @@ class RiskTracker:
                 evidence TEXT
             )
         """)
-        
+
         # Risk history table
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS risk_history (
@@ -81,16 +81,16 @@ class RiskTracker:
                 FOREIGN KEY (risk_id) REFERENCES risks (id)
             )
         """)
-        
+
         conn.commit()
         conn.close()
-    
+
     def save_risk(self, risk: Risk) -> bool:
         """[FR-04] 保存風險到資料庫"""
         try:
             conn = sqlite3.connect(str(self.db_path))
             cursor = conn.cursor()
-            
+
             cursor.execute("""
                 INSERT OR REPLACE INTO risks
                 (id, title, description, dimension, level, status, probability,
@@ -116,46 +116,46 @@ class RiskTracker:
                 risk.closed_at.isoformat() if isinstance(risk.closed_at, datetime) else risk.closed_at,
                 json.dumps(risk.evidence),
             ))
-            
+
             conn.commit()
             conn.close()
             return True
-        except Exception as e:
+        except sqlite3.Error as e:
             print(f"Error saving risk: {e}")
             return False
-    
+
     def load_risk(self, risk_id: str) -> Optional[Risk]:
         """[FR-04] 從資料庫載入風險"""
         try:
             conn = sqlite3.connect(str(self.db_path))
             cursor = conn.cursor()
-            
+
             cursor.execute("SELECT * FROM risks WHERE id = ?", (risk_id,))
             row = cursor.fetchone()
             conn.close()
-            
+
             if row:
                 return self._row_to_risk(row)
             return None
-        except Exception as e:
+        except (sqlite3.Error, json.JSONDecodeError) as e:
             print(f"Error loading risk: {e}")
             return None
-    
+
     def load_all_risks(self) -> List[Risk]:
         """[FR-04] 載入所有風險"""
         try:
             conn = sqlite3.connect(str(self.db_path))
             cursor = conn.cursor()
-            
+
             cursor.execute("SELECT * FROM risks ORDER BY created_at DESC")
             rows = cursor.fetchall()
             conn.close()
-            
+
             return [self._row_to_risk(row) for row in rows]
-        except Exception as e:
+        except (sqlite3.Error, json.JSONDecodeError) as e:
             print(f"Error loading risks: {e}")
             return []
-    
+
     def update_status(
         self,
         risk_id: str,
@@ -165,57 +165,57 @@ class RiskTracker:
     ) -> Tuple[bool, str]:
         """
         [FR-04] 更新風險狀態
-        
+
         Args:
             risk_id: 風險 ID
             new_status: 新狀態
             changed_by: 變更人
             note: 備註
-            
+
         Returns:
             (success, message)
         """
         risk = self.load_risk(risk_id)
         if not risk:
             return False, f"Risk {risk_id} not found"
-        
+
         old_status = risk.status
-        
+
         # Validate transition
         if not old_status.can_transition_to(new_status):
             return False, f"Invalid transition: {old_status.value} -> {new_status.value}"
-        
+
         # Update risk
         risk.status = new_status
         risk.updated_at = datetime.now()
-        
+
         if new_status == RiskStatus.CLOSED:
             risk.closed_at = datetime.now()
-        
+
         # Save
         self.save_risk(risk)
-        
+
         # Record history
         self._record_history(risk_id, old_status, new_status, changed_by, note)
-        
+
         return True, f"Status updated: {old_status.name} -> {new_status.name}"
-    
+
     def get_history(self, risk_id: str) -> List[RiskHistoryEntry]:
         """[FR-04] 獲取風險歷史記錄"""
         try:
             conn = sqlite3.connect(str(self.db_path))
             cursor = conn.cursor()
-            
+
             cursor.execute("""
                 SELECT risk_id, changed_at, old_status, new_status, changed_by, note
                 FROM risk_history
                 WHERE risk_id = ?
                 ORDER BY changed_at DESC
             """, (risk_id,))
-            
+
             rows = cursor.fetchall()
             conn.close()
-            
+
             return [
                 RiskHistoryEntry(
                     risk_id=row[0],
@@ -227,25 +227,25 @@ class RiskTracker:
                 )
                 for row in rows
             ]
-        except Exception as e:
+        except (sqlite3.Error, ValueError) as e:
             print(f"Error loading history: {e}")
             return []
-    
+
     def get_open_risks(self) -> List[Risk]:
         """[FR-04] 獲取所有 Open 狀態的風險"""
         all_risks = self.load_all_risks()
         return [r for r in all_risks if r.status == RiskStatus.OPEN]
-    
+
     def get_closed_risks(self) -> List[Risk]:
         """[FR-04] 獲取所有 Closed 狀態的風險"""
         all_risks = self.load_all_risks()
         return [r for r in all_risks if r.status == RiskStatus.CLOSED]
-    
+
     def get_by_level(self, level) -> List[Risk]:
         """[FR-04] 根據等級篩選風險"""
         all_risks = self.load_all_risks()
         return [r for r in all_risks if r.level == level]
-    
+
     def _record_history(
         self,
         risk_id: str,
@@ -258,7 +258,7 @@ class RiskTracker:
         try:
             conn = sqlite3.connect(str(self.db_path))
             cursor = conn.cursor()
-            
+
             cursor.execute("""
                 INSERT INTO risk_history
                 (risk_id, changed_at, old_status, new_status, changed_by, note)
@@ -271,17 +271,17 @@ class RiskTracker:
                 changed_by,
                 note,
             ))
-            
+
             conn.commit()
             conn.close()
-        except Exception as e:
+        except sqlite3.Error as e:
             print(f"Error recording history: {e}")
-    
+
     def _row_to_risk(self, row: tuple) -> Risk:
         """將資料庫 row 轉換為 Risk 物件"""
         from models.risk import MitigationPlan
         from models.enums import RiskDimension, RiskLevel, RiskStatus, StrategyType
-        
+
         return Risk(
             id=row[0],
             title=row[1],
@@ -300,11 +300,11 @@ class RiskTracker:
             closed_at=datetime.fromisoformat(row[15]) if row[15] else None,
             evidence=json.loads(row[16]) if row[16] else [],
         )
-    
+
     def export_to_register(self) -> Dict[str, Any]:
         """[FR-04] 導出風險登記表摘要"""
         risks = self.load_all_risks()
-        
+
         return {
             "total": len(risks),
             "open": len([r for r in risks if r.status == RiskStatus.OPEN]),
@@ -317,29 +317,29 @@ class RiskTracker:
             },
             "risks": [r.to_dict() for r in risks],
         }
-    
+
     def validate_state_machine(self) -> Dict[str, Any]:
         """
         [FR-04] 驗證狀態機一致性
-        
+
         檢查所有風險是否符合狀態機規則。
         """
         risks = self.load_all_risks()
         violations = []
-        
+
         for risk in risks:
             # CLOSED should have closed_at
             if risk.status == RiskStatus.CLOSED and not risk.closed_at:
                 violations.append(f"{risk.id}: CLOSED but no closed_at")
-            
+
             # OPEN should not have closed_at
             if risk.status == RiskStatus.OPEN and risk.closed_at:
                 violations.append(f"{risk.id}: OPEN but has closed_at")
-            
+
             # Timestamps should be consistent
             if risk.created_at > risk.updated_at:
                 violations.append(f"{risk.id}: created_at > updated_at")
-        
+
         return {
             "valid": len(violations) == 0,
             "violations": violations,
