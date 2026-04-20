@@ -1,7 +1,18 @@
-# constitution/__init__.py
-# Constitution compliance checker
+"""constitution/__init__.py
+[FR-01, FR-02, FR-03, FR-04] Constitution compliance checker
 
-# Note: Import modules directly when needed, not via this __init__
-# to avoid relative import issues with files that use `from ..models`
+Verifies risk assessment meets Constitution standards by checking:
+- Required files (RISK_ASSESSMENT.md, RISK_REGISTER.md)
+- Required sections in assessment documents
+- Mitigation plan completeness
+- Risk register format compliance
+- Status tracking consistency
+
+Usage:
+    >>> from constitution.risk_assessment_checker import RiskAssessmentConstitutionChecker
+    >>> checker = RiskAssessmentConstitutionChecker("/path/to/project")
+    >>> result = checker.check()
+    >>> print(f"Score: {result.score:.1f}%")
+"""
 
 __all__ = []

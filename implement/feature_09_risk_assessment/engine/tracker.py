@@ -2,9 +2,19 @@
 """
 tracker.py - Risk Status Tracker
 [FR-04] Track risk status changes and history
+
+Provides SQLite-based persistence for risk lifecycle management with
+audit trail support. Integrates with phase quality gate constitution
+by tracking risk status transitions and validating state machine consistency.
+
+Usage:
+    >>> tracker = RiskTracker("/path/to/project")
+    >>> tracker.save_risk(risk)
+    >>> risks = tracker.load_all_risks()
 """
 
 import json
+import logging
 import sqlite3
 from pathlib import Path
 from typing import List, Optional, Dict, Any, Tuple
@@ -17,7 +27,7 @@ from ..models.enums import RiskStatus, RiskLevel
 
 @dataclass
 class RiskHistoryEntry:
-    """風險狀態變更歷史記錄"""
+    """Risk status change history record."""
     risk_id: str
     changed_at: datetime
     old_status: RiskStatus
@@ -28,7 +38,7 @@ class RiskHistoryEntry:
 
 class RiskTracker:
     """
-    [FR-04] Risk tracking with history persistence
+    [FR-04] Risk tracking with history persistence.
 
     Manages risk lifecycle state transitions and maintains audit trail.
     """
@@ -39,7 +49,7 @@ class RiskTracker:
         self._init_database()
 
     def _init_database(self) -> None:
-        """初始化 SQLite 資料庫"""
+        """Initialize SQLite database."""
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
 
         conn = sqlite3.connect(str(self.db_path))
@@ -86,7 +96,7 @@ class RiskTracker:
         conn.close()
 
     def save_risk(self, risk: Risk) -> bool:
-        """[FR-04] 保存風險到資料庫"""
+        """[FR-04] Save risk to database."""
         try:
             conn = sqlite3.connect(str(self.db_path))
             cursor = conn.cursor()
@@ -121,11 +131,11 @@ class RiskTracker:
             conn.close()
             return True
         except sqlite3.Error as e:
-            print(f"Error saving risk: {e}")
+            logging.error("Failed to save risk %s: %s", risk.id, e)
             return False
 
     def load_risk(self, risk_id: str) -> Optional[Risk]:
-        """[FR-04] 從資料庫載入風險"""
+        """[FR-04] Load risk from database."""
         try:
             conn = sqlite3.connect(str(self.db_path))
             cursor = conn.cursor()
@@ -138,11 +148,11 @@ class RiskTracker:
                 return self._row_to_risk(row)
             return None
         except (sqlite3.Error, json.JSONDecodeError) as e:
-            print(f"Error loading risk: {e}")
+            logging.error("Failed to load risk %s: %s", risk_id, e)
             return None
 
     def load_all_risks(self) -> List[Risk]:
-        """[FR-04] 載入所有風險"""
+        """[FR-04] Load all risks."""
         try:
             conn = sqlite3.connect(str(self.db_path))
             cursor = conn.cursor()
@@ -153,7 +163,7 @@ class RiskTracker:
 
             return [self._row_to_risk(row) for row in rows]
         except (sqlite3.Error, json.JSONDecodeError) as e:
-            print(f"Error loading risks: {e}")
+            logging.error("Failed to load all risks: %s", e)
             return []
 
     def update_status(
@@ -164,13 +174,13 @@ class RiskTracker:
         note: str = ""
     ) -> Tuple[bool, str]:
         """
-        [FR-04] 更新風險狀態
+        [FR-04] Update risk status.
 
         Args:
-            risk_id: 風險 ID
-            new_status: 新狀態
-            changed_by: 變更人
-            note: 備註
+            risk_id: Risk ID
+            new_status: New status
+            changed_by: Who made the change
+            note: Optional note
 
         Returns:
             (success, message)
@@ -201,7 +211,7 @@ class RiskTracker:
         return True, f"Status updated: {old_status.name} -> {new_status.name}"
 
     def get_history(self, risk_id: str) -> List[RiskHistoryEntry]:
-        """[FR-04] 獲取風險歷史記錄"""
+        """[FR-04] Get risk history."""
         try:
             conn = sqlite3.connect(str(self.db_path))
             cursor = conn.cursor()
@@ -228,21 +238,21 @@ class RiskTracker:
                 for row in rows
             ]
         except (sqlite3.Error, ValueError) as e:
-            print(f"Error loading history: {e}")
+            logging.error("Failed to load history for risk %s: %s", risk_id, e)
             return []
 
     def get_open_risks(self) -> List[Risk]:
-        """[FR-04] 獲取所有 Open 狀態的風險"""
+        """[FR-04] Get all open risks."""
         all_risks = self.load_all_risks()
         return [r for r in all_risks if r.status == RiskStatus.OPEN]
 
     def get_closed_risks(self) -> List[Risk]:
-        """[FR-04] 獲取所有 Closed 狀態的風險"""
+        """[FR-04] Get all closed risks."""
         all_risks = self.load_all_risks()
         return [r for r in all_risks if r.status == RiskStatus.CLOSED]
 
     def get_by_level(self, level) -> List[Risk]:
-        """[FR-04] 根據等級篩選風險"""
+        """[FR-04] Filter risks by level."""
         all_risks = self.load_all_risks()
         return [r for r in all_risks if r.level == level]
 
@@ -254,7 +264,7 @@ class RiskTracker:
         changed_by: str,
         note: str
     ) -> None:
-        """記錄狀態變更歷史"""
+        """Record status change history."""
         try:
             conn = sqlite3.connect(str(self.db_path))
             cursor = conn.cursor()
@@ -275,10 +285,10 @@ class RiskTracker:
             conn.commit()
             conn.close()
         except sqlite3.Error as e:
-            print(f"Error recording history: {e}")
+            logging.error("Failed to record history for risk %s: %s", risk_id, e)
 
     def _row_to_risk(self, row: tuple) -> Risk:
-        """將資料庫 row 轉換為 Risk 物件"""
+        """Convert database row to Risk object."""
         from ..models.risk import MitigationPlan
         from ..models.enums import RiskDimension, RiskLevel, RiskStatus, StrategyType
 
@@ -302,7 +312,7 @@ class RiskTracker:
         )
 
     def export_to_register(self) -> Dict[str, Any]:
-        """[FR-04] 導出風險登記表摘要"""
+        """[FR-04] Export risk register summary."""
         risks = self.load_all_risks()
 
         return {
@@ -320,9 +330,9 @@ class RiskTracker:
 
     def validate_state_machine(self) -> Dict[str, Any]:
         """
-        [FR-04] 驗證狀態機一致性
+        [FR-04] Validate state machine consistency.
 
-        檢查所有風險是否符合狀態機規則。
+        Checks that all risks conform to state machine rules.
         """
         risks = self.load_all_risks()
         violations = []
@@ -345,3 +355,5 @@ class RiskTracker:
             "violations": violations,
             "total_checked": len(risks),
         }
+
+

@@ -1,7 +1,12 @@
-# reports/__init__.py
-# Risk Assessment Report Generators
+"""reports/__init__.py
+[FR-04] Risk Assessment Report Generators
 
-# Note: Import modules directly when needed, not via this __init__
-# to avoid relative import issues with files that use `from ..models`
+Generates human-readable assessment reports for Phase 6/7:
+- RiskAssessmentReportGenerator: Creates RISK_ASSESSMENT.md and RISK_REGISTER.md
+- DecisionGateReportGenerator: Creates Phase 7 Decision Gate reports
 
-__all__ = []
+Usage:
+    >>> from reports.assessor_report import RiskAssessmentReportGenerator
+    >>> gen = RiskAssessmentReportGenerator("/path/to/project")
+    >>> gen.generate(result)
+"""

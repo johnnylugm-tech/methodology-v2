@@ -78896,3 +78896,541 @@
 ❌ **[{{timestamp}}] Constitution Score**: 0.0% (threshold > 80%)
 
 ❌ **[{{timestamp}}] Phase Truth Score**: 0.0%
+
+✅ **[{{timestamp}}] ASPICE Compliance Rate**: 100.0%
+
+❌ **[{{timestamp}}] Constitution Score**: 0.0% (threshold > 80%)
+
+❌ **[{{timestamp}}] Phase Truth Score**: 0.0%
+
+✅ **[{{timestamp}}] ASPICE Compliance Rate**: 100.0%
+
+❌ **[{{timestamp}}] Constitution Score**: 0.0% (threshold > 80%)
+
+❌ **[{{timestamp}}] Phase Truth Score**: 0.0%
+
+✅ **[{{timestamp}}] ASPICE Compliance Rate**: 100.0%
+
+❌ **[{{timestamp}}] Constitution Score**: 0.0% (threshold > 80%)
+
+❌ **[{{timestamp}}] Phase Truth Score**: 0.0%
+
+✅ **[{{timestamp}}] ASPICE Compliance Rate**: 100.0%
+
+❌ **[{{timestamp}}] Constitution Score**: 0.0% (threshold > 80%)
+
+❌ **[{{timestamp}}] Phase Truth Score**: 0.0%
+
+✅ **[{{timestamp}}] ASPICE Compliance Rate**: 100.0%
+
+❌ **[{{timestamp}}] Constitution Score**: 0.0% (threshold > 80%)
+
+❌ **[{{timestamp}}] Phase Truth Score**: 0.0%
+
+✅ **[{{timestamp}}] ASPICE Compliance Rate**: 100.0%
+
+❌ **[{{timestamp}}] Constitution Score**: 0.0% (threshold > 80%)
+
+❌ **[{{timestamp}}] Phase Truth Score**: 0.0%
+
+✅ **[{{timestamp}}] ASPICE Compliance Rate**: 100.0%
+
+❌ **[{{timestamp}}] Constitution Score**: 0.0% (threshold > 80%)
+
+❌ **[{{timestamp}}] Phase Truth Score**: 0.0%
+
+✅ **[{{timestamp}}] ASPICE Compliance Rate**: 100.0%
+
+❌ **[{{timestamp}}] Constitution Score**: 0.0% (threshold > 80%)
+
+❌ **[{{timestamp}}] Phase Truth Score**: 0.0%
+
+✅ **[{{timestamp}}] ASPICE Compliance Rate**: 100.0%
+
+❌ **[{{timestamp}}] Constitution Score**: 0.0% (threshold > 80%)
+
+❌ **[{{timestamp}}] Phase Truth Score**: 0.0%
+
+✅ **[{{timestamp}}] ASPICE Compliance Rate**: 100.0%
+
+❌ **[{{timestamp}}] Constitution Score**: 0.0% (threshold > 80%)
+
+❌ **[{{timestamp}}] Phase Truth Score**: 0.0%
+
+✅ **[{{timestamp}}] ASPICE Compliance Rate**: 100.0%
+
+❌ **[{{timestamp}}] Constitution Score**: 0.0% (threshold > 80%)
+
+❌ **[{{timestamp}}] Phase Truth Score**: 0.0%
+
+✅ **[{{timestamp}}] ASPICE Compliance Rate**: 100.0%
+
+❌ **[{{timestamp}}] Constitution Score**: 0.0% (threshold > 80%)
+
+❌ **[{{timestamp}}] Phase Truth Score**: 0.0%
+
+✅ **[{{timestamp}}] ASPICE Compliance Rate**: 100.0%
+
+❌ **[{{timestamp}}] Constitution Score**: 0.0% (threshold > 80%)
+
+❌ **[{{timestamp}}] Phase Truth Score**: 0.0%
+
+✅ **[{{timestamp}}] ASPICE Compliance Rate**: 100.0%
+
+❌ **[{{timestamp}}] Constitution Score**: 0.0% (threshold > 80%)
+
+❌ **[{{timestamp}}] Phase Truth Score**: 0.0%
+
+✅ **[{{timestamp}}] ASPICE Compliance Rate**: 100.0%
+
+❌ **[{{timestamp}}] Constitution Score**: 0.0% (threshold > 80%)
+
+❌ **[{{timestamp}}] Phase Truth Score**: 0.0%
+
+✅ **[{{timestamp}}] ASPICE Compliance Rate**: 100.0%
+
+❌ **[{{timestamp}}] Constitution Score**: 0.0% (threshold > 80%)
+
+❌ **[{{timestamp}}] Phase Truth Score**: 0.0%
+
+✅ **[{{timestamp}}] ASPICE Compliance Rate**: 100.0%
+
+❌ **[{{timestamp}}] Constitution Score**: 0.0% (threshold > 80%)
+
+❌ **[{{timestamp}}] Phase Truth Score**: 0.0%
+
+✅ **[{{timestamp}}] ASPICE Compliance Rate**: 100.0%
+
+❌ **[{{timestamp}}] Constitution Score**: 0.0% (threshold > 80%)
+
+❌ **[{{timestamp}}] Phase Truth Score**: 0.0%
+
+✅ **[{{timestamp}}] ASPICE Compliance Rate**: 100.0%
+
+❌ **[{{timestamp}}] Constitution Score**: 0.0% (threshold > 80%)
+
+❌ **[{{timestamp}}] Phase Truth Score**: 0.0%
+
+✅ **[{{timestamp}}] ASPICE Compliance Rate**: 100.0%
+
+❌ **[{{timestamp}}] Constitution Score**: 0.0% (threshold > 80%)
+
+❌ **[{{timestamp}}] Phase Truth Score**: 0.0%
+
+✅ **[{{timestamp}}] ASPICE Compliance Rate**: 100.0%
+
+❌ **[{{timestamp}}] Constitution Score**: 0.0% (threshold > 80%)
+
+❌ **[{{timestamp}}] Phase Truth Score**: 0.0%
+
+✅ **[{{timestamp}}] ASPICE Compliance Rate**: 100.0%
+
+❌ **[{{timestamp}}] Constitution Score**: 0.0% (threshold > 80%)
+
+❌ **[{{timestamp}}] Phase Truth Score**: 0.0%
+
+✅ **[{{timestamp}}] ASPICE Compliance Rate**: 100.0%
+
+❌ **[{{timestamp}}] Constitution Score**: 0.0% (threshold > 80%)
+
+❌ **[{{timestamp}}] Phase Truth Score**: 0.0%
+
+✅ **[{{timestamp}}] ASPICE Compliance Rate**: 100.0%
+
+❌ **[{{timestamp}}] Constitution Score**: 0.0% (threshold > 80%)
+
+❌ **[{{timestamp}}] Phase Truth Score**: 0.0%
+
+✅ **[{{timestamp}}] ASPICE Compliance Rate**: 100.0%
+
+❌ **[{{timestamp}}] Constitution Score**: 0.0% (threshold > 80%)
+
+❌ **[{{timestamp}}] Phase Truth Score**: 0.0%
+
+✅ **[{{timestamp}}] ASPICE Compliance Rate**: 100.0%
+
+❌ **[{{timestamp}}] Constitution Score**: 0.0% (threshold > 80%)
+
+❌ **[{{timestamp}}] Phase Truth Score**: 0.0%
+
+✅ **[{{timestamp}}] ASPICE Compliance Rate**: 100.0%
+
+❌ **[{{timestamp}}] Constitution Score**: 0.0% (threshold > 80%)
+
+❌ **[{{timestamp}}] Phase Truth Score**: 0.0%
+
+✅ **[{{timestamp}}] ASPICE Compliance Rate**: 100.0%
+
+❌ **[{{timestamp}}] Constitution Score**: 0.0% (threshold > 80%)
+
+❌ **[{{timestamp}}] Phase Truth Score**: 0.0%
+
+✅ **[{{timestamp}}] ASPICE Compliance Rate**: 100.0%
+
+❌ **[{{timestamp}}] Constitution Score**: 0.0% (threshold > 80%)
+
+❌ **[{{timestamp}}] Phase Truth Score**: 0.0%
+
+✅ **[{{timestamp}}] ASPICE Compliance Rate**: 100.0%
+
+❌ **[{{timestamp}}] Constitution Score**: 0.0% (threshold > 80%)
+
+❌ **[{{timestamp}}] Phase Truth Score**: 0.0%
+
+✅ **[{{timestamp}}] ASPICE Compliance Rate**: 100.0%
+
+❌ **[{{timestamp}}] Constitution Score**: 0.0% (threshold > 80%)
+
+❌ **[{{timestamp}}] Phase Truth Score**: 0.0%
+
+✅ **[{{timestamp}}] ASPICE Compliance Rate**: 100.0%
+
+❌ **[{{timestamp}}] Constitution Score**: 0.0% (threshold > 80%)
+
+❌ **[{{timestamp}}] Phase Truth Score**: 0.0%
+
+✅ **[{{timestamp}}] ASPICE Compliance Rate**: 100.0%
+
+❌ **[{{timestamp}}] Constitution Score**: 0.0% (threshold > 80%)
+
+❌ **[{{timestamp}}] Phase Truth Score**: 0.0%
+
+✅ **[{{timestamp}}] ASPICE Compliance Rate**: 100.0%
+
+❌ **[{{timestamp}}] Constitution Score**: 0.0% (threshold > 80%)
+
+❌ **[{{timestamp}}] Phase Truth Score**: 0.0%
+
+✅ **[{{timestamp}}] ASPICE Compliance Rate**: 100.0%
+
+❌ **[{{timestamp}}] Constitution Score**: 0.0% (threshold > 80%)
+
+❌ **[{{timestamp}}] Phase Truth Score**: 0.0%
+
+✅ **[{{timestamp}}] ASPICE Compliance Rate**: 100.0%
+
+❌ **[{{timestamp}}] Constitution Score**: 0.0% (threshold > 80%)
+
+❌ **[{{timestamp}}] Phase Truth Score**: 0.0%
+
+✅ **[{{timestamp}}] ASPICE Compliance Rate**: 100.0%
+
+❌ **[{{timestamp}}] Constitution Score**: 0.0% (threshold > 80%)
+
+❌ **[{{timestamp}}] Phase Truth Score**: 0.0%
+
+✅ **[{{timestamp}}] ASPICE Compliance Rate**: 100.0%
+
+❌ **[{{timestamp}}] Constitution Score**: 0.0% (threshold > 80%)
+
+❌ **[{{timestamp}}] Phase Truth Score**: 0.0%
+
+✅ **[{{timestamp}}] ASPICE Compliance Rate**: 100.0%
+
+❌ **[{{timestamp}}] Constitution Score**: 0.0% (threshold > 80%)
+
+❌ **[{{timestamp}}] Phase Truth Score**: 0.0%
+
+✅ **[{{timestamp}}] ASPICE Compliance Rate**: 100.0%
+
+❌ **[{{timestamp}}] Constitution Score**: 0.0% (threshold > 80%)
+
+❌ **[{{timestamp}}] Phase Truth Score**: 0.0%
+
+✅ **[{{timestamp}}] ASPICE Compliance Rate**: 100.0%
+
+❌ **[{{timestamp}}] Constitution Score**: 0.0% (threshold > 80%)
+
+❌ **[{{timestamp}}] Phase Truth Score**: 0.0%
+
+✅ **[{{timestamp}}] ASPICE Compliance Rate**: 100.0%
+
+❌ **[{{timestamp}}] Constitution Score**: 0.0% (threshold > 80%)
+
+❌ **[{{timestamp}}] Phase Truth Score**: 0.0%
+
+✅ **[{{timestamp}}] ASPICE Compliance Rate**: 100.0%
+
+❌ **[{{timestamp}}] Constitution Score**: 0.0% (threshold > 80%)
+
+❌ **[{{timestamp}}] Phase Truth Score**: 0.0%
+
+✅ **[{{timestamp}}] ASPICE Compliance Rate**: 100.0%
+
+❌ **[{{timestamp}}] Constitution Score**: 0.0% (threshold > 80%)
+
+❌ **[{{timestamp}}] Phase Truth Score**: 0.0%
+
+✅ **[{{timestamp}}] ASPICE Compliance Rate**: 100.0%
+
+❌ **[{{timestamp}}] Constitution Score**: 0.0% (threshold > 80%)
+
+❌ **[{{timestamp}}] Phase Truth Score**: 0.0%
+
+✅ **[{{timestamp}}] ASPICE Compliance Rate**: 100.0%
+
+❌ **[{{timestamp}}] Constitution Score**: 0.0% (threshold > 80%)
+
+❌ **[{{timestamp}}] Phase Truth Score**: 0.0%
+
+✅ **[{{timestamp}}] ASPICE Compliance Rate**: 100.0%
+
+❌ **[{{timestamp}}] Constitution Score**: 0.0% (threshold > 80%)
+
+❌ **[{{timestamp}}] Phase Truth Score**: 0.0%
+
+✅ **[{{timestamp}}] ASPICE Compliance Rate**: 100.0%
+
+❌ **[{{timestamp}}] Constitution Score**: 0.0% (threshold > 80%)
+
+❌ **[{{timestamp}}] Phase Truth Score**: 0.0%
+
+✅ **[{{timestamp}}] ASPICE Compliance Rate**: 100.0%
+
+❌ **[{{timestamp}}] Constitution Score**: 0.0% (threshold > 80%)
+
+❌ **[{{timestamp}}] Phase Truth Score**: 0.0%
+
+✅ **[{{timestamp}}] ASPICE Compliance Rate**: 100.0%
+
+❌ **[{{timestamp}}] Constitution Score**: 0.0% (threshold > 80%)
+
+❌ **[{{timestamp}}] Phase Truth Score**: 0.0%
+
+✅ **[{{timestamp}}] ASPICE Compliance Rate**: 100.0%
+
+❌ **[{{timestamp}}] Constitution Score**: 0.0% (threshold > 80%)
+
+❌ **[{{timestamp}}] Phase Truth Score**: 0.0%
+
+✅ **[{{timestamp}}] ASPICE Compliance Rate**: 100.0%
+
+❌ **[{{timestamp}}] Constitution Score**: 0.0% (threshold > 80%)
+
+❌ **[{{timestamp}}] Phase Truth Score**: 0.0%
+
+✅ **[{{timestamp}}] ASPICE Compliance Rate**: 100.0%
+
+❌ **[{{timestamp}}] Constitution Score**: 0.0% (threshold > 80%)
+
+❌ **[{{timestamp}}] Phase Truth Score**: 0.0%
+
+✅ **[{{timestamp}}] ASPICE Compliance Rate**: 100.0%
+
+❌ **[{{timestamp}}] Constitution Score**: 0.0% (threshold > 80%)
+
+❌ **[{{timestamp}}] Phase Truth Score**: 0.0%
+
+✅ **[{{timestamp}}] ASPICE Compliance Rate**: 100.0%
+
+❌ **[{{timestamp}}] Constitution Score**: 0.0% (threshold > 80%)
+
+❌ **[{{timestamp}}] Phase Truth Score**: 0.0%
+
+✅ **[{{timestamp}}] ASPICE Compliance Rate**: 100.0%
+
+❌ **[{{timestamp}}] Constitution Score**: 0.0% (threshold > 80%)
+
+❌ **[{{timestamp}}] Phase Truth Score**: 0.0%
+
+✅ **[{{timestamp}}] ASPICE Compliance Rate**: 100.0%
+
+❌ **[{{timestamp}}] Constitution Score**: 0.0% (threshold > 80%)
+
+❌ **[{{timestamp}}] Phase Truth Score**: 0.0%
+
+✅ **[{{timestamp}}] ASPICE Compliance Rate**: 100.0%
+
+❌ **[{{timestamp}}] Constitution Score**: 0.0% (threshold > 80%)
+
+❌ **[{{timestamp}}] Phase Truth Score**: 0.0%
+
+✅ **[{{timestamp}}] ASPICE Compliance Rate**: 100.0%
+
+❌ **[{{timestamp}}] Constitution Score**: 0.0% (threshold > 80%)
+
+❌ **[{{timestamp}}] Phase Truth Score**: 0.0%
+
+✅ **[{{timestamp}}] ASPICE Compliance Rate**: 100.0%
+
+❌ **[{{timestamp}}] Constitution Score**: 0.0% (threshold > 80%)
+
+❌ **[{{timestamp}}] Phase Truth Score**: 0.0%
+
+✅ **[{{timestamp}}] ASPICE Compliance Rate**: 100.0%
+
+❌ **[{{timestamp}}] Phase Truth Score**: 0.0%
+
+✅ **[{{timestamp}}] ASPICE Compliance Rate**: 100.0%
+
+❌ **[{{timestamp}}] Constitution Score**: 0.0% (threshold > 80%)
+
+❌ **[{{timestamp}}] Phase Truth Score**: 0.0%
+
+✅ **[{{timestamp}}] ASPICE Compliance Rate**: 100.0%
+
+❌ **[{{timestamp}}] Constitution Score**: 0.0% (threshold > 80%)
+
+❌ **[{{timestamp}}] Phase Truth Score**: 0.0%
+
+✅ **[{{timestamp}}] ASPICE Compliance Rate**: 100.0%
+
+❌ **[{{timestamp}}] Constitution Score**: 0.0% (threshold > 80%)
+
+✅ **[{{timestamp}}] ASPICE Compliance Rate**: 100.0%
+
+❌ **[{{timestamp}}] Constitution Score**: 0.0% (threshold > 80%)
+
+❌ **[{{timestamp}}] Phase Truth Score**: 0.0%
+
+❌ **[{{timestamp}}] Phase Truth Score**: 0.0%
+
+✅ **[{{timestamp}}] ASPICE Compliance Rate**: 100.0%
+
+❌ **[{{timestamp}}] Constitution Score**: 0.0% (threshold > 80%)
+
+❌ **[{{timestamp}}] Phase Truth Score**: 0.0%
+
+✅ **[{{timestamp}}] ASPICE Compliance Rate**: 100.0%
+
+❌ **[{{timestamp}}] Constitution Score**: 0.0% (threshold > 80%)
+
+❌ **[{{timestamp}}] Phase Truth Score**: 0.0%
+
+✅ **[{{timestamp}}] ASPICE Compliance Rate**: 100.0%
+
+❌ **[{{timestamp}}] Constitution Score**: 0.0% (threshold > 80%)
+
+❌ **[{{timestamp}}] Phase Truth Score**: 0.0%
+
+✅ **[{{timestamp}}] ASPICE Compliance Rate**: 100.0%
+
+❌ **[{{timestamp}}] Constitution Score**: 0.0% (threshold > 80%)
+
+❌ **[{{timestamp}}] Phase Truth Score**: 0.0%
+
+✅ **[{{timestamp}}] ASPICE Compliance Rate**: 100.0%
+
+❌ **[{{timestamp}}] Constitution Score**: 0.0% (threshold > 80%)
+
+❌ **[{{timestamp}}] Phase Truth Score**: 0.0%
+
+✅ **[{{timestamp}}] ASPICE Compliance Rate**: 100.0%
+
+❌ **[{{timestamp}}] Constitution Score**: 0.0% (threshold > 80%)
+
+✅ **[{{timestamp}}] ASPICE Compliance Rate**: 100.0%
+
+❌ **[{{timestamp}}] Phase Truth Score**: 0.0%
+
+❌ **[{{timestamp}}] Constitution Score**: 0.0% (threshold > 80%)
+
+❌ **[{{timestamp}}] Phase Truth Score**: 0.0%
+
+✅ **[{{timestamp}}] ASPICE Compliance Rate**: 100.0%
+
+✅ **[{{timestamp}}] ASPICE Compliance Rate**: 100.0%
+
+❌ **[{{timestamp}}] Constitution Score**: 0.0% (threshold > 80%)
+
+❌ **[{{timestamp}}] Constitution Score**: 0.0% (threshold > 80%)
+
+❌ **[{{timestamp}}] Phase Truth Score**: 0.0%
+
+❌ **[{{timestamp}}] Phase Truth Score**: 0.0%
+
+✅ **[{{timestamp}}] ASPICE Compliance Rate**: 100.0%
+
+❌ **[{{timestamp}}] Constitution Score**: 0.0% (threshold > 80%)
+
+❌ **[{{timestamp}}] Phase Truth Score**: 0.0%
+
+✅ **[{{timestamp}}] ASPICE Compliance Rate**: 100.0%
+
+❌ **[{{timestamp}}] Constitution Score**: 0.0% (threshold > 80%)
+
+❌ **[{{timestamp}}] Phase Truth Score**: 0.0%
+
+✅ **[{{timestamp}}] ASPICE Compliance Rate**: 100.0%
+
+❌ **[{{timestamp}}] Constitution Score**: 0.0% (threshold > 80%)
+
+❌ **[{{timestamp}}] Phase Truth Score**: 0.0%
+
+✅ **[{{timestamp}}] ASPICE Compliance Rate**: 100.0%
+
+❌ **[{{timestamp}}] Constitution Score**: 0.0% (threshold > 80%)
+
+❌ **[{{timestamp}}] Phase Truth Score**: 0.0%
+
+✅ **[{{timestamp}}] ASPICE Compliance Rate**: 100.0%
+
+❌ **[{{timestamp}}] Constitution Score**: 0.0% (threshold > 80%)
+
+❌ **[{{timestamp}}] Phase Truth Score**: 0.0%
+
+✅ **[{{timestamp}}] ASPICE Compliance Rate**: 100.0%
+
+❌ **[{{timestamp}}] Constitution Score**: 0.0% (threshold > 80%)
+
+❌ **[{{timestamp}}] Phase Truth Score**: 0.0%
+
+✅ **[{{timestamp}}] ASPICE Compliance Rate**: 100.0%
+
+❌ **[{{timestamp}}] Constitution Score**: 0.0% (threshold > 80%)
+
+❌ **[{{timestamp}}] Phase Truth Score**: 0.0%
+
+✅ **[{{timestamp}}] ASPICE Compliance Rate**: 100.0%
+
+❌ **[{{timestamp}}] Constitution Score**: 0.0% (threshold > 80%)
+
+❌ **[{{timestamp}}] Phase Truth Score**: 0.0%
+
+✅ **[{{timestamp}}] ASPICE Compliance Rate**: 100.0%
+
+❌ **[{{timestamp}}] Constitution Score**: 0.0% (threshold > 80%)
+
+❌ **[{{timestamp}}] Phase Truth Score**: 0.0%
+
+✅ **[{{timestamp}}] ASPICE Compliance Rate**: 100.0%
+
+❌ **[{{timestamp}}] Constitution Score**: 0.0% (threshold > 80%)
+
+❌ **[{{timestamp}}] Phase Truth Score**: 0.0%
+
+✅ **[{{timestamp}}] ASPICE Compliance Rate**: 100.0%
+
+❌ **[{{timestamp}}] Constitution Score**: 0.0% (threshold > 80%)
+
+❌ **[{{timestamp}}] Phase Truth Score**: 0.0%
+
+✅ **[{{timestamp}}] ASPICE Compliance Rate**: 100.0%
+
+❌ **[{{timestamp}}] Constitution Score**: 0.0% (threshold > 80%)
+
+❌ **[{{timestamp}}] Phase Truth Score**: 0.0%
+
+✅ **[{{timestamp}}] ASPICE Compliance Rate**: 100.0%
+
+❌ **[{{timestamp}}] Constitution Score**: 0.0% (threshold > 80%)
+
+❌ **[{{timestamp}}] Phase Truth Score**: 0.0%
+
+✅ **[{{timestamp}}] ASPICE Compliance Rate**: 100.0%
+
+❌ **[{{timestamp}}] Constitution Score**: 0.0% (threshold > 80%)
+
+❌ **[{{timestamp}}] Phase Truth Score**: 0.0%
+
+✅ **[{{timestamp}}] ASPICE Compliance Rate**: 100.0%
+
+❌ **[{{timestamp}}] Constitution Score**: 0.0% (threshold > 80%)
+
+❌ **[{{timestamp}}] Phase Truth Score**: 0.0%
+
+✅ **[{{timestamp}}] ASPICE Compliance Rate**: 100.0%
+
+❌ **[{{timestamp}}] Constitution Score**: 0.0% (threshold > 80%)
+
+❌ **[{{timestamp}}] Phase Truth Score**: 0.0%

@@ -8,11 +8,20 @@ Checks against:
 - RISK_ASSESSMENT.md existence
 - RISK_REGISTER.md existence
 - Mitigation plans presence
+
+Usage:
+    >>> from constitution.risk_assessment_checker import RiskAssessmentConstitutionChecker
+    >>> checker = RiskAssessmentConstitutionChecker("/path/to/project")
+    >>> result = checker.check()
+    >>> if result.passed:
+    ...     print("Constitution compliance: PASS")
 """
 
+import sqlite3
 from pathlib import Path
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Any
 from dataclasses import dataclass
+from ..models.enums import RiskLevel
 
 # Constitution thresholds (from quality_gate.constitution)
 CONSTITUTION_THRESHOLDS = {
@@ -36,7 +45,18 @@ class RiskAssessmentConstitutionChecker:
     """
     [FR-01, FR-02, FR-03, FR-04] Constitution 合規檢查器
 
-    驗證風險評估是否符合 Constitution 原則。
+    Verifies risk assessment meets Constitution principles by checking:
+    - Required files exist (RISK_ASSESSMENT.md, RISK_REGISTER.md)
+    - Required sections present in assessment documents
+    - Mitigation plans exist for HIGH/CRITICAL risks
+    - Risk register format matches expected template
+    - Status tracking state machine is consistent
+
+    Usage:
+        >>> from constitution.risk_assessment_checker import RiskAssessmentConstitutionChecker
+        >>> checker = RiskAssessmentConstitutionChecker("/path/to/project")
+        >>> result = checker.check()
+        >>> print(f"Score: {result.score:.1f}% - {'PASS' if result.passed else 'FAIL'}")
     """
 
     REQUIRED_FILES = [
@@ -54,8 +74,7 @@ class RiskAssessmentConstitutionChecker:
         self.project_root = Path(project_root)
 
     def check(self) -> ConstitutionCheckResult:
-        """
-        執行 Constitution 合規檢查
+        """[FR-01, FR-02, FR-03, FR-04] Execute constitution compliance check.
 
         Returns:
             ConstitutionCheckResult with pass/fail and details
@@ -140,7 +159,7 @@ class RiskAssessmentConstitutionChecker:
         )
 
     def _check_required_files(self) -> bool:
-        """檢查所需檔案是否存在"""
+        """[FR-01] Check if required risk assessment files exist."""
         for filename in self.REQUIRED_FILES:
             path = self.project_root / filename
             if not path.exists():
@@ -150,7 +169,7 @@ class RiskAssessmentConstitutionChecker:
         return True
 
     def _check_assessment_sections(self) -> bool:
-        """檢查 RISK_ASSESSMENT.md 包含必要章節"""
+        """[FR-02] Check if RISK_ASSESSMENT.md has required sections."""
         path = self.project_root / "RISK_ASSESSMENT.md"
         if not path.exists():
             path = self.project_root / "docs" / "RISK_ASSESSMENT.md"
@@ -167,7 +186,7 @@ class RiskAssessmentConstitutionChecker:
         return True
 
     def _check_mitigation_plans(self) -> bool:
-        """檢查所有風險是否有緩解措施"""
+        """[FR-03] Check if all risks have mitigation plans."""
         # Check if we can read risk data
         from ..engine.tracker import RiskTracker
 
@@ -185,7 +204,7 @@ class RiskAssessmentConstitutionChecker:
                         return False
 
             return True
-        except Exception:
+        except (sqlite3.Error, OSError, UnicodeDecodeError):
             # If database doesn't exist, check markdown
             register_path = self.project_root / "RISK_REGISTER.md"
             if not register_path.exists():
@@ -199,7 +218,7 @@ class RiskAssessmentConstitutionChecker:
             return "Mitigation" in content or "緩解措施" in content
 
     def _check_register_format(self) -> bool:
-        """檢查 RISK_REGISTER.md 格式"""
+        """[FR-04] Check if RISK_REGISTER.md format matches template."""
         path = self.project_root / "RISK_REGISTER.md"
         if not path.exists():
             path = self.project_root / "docs" / "RISK_REGISTER.md"
@@ -218,18 +237,18 @@ class RiskAssessmentConstitutionChecker:
         return True
 
     def _check_status_tracking(self) -> bool:
-        """檢查狀態追蹤完整性"""
+        """[FR-04] Check risk status tracking completeness."""
         from ..engine.tracker import RiskTracker
 
         try:
             tracker = RiskTracker(str(self.project_root))
             return tracker.validate_state_machine()["valid"]
-        except Exception:
+        except (sqlite3.Error, OSError, AttributeError):
             # If we can't check DB, assume OK
             return True
 
     def generate_report(self) -> str:
-        """生成 Constitution 合規報告"""
+        """[FR-01, FR-02, FR-03, FR-04] Generate constitution compliance report."""
         result = self.check()
 
         lines = [
@@ -262,9 +281,8 @@ class RiskAssessmentConstitutionChecker:
         return "\n".join(lines)
 
     def _timestamp(self) -> str:
+        """Get current timestamp string."""
         from datetime import datetime
         return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
 
-# Import RiskLevel for _check_mitigation_plans
-from ..models.enums import RiskLevel

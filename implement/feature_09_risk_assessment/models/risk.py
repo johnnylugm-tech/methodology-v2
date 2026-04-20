@@ -1,10 +1,18 @@
-#!/usr/bin/env python3
 """
 risk.py - Risk Data Model
 [FR-01, FR-02, FR-03, FR-04] Core risk data structure
+
+Provides the core data models for risk assessment:
+- MitigationPlan: Structured mitigation action plan
+- Risk: Individual risk record with scoring
+- RiskAssessmentResult: Aggregation of assessment results
+
+Usage:
+    >>> from models import Risk, RiskAssessmentResult
+    >>> risk = Risk(title="Test", description="Test risk", dimension=RiskDimension.TECHNICAL)
+    >>> print(f"Risk score: {risk.score}")
 """
 
-import json
 import uuid
 from dataclasses import dataclass, field, asdict
 from datetime import datetime
@@ -22,10 +30,12 @@ class MitigationPlan:
     fallback: List[str] = field(default_factory=list)
 
     def to_dict(self) -> Dict[str, Any]:
+        """Convert mitigation plan to dictionary."""
         return asdict(self)
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "MitigationPlan":
+        """Create MitigationPlan from dictionary."""
         return cls(
             immediate=data.get("immediate", []),
             short_term=data.get("short_term", []),
@@ -71,15 +81,13 @@ class Risk:
     evidence: List[str] = field(default_factory=list)
 
     # Computed
-    _score: float = field(init=False, repr=False)
-
     def __post_init__(self):
         self._score = self.calculate_score()
         if self.level == RiskLevel.MEDIUM and self._score > 0:
             self.level = RiskLevel.from_score(self._score)
 
     def calculate_score(self) -> float:
-        """[FR-02] 計算風險分數: Probability × Impact × Detectability_Factor"""
+        """[FR-02] Calculate risk score: P × I × Detectability_Factor"""
         try:
             prob = max(0.0, min(1.0, self.probability))
             imp = max(1, min(5, self.impact))
@@ -90,7 +98,7 @@ class Risk:
 
     @property
     def score(self) -> float:
-        """風險分數（唯讀）"""
+        """Risk score (read-only, computed from probability, impact, detectability)."""
         return self._score
 
     def to_dict(self) -> Dict[str, Any]:
@@ -196,6 +204,7 @@ class RiskAssessmentResult:
     recommendations: List[str] = field(default_factory=list)
 
     def to_dict(self) -> Dict[str, Any]:
+        """Convert result to dictionary."""
         return {
             "project_name": self.project_name,
             "phase": self.phase,
@@ -209,24 +218,30 @@ class RiskAssessmentResult:
 
     @property
     def critical_count(self) -> int:
+        """Number of critical-level risks."""
         return len([r for r in self.risks if r.level == RiskLevel.CRITICAL])
 
     @property
     def high_count(self) -> int:
+        """Number of high-level risks."""
         return len([r for r in self.risks if r.level == RiskLevel.HIGH])
 
     @property
     def medium_count(self) -> int:
+        """Number of medium-level risks."""
         return len([r for r in self.risks if r.level == RiskLevel.MEDIUM])
 
     @property
     def low_count(self) -> int:
+        """Number of low-level risks."""
         return len([r for r in self.risks if r.level == RiskLevel.LOW])
 
     @property
     def open_count(self) -> int:
+        """Number of open (unresolved) risks."""
         return len([r for r in self.risks if r.status == RiskStatus.OPEN])
 
     @property
     def closed_count(self) -> int:
+        """Number of closed risks."""
         return len([r for r in self.risks if r.status == RiskStatus.CLOSED])

@@ -3,15 +3,23 @@
 assessor.py - Risk Assessment Core
 [FR-01] Risk identification
 [FR-02] Risk evaluation and scoring
+
+Scans project artifacts to identify and evaluate risks across three
+dimensions: Technical, Operational, and External.
+
+Usage:
+    >>> assessor = RiskAssessor("/path/to/project")
+    >>> result = assessor.assess()
 """
+
 
 import re
 from pathlib import Path
-from typing import List, Dict, Optional, Tuple
+from typing import List, Dict
 from datetime import datetime
 
 from ..models.risk import Risk, RiskAssessmentResult
-from ..models.enums import RiskDimension, RiskLevel, RiskStatus
+from ..models.enums import RiskDimension, RiskLevel
 
 
 class RiskScorer:
@@ -316,7 +324,7 @@ class RiskAssessor:
                         if f.is_file():
                             try:
                                 content_parts.append(f.read_text(errors="ignore")[:500])
-                            except Exception:
+                            except (OSError, UnicodeDecodeError):
                                 pass
 
             combined = " ".join(content_parts)
@@ -339,7 +347,7 @@ class RiskAssessor:
                 import json
                 state = json.loads(state_file.read_text())
                 return state.get("current_phase", 1)
-            except Exception:
+            except (OSError, UnicodeDecodeError):
                 pass
 
         # Fallback: check for highest phase directory
