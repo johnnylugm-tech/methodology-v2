@@ -6,7 +6,6 @@ from detection.data_models import CalibrationResult
 from detection.exceptions import CalibrationError
 from detection.confidence_calibrator import (
     CalibrationRecord,
-    CalibrationConfig,
     ConfidenceCalibrator,
     logit,
     platt_scale,
@@ -212,7 +211,7 @@ class TestConfidenceCalibratorCalibrate:
         # First calibration
         cal.calibrate(0.8, True, 0.2)
         # Second - if error exceeds threshold
-        result = cal.calibrate(0.95, False, 0.1)  # almost certain but failed
+        cal.calibrate(0.95, False, 0.1)  # almost certain but failed
         # calibration_error should be large
 
 

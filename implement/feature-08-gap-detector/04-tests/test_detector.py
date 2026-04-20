@@ -3,9 +3,9 @@
 import pytest
 from pathlib import Path
 
-from gap_detector.parser import SpecParser, ParsedSpec, FeatureItem
-from gap_detector.scanner import CodeScanner, ScannedCode, CodeItem
-from gap_detector.detector import GapDetector, Gap, GapSummary, Match
+from gap_detector.parser import SpecParser, ParsedSpec
+from gap_detector.scanner import CodeScanner, ScannedCode
+from gap_detector.detector import GapDetector, Gap, GapSummary
 
 
 @pytest.fixture

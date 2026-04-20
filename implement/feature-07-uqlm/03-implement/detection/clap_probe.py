@@ -27,7 +27,7 @@ from __future__ import annotations
 
 import pickle
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, Optional
 
 import numpy as np
 
@@ -264,7 +264,7 @@ class ActivationProbe:
         try:
             # Predict probabilities
             proba = self.model.predict_proba(normalized_states)
-            predictions = self.model.predict(normalized_states)
+            self.model.predict(normalized_states)
 
             # Extract hallucination probability (class 1)
             p_hallucinate = float(proba[0, 1]) if len(proba) == 1 else float(np.mean(proba[:, 1]))

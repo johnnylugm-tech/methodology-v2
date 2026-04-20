@@ -1,5 +1,4 @@
 """Tests for RuleCompliance."""
-import pytest
 from implement.hunter.rule_compliance import RuleCompliance
 from implement.hunter.enums import Severity
 
@@ -139,7 +138,7 @@ class TestRuleCompliance:
     def test_check_whitelist_returns_abuse_result_with_severity(self):
         """Test check_whitelist returns AbuseResult with severity set."""
         result = self.compliance.check_whitelist("planner", "sudo")
-        assert result.is_abused == True
+        assert result.is_abused
         assert result.severity == Severity.HIGH
         assert result.tool_name == "sudo"
         assert "sudo" in result.requested_permissions

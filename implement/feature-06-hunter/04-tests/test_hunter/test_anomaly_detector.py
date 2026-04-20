@@ -1,5 +1,4 @@
 """Tests for AnomalyDetector."""
-import pytest
 from datetime import datetime
 from implement.hunter.anomaly_detector import AnomalyDetector
 from implement.hunter.models import MemoryFact, AuthorizationChain
@@ -230,10 +229,10 @@ class TestAnomalyDetector:
         result = self.detector._query_audit("conv_123")
         assert result == "found_in_audit"
 
-    def test_detect_fabrication_empty_claim(self):
+    def test_detect_fabrication_empty_claim_v2(self):
         """Test detect_fabrication with empty claim."""
         result = self.detector.detect_fabrication("agent_1", "", "conv_123")
-        assert result.is_fabricated == False
+        assert not result.is_fabricated
         assert result.confidence == 0.0
 
     def test_detect_fabrication_claim_found_in_audit(self):
@@ -246,6 +245,6 @@ class TestAnomalyDetector:
             "conv_existing"  # This conversation exists in cache
         )
         # audit_ref exists, so is_fabricated should be False
-        assert result.is_fabricated == False
+        assert not result.is_fabricated
         assert result.audit_reference == "found_reference"
         assert result.confidence == 0.9

@@ -56,13 +56,13 @@ class RiskStrategist:
 
         # Build context-aware actions
         dim_context = self._get_dimension_context(risk)
-        level_context = self._get_level_context(risk)
+        self._get_level_context(risk)
 
         # Immediate actions (24h)
         plan.immediate = [
             f"Document risk in RISK_REGISTER: {risk.id}",
             f"Notify {risk.owner or 'project owner'} of {risk.title}",
-            f"Assess current exposure and immediate blast radius",
+            "Assess current exposure and immediate blast radius",
         ]
 
         if risk.level in [RiskLevel.CRITICAL, RiskLevel.HIGH]:
@@ -73,7 +73,7 @@ class RiskStrategist:
         plan.short_term = [
             f"Conduct detailed analysis of {dim_context}",
             f"Develop remediation plan for {risk.title}",
-            f"Identify resources needed for mitigation",
+            "Identify resources needed for mitigation",
         ]
 
         if risk.strategy == StrategyType.AVOID:
@@ -86,8 +86,8 @@ class RiskStrategist:
         # Long-term actions (1 month)
         plan.long_term = [
             f"Integrate {risk.title} into ongoing monitoring",
-            f"Update risk register with lessons learned",
-            f"Review and update related processes/procedures",
+            "Update risk register with lessons learned",
+            "Review and update related processes/procedures",
         ]
 
         if risk.dimension.value == "technical":

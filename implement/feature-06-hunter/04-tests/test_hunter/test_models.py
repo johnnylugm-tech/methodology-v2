@@ -1,5 +1,4 @@
 """Tests for Hunter Agent data models."""
-import pytest
 from datetime import datetime
 from implement.hunter.models import (
     AgentMessage,

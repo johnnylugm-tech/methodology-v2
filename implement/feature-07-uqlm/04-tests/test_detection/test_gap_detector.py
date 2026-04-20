@@ -1,7 +1,7 @@
 """Tests for detection/gap_detector.py."""
 import pytest
 
-from detection.data_models import GapFinding, GapSeverity, GapType
+from detection.data_models import GapSeverity, GapType
 from detection.exceptions import GapDetectionError
 from detection.gap_detector import (
     Base64VsAESVisitor,
@@ -365,7 +365,7 @@ except:
         assert rule.gap_type == GapType.EMPTY_CATCH
 
     def test_get_rule_nonexistent(self):
-        detector = GapDetector()
+        GapDetector()
         # Custom detector with no rules
         custom_detector = GapDetector(rules=[])
         assert custom_detector.get_rule(GapType.EMPTY_CATCH) is None
@@ -422,7 +422,7 @@ except:
         assert summary.total_files == 0
 
     def test_scan_directory_generic_exception(self, tmp_path, capsys):
-        detector = GapDetector()
+        GapDetector()
         # Create a file that can't be read (permission error simulated by passing invalid path)
         # But since we control the temp path, this is hard to simulate
         # Instead, test that scan() can handle generic exceptions
@@ -447,7 +447,6 @@ class TestBase64VsAESVisitorEdgeCases:
         # The _is_base64_context would return False
         # But to directly test it, we'd need to construct the AST manually
         # For simplicity, we test the broader behavior
-        import ast
         code = "obj.base64.b64encode(b'data')"
         tree = ast.parse(code)
         visitor = Base64VsAESVisitor()

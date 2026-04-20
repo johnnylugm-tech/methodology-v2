@@ -1,5 +1,4 @@
 """Tests for detection/exceptions.py."""
-import pytest
 
 from detection.exceptions import (
     BaselineNotFoundError,

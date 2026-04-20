@@ -28,7 +28,7 @@ import math
 from collections import deque
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Deque, List, Optional
+from typing import Deque, Optional
 
 from detection.data_models import CalibrationConfig, CalibrationResult
 from detection.exceptions import CalibrationError

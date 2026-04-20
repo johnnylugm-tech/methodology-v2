@@ -5,7 +5,6 @@ decision_gate_report.py - Phase 7 Decision Gate Report Generator
 """
 
 from pathlib import Path
-from typing import List
 from datetime import datetime
 import sqlite3
 
@@ -173,7 +172,7 @@ class DecisionGateReportGenerator:
         """
         content = self.generate(result, next_phase)
 
-        filename = f"Phase7_DecisionGate_Report.md"
+        filename = "Phase7_DecisionGate_Report.md"
         output_path = self.project_root / filename
 
         output_path.write_text(content, encoding="utf-8")

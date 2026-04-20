@@ -1,5 +1,4 @@
 """Tests for Hunter Agent detection patterns."""
-import pytest
 from implement.hunter.patterns import (
     TAMPER_PATTERNS,
     FABRICATION_KEYWORDS,

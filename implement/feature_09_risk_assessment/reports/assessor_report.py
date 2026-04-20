@@ -5,11 +5,11 @@ assessor_report.py - Risk Assessment Report Generator
 """
 
 from pathlib import Path
-from typing import List, Optional
+from typing import List
 from datetime import datetime
 
 from ..models.risk import Risk, RiskAssessmentResult
-from ..models.enums import RiskLevel, RiskStatus, RiskDimension
+from ..models.enums import RiskLevel
 
 
 class RiskAssessmentReportGenerator:

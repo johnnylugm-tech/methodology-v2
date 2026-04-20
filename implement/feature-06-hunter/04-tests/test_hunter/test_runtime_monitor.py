@@ -1,7 +1,5 @@
 """Tests for RuntimeMonitor."""
-import pytest
-import time
-from datetime import datetime, timedelta
+from datetime import datetime
 from implement.hunter.runtime_monitor import RuntimeMonitor, AccessRecord
 
 
@@ -151,7 +149,6 @@ class TestRuntimeMonitor:
     def test_validate_read_invalid_anomaly_threshold(self):
         """Test validate_read with anomaly at threshold triggers HITL."""
         # Pre-populate access window to trigger anomaly
-        import time
         for i in range(25):
             self.monitor.record_access("agent_anomaly", f"source_{i}")
         
@@ -161,8 +158,8 @@ class TestRuntimeMonitor:
             "some_source", 
             "wrong_hash"
         )
-        assert result.is_valid == False
-        assert result.requires_hitl == True
+        assert not result.is_valid
+        assert result.requires_hitl
 
     def test_anomaly_sliding_window_maintains_limit(self):
         """Test sliding window maintains max limit."""

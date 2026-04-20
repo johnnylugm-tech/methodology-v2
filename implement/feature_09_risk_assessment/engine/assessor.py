@@ -205,7 +205,7 @@ class RiskAssessor:
             if not test_file.exists():
                 risks.append(Risk(
                     title=f"Missing test coverage for {file_path.name}",
-                    description=f"No corresponding test file found",
+                    description="No corresponding test file found",
                     dimension=RiskDimension.TECHNICAL,
                     probability=0.5,
                     impact=2,

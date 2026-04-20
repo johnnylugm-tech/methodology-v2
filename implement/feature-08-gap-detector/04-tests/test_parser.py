@@ -6,7 +6,6 @@ from pathlib import Path
 from gap_detector.parser import (
     SpecParser,
     ParsedSpec,
-    FeatureItem,
     SpecParseError,
 )
 

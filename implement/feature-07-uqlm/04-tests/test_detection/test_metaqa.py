@@ -1,10 +1,7 @@
 """Tests for detection/metaqa.py."""
-import pytest
 
-import numpy as np
 
-from detection.data_models import DriftScore, MetaQAResult, TokenDistribution
-from detection.exceptions import BaselineNotFoundError
+from detection.data_models import TokenDistribution
 from detection.metaqa import (
     MetaQADetector,
     kl_divergence,
@@ -149,7 +146,7 @@ class TestMetaQADetectorUpdateBaseline:
     def test_update_baseline_merges(self):
         detector = MetaQADetector()
         detector.update_baseline(["word1 word2 word3"])
-        baseline1 = dict(zip(detector.baseline.tokens, detector.baseline.probabilities))
+        dict(zip(detector.baseline.tokens, detector.baseline.probabilities))
         detector.update_baseline(["word2 word3 word4"])
         baseline2 = dict(zip(detector.baseline.tokens, detector.baseline.probabilities))
         # word1 should still be there with reduced probability

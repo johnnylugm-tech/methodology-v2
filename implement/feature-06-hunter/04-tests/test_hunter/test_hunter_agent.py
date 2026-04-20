@@ -1,5 +1,4 @@
 """Tests for HunterAgent."""
-import pytest
 from datetime import datetime, timedelta
 from implement.hunter.hunter_agent import HunterAgent
 from implement.hunter.models import AgentMessage, ToolCall

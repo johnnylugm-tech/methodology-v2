@@ -28,7 +28,7 @@ Date: 2026-04-19
 from __future__ import annotations
 
 import time
-from typing import Dict, List, Optional
+from typing import Dict, Optional
 
 import numpy as np
 

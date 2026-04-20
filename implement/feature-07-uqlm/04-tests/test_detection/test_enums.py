@@ -1,5 +1,4 @@
 """Tests for detection/enums.py."""
-import pytest
 
 from detection.enums import Decision, GapSeverity, GapType, ProbeType
 

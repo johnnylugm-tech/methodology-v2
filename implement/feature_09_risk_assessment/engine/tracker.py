@@ -290,7 +290,7 @@ class RiskTracker:
     def _row_to_risk(self, row: tuple) -> Risk:
         """Convert database row to Risk object."""
         from ..models.risk import MitigationPlan
-        from ..models.enums import RiskDimension, RiskLevel, RiskStatus, StrategyType
+        from ..models.enums import RiskDimension, RiskLevel, RiskStatus
 
         return Risk(
             id=row[0],

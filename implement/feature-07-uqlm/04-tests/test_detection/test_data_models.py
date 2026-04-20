@@ -7,12 +7,10 @@ import numpy as np
 from detection.data_models import (
     CalibrationConfig,
     CalibrationResult,
-    Decision,
     DriftScore,
     EnsembleConfig,
     EnsembleResult,
     GapFinding,
-    GapSeverity,
     GapSummary,
     GapType,
     HiddenStateBatch,

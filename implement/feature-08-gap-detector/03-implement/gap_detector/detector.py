@@ -7,8 +7,7 @@ Identifies three types of gaps:
 - ORPHANED: Code items not specified in SPEC
 """
 
-import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Optional
 
 from gap_detector.parser import ParsedSpec, FeatureItem
@@ -348,7 +347,7 @@ class GapDetector:
                 has_docstring = len(code_item.docstring) > 0
 
                 # Check for incomplete params (simplified check)
-                has_params = len(code_item.params) >= 0  # Simplified
+                len(code_item.params) >= 0  # Simplified
 
                 if not has_docstring:
                     gap = Gap(

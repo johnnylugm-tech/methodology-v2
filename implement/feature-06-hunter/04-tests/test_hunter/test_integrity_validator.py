@@ -1,5 +1,4 @@
 """Tests for IntegrityValidator."""
-import pytest
 from implement.hunter.integrity_validator import IntegrityValidator
 from implement.hunter.enums import TamperPattern, Severity
 

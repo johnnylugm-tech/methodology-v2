@@ -11,7 +11,7 @@ from pathlib import Path
 from datetime import datetime
 
 from implement.feature_09_risk_assessment.engine.tracker import RiskTracker, RiskHistoryEntry
-from implement.feature_09_risk_assessment.models.risk import Risk, MitigationPlan
+from implement.feature_09_risk_assessment.models.risk import Risk
 from implement.feature_09_risk_assessment.models.enums import RiskDimension, RiskLevel, RiskStatus
 
 

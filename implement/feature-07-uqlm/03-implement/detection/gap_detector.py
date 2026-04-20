@@ -23,10 +23,9 @@ Date: 2026-04-19
 from __future__ import annotations
 
 import ast
-import os
 import re
 from pathlib import Path
-from typing import Callable, Dict, List, Optional, Set
+from typing import Dict, List, Optional
 
 from detection.data_models import (
     GapFinding,

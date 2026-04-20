@@ -248,7 +248,6 @@ class SpecParser:
         current_feature: Optional[FeatureItem] = None
         current_block_lines: list[str] = []
         in_feature_block = False
-        in_metadata_section = False
 
         for line_num, line in enumerate(lines, start=1):
             line = line.strip()
@@ -271,7 +270,6 @@ class SpecParser:
                 )
                 current_block_lines = [line]
                 in_feature_block = True
-                in_metadata_section = False
                 continue
 
             if in_feature_block and current_feature is not None:

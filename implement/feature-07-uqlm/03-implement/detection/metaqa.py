@@ -23,15 +23,13 @@ Date: 2026-04-19
 
 from __future__ import annotations
 
-import re
 from collections import Counter
 from datetime import datetime
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional
 
 import numpy as np
 
 from detection.data_models import DriftScore, MetaQAResult, TokenDistribution
-from detection.exceptions import BaselineNotFoundError
 
 
 # =============================================================================
@@ -375,7 +373,7 @@ class MetaQADetector:
 
         # Compute baseline statistics
         base_probs = np.array([base_lookup[t] for t in common_tokens])
-        mean = np.mean(base_probs)
+        np.mean(base_probs)
         std = np.std(base_probs) + 1e-10  # Avoid division by zero
 
         # Find drifted tokens

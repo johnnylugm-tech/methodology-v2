@@ -6,7 +6,6 @@ from pathlib import Path
 from gap_detector.scanner import (
     CodeScanner,
     ScannedCode,
-    CodeItem,
     CodeFile,
     ScanError,
 )

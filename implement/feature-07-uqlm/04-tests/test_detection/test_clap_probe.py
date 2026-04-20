@@ -132,7 +132,7 @@ class TestActivationProbeFit:
 
         cfg = ProbeConfig(model_type="llama-3.3", probe_type=ProbeType.LINEAR)
         probe = ActivationProbe(cfg)
-        result = probe.fit(training_data)
+        probe.fit(training_data)
         assert probe.is_fitted is True
 
     def test_fit_unsupported_probe_type(self, training_data):
@@ -243,7 +243,7 @@ class TestActivationProbePredict:
 
 class TestActivationProbePredictFromLayer:
     def test_unsupported_model_for_extraction(self, probe_config):
-        probe = ActivationProbe(probe_config)
+        ActivationProbe(probe_config)
         # Should raise since qwen hidden state extraction not implemented for qwen
         cfg = ProbeConfig(model_type="gpt-4")
         probe_gpt = ActivationProbe(cfg)
@@ -447,7 +447,6 @@ class TestActivationProbeSaveLoadRoundtrip:
     def test_load_pickle_exception(self, tmp_path):
         """Test that load() raises ProbeError when pickle.load fails."""
         # Create a corrupted pickle file directly
-        import pickle
         save_path = tmp_path / "corrupted_probe.pkl"
         with open(save_path, "wb") as f:
             f.write(b"This is not a valid pickle file")

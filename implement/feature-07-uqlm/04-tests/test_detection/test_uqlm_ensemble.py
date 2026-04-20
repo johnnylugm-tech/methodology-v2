@@ -1,10 +1,8 @@
 """Tests for detection/uqlm_ensemble.py."""
 import pytest
-from unittest.mock import patch, MagicMock
 
-import numpy as np
 
-from detection.data_models import EnsembleConfig, EnsembleResult, ScorerResult
+from detection.data_models import EnsembleConfig, EnsembleResult
 from detection.exceptions import UQLMError
 from detection.uqlm_ensemble import (
     BaseScorer,
@@ -111,7 +109,7 @@ class TestSelfConsistencyScorer:
 
     def test_longer_response_more_consistent(self):
         scorer = SelfConsistencyScorer()
-        short = scorer.score("", "hi", 5)
+        scorer.score("", "hi", 5)
         long = scorer.score("", "word " * 50, 5)
         # Longer responses tend to be more consistent
         assert 0.0 <= long <= 1.0

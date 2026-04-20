@@ -25,7 +25,7 @@ Date: 2026-04-19
 
 from __future__ import annotations
 
-from typing import Dict, List, Optional, Tuple
+from typing import Optional, Tuple
 
 import numpy as np
 
@@ -201,7 +201,6 @@ class TinyLoRA:
         # Training via gradient descent on MSE loss
         lr = self.config.lr
         max_iter = self.config.max_iter
-        dropout = self.config.dropout
 
         # Compute target: we want to predict hallucination probability
         # Use sigmoid activation on output of lora_b @ lora_a @ x
@@ -235,7 +234,7 @@ class TinyLoRA:
 
             # Gradient computation (simplified)
             # In production, use proper autograd
-            error = 2 * (predictions - y)
+            2 * (predictions - y)
             # Simplified gradient update
             # Real implementation needs proper backprop
 

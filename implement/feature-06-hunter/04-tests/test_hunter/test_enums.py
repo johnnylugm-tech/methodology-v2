@@ -1,5 +1,4 @@
 """Tests for Hunter Agent enums."""
-import pytest
 from implement.hunter.enums import (
     TamperPattern,
     Severity,

@@ -1,13 +1,11 @@
 """Tests for detection/uncertainty_score.py."""
 import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock
 
 import numpy as np
 
 from detection.data_models import (
     Decision,
-    EnsembleResult,
-    MetaQAResult,
     ProbeResult,
     UncertaintyScore,
 )
@@ -19,7 +17,7 @@ from detection.uncertainty_score import (
 from detection.uqlm_ensemble import EnsembleScorer
 from detection.clap_probe import ActivationProbe
 from detection.metaqa import MetaQADetector
-from detection.data_models import EnsembleConfig, ProbeConfig, ProbeType
+from detection.data_models import EnsembleConfig, ProbeConfig
 
 
 class TestWeightManager:
@@ -179,7 +177,7 @@ class TestUncertaintyScoreCalculatorCompute:
             gamma=0.0,
         )
         # Create response that generates high uncertainty
-        result = calc.compute("prompt", "word " * 100)
+        calc.compute("prompt", "word " * 100)
         # High uncertainty score should lead to HITL
         # (depends on the scorer output)
 
