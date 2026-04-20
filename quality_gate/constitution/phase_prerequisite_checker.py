@@ -7,47 +7,26 @@ Phase Prerequisite Checker
 Logic:
 - Phase N Constitution 檢查 Phase (N-1) 的產出
 - 不是檢查 Phase N 自己的產出
-
-IMPORTANT: Phase 5 artifacts are in 05-verify/ (Phase5_Plan WHERE)
-           Phase 6 needs to check both 05-baseline/ and 05-verify/
 """
 
 from pathlib import Path
-from typing import Dict, List, Tuple, Union
-from quality_gate.phase_paths import PHASE_ARTIFACT_PATHS
-from typing import Dict, List, Tuple
+from typing import Dict, List
 
-# Phase N 需要的前置產出（ASPICE 目錄結構）
-# Phase 6 includes Phase 5 outputs at both 05-baseline/ (old) and 05-verify/ (Phase5_Plan)
+# Phase N 需要的前置產出
 PHASE_PREREQUISITES = {
     1: [],  # 基本前提（由 FSM 檢查）
-    2: ["SRS.md", "01-requirements/SRS.md"],
-    3: ["SRS.md", "01-requirements/SRS.md", "02-architecture/SAD.md", ".methodology/fr_mapping.json"],
-    4: ["SRS.md", "01-requirements/SRS.md", "02-architecture/SAD.md", ".methodology/fr_mapping.json", ".methodology/SAB.json"],
-    5: ["SRS.md", "01-requirements/SRS.md", "02-architecture/SAD.md", ".methodology/fr_mapping.json", ".methodology/SAB.json", "04-testing/TEST_PLAN.md"],
-    6: [
-        # Phase 6 needs Phase 5 outputs
-        # Check both old location (05-baseline/) and Phase5_Plan location (05-verify/)
-        "SRS.md",
-        "01-requirements/SRS.md",
-        "02-architecture/SAD.md",
-        ".methodology/SAB.json",
-        # Phase 5 outputs - check both locations
-        ("05-verify/BASELINE.md", "05-verify/BASELINE.md"),  # BASELINE.md alternate paths
-        ("04-testing/TEST_RESULTS.md", "05-verify/TEST_RESULTS.md"),  # TEST_RESULTS alternate paths
-    ],
-    7: ["06-quality/QUALITY_REPORT.md"],
-    8: ["08-config/CONFIG_RECORDS.md", "08-config/requirements.lock"],
+    2: ["SRS.md"],
+    3: ["SRS.md", "SAD.md", "fr_mapping.json"],
+    4: ["SRS.md", "SAD.md", "fr_mapping.json", "SAB.json"],
+    5: ["SRS.md", "SAD.md", "TEST_PLAN.md"],
+    6: ["SRS.md", "SAD.md", "TEST_PLAN.md", "BASELINE.md"],
+    7: ["QUALITY_REPORT.md"],
+    8: ["CONFIG_RECORDS.md", "requirements.lock"],
 }
 
-
-def check_phase_prerequisites(phase: int, project_path: Path) -> Tuple[bool, List, List]:
+def check_phase_prerequisites(phase: int, project_path: Path) -> tuple:
     """
     檢查 Phase N 的前置產出是否 Ready
-    
-    Supports alternate paths for Phase 5 artifacts:
-    - BASELINE.md: 05-baseline/ OR 05-verify/
-    - TEST_RESULTS.md: 04-testing/ OR 05-verify/
     
     Returns: (passed: bool, missing: list, ready: list)
     """
@@ -56,31 +35,15 @@ def check_phase_prerequisites(phase: int, project_path: Path) -> Tuple[bool, Lis
     ready = []
     
     for item in prereqs:
-        if isinstance(item, tuple):
-            # Alternate paths - check any one exists
-            found = False
-            found_path = None
-            for alt_path in item:
-                path = project_path / alt_path
-                if path.exists():
-                    found = True
-                    found_path = alt_path
-                    break
-            
-            if found:
-                ready.append(found_path)  # Record the actual path found
-            else:
-                missing.append(item[0])  # Record the primary path as missing
-        elif item.endswith("/"):
+        path = project_path / item
+        if item.endswith("/"):
             # 目錄檢查
-            path = project_path / item
             if path.exists() and any(path.iterdir()):
                 ready.append(item)
             else:
                 missing.append(item)
         else:
             # 檔案檢查
-            path = project_path / item
             if path.exists():
                 ready.append(item)
             else:
@@ -110,7 +73,3 @@ def format_prerequisite_error(phase: int, missing: list, ready: list) -> str:
     lines.append("=" * 70)
     
     return "\n".join(lines)
-
-
-# Direct export for convenience
-check_prerequisites = check_phase_prerequisites

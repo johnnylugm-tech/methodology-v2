@@ -1,6 +1,6 @@
 # 強制 A/B 協作工作流（必讀）
 
-**版本**: v1.0  
+**版本**: v1.1  
 **生效日期**: 2026-03-27  
 **狀態**: 強制執行
 
@@ -69,12 +69,14 @@ Step 4: 兩人交換角色，再做一次（交換審查）
 
 ## 強制檢查清單（每次 commit 前勾選）
 
+- [ ] sessions_spawn timeout = 3600（60 分鐘）
 - [ ] Developer 寫完 code
 - [ ] Code Reviewer 審查並 approve（不是 Developer）
 - [ ] Tester 執行 pytest 實際通過
 - [ ] 交換角色後，另一個 Reviewer 也 approve
 - [ ] HybridWorkflow mode = ON
 - [ ] commit message 有兩個人確認
+- [ ] 大檔案 (>500 lines) 使用 Chunked Write Protocol
 
 ---
 
@@ -90,19 +92,77 @@ Step 4: 兩人交換角色，再做一次（交換審查）
 
 ---
 
+## 大檔案生成規範（Chunked Write Protocol）
+
+**問題**：Subagent 單次生成大量內容 (>500 lines) 時，context window 累積過多，導致 request 被截斷，tool call arguments 變成空的。
+
+**解決方案**：分割成 300-500 line chunks，每段生成後立即 write，不累積在 memory 裡。
+
+```
+大檔案 (1500+ lines)
+    ↓
+分割成 300-500 line chunks
+    ↓
+Chunk 1 生成 → write → 清空
+Chunk 2 生成 → write → 清空
+Chunk 3 生成 → write → 清空
+...
+```
+
+### Task Prompt 模板
+
+```markdown
+## 輸出要求
+1. 直接寫入: `{path}`
+2. **分段執行，每段 300-500 lines**
+3. 每段生成後立即呼叫 write tool，不要等待整個檔案完成
+
+## Chunk 策略
+- Chunk 1: `{section_1_description}`
+- Chunk 2: `{section_2_description}`
+- Chunk 3: `{section_3_description}`
+...
+
+## 執行順序
+1. 生成 Chunk 1 → write
+2. 生成 Chunk 2 → write (append)
+3. ...重複直到完成
+```
+
+### timeout 設定（強制）
+
+所有 subagent sessions 一律設定：
+
+```python
+sessions_spawn(timeoutSeconds=3600, ...)  # 60 分鐘
+```
+
+| 場景 | timeout |
+|------|---------|
+| TDD 測試開發（Phase 4） | 3600 |
+| 複雜功能實作（Phase 3） | 3600 |
+| 簡單任務 | 3600 |
+
+---
+
 ## 驗證命令
 
 ```bash
 # 確認團隊有 2+ Agent
-team.list_agents()  # 應該顯示 Developer + Reviewer
+team.list_agents()
 
 # 確認 Workflow mode 是 ON
 echo $WORKFLOW_MODE  # 應該是 "ON"
 
 # 確認有 A/B 審查記錄
 git log --all --grep="Reviewer" --oneline
+
+# 確認 timeout 設定
+grep -r "timeoutSeconds.*3600" .
 ```
 
 ---
 
 *強制執行日期: 2026-03-27*
+*Chunked Write Protocol 新增: 2026-04-20*
+*timeout 60min 設定: 2026-04-20*
