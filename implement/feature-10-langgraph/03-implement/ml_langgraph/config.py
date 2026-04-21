@@ -12,10 +12,10 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any
 
-
 # ---------------------------------------------------------------------------
 # Dataclass
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class GraphConfig:
@@ -51,6 +51,7 @@ DEFAULT_CONFIG = GraphConfig()
 # Serialization helpers
 # ---------------------------------------------------------------------------
 
+
 def config_to_dict(config: GraphConfig) -> dict[str, Any]:
     """Convert a GraphConfig into a plain dictionary.
 
@@ -68,6 +69,7 @@ def config_to_dict(config: GraphConfig) -> dict[str, Any]:
 # ---------------------------------------------------------------------------
 # Validation
 # ---------------------------------------------------------------------------
+
 
 def validate_config(config: GraphConfig) -> bool:
     """Validate a GraphConfig instance.
@@ -119,6 +121,7 @@ def validate_config(config: GraphConfig) -> bool:
 # Merge
 # ---------------------------------------------------------------------------
 
+
 def merge_configs(base: GraphConfig, override: dict[str, Any]) -> GraphConfig:
     """Merge override dict into a base GraphConfig.
 
@@ -145,6 +148,7 @@ def merge_configs(base: GraphConfig, override: dict[str, Any]) -> GraphConfig:
 # ---------------------------------------------------------------------------
 # Loading
 # ---------------------------------------------------------------------------
+
 
 def load_config(config_path: str | dict[str, Any] | None = None) -> GraphConfig:
     """Load GraphConfig from a file path or dict.
@@ -190,8 +194,7 @@ def load_config(config_path: str | dict[str, Any] | None = None) -> GraphConfig:
         return _config_from_json(path)
     else:
         raise NotImplementedError(
-            f"Unsupported config file extension '{suffix}'. "
-            "Use .yaml, .yml, or .json"
+            f"Unsupported config file extension '{suffix}'. " "Use .yaml, .yml, or .json"
         )
 
 
@@ -239,6 +242,7 @@ def _get_yaml_parser():
     """Return a YAML parser, trying ruamel.yaml then yaml."""
     try:
         from ruamel.yaml import YAML as _YAML
+
         yaml = _YAML()
         yaml.preserve_quotes = True
         return yaml
@@ -247,6 +251,7 @@ def _get_yaml_parser():
 
     try:
         import yaml
+
         return yaml
     except ImportError as exc:
         raise ImportError(
@@ -258,6 +263,7 @@ def _get_yaml_parser():
 # ---------------------------------------------------------------------------
 # Convenience utilities
 # ---------------------------------------------------------------------------
+
 
 def save_config(config: GraphConfig, path: str, *, overwrite: bool = True) -> None:
     """Write a GraphConfig to a JSON file.
@@ -292,6 +298,7 @@ def save_config(config: GraphConfig, path: str, *, overwrite: bool = True) -> No
 # ---------------------------------------------------------------------------
 # CLI-friendly helpers (for testing / scripting)
 # ---------------------------------------------------------------------------
+
 
 def load_config_or_default(config_path: str | None) -> GraphConfig:
     """Load config if path is non-None and non-empty, else return default."""

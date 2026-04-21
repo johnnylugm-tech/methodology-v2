@@ -17,11 +17,13 @@ from typing import Any, Optional
 
 class CheckpointAlreadyExistsError(Exception):
     """Raised when attempting to save a checkpoint that already exists."""
+
     pass
 
 
 class CheckpointNotFoundError(Exception):
     """Raised when a checkpoint ID is not found."""
+
     pass
 
 
@@ -62,9 +64,7 @@ class MemoryCheckpointBackend(CheckpointBackend):
 
     def save(self, checkpoint_id: str, state: dict) -> None:
         if checkpoint_id in self._checkpoints:
-            raise CheckpointAlreadyExistsError(
-                f"Checkpoint '{checkpoint_id}' already exists"
-            )
+            raise CheckpointAlreadyExistsError(f"Checkpoint '{checkpoint_id}' already exists")
         self._checkpoints[checkpoint_id] = {
             "id": checkpoint_id,
             "state": state,
@@ -73,9 +73,7 @@ class MemoryCheckpointBackend(CheckpointBackend):
 
     def load(self, checkpoint_id: str) -> dict:
         if checkpoint_id not in self._checkpoints:
-            raise CheckpointNotFoundError(
-                f"Checkpoint '{checkpoint_id}' not found"
-            )
+            raise CheckpointNotFoundError(f"Checkpoint '{checkpoint_id}' not found")
         return self._checkpoints[checkpoint_id]["state"]
 
     def list(self) -> list[dict]:
@@ -87,9 +85,7 @@ class MemoryCheckpointBackend(CheckpointBackend):
 
     def delete(self, checkpoint_id: str) -> None:
         if checkpoint_id not in self._checkpoints:
-            raise CheckpointNotFoundError(
-                f"Checkpoint '{checkpoint_id}' not found"
-            )
+            raise CheckpointNotFoundError(f"Checkpoint '{checkpoint_id}' not found")
         del self._checkpoints[checkpoint_id]
 
     def exists(self, checkpoint_id: str) -> bool:
@@ -128,13 +124,10 @@ class SqliteCheckpointBackend(CheckpointBackend):
     def save(self, checkpoint_id: str, state: dict) -> None:
         conn = self._get_conn()
         existing = conn.execute(
-            "SELECT id FROM checkpoints WHERE id = ?",
-            (checkpoint_id,)
+            "SELECT id FROM checkpoints WHERE id = ?", (checkpoint_id,)
         ).fetchone()
         if existing is not None:
-            raise CheckpointAlreadyExistsError(
-                f"Checkpoint '{checkpoint_id}' already exists"
-            )
+            raise CheckpointAlreadyExistsError(f"Checkpoint '{checkpoint_id}' already exists")
         state_json = json.dumps(state, default=str)
         created_at = datetime.now().isoformat()
         conn.execute(
@@ -146,13 +139,10 @@ class SqliteCheckpointBackend(CheckpointBackend):
     def load(self, checkpoint_id: str) -> dict:
         conn = self._get_conn()
         row = conn.execute(
-            "SELECT state FROM checkpoints WHERE id = ?",
-            (checkpoint_id,)
+            "SELECT state FROM checkpoints WHERE id = ?", (checkpoint_id,)
         ).fetchone()
         if row is None:
-            raise CheckpointNotFoundError(
-                f"Checkpoint '{checkpoint_id}' not found"
-            )
+            raise CheckpointNotFoundError(f"Checkpoint '{checkpoint_id}' not found")
         return json.loads(row["state"])
 
     def list(self) -> list[dict]:
@@ -160,29 +150,18 @@ class SqliteCheckpointBackend(CheckpointBackend):
         rows = conn.execute(
             "SELECT id, created_at FROM checkpoints ORDER BY created_at DESC"
         ).fetchall()
-        return [
-            {"id": row["id"], "created_at": row["created_at"]}
-            for row in rows
-        ]
+        return [{"id": row["id"], "created_at": row["created_at"]} for row in rows]
 
     def delete(self, checkpoint_id: str) -> None:
         conn = self._get_conn()
-        cursor = conn.execute(
-            "DELETE FROM checkpoints WHERE id = ?",
-            (checkpoint_id,)
-        )
+        cursor = conn.execute("DELETE FROM checkpoints WHERE id = ?", (checkpoint_id,))
         conn.commit()
         if cursor.rowcount == 0:
-            raise CheckpointNotFoundError(
-                f"Checkpoint '{checkpoint_id}' not found"
-            )
+            raise CheckpointNotFoundError(f"Checkpoint '{checkpoint_id}' not found")
 
     def exists(self, checkpoint_id: str) -> bool:
         conn = self._get_conn()
-        row = conn.execute(
-            "SELECT 1 FROM checkpoints WHERE id = ?",
-            (checkpoint_id,)
-        ).fetchone()
+        row = conn.execute("SELECT 1 FROM checkpoints WHERE id = ?", (checkpoint_id,)).fetchone()
         return row is not None
 
     def close(self) -> None:
@@ -205,7 +184,7 @@ class FileSystemCheckpointBackend(CheckpointBackend):
             with open(self._metadata_file, "r") as f:
                 self._metadata = json.load(f)
         else:
-            self._metadata: dict[str, dict] = {}
+            self._metadata = {}
 
     def _save_metadata(self) -> None:
         with open(self._metadata_file, "w") as f:
@@ -217,9 +196,7 @@ class FileSystemCheckpointBackend(CheckpointBackend):
 
     def save(self, checkpoint_id: str, state: dict) -> None:
         if checkpoint_id in self._metadata:
-            raise CheckpointAlreadyExistsError(
-                f"Checkpoint '{checkpoint_id}' already exists"
-            )
+            raise CheckpointAlreadyExistsError(f"Checkpoint '{checkpoint_id}' already exists")
         checkpoint_path = self._get_checkpoint_path(checkpoint_id)
         created_at = datetime.now().isoformat()
         with open(checkpoint_path, "w") as f:
@@ -233,9 +210,7 @@ class FileSystemCheckpointBackend(CheckpointBackend):
 
     def load(self, checkpoint_id: str) -> dict:
         if checkpoint_id not in self._metadata:
-            raise CheckpointNotFoundError(
-                f"Checkpoint '{checkpoint_id}' not found"
-            )
+            raise CheckpointNotFoundError(f"Checkpoint '{checkpoint_id}' not found")
         checkpoint_path = Path(self._metadata[checkpoint_id]["file"])
         with open(checkpoint_path, "r") as f:
             return json.load(f)
@@ -249,9 +224,7 @@ class FileSystemCheckpointBackend(CheckpointBackend):
 
     def delete(self, checkpoint_id: str) -> None:
         if checkpoint_id not in self._metadata:
-            raise CheckpointNotFoundError(
-                f"Checkpoint '{checkpoint_id}' not found"
-            )
+            raise CheckpointNotFoundError(f"Checkpoint '{checkpoint_id}' not found")
         checkpoint_path = Path(self._metadata[checkpoint_id]["file"])
         if checkpoint_path.exists():
             checkpoint_path.unlink()

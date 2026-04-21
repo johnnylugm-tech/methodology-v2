@@ -12,7 +12,6 @@ from dataclasses import dataclass, field
 from typing import Callable, Dict, List, Optional, Set, Any, Union
 from enum import Enum
 
-
 # Type alias for router functions
 RouterFunction = Callable[["StateT"], str]
 
@@ -22,6 +21,7 @@ class StateT(dict):
     TypedDict-like state container for routing decisions.
     In practice this would be typed properly via TypedDict.
     """
+
     def get(self, key: str, default: Any = None) -> Any:
         return super().get(key, default)
 
@@ -29,6 +29,7 @@ class StateT(dict):
 # ----------------------------------------------------------------------
 # Edge Item
 # ----------------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class EdgeItem:
@@ -39,6 +40,7 @@ class EdgeItem:
         source: Name of the source node
         target: Name of the target node
     """
+
     source: str
     target: str
 
@@ -53,6 +55,7 @@ class EdgeItem:
 # Conditional Edge Item
 # ----------------------------------------------------------------------
 
+
 @dataclass
 class ConditionalEdgeItem:
     """
@@ -65,6 +68,7 @@ class ConditionalEdgeItem:
         mapping: Dict mapping routing keys to target node names
         default: Default target node name when routing key not in mapping
     """
+
     source: str
     routing_fn: RouterFunction
     mapping: Dict[str, str] = field(default_factory=dict)
@@ -95,6 +99,7 @@ class ConditionalEdgeItem:
 # ----------------------------------------------------------------------
 # Helper Router Functions
 # ----------------------------------------------------------------------
+
 
 def route_by_confidence(state: StateT, threshold: float) -> str:
     """
@@ -154,8 +159,10 @@ def route_by_error_count(state: StateT, max_errors: int) -> str:
 # Edge Validator
 # ----------------------------------------------------------------------
 
+
 class EdgeValidationError(Exception):
     """Raised when edge validation fails."""
+
     pass
 
 
@@ -204,9 +211,7 @@ class EdgeValidator:
 
     @staticmethod
     def detect_orphaned_nodes(
-        edges: List[EdgeItem],
-        node_names: Set[str],
-        entry_point: Optional[str] = None
+        edges: List[EdgeItem], node_names: Set[str], entry_point: Optional[str] = None
     ) -> Dict[str, List[str]]:
         """
         Detect nodes that are unreachable or have no outgoing edges.
@@ -234,11 +239,7 @@ class EdgeValidator:
             outgoing[edge.source].append(edge.target)
             incoming[edge.target].append(edge.source)
 
-        result: Dict[str, List[str]] = {
-            "unreachable": [],
-            "no_outgoing": [],
-            "no_incoming": []
-        }
+        result: Dict[str, List[str]] = {"unreachable": [], "no_outgoing": [], "no_incoming": []}
 
         # Find nodes unreachable from entry point
         if entry_point and entry_point in node_names:
@@ -295,9 +296,7 @@ class EdgeValidator:
 
     @staticmethod
     def validate_conditional_edge(
-        cond_edge: ConditionalEdgeItem,
-        node_names: Set[str],
-        valid_routes: Set[str]
+        cond_edge: ConditionalEdgeItem, node_names: Set[str], valid_routes: Set[str]
     ) -> List[str]:
         """
         Validate a conditional edge's mapping covers expected routes.
@@ -340,6 +339,7 @@ class EdgeValidator:
 # Edge Builder Utility
 # ----------------------------------------------------------------------
 
+
 class EdgeBuilder:
     """
     Fluent builder for constructing edges programmatically.
@@ -381,6 +381,7 @@ class EdgeBuilder:
 # ----------------------------------------------------------------------
 # Composite Edge Operators
 # ----------------------------------------------------------------------
+
 
 def merge_edges(edges_list: List[List[EdgeItem]]) -> List[EdgeItem]:
     """

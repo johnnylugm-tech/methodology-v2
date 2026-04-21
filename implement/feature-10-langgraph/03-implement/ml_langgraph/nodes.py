@@ -20,6 +20,7 @@ NodeFunction = Callable[[StateT], StateT]
 # Base node interface
 # ---------------------------------------------------------------------------
 
+
 class BaseNode:
     """
     Abstract base for all node types.
@@ -45,6 +46,7 @@ class BaseNode:
 # ---------------------------------------------------------------------------
 # ToolNode
 # ---------------------------------------------------------------------------
+
 
 class ToolNode(BaseNode):
     """
@@ -107,11 +109,13 @@ class ToolNode(BaseNode):
             if self.result_key is not None:
                 state[self.result_key] = result
 
-            intermediate.append({
-                "node": self.name,
-                "tool": getattr(self.tool_func, "__name__", repr(self.tool_func)),
-                "result": result,
-            })
+            intermediate.append(
+                {
+                    "node": self.name,
+                    "tool": getattr(self.tool_func, "__name__", repr(self.tool_func)),
+                    "result": result,
+                }
+            )
             state["intermediate_results"] = intermediate
             state["last_node"] = self.name
 
@@ -128,16 +132,19 @@ class ToolNode(BaseNode):
 
         Returns a new node that merges state-derived args with ``fixed_args``.
         """
+
         def bound_call(state: StateT) -> StateT:
             merged = {**fixed_args, **state.get("tool_args", {})}
             new_state = {**state, "tool_args": merged}
             return self(new_state)
+
         return bound_call
 
 
 # ---------------------------------------------------------------------------
 # LLMNode
 # ---------------------------------------------------------------------------
+
 
 class LLMNode(BaseNode):
     """
@@ -254,6 +261,7 @@ class LLMNode(BaseNode):
 # HumanInTheLoopNode
 # ---------------------------------------------------------------------------
 
+
 class HumanInTheLoopNode(BaseNode):
     """
     Node that pauses the graph for human approval or input before continuing.
@@ -362,6 +370,7 @@ class HumanInTheLoopNode(BaseNode):
 # ConditionalRouterNode
 # ---------------------------------------------------------------------------
 
+
 class ConditionalRouterNode(BaseNode):
     """
     Node that inspects the current state and decides which named node to run next.
@@ -431,7 +440,9 @@ class ConditionalRouterNode(BaseNode):
             logger.warning(
                 "[ConditionalRouterNode:%s] routing key %r not in mapping "
                 "and no default set. state=%s",
-                self.name, key, state,
+                self.name,
+                key,
+                state,
             )
 
         state["__next_node__"] = target
@@ -446,11 +457,14 @@ class ConditionalRouterNode(BaseNode):
 # Utility node factories
 # ---------------------------------------------------------------------------
 
+
 def passthrough_node(name: str) -> NodeFunction:
     """Return a node that simply returns state unchanged (identity function)."""
+
     def node(state: StateT) -> StateT:
         state["last_node"] = name
         return state
+
     return node
 
 
@@ -468,6 +482,7 @@ def map_node(
         key: State key whose value is transformed.
         fn: Transform function applied to the value at ``key``.
     """
+
     def node(state: StateT) -> StateT:
         try:
             state[key] = fn(state[key])
@@ -476,4 +491,5 @@ def map_node(
             state["error"] = repr(exc)
         state["last_node"] = name
         return state
+
     return node

@@ -20,7 +20,6 @@ from typing import Any, TypedDict
 
 from pydantic import BaseModel, Field
 
-
 # ─────────────────────────────────────────────────────────────────────────────
 # Dataclasses: ErrorRecord & CheckpointRecord
 # ─────────────────────────────────────────────────────────────────────────────
@@ -150,9 +149,7 @@ class AgentState(BaseModel):
         """Set a key in the context dict."""
         self.context[key] = value
 
-    def add_trace_entry(
-        self, node: str, event: str, data: dict[str, Any] | None = None
-    ) -> None:
+    def add_trace_entry(self, node: str, event: str, data: dict[str, Any] | None = None) -> None:
         """Append an entry to the execution trace."""
         entry: dict[str, Any] = {
             "node": node,
@@ -268,18 +265,14 @@ class StateManager:
         if "messages" in partial:
             incoming = partial["messages"]
             if isinstance(incoming, list):
-                self._state.messages.extend(
-                    m for m in incoming if isinstance(m, dict)
-                )
+                self._state.messages.extend(m for m in incoming if isinstance(m, dict))
             del partial["messages"]
 
         # Task history: append new tasks
         if "task_history" in partial:
             incoming = partial["task_history"]
             if isinstance(incoming, list):
-                self._state.task_history.extend(
-                    t for t in incoming if isinstance(t, str)
-                )
+                self._state.task_history.extend(t for t in incoming if isinstance(t, str))
             del partial["tasks_history"]
 
         # Errors: append ErrorRecord instances

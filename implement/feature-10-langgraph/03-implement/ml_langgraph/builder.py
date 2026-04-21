@@ -25,17 +25,13 @@ try:
     from langgraph.graph import END
     from langgraph.graph.state import CompiledStateGraph
 except ImportError as e:
-    raise ImportError(
-        "langgraph is required. Install: pip install langgraph"
-    ) from e
+    raise ImportError("langgraph is required. Install: pip install langgraph") from e
 
 # Pydantic for config validation
 try:
     from pydantic import BaseModel, Field, ConfigDict
 except ImportError as e:
-    raise ImportError(
-        "pydantic is required. Install: pip install pydantic"
-    ) from e
+    raise ImportError("pydantic is required. Install: pip install pydantic") from e
 
 # Custom exceptions
 from .exceptions import (
@@ -46,14 +42,15 @@ from .exceptions import (
     CircularDependencyError,
 )
 
-
 # ---------------------------------------------------------------------------
 # Internal Dataclasses
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class NodeItem:
     """Represents a node in the graph."""
+
     name: str
     func: Callable[..., Any]
     config: Optional[Dict[str, Any]] = None
@@ -76,6 +73,7 @@ class NodeItem:
 @dataclass
 class EdgeItem:
     """Represents a directed edge between two nodes."""
+
     source: str
     target: str
 
@@ -90,6 +88,7 @@ class EdgeItem:
 @dataclass
 class ConditionalEdgeItem:
     """Represents a conditional edge with routing function."""
+
     source: str
     routing_fn: Callable[..., str]
     mapping: Dict[str, str] = field(default_factory=dict)
@@ -120,8 +119,10 @@ class ConditionalEdgeItem:
 # Config Models (Pydantic)
 # ---------------------------------------------------------------------------
 
+
 class NodeConfig(BaseModel):
     """Configuration for a graph node."""
+
     model_config = ConfigDict(extra="allow")
 
     name: Optional[str] = None
@@ -133,6 +134,7 @@ class NodeConfig(BaseModel):
 
 class GraphCompileConfig(BaseModel):
     """Configuration for graph compilation."""
+
     model_config = ConfigDict(extra="allow")
 
     checkpointer: Optional[Any] = None
@@ -146,6 +148,7 @@ class GraphCompileConfig(BaseModel):
 # ---------------------------------------------------------------------------
 # GraphBuilder
 # ---------------------------------------------------------------------------
+
 
 class GraphBuilder:
     """
@@ -353,9 +356,7 @@ class GraphBuilder:
         """
         # Ensure at least one node exists
         if not self._nodes:
-            raise GraphValidationError(
-                "Cannot compile empty graph. Add at least one node."
-            )
+            raise GraphValidationError(["Cannot compile empty graph. Add at least one node."])
 
         # Ensure entry point is set (or use first node as fallback)
         if self._entry_point is None:
@@ -371,18 +372,12 @@ class GraphBuilder:
         # Validate conditional edges
         for cond in self._conditional_edges:
             if cond.source not in self._nodes:
-                raise NodeNotFoundError(
-                    f"Conditional edge source '{cond.source}' not found"
-                )
+                raise NodeNotFoundError(f"Conditional edge source '{cond.source}' not found")
             for target in cond.mapping.values():
                 if target not in self._nodes:
-                    raise NodeNotFoundError(
-                        f"Conditional edge target '{target}' not found"
-                    )
+                    raise NodeNotFoundError(f"Conditional edge target '{target}' not found")
             if cond.default and cond.default not in self._nodes:
-                raise NodeNotFoundError(
-                    f"Conditional edge default '{cond.default}' not found"
-                )
+                raise NodeNotFoundError(f"Conditional edge default '{cond.default}' not found")
 
         # Detect unconnected nodes (warning only, not error)
         connected = self._get_connected_nodes()
@@ -390,6 +385,7 @@ class GraphBuilder:
         if orphaned:
             # Log warning but don't block compilation
             import warnings
+
             warnings.warn(
                 f"Unconnected nodes detected: {orphaned}. "
                 "These nodes cannot be reached from the entry point.",
@@ -536,9 +532,7 @@ class GraphBuilder:
             self._compiled = compiled
             return compiled
         except Exception as e:
-            raise GraphValidationError(
-                f"Failed to compile graph: {e}"
-            ) from e
+            raise GraphValidationError([f"Failed to compile graph: {e}"]) from e
 
     # -------------------------------------------------------------------------
     # Serialization
@@ -558,10 +552,7 @@ class GraphBuilder:
         data = {
             "name": self._name,
             "state_schema": str(self._state_schema),
-            "nodes": [
-                {"name": name, "config": item.config}
-                for name, item in self._nodes.items()
-            ],
+            "nodes": [{"name": name, "config": item.config} for name, item in self._nodes.items()],
             "edges": [edge.to_dict() for edge in self._edges],
             "conditional_edges": [
                 {
@@ -601,14 +592,13 @@ class GraphBuilder:
         try:
             data = json.loads(json_str)
         except json.JSONDecodeError as e:
-            raise GraphValidationError(f"Invalid JSON: {e}") from e
+            raise GraphValidationError([f"Invalid JSON: {e}"]) from e
 
         # Extract schema if not provided
         if state_schema is None:
             schema_repr = data.get("state_schema", "")
             raise GraphValidationError(
-                f"state_schema is required to reconstruct GraphBuilder. "
-                f"Got: {schema_repr}"
+                [f"state_schema is required to reconstruct GraphBuilder. " f"Got: {schema_repr}"]
             )
 
         # Reconstruct builder
@@ -620,8 +610,10 @@ class GraphBuilder:
             node_name = node_data["name"]
             if node_name not in node_functions:
                 raise GraphValidationError(
-                    f"Missing function for node '{node_name}'. "
-                    f"Provided functions: {list(node_functions.keys())}"
+                    [
+                        f"Missing function for node '{node_name}'. "
+                        f"Provided functions: {list(node_functions.keys())}"
+                    ]
                 )
             builder.add_node(
                 name=node_name,
@@ -639,8 +631,10 @@ class GraphBuilder:
             routing_key = f"{source}_router"
             if routing_key not in node_functions:
                 raise GraphValidationError(
-                    f"Missing routing function for conditional edge from '{source}'. "
-                    f"Expected key '{routing_key}' in node_functions."
+                    [
+                        f"Missing routing function for conditional edge from '{source}'. "
+                        f"Expected key '{routing_key}' in node_functions."
+                    ]
                 )
             builder.add_conditional_edges(
                 source=source,
@@ -708,9 +702,7 @@ class GraphBuilder:
         if self._conditional_edges:
             lines.append(f"\nConditional Edges ({len(self._conditional_edges)}):")
             for cond in self._conditional_edges:
-                targets = " | ".join(
-                    f"{k}→{v}" for k, v in cond.mapping.items()
-                )
+                targets = " | ".join(f"{k}→{v}" for k, v in cond.mapping.items())
                 if cond.default:
                     targets += f" | DEFAULT→{cond.default}"
                 lines.append(f"  {cond.source} --[{targets}]")

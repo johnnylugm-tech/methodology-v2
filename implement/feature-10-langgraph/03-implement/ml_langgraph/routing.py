@@ -21,8 +21,7 @@ StateT = dict[str, Any]
 class RoutingFunction(Protocol):
     """A callable that inspects state and returns a route key (str)."""
 
-    def __call__(self, state: StateT) -> str:
-        ...
+    def __call__(self, state: StateT) -> str: ...
 
 
 # ----------------------------------------------------------------------
@@ -70,7 +69,9 @@ class Router:
         # Verify all referenced nodes are non-empty lists
         for key, nodes in routes.items():
             if not isinstance(nodes, list):
-                raise TypeError(f"Route '{key}' must map to a list of node names, got {type(nodes).__name__}")
+                raise TypeError(
+                    f"Route '{key}' must map to a list of node names, got {type(nodes).__name__}"
+                )
             if not all(isinstance(n, str) for n in nodes):
                 raise TypeError(f"Route '{key}' must contain only string node names")
 
@@ -170,7 +171,9 @@ def confidence_router(thresholds: dict[str, float]) -> RoutingFunction:
     def _router(state: StateT) -> str:
         confidence: float = state.get("confidence", 0.0)
         if not isinstance(confidence, (int, float)):
-            raise TypeError(f"confidence_router: 'confidence' must be numeric, got {type(confidence).__name__}")
+            raise TypeError(
+                f"confidence_router: 'confidence' must be numeric, got {type(confidence).__name__}"
+            )
         for key, threshold in sorted_thresholds:
             if confidence >= threshold:
                 return key
@@ -209,6 +212,7 @@ def count_router(min_count: int, below_key: str, above_key: str) -> RoutingFunct
     >>> router_fn({"results": [1, 2, 3]})
     'done'
     """
+
     def _router(state: StateT) -> str:
         results = state.get("results", [])
         if not isinstance(results, list):
@@ -246,6 +250,7 @@ def error_router(max_errors: int, error_key: str, ok_key: str) -> RoutingFunctio
     >>> router_fn({"errors": ["timeout", "retry", "fatal"]})
     'abort'
     """
+
     def _router(state: StateT) -> str:
         errors = state.get("errors", [])
         if not isinstance(errors, list):
@@ -282,6 +287,7 @@ def bool_router(flag_key: str, true_key: str, false_key: str) -> RoutingFunction
     >>> router_fn({})
     'reject'
     """
+
     def _router(state: StateT) -> str:
         flag = state.get(flag_key)
         return true_key if flag else false_key
@@ -328,9 +334,7 @@ def regex_router(pattern: str, groups: dict[str, str]) -> RoutingFunction:
 
         match = compiled.search(text)
         if not match:
-            raise ValueError(
-                f"regex_router: pattern '{pattern}' did not match text: {text!r}"
-            )
+            raise ValueError(f"regex_router: pattern '{pattern}' did not match text: {text!r}")
 
         # Try to resolve the route key via named groups first, then positional.
         for key, route_key in groups.items():
@@ -384,6 +388,7 @@ def chain_routers(*routers: RoutingFunction) -> RoutingFunction:
     >>> secondary = bool_router("forced", "force", "auto")
     >>> combined = chain_routers(primary, secondary)
     """
+
     def _router(state: StateT) -> str:
         for router in routers:
             result = router(state)
@@ -409,6 +414,7 @@ def fallback_router(primary: RoutingFunction, fallback_key: str) -> RoutingFunct
     -------
     RoutingFunction
     """
+
     def _router(state: StateT) -> str:
         try:
             return primary(state)

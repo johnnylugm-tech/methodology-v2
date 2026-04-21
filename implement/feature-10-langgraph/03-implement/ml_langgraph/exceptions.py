@@ -99,14 +99,10 @@ class StateSchemaError(FeatureError):
         message: Optional custom error message.
     """
 
-    def __init__(
-        self, schema: str, actual: str, message: str | None = None
-    ) -> None:
+    def __init__(self, schema: str, actual: str, message: str | None = None) -> None:
         if message is None:
             message = (
-                f"State schema validation failed.\n"
-                f"  Expected: {schema}\n"
-                f"  Actual: {actual}"
+                f"State schema validation failed.\n" f"  Expected: {schema}\n" f"  Actual: {actual}"
             )
         super().__init__(message)
         self.schema = schema
@@ -166,10 +162,7 @@ class TimeoutError(FeatureError):
 
     def __init__(self, node_name: str, timeout_seconds: float, message: str | None = None) -> None:
         if message is None:
-            message = (
-                f"Node '{node_name}' execution timed out after "
-                f"{timeout_seconds} seconds"
-            )
+            message = f"Node '{node_name}' execution timed out after " f"{timeout_seconds} seconds"
         super().__init__(message)
         self.node_name = node_name
         self.timeout_seconds = timeout_seconds
@@ -198,8 +191,7 @@ class RetryExhaustedError(FeatureError):
     ) -> None:
         if message is None:
             message = (
-                f"Node '{node_name}' failed after {attempts} attempts. "
-                f"Last error: {last_error}"
+                f"Node '{node_name}' failed after {attempts} attempts. " f"Last error: {last_error}"
             )
         super().__init__(message)
         self.node_name = node_name

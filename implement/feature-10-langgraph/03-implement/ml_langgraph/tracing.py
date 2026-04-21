@@ -21,6 +21,7 @@ from typing import Any, Generator, Optional
 
 class SpanStatus(Enum):
     """Span completion status constants."""
+
     SUCCESS = "success"
     FAILED = "failed"
     TIMEOUT = "timeout"
@@ -35,6 +36,7 @@ SPAN_STATUS_TIMEOUT = SpanStatus.TIMEOUT
 @dataclass
 class SpanEvent:
     """A timestamped event that occurred during a span's execution."""
+
     name: str
     timestamp: datetime = field(default_factory=datetime.utcnow)
     metadata: dict[str, Any] = field(default_factory=dict)
@@ -50,6 +52,7 @@ class SpanEvent:
 @dataclass
 class Span:
     """Represents a single unit of work within a trace."""
+
     span_id: str
     parent_id: Optional[str]
     node_name: str
@@ -68,10 +71,7 @@ class Span:
 
     def add_event(self, event_name: str, metadata: Optional[dict[str, Any]] = None) -> None:
         """Add an event to this span."""
-        self.events.append(SpanEvent(
-            name=event_name,
-            metadata=metadata or {}
-        ))
+        self.events.append(SpanEvent(name=event_name, metadata=metadata or {}))
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -90,6 +90,7 @@ class Span:
 @dataclass
 class TraceRecord:
     """Complete record of a single trace execution."""
+
     trace_id: str
     execution_id: str
     start_time: datetime = field(default_factory=datetime.utcnow)
@@ -198,9 +199,7 @@ class ExecutionTracer:
 
         trace_id = self._generate_id(prefix="trace")
         self._active_trace = TraceRecord(
-            trace_id=trace_id,
-            execution_id=execution_id,
-            metadata=metadata or {}
+            trace_id=trace_id, execution_id=execution_id, metadata=metadata or {}
         )
         self._active_span_stack = []
         self._span_counter = 0
@@ -244,7 +243,7 @@ class ExecutionTracer:
         self,
         node_name: str,
         parent_id: Optional[str] = None,
-        metadata: Optional[dict[str, Any]] = None
+        metadata: Optional[dict[str, Any]] = None,
     ) -> str:
         """
         Open a new span for a node or sub-operation.
@@ -272,10 +271,7 @@ class ExecutionTracer:
         span_id = self._generate_id(prefix=f"s{self._span_counter}")
 
         span = Span(
-            span_id=span_id,
-            parent_id=parent_id,
-            node_name=node_name,
-            metadata=metadata or {}
+            span_id=span_id, parent_id=parent_id, node_name=node_name, metadata=metadata or {}
         )
 
         if self._enable_profiling:
@@ -290,7 +286,7 @@ class ExecutionTracer:
         self,
         span_id: str,
         status: SpanStatus = SpanStatus.SUCCESS,
-        metadata: Optional[dict[str, Any]] = None
+        metadata: Optional[dict[str, Any]] = None,
     ) -> Optional[Span]:
         """
         Close a span and record its outcome.
@@ -323,10 +319,7 @@ class ExecutionTracer:
         return span
 
     def add_event(
-        self,
-        span_id: str,
-        event_name: str,
-        metadata: Optional[dict[str, Any]] = None
+        self, span_id: str, event_name: str, metadata: Optional[dict[str, Any]] = None
     ) -> None:
         """
         Append a named event to a span for custom instrumentation.
@@ -366,9 +359,7 @@ class ExecutionTracer:
             return "{}"
 
         return json.dumps(
-            self._active_trace.to_dict(),
-            indent=2 if indent else None,
-            ensure_ascii=False
+            self._active_trace.to_dict(), indent=2 if indent else None, ensure_ascii=False
         )
 
     @contextmanager
@@ -377,7 +368,7 @@ class ExecutionTracer:
         node_name: str,
         parent_id: Optional[str] = None,
         metadata: Optional[dict[str, Any]] = None,
-        status_on_error: SpanStatus = SpanStatus.FAILED
+        status_on_error: SpanStatus = SpanStatus.FAILED,
     ) -> Generator[str, None, None]:
         """
         Context-manager entry for defining a span with automatic lifecycle.
@@ -434,10 +425,7 @@ class TraceContext:
     """
 
     def __init__(
-        self,
-        tracer: ExecutionTracer,
-        execution_id: str,
-        metadata: Optional[dict[str, Any]] = None
+        self, tracer: ExecutionTracer, execution_id: str, metadata: Optional[dict[str, Any]] = None
     ) -> None:
         self._tracer = tracer
         self._execution_id = execution_id
@@ -446,8 +434,7 @@ class TraceContext:
 
     def __enter__(self) -> "TraceContext":
         self._trace_id = self._tracer.start_trace(
-            execution_id=self._execution_id,
-            metadata=self._initial_metadata
+            execution_id=self._execution_id, metadata=self._initial_metadata
         )
         return self
 
@@ -462,7 +449,7 @@ class TraceContext:
         self,
         node_name: str,
         parent_id: Optional[str] = None,
-        metadata: Optional[dict[str, Any]] = None
+        metadata: Optional[dict[str, Any]] = None,
     ) -> str:
         """Create a span within this context."""
         return self._tracer.start_span(node_name, parent_id, metadata)
@@ -471,7 +458,7 @@ class TraceContext:
         self,
         span_id: str,
         status: SpanStatus = SpanStatus.SUCCESS,
-        metadata: Optional[dict[str, Any]] = None
+        metadata: Optional[dict[str, Any]] = None,
     ) -> Optional[Span]:
         """Close a span within this context."""
         return self._tracer.end_span(span_id, status, metadata)

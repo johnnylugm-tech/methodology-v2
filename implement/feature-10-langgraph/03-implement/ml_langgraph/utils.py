@@ -1,6 +1,7 @@
 """
 Shared utility functions for LangGraph workflow engine.
 """
+
 from __future__ import annotations
 
 import re
@@ -12,10 +13,10 @@ from copy import deepcopy
 
 from .config import NodeConfig, RetryPolicy
 
-
 # ----------------------------------------------------------------------
 # ID generation
 # ----------------------------------------------------------------------
+
 
 def generate_id(prefix: str = "") -> str:
     """Generate a unique ID with optional prefix.
@@ -36,6 +37,7 @@ def generate_id(prefix: str = "") -> str:
 # State merging
 # ----------------------------------------------------------------------
 
+
 def merge_state(base: dict, update: dict, mode: str = "deep") -> dict:
     """Merge update dict into base dict.
 
@@ -55,7 +57,12 @@ def merge_state(base: dict, update: dict, mode: str = "deep") -> dict:
 
     result = dict(base)
     for key, val in update.items():
-        if mode == "deep" and key in result and isinstance(result[key], dict) and isinstance(val, dict):
+        if (
+            mode == "deep"
+            and key in result
+            and isinstance(result[key], dict)
+            and isinstance(val, dict)
+        ):
             result[key] = merge_state(result[key], val, mode="deep")
         else:
             result[key] = deepcopy(val)
@@ -65,6 +72,7 @@ def merge_state(base: dict, update: dict, mode: str = "deep") -> dict:
 # ----------------------------------------------------------------------
 # Node signature validation
 # ----------------------------------------------------------------------
+
 
 def validate_node_signature(func: Callable, state_schema: Type) -> bool:
     """Validate that a node function accepts the expected state schema.
@@ -82,6 +90,7 @@ def validate_node_signature(func: Callable, state_schema: Type) -> bool:
     sig = None
     try:
         import inspect
+
         sig = inspect.signature(func)
     except (ValueError, TypeError):
         return False
@@ -112,6 +121,7 @@ def validate_node_signature(func: Callable, state_schema: Type) -> bool:
 # Retry policy resolution
 # ----------------------------------------------------------------------
 
+
 def get_node_retry_policy(config: NodeConfig | None, default: RetryPolicy) -> RetryPolicy:
     """Get effective retry policy for a node.
 
@@ -132,6 +142,7 @@ def get_node_retry_policy(config: NodeConfig | None, default: RetryPolicy) -> Re
 # ----------------------------------------------------------------------
 # Duration formatting
 # ----------------------------------------------------------------------
+
 
 def format_duration(ms: float) -> str:
     """Format a millisecond duration as human-readable string.
@@ -161,6 +172,7 @@ def format_duration(ms: float) -> str:
 # ----------------------------------------------------------------------
 # Node name sanitization
 # ----------------------------------------------------------------------
+
 
 def sanitize_node_name(name: str) -> str:
     """Ensure a node name is a valid Python identifier.
@@ -232,6 +244,7 @@ def import_langgraph_checkpointer(backend: str):
 # ----------------------------------------------------------------------
 # Miscellaneous helpers
 # ----------------------------------------------------------------------
+
 
 def safe_get(dictionary: dict, *keys: str, default: Any = None) -> Any:
     """Safely get a nested value from a dictionary.

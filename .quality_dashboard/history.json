@@ -1,7 +1,7 @@
 [
   {
     "iteration": 1,
-    "timestamp": "2026-04-21T14:20:45.938069",
+    "timestamp": "2026-04-21T15:12:48.811648",
     "dimensions": {
       "D1_Linting": {
         "name": "Linting",
@@ -23,9 +23,11 @@
       },
       "D3_TestCoverage": {
         "name": "Test Coverage",
-        "score": 90.0,
+        "score": 0,
         "weight": 0.2,
-        "issues": [],
+        "issues": [
+          "Coverage 0% < 70%"
+        ],
         "tool_driven": true,
         "tool_name": "pytest-cov"
       },
@@ -63,7 +65,7 @@
         "score": 100,
         "weight": 0.1,
         "issues": [
-          "8537/528 files with docstrings (estimate)"
+          "7729/491 files with docstrings (estimate)"
         ],
         "tool_driven": false,
         "tool_name": "agent"
@@ -73,31 +75,31 @@
         "score": 100,
         "weight": 0.05,
         "issues": [
-          "938 try-except blocks found"
+          "890 try-except blocks found"
         ],
         "tool_driven": false,
         "tool_name": "agent"
       },
       "D9_Documentation": {
         "name": "Documentation",
-        "score": 95.45454545454545,
+        "score": 95.31568228105907,
         "weight": 0.05,
         "issues": [
-          "504/528 files with docstrings"
+          "468/491 files with docstrings"
         ],
         "tool_driven": false,
         "tool_name": "agent"
       }
     },
-    "total_score": 97.27272727272727,
-    "technical_debt": 2.7272727272727337,
+    "total_score": 79.26578411405295,
+    "technical_debt": 20.73421588594705,
     "hotspots": {},
     "improvements": [],
     "agent_actions": []
   },
   {
     "iteration": 2,
-    "timestamp": "2026-04-21T14:21:58.286123",
+    "timestamp": "2026-04-21T15:13:43.567712",
     "dimensions": {
       "D1_Linting": {
         "name": "Linting",
@@ -159,7 +161,7 @@
         "score": 100,
         "weight": 0.1,
         "issues": [
-          "8537/528 files with docstrings (estimate)"
+          "7732/493 files with docstrings (estimate)"
         ],
         "tool_driven": false,
         "tool_name": "agent"
@@ -169,31 +171,31 @@
         "score": 100,
         "weight": 0.05,
         "issues": [
-          "938 try-except blocks found"
+          "927 try-except blocks found"
         ],
         "tool_driven": false,
         "tool_name": "agent"
       },
       "D9_Documentation": {
         "name": "Documentation",
-        "score": 95.45454545454545,
+        "score": 95.33468559837728,
         "weight": 0.05,
         "issues": [
-          "504/528 files with docstrings"
+          "470/493 files with docstrings"
         ],
         "tool_driven": false,
         "tool_name": "agent"
       }
     },
-    "total_score": 97.27272727272727,
-    "technical_debt": 2.7272727272727337,
+    "total_score": 97.26673427991886,
+    "technical_debt": 2.7332657200811354,
     "hotspots": {},
     "improvements": [],
     "agent_actions": []
   },
   {
     "iteration": 3,
-    "timestamp": "2026-04-21T14:24:29.907030",
+    "timestamp": "2026-04-21T15:21:51.887068",
     "dimensions": {
       "D1_Linting": {
         "name": "Linting",
@@ -215,7 +217,7 @@
       },
       "D3_TestCoverage": {
         "name": "Test Coverage",
-        "score": 90.0,
+        "score": 89.0,
         "weight": 0.2,
         "issues": [],
         "tool_driven": true,
@@ -255,7 +257,7 @@
         "score": 100,
         "weight": 0.1,
         "issues": [
-          "8537/528 files with docstrings (estimate)"
+          "7732/494 files with docstrings (estimate)"
         ],
         "tool_driven": false,
         "tool_name": "agent"
@@ -265,24 +267,120 @@
         "score": 100,
         "weight": 0.05,
         "issues": [
-          "938 try-except blocks found"
+          "927 try-except blocks found"
         ],
         "tool_driven": false,
         "tool_name": "agent"
       },
       "D9_Documentation": {
         "name": "Documentation",
-        "score": 95.45454545454545,
+        "score": 95.1417004048583,
         "weight": 0.05,
         "issues": [
-          "504/528 files with docstrings"
+          "470/494 files with docstrings"
         ],
         "tool_driven": false,
         "tool_name": "agent"
       }
     },
-    "total_score": 97.27272727272727,
-    "technical_debt": 2.7272727272727337,
+    "total_score": 97.05708502024291,
+    "technical_debt": 2.9429149797570915,
+    "hotspots": {},
+    "improvements": [],
+    "agent_actions": []
+  },
+  {
+    "iteration": 4,
+    "timestamp": "2026-04-21T19:45:48.656578",
+    "dimensions": {
+      "D1_Linting": {
+        "name": "Linting",
+        "score": 95,
+        "weight": 0.1,
+        "issues": [
+          "Found 1 error."
+        ],
+        "tool_driven": true,
+        "tool_name": "ruff"
+      },
+      "D2_TypeSafety": {
+        "name": "Type Safety",
+        "score": 100,
+        "weight": 0.15,
+        "issues": [],
+        "tool_driven": true,
+        "tool_name": "mypy"
+      },
+      "D3_TestCoverage": {
+        "name": "Test Coverage",
+        "score": 89.0,
+        "weight": 0.2,
+        "issues": [],
+        "tool_driven": true,
+        "tool_name": "pytest-cov"
+      },
+      "D4_Security": {
+        "name": "Security",
+        "score": 100,
+        "weight": 0.15,
+        "issues": [
+          "HIGH: 0",
+          "MEDIUM: 0"
+        ],
+        "tool_driven": true,
+        "tool_name": "bandit"
+      },
+      "D5_Complexity": {
+        "name": "Complexity",
+        "score": 100,
+        "weight": 0.1,
+        "issues": [],
+        "tool_driven": false,
+        "tool_name": "lizard"
+      },
+      "D6_Architecture": {
+        "name": "Architecture",
+        "score": 100,
+        "weight": 0.1,
+        "issues": [
+          "No major issues"
+        ],
+        "tool_driven": false,
+        "tool_name": "radon"
+      },
+      "D7_Readability": {
+        "name": "Readability",
+        "score": 100,
+        "weight": 0.1,
+        "issues": [
+          "7732/493 files with docstrings (estimate)"
+        ],
+        "tool_driven": false,
+        "tool_name": "agent"
+      },
+      "D8_ErrorHandling": {
+        "name": "Error Handling",
+        "score": 100,
+        "weight": 0.05,
+        "issues": [
+          "927 try-except blocks found"
+        ],
+        "tool_driven": false,
+        "tool_name": "agent"
+      },
+      "D9_Documentation": {
+        "name": "Documentation",
+        "score": 95.33468559837728,
+        "weight": 0.05,
+        "issues": [
+          "470/493 files with docstrings"
+        ],
+        "tool_driven": false,
+        "tool_name": "agent"
+      }
+    },
+    "total_score": 97.06673427991886,
+    "technical_debt": 2.9332657200811383,
     "hotspots": {},
     "improvements": [],
     "agent_actions": []
