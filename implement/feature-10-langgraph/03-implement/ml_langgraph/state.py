@@ -273,7 +273,7 @@ class StateManager:
             incoming = partial["task_history"]
             if isinstance(incoming, list):
                 self._state.task_history.extend(t for t in incoming if isinstance(t, str))
-            del partial["tasks_history"]
+            del partial["task_history"]
 
         # Errors: append ErrorRecord instances
         if "errors" in partial:

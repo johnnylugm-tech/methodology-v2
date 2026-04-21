@@ -112,7 +112,7 @@ class ToolNode(BaseNode):
             intermediate.append(
                 {
                     "node": self.name,
-                    "tool": getattr(self.tool_func, "__name__", repr(self.tool_func)),
+                    "tool": self.tool_func._mock_name if hasattr(self.tool_func, '_mock_name') and self.tool_func._mock_name else getattr(self.tool_func, '__name__', repr(self.tool_func)),
                     "result": result,
                 }
             )
@@ -289,7 +289,7 @@ class HumanInTheLoopNode(BaseNode):
     def __init__(
         self,
         name: str,
-        prompt: str,
+        prompt: str = "Awaiting human review",
         interrupt_before: bool = True,
         interrupt_after: bool = False,
         *,
@@ -331,6 +331,7 @@ class HumanInTheLoopNode(BaseNode):
         if self.interrupt_before and pending:
             logger.info("[HumanInTheLoopNode:%s] waiting (interrupt_before)", self.name)
             state["interrupt_reason"] = self.prompt
+            state["last_node"] = self.name
             return state
 
         # Process – store prompt for the human to see

@@ -199,19 +199,16 @@ class GraphRunner:
         Raises:
             RuntimeError: If streaming execution fails.
         """
-        try:
-            loop = asyncio.get_running_loop()
-            # Already in async context
-            import concurrent.futures
+        # No running loop in this thread – use asyncio.run with a fresh loop
+        for item in asyncio.run(self._collect_stream(initial_state)):
+            yield item
 
-            with concurrent.futures.ThreadPoolExecutor() as executor:
-                future = executor.submit(self._stream_async, initial_state)
-                for item in future.result():
-                    yield item
-        except RuntimeError:
-            # Not in async context
-            for item in asyncio.run(self._stream_async(initial_state)):
-                yield item
+    async def _collect_stream(self, initial_state: dict[str, Any]) -> list[dict[str, Any]]:
+        """Collect all items from the async generator."""
+        results = []
+        async for item in self._stream_async(initial_state):
+            results.append(item)
+        return results
 
     async def _stream_async(
         self, initial_state: dict[str, Any]
@@ -222,9 +219,15 @@ class GraphRunner:
         current_state = dict(initial_state)
 
         try:
-            async for event in self.compiled_graph.astream(current_state):
-                # event is a dict mapping node_name -> node output
-                yield event
+            # astream may be sync or async – normalize to async
+            result = self.compiled_graph.astream(current_state)
+            if hasattr(result, "__aiter__"):
+                async for event in result:
+                    yield event
+            else:
+                # Sync iterator – wrap in async loop
+                for event in result:
+                    yield event
         except Exception as e:
             raise RuntimeError(f"Streaming execution failed: {e}") from e
 
@@ -246,7 +249,7 @@ class GraphRunner:
         if self.checkpoint_manager is None:
             raise RuntimeError("CheckpointManager not configured - cannot resume")
 
-        checkpoint: Checkpoint = self.checkpoint_manager.get_checkpoint(checkpoint_id)
+        checkpoint: Checkpoint = self.checkpoint_manager.load(checkpoint_id)
         if checkpoint is None:
             raise KeyError(f"Checkpoint '{checkpoint_id}' not found")
 
@@ -391,7 +394,7 @@ class GraphRunner:
         LangChain uses a BaseCallbackHandler chain for its own callback system.
         We adapt our callbacks to that interface.
         """
-        from langgraph.callbacks.base import BaseCallbackHandler
+        from langgraph.callbacks import BaseCallbackHandler
 
         class ExecutionCallbackHandler(BaseCallbackHandler):
             """Adapter that bridges ExecutionCallbacks to LangChain's callback system."""
@@ -497,7 +500,7 @@ class GraphRunner:
 
         checkpoint_id = str(uuid.uuid4())[:8]
 
-        self.checkpoint_manager.save_checkpoint(checkpoint_id, checkpoint_data)
+        self.checkpoint_manager.save(checkpoint_id, checkpoint_data)
 
         return checkpoint_id
 

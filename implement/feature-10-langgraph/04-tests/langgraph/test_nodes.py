@@ -31,7 +31,7 @@ from ml_langgraph.nodes import (
 class TestToolNode:
     def test_tool_node_executes(self):
         """ToolNode should call tool_func with state tool_args and store result."""
-        mock_tool = MagicMock(return_value="search results")
+        mock_tool = MagicMock(return_value="search results", name="mock_tool")
         node = ToolNode(name="search", tool_func=mock_tool, result_key="search_result")
 
         state = {

@@ -80,7 +80,7 @@ class MemoryCheckpointBackend(CheckpointBackend):
         return sorted(
             self._checkpoints.values(),
             key=lambda x: x["created_at"],
-            reverse=True,
+            reverse=False,
         )
 
     def delete(self, checkpoint_id: str) -> None:
@@ -219,7 +219,7 @@ class FileSystemCheckpointBackend(CheckpointBackend):
         return sorted(
             self._metadata.values(),
             key=lambda x: x["created_at"],
-            reverse=True,
+            reverse=False,
         )
 
     def delete(self, checkpoint_id: str) -> None:
@@ -332,7 +332,7 @@ class CheckpointManager:
         checkpoints = self._backend.list()
         if not checkpoints:
             return None
-        latest = checkpoints[0]
+        latest = checkpoints[-1]  # newest (last in ascending-sorted list)
         state = self._backend.load(latest["id"])
         return {"id": latest["id"], "state": state}
 

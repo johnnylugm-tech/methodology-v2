@@ -27,18 +27,42 @@ class RoutingFunction(Protocol):
 # ----------------------------------------------------------------------
 # RouteResult
 # ----------------------------------------------------------------------
-@dataclass(frozen=True)
 class RouteResult:
     """The result of a routing decision."""
 
-    route_key: str
-    """Key that identifies which branch was chosen."""
+    __slots__ = ('route_key', '_target_nodes', '_metadata')
 
-    target_nodes: list[str]
-    """List of node names to execute next (may be empty)."""
+    def __init__(self, route_key: str, target_nodes: list[str], metadata: Optional[dict] = None) -> None:
+        object.__setattr__(self, 'route_key', route_key)
+        object.__setattr__(self, '_target_nodes', list(target_nodes))  # store copy
+        object.__setattr__(self, '_metadata', (metadata if metadata is not None else {}))
 
-    metadata: dict[str, Any] = field(default_factory=dict)
-    """Arbitrary auxiliary data about this routing decision."""
+    @property
+    def target_nodes(self) -> list[str]:
+        """List of node names to execute next (returns a copy)."""
+        return list(self._target_nodes)
+
+    @property
+    def metadata(self) -> dict[str, Any]:
+        return self._metadata
+
+    def __repr__(self) -> str:
+        return f"RouteResult(route_key={self.route_key!r}, target_nodes={self.target_nodes!r})"
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, RouteResult):
+            return NotImplemented
+        return (
+            self.route_key == other.route_key
+            and self._target_nodes == other._target_nodes
+            and self._metadata == other._metadata
+        )
+
+    def __setattr__(self, name: str, value: Any) -> None:
+        raise AttributeError(f"RouteResult is immutable")
+
+    def __delattr__(self, name: str) -> None:
+        raise AttributeError(f"RouteResult is immutable")
 
 
 # ----------------------------------------------------------------------
@@ -216,7 +240,8 @@ def count_router(min_count: int, below_key: str, above_key: str) -> RoutingFunct
     def _router(state: StateT) -> str:
         results = state.get("results", [])
         if not isinstance(results, list):
-            raise TypeError(f"count_router: 'results' must be a list, got {type(results).__name__}")
+            # Treat non-list as empty/invalid — return below_key
+            return below_key
         return above_key if len(results) >= min_count else below_key
 
     return _router

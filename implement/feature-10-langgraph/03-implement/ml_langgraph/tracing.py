@@ -163,6 +163,7 @@ class ExecutionTracer:
         self._active_trace: Optional[TraceRecord] = None
         self._active_span_stack: list[str] = []
         self._span_counter: int = 0
+        self._last_completed_trace: Optional[TraceRecord] = None
 
     @property
     def enable_profiling(self) -> bool:
@@ -235,6 +236,7 @@ class ExecutionTracer:
                     span.status = SpanStatus.FAILED
 
         record = self._active_trace
+        self._last_completed_trace = record
         self._active_trace = None
         self._active_span_stack = []
         return record
@@ -347,7 +349,7 @@ class ExecutionTracer:
 
     def to_json(self, indent: bool = True) -> str:
         """
-        Serialize the active trace to a JSON string.
+        Serialize the active trace (or last completed trace) to a JSON string.
 
         Args:
             indent: If True, pretty-prints with indentation.
@@ -355,11 +357,12 @@ class ExecutionTracer:
         Returns:
             JSON representation of the current trace.
         """
-        if self._active_trace is None:
+        trace = self._active_trace if self._active_trace is not None else self._last_completed_trace
+        if trace is None:
             return "{}"
 
         return json.dumps(
-            self._active_trace.to_dict(), indent=2 if indent else None, ensure_ascii=False
+            trace.to_dict(), indent=2 if indent else None, ensure_ascii=False
         )
 
     @contextmanager
