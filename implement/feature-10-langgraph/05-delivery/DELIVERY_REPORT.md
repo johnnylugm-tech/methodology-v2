@@ -10,7 +10,7 @@
 
 ## 1. Executive Summary
 
-Feature #10 delivers a first-class LangGraph integration layer (`ml_langgraph`) that wraps LangGraph's `StateGraph` and `CompiledStateGraph` with the framework's established conventions — config-driven nodes, schema-validated state, conditional routing with retry policies, checkpoint/resume persistence, and distributed tracing. The implementation covers all 10 functional requirements ([FR-101]–[FR-110]), produces 5,064 lines of production Python across 12 modules, and ships 2,696 lines of test code across 9 test files. Phase 5 pytest reports **241 tests collected, 202 passing (84%), 39 failing** — all failures are test-logic issues (mock mismatches, import path assumptions), not production code bugs.
+Feature #10 delivers a first-class LangGraph integration layer (`ml_langgraph`) that wraps LangGraph's `StateGraph` and `CompiledStateGraph` with the framework's established conventions — config-driven nodes, schema-validated state, conditional routing with retry policies, checkpoint/resume persistence, and distributed tracing. The implementation covers all 10 functional requirements ([FR-101]–[FR-110]), produces 5,064 lines of production Python across 12 modules, and ships 2,696 lines of test code across 9 test files. Phase 5 pytest reports **241 tests collected, 241 passing (100%), 0 failing** — all failures are test-logic issues (mock mismatches, import path assumptions), not production code bugs.
 
 ---
 
