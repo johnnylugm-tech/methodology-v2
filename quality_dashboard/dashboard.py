@@ -135,9 +135,9 @@ class CoverageEvaluator:
                 cov_modules = []
                 for feat_dir in feature_dirs:
                     impl_path = feat_dir / "03-implement"
-                    # Check for module symlinks at implement/ level
+                    # Check for module symlinks at implement/ level (resolve both to compare)
                     for item in (impl_dir).iterdir():
-                        if item.is_symlink() and item.resolve() == impl_path / item.name:
+                        if item.is_symlink() and (impl_path / item.name).resolve() == item.resolve():
                             cov_modules.append(str(item.name))
                 if cov_modules:
                     for mod in cov_modules:
