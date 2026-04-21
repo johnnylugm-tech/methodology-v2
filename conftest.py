@@ -6,11 +6,44 @@
 
 import sys
 from pathlib import Path
+import types
 
 # Add project root to path FIRST (before any project imports)
 project_root = Path(__file__).parent
 if str(project_root) not in sys.path:
     sys.path.insert(0, str(project_root))
+
+# Set up namespace package redirects for implement/* modules
+# Tests import as "from implement.{module}.xxx import ..."
+# But modules live in "implement/feature-*/03-implement/{module}/"
+impl_dir = project_root / "implement"
+
+# Create implement as a namespace package
+impl_pkg = types.ModuleType("implement")
+impl_pkg.__path__ = [str(impl_dir)]
+sys.modules["implement"] = impl_pkg
+
+# Redirect each module directory in 03-implement to implement.{module}
+for feature_dir in impl_dir.glob("feature-*"):
+    impl_path = feature_dir / "03-implement"
+    if not impl_path.exists():
+        continue
+    for mod_dir in impl_path.iterdir():
+        if mod_dir.is_dir():
+            mod_name = f"implement.{mod_dir.name}"
+            mod = types.ModuleType(mod_name)
+            mod.__path__ = [str(mod_dir)]
+            sys.modules[mod_name] = mod
+
+# Handle feature_09_risk_assessment (engine, models, reports subdirectories)
+for feature_dir in impl_dir.glob("feature_*"):
+    for submod in ["engine", "models", "reports"]:
+        submod_path = feature_dir / submod
+        if submod_path.exists():
+            mod_name = f"implement.{feature_dir.name}.{submod}"
+            mod = types.ModuleType(mod_name)
+            mod.__path__ = [str(submod_path)]
+            sys.modules[mod_name] = mod
 
 # Import enforcement modules directly (avoiding __init__.py)
 import importlib.util

@@ -129,28 +129,28 @@ class CoverageEvaluator:
             feature_dirs = [d for d in impl_dir.glob("feature-*") if (d / "03-implement").exists()]
             
             if feature_dirs:
-                # Run all feature tests with coverage for each feature module
+                # Build coverage targets using module paths (not symlinks)
+                # Feature modules: hunter, detection, gap_detector (under 03-implement/)
+                # Feature #9 (feature_09_risk_assessment) has no 03-implement, skip coverage
                 cmd = ["python3", "-m", "pytest"]
-                # Add --cov for each feature module that has a symlink at implement/ level
-                cov_modules = []
+                cov_targets = []
                 for feat_dir in feature_dirs:
                     impl_path = feat_dir / "03-implement"
-                    # Check for module symlinks at implement/ level (resolve both to compare)
-                    for item in (impl_dir).iterdir():
-                        if item.is_symlink() and (impl_path / item.name).resolve() == item.resolve():
-                            cov_modules.append(str(item.name))
-                if cov_modules:
-                    for mod in cov_modules:
-                        cmd.extend(["--cov=implement." + mod])
+                    # For features with 03-implement, find the module subdirectory
+                    # e.g., feature-06-hunter/03-implement/hunter -> implement.hunter
+                    for item in impl_path.iterdir():
+                        if item.is_dir():
+                            cov_targets.append(f"implement.{item.name}")
+                for target in cov_targets:
+                    cmd.extend(["--cov=" + target])
                 cmd.extend(["--cov-report=term-missing"])
                 for feat_dir in feature_dirs:
                     tests_dir = feat_dir / "04-tests"
                     if tests_dir.exists():
                         cmd.append(str(tests_dir))
-                # Set PYTHONPATH to include all 03-implement dirs
-                pp_parts = [str(feat_dir / "03-implement") for feat_dir in feature_dirs]
+                # Set PYTHONPATH to project root (for conftest.py namespace redirects)
                 env = os.environ.copy()
-                env["PYTHONPATH"] = ":".join(pp_parts)
+                env["PYTHONPATH"] = project_path
                 stdout, _, rc = run_tool(cmd, timeout=120, cwd=project_path, env=env)
             else:
                 stdout, _, rc = "", "No feature directories found", 1

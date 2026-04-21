@@ -5,6 +5,12 @@ import shutil
 from pathlib import Path
 from typing import Generator
 
+import sys
+from pathlib import Path
+
+# Add 03-implement to path so tests can import "from gap_detector.xxx"
+sys.path.insert(0, str(Path(__file__).parent.parent / "03-implement"))
+
 import pytest
 
 
