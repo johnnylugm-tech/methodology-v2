@@ -1,0 +1,290 @@
+[
+  {
+    "iteration": 1,
+    "timestamp": "2026-04-21T14:20:45.938069",
+    "dimensions": {
+      "D1_Linting": {
+        "name": "Linting",
+        "score": 95,
+        "weight": 0.1,
+        "issues": [
+          "Found 1 error."
+        ],
+        "tool_driven": true,
+        "tool_name": "ruff"
+      },
+      "D2_TypeSafety": {
+        "name": "Type Safety",
+        "score": 100,
+        "weight": 0.15,
+        "issues": [],
+        "tool_driven": true,
+        "tool_name": "mypy"
+      },
+      "D3_TestCoverage": {
+        "name": "Test Coverage",
+        "score": 90.0,
+        "weight": 0.2,
+        "issues": [],
+        "tool_driven": true,
+        "tool_name": "pytest-cov"
+      },
+      "D4_Security": {
+        "name": "Security",
+        "score": 100,
+        "weight": 0.15,
+        "issues": [
+          "HIGH: 0",
+          "MEDIUM: 0"
+        ],
+        "tool_driven": true,
+        "tool_name": "bandit"
+      },
+      "D5_Complexity": {
+        "name": "Complexity",
+        "score": 100,
+        "weight": 0.1,
+        "issues": [],
+        "tool_driven": false,
+        "tool_name": "lizard"
+      },
+      "D6_Architecture": {
+        "name": "Architecture",
+        "score": 100,
+        "weight": 0.1,
+        "issues": [
+          "No major issues"
+        ],
+        "tool_driven": false,
+        "tool_name": "radon"
+      },
+      "D7_Readability": {
+        "name": "Readability",
+        "score": 100,
+        "weight": 0.1,
+        "issues": [
+          "8537/528 files with docstrings (estimate)"
+        ],
+        "tool_driven": false,
+        "tool_name": "agent"
+      },
+      "D8_ErrorHandling": {
+        "name": "Error Handling",
+        "score": 100,
+        "weight": 0.05,
+        "issues": [
+          "938 try-except blocks found"
+        ],
+        "tool_driven": false,
+        "tool_name": "agent"
+      },
+      "D9_Documentation": {
+        "name": "Documentation",
+        "score": 95.45454545454545,
+        "weight": 0.05,
+        "issues": [
+          "504/528 files with docstrings"
+        ],
+        "tool_driven": false,
+        "tool_name": "agent"
+      }
+    },
+    "total_score": 97.27272727272727,
+    "technical_debt": 2.7272727272727337,
+    "hotspots": {},
+    "improvements": [],
+    "agent_actions": []
+  },
+  {
+    "iteration": 2,
+    "timestamp": "2026-04-21T14:21:58.286123",
+    "dimensions": {
+      "D1_Linting": {
+        "name": "Linting",
+        "score": 95,
+        "weight": 0.1,
+        "issues": [
+          "Found 1 error."
+        ],
+        "tool_driven": true,
+        "tool_name": "ruff"
+      },
+      "D2_TypeSafety": {
+        "name": "Type Safety",
+        "score": 100,
+        "weight": 0.15,
+        "issues": [],
+        "tool_driven": true,
+        "tool_name": "mypy"
+      },
+      "D3_TestCoverage": {
+        "name": "Test Coverage",
+        "score": 90.0,
+        "weight": 0.2,
+        "issues": [],
+        "tool_driven": true,
+        "tool_name": "pytest-cov"
+      },
+      "D4_Security": {
+        "name": "Security",
+        "score": 100,
+        "weight": 0.15,
+        "issues": [
+          "HIGH: 0",
+          "MEDIUM: 0"
+        ],
+        "tool_driven": true,
+        "tool_name": "bandit"
+      },
+      "D5_Complexity": {
+        "name": "Complexity",
+        "score": 100,
+        "weight": 0.1,
+        "issues": [],
+        "tool_driven": false,
+        "tool_name": "lizard"
+      },
+      "D6_Architecture": {
+        "name": "Architecture",
+        "score": 100,
+        "weight": 0.1,
+        "issues": [
+          "No major issues"
+        ],
+        "tool_driven": false,
+        "tool_name": "radon"
+      },
+      "D7_Readability": {
+        "name": "Readability",
+        "score": 100,
+        "weight": 0.1,
+        "issues": [
+          "8537/528 files with docstrings (estimate)"
+        ],
+        "tool_driven": false,
+        "tool_name": "agent"
+      },
+      "D8_ErrorHandling": {
+        "name": "Error Handling",
+        "score": 100,
+        "weight": 0.05,
+        "issues": [
+          "938 try-except blocks found"
+        ],
+        "tool_driven": false,
+        "tool_name": "agent"
+      },
+      "D9_Documentation": {
+        "name": "Documentation",
+        "score": 95.45454545454545,
+        "weight": 0.05,
+        "issues": [
+          "504/528 files with docstrings"
+        ],
+        "tool_driven": false,
+        "tool_name": "agent"
+      }
+    },
+    "total_score": 97.27272727272727,
+    "technical_debt": 2.7272727272727337,
+    "hotspots": {},
+    "improvements": [],
+    "agent_actions": []
+  },
+  {
+    "iteration": 3,
+    "timestamp": "2026-04-21T14:24:29.907030",
+    "dimensions": {
+      "D1_Linting": {
+        "name": "Linting",
+        "score": 95,
+        "weight": 0.1,
+        "issues": [
+          "Found 1 error."
+        ],
+        "tool_driven": true,
+        "tool_name": "ruff"
+      },
+      "D2_TypeSafety": {
+        "name": "Type Safety",
+        "score": 100,
+        "weight": 0.15,
+        "issues": [],
+        "tool_driven": true,
+        "tool_name": "mypy"
+      },
+      "D3_TestCoverage": {
+        "name": "Test Coverage",
+        "score": 90.0,
+        "weight": 0.2,
+        "issues": [],
+        "tool_driven": true,
+        "tool_name": "pytest-cov"
+      },
+      "D4_Security": {
+        "name": "Security",
+        "score": 100,
+        "weight": 0.15,
+        "issues": [
+          "HIGH: 0",
+          "MEDIUM: 0"
+        ],
+        "tool_driven": true,
+        "tool_name": "bandit"
+      },
+      "D5_Complexity": {
+        "name": "Complexity",
+        "score": 100,
+        "weight": 0.1,
+        "issues": [],
+        "tool_driven": false,
+        "tool_name": "lizard"
+      },
+      "D6_Architecture": {
+        "name": "Architecture",
+        "score": 100,
+        "weight": 0.1,
+        "issues": [
+          "No major issues"
+        ],
+        "tool_driven": false,
+        "tool_name": "radon"
+      },
+      "D7_Readability": {
+        "name": "Readability",
+        "score": 100,
+        "weight": 0.1,
+        "issues": [
+          "8537/528 files with docstrings (estimate)"
+        ],
+        "tool_driven": false,
+        "tool_name": "agent"
+      },
+      "D8_ErrorHandling": {
+        "name": "Error Handling",
+        "score": 100,
+        "weight": 0.05,
+        "issues": [
+          "938 try-except blocks found"
+        ],
+        "tool_driven": false,
+        "tool_name": "agent"
+      },
+      "D9_Documentation": {
+        "name": "Documentation",
+        "score": 95.45454545454545,
+        "weight": 0.05,
+        "issues": [
+          "504/528 files with docstrings"
+        ],
+        "tool_driven": false,
+        "tool_name": "agent"
+      }
+    },
+    "total_score": 97.27272727272727,
+    "technical_debt": 2.7272727272727337,
+    "hotspots": {},
+    "improvements": [],
+    "agent_actions": []
+  }
+]

@@ -5,7 +5,7 @@ planner_decision_trace:
   choice: test
   confidence_calibrated: false
   confidence_score: 7.0
-  decision_id: dec-20260419-001
+  decision_id: dec-20260421-001
   effort_minutes: 0
   evidence_hash: ''
   evidence_payload: {}
@@ -17,7 +17,7 @@ planner_decision_trace:
   review_round: 0
   reviewed_by: null
   task_id: ''
-  timestamp: '2026-04-19T16:47:47.215797'
+  timestamp: '2026-04-21T06:41:39.938077'
   tokens_consumed: 0
   tool_calls: 0
   uncertainties: []
