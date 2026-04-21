@@ -44,7 +44,7 @@ class TestAgentStateDefaults:
     def test_default_messages_is_empty_list(self):
         """AgentState.messages should default to an empty list."""
         # Patch Pydantic so we can test the dataclass-like behavior directly
-        import langgraph.state as state_module
+        import ml_langgraph.state as state_module
         with patch.object(state_module, "BaseModel", _pydantic_BaseModel):
             # Create a fresh module import by re-patching before import
             pass
@@ -55,7 +55,7 @@ class TestAgentStateDefaults:
 
     def test_agent_state_get_set_context(self):
         """Test context get/set helpers."""
-        import langgraph.state as state_module
+        import ml_langgraph.state as state_module
         # Verify the methods exist on the module's classes
         assert hasattr(state_module, "AgentState")
         assert hasattr(state_module, "StateManager")
@@ -64,7 +64,7 @@ class TestAgentStateDefaults:
 class TestStateManagerInit:
     def test_state_manager_default_state(self):
         """StateManager creates an empty AgentState if none provided."""
-        import langgraph.state as state_module
+        import ml_langgraph.state as state_module
         # Import with mocks
         with patch.object(state_module, "AgentState", MagicMock()) as MockState:
             MockState.return_value = _make_mock_state()
@@ -75,7 +75,7 @@ class TestStateManagerInit:
 class TestStateManagerUpdate:
     def test_update_simple_field(self):
         """StateManager.update() should set top-level fields."""
-        import langgraph.state as state_module
+        import ml_langgraph.state as state_module
         mock_state = _make_mock_state()
         with patch.object(state_module, "AgentState", return_value=mock_state):
             sm = state_module.StateManager(initial_state=mock_state)
@@ -85,7 +85,7 @@ class TestStateManagerUpdate:
 
     def test_update_merge_messages(self):
         """update() should append messages rather than replace the list."""
-        import langgraph.state as state_module
+        import ml_langgraph.state as state_module
         mock_state = _make_mock_state(messages=[{"role": "user", "content": "hello"}])
         with patch.object(state_module, "AgentState", return_value=mock_state):
             sm = state_module.StateManager(initial_state=mock_state)
@@ -97,7 +97,7 @@ class TestStateManagerUpdate:
 
     def test_update_merge_task_history(self):
         """update() should append to task_history."""
-        import langgraph.state as state_module
+        import ml_langgraph.state as state_module
         mock_state = _make_mock_state(task_history=["task_a"])
         with patch.object(state_module, "AgentState", return_value=mock_state):
             sm = state_module.StateManager(initial_state=mock_state)
@@ -106,7 +106,7 @@ class TestStateManagerUpdate:
 
     def test_update_empty_partial(self):
         """update() with empty dict should be a no-op."""
-        import langgraph.state as state_module
+        import ml_langgraph.state as state_module
         mock_state = _make_mock_state(current_task="original")
         with patch.object(state_module, "AgentState", return_value=mock_state):
             sm = state_module.StateManager(initial_state=mock_state)
@@ -117,7 +117,7 @@ class TestStateManagerUpdate:
 class TestStateManagerCheckpoint:
     def test_push_checkpoint(self):
         """push_checkpoint() should create a checkpoint record."""
-        import langgraph.state as state_module
+        import ml_langgraph.state as state_module
         mock_state = _make_mock_state()
         with patch.object(state_module, "AgentState", return_value=mock_state):
             sm = state_module.StateManager(initial_state=mock_state)
@@ -131,7 +131,7 @@ class TestStateManagerCheckpoint:
 
     def test_restore_checkpoint(self):
         """restore_checkpoint() should roll back state fields."""
-        import langgraph.state as state_module
+        import ml_langgraph.state as state_module
         # Pre-populate a checkpoint in the stack
         mock_record = MagicMock()
         mock_record.checkpoint_id = "cp-123"
@@ -157,7 +157,7 @@ class TestStateManagerCheckpoint:
 
     def test_restore_checkpoint_not_found(self):
         """restore_checkpoint() should return False for unknown ID."""
-        import langgraph.state as state_module
+        import ml_langgraph.state as state_module
         mock_state = _make_mock_state()
         with patch.object(state_module, "AgentState", return_value=mock_state):
             sm = state_module.StateManager(initial_state=mock_state)
@@ -166,7 +166,7 @@ class TestStateManagerCheckpoint:
 
     def test_get_checkpoint(self):
         """get_checkpoint() should return the record without restoring."""
-        import langgraph.state as state_module
+        import ml_langgraph.state as state_module
         mock_record = MagicMock()
         mock_record.checkpoint_id = "cp-get"
         mock_state = _make_mock_state(checkpoint_stack=[mock_record])
@@ -177,7 +177,7 @@ class TestStateManagerCheckpoint:
 
     def test_list_checkpoints(self):
         """list_checkpoints() should return summary dicts."""
-        import langgraph.state as state_module
+        import ml_langgraph.state as state_module
         mock_record = MagicMock()
         mock_record.checkpoint_id = "cp-list"
         mock_record.node_name = "ListNode"
@@ -194,7 +194,7 @@ class TestStateManagerCheckpoint:
 class TestStateManagerErrors:
     def test_record_error_from_exception(self):
         """record_error() should extract type and message from Exception."""
-        import langgraph.state as state_module
+        import ml_langgraph.state as state_module
         mock_state = _make_mock_state()
         with patch.object(state_module, "AgentState", return_value=mock_state):
             sm = state_module.StateManager(initial_state=mock_state)
@@ -206,7 +206,7 @@ class TestStateManagerErrors:
 
     def test_record_error_from_string(self):
         """record_error() should handle plain string errors."""
-        import langgraph.state as state_module
+        import ml_langgraph.state as state_module
         mock_state = _make_mock_state()
         with patch.object(state_module, "AgentState", return_value=mock_state):
             sm = state_module.StateManager(initial_state=mock_state)
@@ -216,7 +216,7 @@ class TestStateManagerErrors:
 
     def test_record_error_appends_to_errors_list(self):
         """record_error() should append ErrorRecord to state.errors."""
-        import langgraph.state as state_module
+        import ml_langgraph.state as state_module
         mock_state = _make_mock_state()
         with patch.object(state_module, "AgentState", return_value=mock_state):
             sm = state_module.StateManager(initial_state=mock_state)
@@ -225,7 +225,7 @@ class TestStateManagerErrors:
 
     def test_get_errors_for_node(self):
         """get_errors_for_node() should return only errors for that node."""
-        import langgraph.state as state_module
+        import ml_langgraph.state as state_module
         err_a = MagicMock()
         err_a.node_name = "NodeA"
         err_b = MagicMock()
@@ -241,7 +241,7 @@ class TestStateManagerErrors:
 class TestStateManagerRetry:
     def test_can_retry_no_policy(self):
         """can_retry() with no policy should use default max_attempts=3."""
-        import langgraph.state as state_module
+        import ml_langgraph.state as state_module
         mock_state = _make_mock_state(retry_count={"MyNode": 1})
         with patch.object(state_module, "AgentState", return_value=mock_state):
             sm = state_module.StateManager(initial_state=mock_state)
@@ -251,7 +251,7 @@ class TestStateManagerRetry:
 
     def test_can_retry_with_explicit_policy(self):
         """can_retry() should respect max_attempts in policy."""
-        import langgraph.state as state_module
+        import ml_langgraph.state as state_module
         mock_state = _make_mock_state(retry_count={"MyNode": 5})
         with patch.object(state_module, "AgentState", return_value=mock_state):
             sm = state_module.StateManager(initial_state=mock_state)
@@ -262,7 +262,7 @@ class TestStateManagerRetry:
 
     def test_can_retry_respects_retryable_errors_list(self):
         """can_retry() should return False if error type not in retryable_errors."""
-        import langgraph.state as state_module
+        import ml_langgraph.state as state_module
         err_record = MagicMock()
         err_record.node_name = "NetNode"
         err_record.error_type = "NetworkError"
@@ -288,7 +288,7 @@ class TestStateManagerRetry:
 
     def test_increment_retry(self):
         """increment_retry() should increase counter and return new value."""
-        import langgraph.state as state_module
+        import ml_langgraph.state as state_module
         mock_state = _make_mock_state(retry_count={"RNode": 2})
         with patch.object(state_module, "AgentState", return_value=mock_state):
             sm = state_module.StateManager(initial_state=mock_state)
@@ -298,7 +298,7 @@ class TestStateManagerRetry:
 
     def test_reset_retry(self):
         """reset_retry() should set counter to zero."""
-        import langgraph.state as state_module
+        import ml_langgraph.state as state_module
         mock_state = _make_mock_state(retry_count={"RNode": 5})
         with patch.object(state_module, "AgentState", return_value=mock_state):
             sm = state_module.StateManager(initial_state=mock_state)
@@ -309,7 +309,7 @@ class TestStateManagerRetry:
 class TestStateManagerHumanReview:
     def test_request_human_review(self):
         """request_human_review() should set flag and optionally notes."""
-        import langgraph.state as state_module
+        import ml_langgraph.state as state_module
         mock_state = _make_mock_state()
         with patch.object(state_module, "AgentState", return_value=mock_state):
             sm = state_module.StateManager(initial_state=mock_state)
@@ -319,7 +319,7 @@ class TestStateManagerHumanReview:
 
     def test_resolve_human_review(self):
         """resolve_human_review() should clear flag and set notes."""
-        import langgraph.state as state_module
+        import ml_langgraph.state as state_module
         mock_state = _make_mock_state(pending_human_review=True)
         with patch.object(state_module, "AgentState", return_value=mock_state):
             sm = state_module.StateManager(initial_state=mock_state)
@@ -329,7 +329,7 @@ class TestStateManagerHumanReview:
 
     def test_is_human_review_pending(self):
         """is_human_review_pending() should return current flag state."""
-        import langgraph.state as state_module
+        import ml_langgraph.state as state_module
         mock_state = _make_mock_state(pending_human_review=True)
         with patch.object(state_module, "AgentState", return_value=mock_state):
             sm = state_module.StateManager(initial_state=mock_state)
@@ -341,7 +341,7 @@ class TestStateManagerHumanReview:
 class TestStateManagerCopy:
     def test_copy(self):
         """copy() should return a deep copy of the state."""
-        import langgraph.state as state_module
+        import ml_langgraph.state as state_module
         mock_state = _make_mock_state(current_task="Original")
         with patch.object(state_module, "AgentState", return_value=mock_state):
             sm = state_module.StateManager(initial_state=mock_state)
