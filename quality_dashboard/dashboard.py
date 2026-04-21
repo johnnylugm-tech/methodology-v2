@@ -46,10 +46,10 @@ class IterationResult:
 # TOOL-DRIVEN EVALUATORS
 # ============================================================================
 
-def run_tool(cmd: List[str], timeout: int = 30, cwd: str = None) -> tuple:
+def run_tool(cmd: List[str], timeout: int = 30, cwd: str = None, env: dict = None) -> tuple:
     """執行工具並返回 (stdout, stderr, returncode)"""
     try:
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout, cwd=cwd)
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout, cwd=cwd, env=env)
         return result.stdout, result.stderr, result.returncode
     except Exception as e:
         return "", str(e), 1
@@ -80,19 +80,92 @@ class CoverageEvaluator:
     name = "Test Coverage"
     weight = 0.20
     
+    def _find_test_and_source_paths(self, project_path: str) -> tuple:
+        """Find test and source paths - supports both traditional and feature structures."""
+        # Check for traditional 03-development structure
+        tests_03 = Path(project_path) / "03-development" / "tests"
+        src_03 = Path(project_path) / "03-development" / "src"
+        if tests_03.exists():
+            return (str(tests_03), "src", "")
+        
+        # Check for feature-level structure (implement/feature-XX/04-tests/)
+        impl_dir = Path(project_path) / "implement"
+        if impl_dir.exists():
+            feature_tests = []
+            feature_srcs = []
+            for feat_dir in impl_dir.glob("feature-*"):
+                tests_dir = feat_dir / "04-tests"
+                src_dir = feat_dir / "03-implement"
+                if tests_dir.exists():
+                    feature_tests.append(str(tests_dir))
+                if src_dir.exists():
+                    feature_srcs.append(str(src_dir))
+            if feature_tests:
+                # Use first feature as primary, add others with --cov-append or similar
+                return (feature_tests[0], feature_srcs[0] if feature_srcs else "", "feature")
+        
+        # Fallback: try project_root/tests and project_root/src
+        tests_root = Path(project_path) / "tests"
+        src_root = Path(project_path) / "src"
+        if tests_root.exists():
+            return (str(tests_root), str(src_root) if src_root.exists() else "", "root")
+        
+        return ("", "", "")
+    
     def evaluate(self, project_path: str) -> DimensionScore:
-        # Use 03-development/tests (not project-root/tests symlink) to avoid duplicate collection
-        stdout, _, rc = run_tool(["python3", "-m", "pytest", f"{project_path}/03-development/tests",
-                                 "--cov=src", "--cov-report=term-missing", "--tb=no", "-q"],
-                                timeout=60, cwd=project_path)
+        # Find appropriate test and source paths
+        test_path, src_path, structure_type = self._find_test_and_source_paths(project_path)
+        
+        if not test_path:
+            return DimensionScore(self.name, 0, self.weight, 
+                                  ["No test directory found (checked 03-development/tests, implement/feature-*/04-tests/, tests/)"],
+                                  True, "pytest-cov")
+        
+        # Build pytest command based on structure type
+        if structure_type == "feature":
+            # For feature structure, run pytest with PYTHONPATH set to find modules
+            import os
+            impl_dir = Path(project_path) / "implement"
+            feature_dirs = [d for d in impl_dir.glob("feature-*") if (d / "03-implement").exists()]
+            
+            if feature_dirs:
+                # Run all feature tests with coverage for each feature module
+                cmd = ["python3", "-m", "pytest"]
+                # Add --cov for each feature module that has a symlink at implement/ level
+                cov_modules = []
+                for feat_dir in feature_dirs:
+                    impl_path = feat_dir / "03-implement"
+                    # Check for module symlinks at implement/ level
+                    for item in (impl_dir).iterdir():
+                        if item.is_symlink() and item.resolve() == impl_path / item.name:
+                            cov_modules.append(str(item.name))
+                if cov_modules:
+                    for mod in cov_modules:
+                        cmd.extend(["--cov=implement." + mod])
+                cmd.extend(["--cov-report=term-missing"])
+                for feat_dir in feature_dirs:
+                    tests_dir = feat_dir / "04-tests"
+                    if tests_dir.exists():
+                        cmd.append(str(tests_dir))
+                # Set PYTHONPATH to include all 03-implement dirs
+                pp_parts = [str(feat_dir / "03-implement") for feat_dir in feature_dirs]
+                env = os.environ.copy()
+                env["PYTHONPATH"] = ":".join(pp_parts)
+                stdout, _, rc = run_tool(cmd, timeout=120, cwd=project_path, env=env)
+            else:
+                stdout, _, rc = "", "No feature directories found", 1
+        else:
+            # Traditional structure
+            cmd = ["python3", "-m", "pytest", test_path, "--cov=src", "--cov-report=term-missing", "--tb=no", "-q"]
+            stdout, _, rc = run_tool(cmd, timeout=60, cwd=project_path)
+        
         coverage = 0
         for line in stdout.split('\n'):
             if 'TOTAL' in line:
                 parts = line.replace('%', ' ').split()
-                # Find the coverage percentage (last number in TOTAL line)
                 nums = [float(p) for p in parts if p.replace('.', '').isdigit()]
                 if nums:
-                    coverage = nums[-1]  # Last number is percentage
+                    coverage = nums[-1]
         issues = [] if coverage >= 70 else [f"Coverage {coverage:.0f}% < 70%"]
         return DimensionScore(self.name, coverage, self.weight, issues, True, "pytest-cov")
 

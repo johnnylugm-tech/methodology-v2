@@ -1,0 +1,23 @@
+planner_decision_trace:
+  actual_outcome: null
+  agent_id: planner
+  alternatives_considered: []
+  choice: test
+  confidence_calibrated: false
+  confidence_score: 7.0
+  decision_id: dec-20260419-001
+  effort_minutes: 0
+  evidence_hash: ''
+  evidence_payload: {}
+  key_assumptions: []
+  metadata:
+    model_version: unknown
+    session_id: unknown
+  review_notes: ''
+  review_round: 0
+  reviewed_by: null
+  task_id: ''
+  timestamp: '2026-04-19T16:47:47.215797'
+  tokens_consumed: 0
+  tool_calls: 0
+  uncertainties: []
