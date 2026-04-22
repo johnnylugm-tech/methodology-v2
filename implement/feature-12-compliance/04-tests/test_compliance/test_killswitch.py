@@ -18,7 +18,7 @@ import threading
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "03-implement"))
 
-from compliance.killswitch_compliance import (
+from killswitch_compliance import (
     KillSwitchMonitor,
     KillSwitchState,
     KillSwitchEvent,

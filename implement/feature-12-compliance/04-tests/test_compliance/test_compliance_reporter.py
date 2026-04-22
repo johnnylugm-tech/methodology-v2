@@ -18,16 +18,16 @@ import sys
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "03-implement"))
 
-from compliance.compliance_reporter import (
+from compliance_reporter import (
     ComplianceReporter,
     ComplianceReport,
     ReportType,
     ReportFormat,
     GapTrend
 )
-from compliance.compliance_matrix import ASLLevelDetector, ASLDetectionResult, ASLLevel, UnifiedComplianceMatrix
-from compliance.eu_ai_act import ComplianceAssessment, ComplianceStatus, Article14Requirement
-from compliance.nist_rmf import NISTRMFMapper, FunctionMapping, NISTFunction
+from compliance_matrix import ASLLevelDetector, ASLDetectionResult, ASLLevel, UnifiedComplianceMatrix
+from eu_ai_act import ComplianceAssessment, ComplianceStatus, Article14Requirement
+from nist_rmf import NISTRMFMapper, FunctionMapping, NISTFunction
 
 
 class TestComplianceReporter:

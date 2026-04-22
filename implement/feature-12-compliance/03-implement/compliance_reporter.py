@@ -20,9 +20,9 @@ from datetime import datetime, timedelta
 from enum import Enum, auto
 from typing import Any, Optional
 
-from .eu_ai_act import ComplianceAssessment, EUAIActChecker
-from .nist_rmf import NISTRMFMapper, FunctionMapping
-from .compliance_matrix import ASLDetectionResult, UnifiedComplianceMatrix
+from eu_ai_act import ComplianceAssessment, EUAIActChecker
+from nist_rmf import NISTRMFMapper, FunctionMapping
+from compliance_matrix import ASLDetectionResult, UnifiedComplianceMatrix
 
 
 class ReportType(Enum):
@@ -295,7 +295,7 @@ class ComplianceReporter:
 
     def _create_mock_assessment(self) -> ComplianceAssessment:
         """Create a mock assessment when none provided (for testing)."""
-        from .eu_ai_act import Article14Requirement, ComplianceStatus
+        from eu_ai_act import Article14Requirement, ComplianceStatus
 
         return ComplianceAssessment(
             requirements=[

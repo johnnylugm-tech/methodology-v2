@@ -18,8 +18,8 @@ from datetime import datetime
 from enum import Enum
 from typing import Any, Optional
 
-from .eu_ai_act import ComplianceStatus, ComplianceAssessment
-from .nist_rmf import FunctionMapping
+from eu_ai_act import ComplianceStatus, ComplianceAssessment
+from nist_rmf import FunctionMapping
 
 
 class ASLLevel(Enum):

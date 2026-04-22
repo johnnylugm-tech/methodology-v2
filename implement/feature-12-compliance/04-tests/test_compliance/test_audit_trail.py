@@ -20,7 +20,7 @@ import json
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "03-implement"))
 
-from compliance.audit_trail import (
+from audit_trail import (
     OverrideAuditLogger,
     OverrideEvent,
     OverrideType,

@@ -17,7 +17,7 @@ import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "03-implement"))
 
-from compliance.nist_rmf import (
+from nist_rmf import (
     NISTRMFMapper,
     NISTFunction,
     NISTCategory,

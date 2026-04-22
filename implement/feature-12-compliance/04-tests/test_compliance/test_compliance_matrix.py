@@ -17,7 +17,7 @@ import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "03-implement"))
 
-from compliance.compliance_matrix import (
+from compliance_matrix import (
     ASLLevelDetector,
     ASLDetectionResult,
     ASLLevel,
@@ -25,14 +25,14 @@ from compliance.compliance_matrix import (
     UnifiedComplianceMatrix,
     ComplianceDimension
 )
-from compliance.eu_ai_act import (
+from eu_ai_act import (
     EUAIActChecker,
     ComplianceStatus,
     Article14Requirement,
     OversightCapability,
     ComplianceAssessment
 )
-from compliance.nist_rmf import NISTRMFMapper, FunctionMapping, NISTFunction, NISTCategory
+from nist_rmf import NISTRMFMapper, FunctionMapping, NISTFunction, NISTCategory
 
 
 class TestASLLevelDetector:

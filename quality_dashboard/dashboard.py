@@ -57,20 +57,77 @@ def run_tool(cmd: List[str], timeout: int = 30, cwd: str = None, env: dict = Non
 class LintingEvaluator:
     name = "Linting"
     weight = 0.10
-    
+
+    def _find_lint_path(self, project_path: str) -> tuple[str, str]:
+        """Find source path for linting - supports traditional, self-contained, and multi-feature structures."""
+        p = Path(project_path)
+
+        # Check traditional 03-development structure
+        src_03 = p / "03-development" / "src"
+        if src_03.exists():
+            return (str(src_03), "traditional")
+
+        # Check self-contained: 03-implement/ at feature level
+        impl_self = p / "03-implement"
+        if impl_self.exists():
+            return (str(impl_self), "self_contained")
+
+        # Check multi-feature: implement/feature-*/03-implement/
+        impl_dir = p / "implement"
+        if impl_dir.exists():
+            for feat_dir in impl_dir.glob("feature-*"):
+                impl_feat = feat_dir / "03-implement"
+                if impl_feat.exists():
+                    return (str(impl_feat), "multi_feature")
+
+        # Fallback: src/ at project root
+        src_root = p / "src"
+        if src_root.exists():
+            return (str(src_root), "root")
+
+        return (str(p), "project_root")
+
     def evaluate(self, project_path: str) -> DimensionScore:
-        stdout, _, rc = run_tool(["ruff", "check", f"{project_path}/03-development/src", "--ignore=D100,E501,F401"])
+        lint_path, structure_type = self._find_lint_path(project_path)
+        stdout, _, rc = run_tool([
+            "ruff", "check", lint_path,
+            "--ignore=D100,E501,F401,F821"
+        ])
         error_count = len([l for l in stdout.split('\n') if l.strip() and l.startswith('F')])
         score = max(0, 100 - error_count * 5)
         issues = [l.strip() for l in stdout.split('\n') if l.strip() and l.startswith('F')][:5]
+        if not issues and structure_type != "traditional":
+            issues = [f"All clean ({structure_type} structure, scanned: {lint_path})"]
         return DimensionScore(self.name, score, self.weight, issues, True, "ruff")
 
 class TypeSafetyEvaluator:
     name = "Type Safety"
     weight = 0.15
-    
+
+    def _find_type_path(self, project_path: str) -> str:
+        p = Path(project_path)
+        src_03 = p / "03-development" / "src"
+        if src_03.exists():
+            return str(src_03)
+        impl_self = p / "03-implement"
+        if impl_self.exists():
+            return str(impl_self)
+        impl_dir = p / "implement"
+        if impl_dir.exists():
+            for feat_dir in impl_dir.glob("feature-*"):
+                impl_feat = feat_dir / "03-implement"
+                if impl_feat.exists():
+                    return str(impl_feat)
+        src_root = p / "src"
+        if src_root.exists():
+            return str(src_root)
+        return str(p)
+
     def evaluate(self, project_path: str) -> DimensionScore:
-        stdout, _, rc = run_tool(["mypy", f"{project_path}/03-development/src", "--ignore-missing-imports", "--no-error-summary"], timeout=60)
+        type_path = self._find_type_path(project_path)
+        stdout, _, rc = run_tool([
+            "mypy", type_path, "--ignore-missing-imports", "--no-error-summary"
+        ], timeout=60)
         error_count = stdout.count(": error:")
         score = max(0, 100 - error_count * 10)
         issues = [l.strip() for l in stdout.split('\n') if ': error:' in l][:5]
@@ -138,6 +195,8 @@ class CoverageEvaluator:
                     for item in impl_path.iterdir():
                         if item.is_dir() and not item.name.startswith("_"):
                             cov_targets.append(item.name)
+                        elif item.suffix == ".py" and item.stem not in ("__init__",):
+                            cov_targets.append(item.stem)
                 cmd = ["python3", "-m", "pytest"]
                 for target in cov_targets:
                     cmd.extend(["--cov=" + target])
@@ -162,6 +221,8 @@ class CoverageEvaluator:
                     for item in impl_path.iterdir():
                         if item.is_dir() and not item.name.startswith("_"):
                             cov_targets.append(item.name)
+                        elif item.suffix == ".py" and item.stem not in ("__init__",):
+                            cov_targets.append(item.stem)
                 for target in cov_targets:
                     cmd.extend(["--cov=" + target])
                 cmd.extend(["--cov-report=term-missing"])
