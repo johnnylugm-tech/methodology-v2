@@ -15,7 +15,7 @@
 
 | Artifact | Location | Status |
 |----------|----------|--------|
-| REQUIREMENTS.md | `implement/feature-11-langfuse/01-requirements/REQUIREMENTS.md` | ✅ Complete |
+| REQUIREMENTS.md | Merged into SPEC.md (duplicate) | ✅ Removed
 | SPEC.md | `implement/feature-11-langfuse/01-spec/SPEC.md` | ✅ Complete |
 | ARCHITECTURE.md | `implement/feature-11-langfuse/02-architecture/ARCHITECTURE.md` | ✅ Complete |
 | TEST_PLAN.md | `implement/feature-11-langfuse/04-testing/TEST_PLAN.md` | ✅ Complete |
