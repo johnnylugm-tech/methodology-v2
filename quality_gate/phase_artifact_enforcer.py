@@ -297,6 +297,92 @@ class PhaseArtifactRegistry:
         )
 
 
+
+    def check_folder_structure(self) -> dict:
+        """
+        檢查 feature 資料夾是否有重複的 Phase 目錄。
+        
+        每個 Phase 只能有一個資料夾。如果出現多個（如 04-testing + 04-tests），
+        或出現非法的替代名稱（如 05-delivery 代替 05-verify），則回報錯誤。
+        
+        Returns:
+            dict: {
+                "passed": bool,
+                "errors": List[str],  # 每個錯誤一條訊息
+                "warnings": List[str]
+            }
+        """
+        # 掃描所有 implement/feature-* 目錄
+        project_root = self.project_root
+        impl_dir = project_root / "implement"
+        
+        if not impl_dir.exists():
+            return {"passed": True, "errors": [], "warnings": ["No implement/ directory found"]}
+        
+        all_errors = []
+        all_warnings = []
+        
+        # Phase → 唯一合法的資料夾名稱
+        STRICT_ALLOWED = {
+            "1":  ["1-constitution"],
+            "2":  ["2-specify", "02-specification"],
+            "3":  ["3-plan", "03-plan"],
+            "4":  ["4-implement", "04-implementation"],
+            "5":  ["5-verify", "05-verify"],
+            "6":  ["6-quality", "06-quality"],
+            "7":  ["7-risk", "07-risk"],
+            "8":  ["8-config", "08-config", "08-configuration"],
+        }
+        
+        # Feature-level Phase → 唯一合法的資料夾名稱
+        FEATURE_PHASE_ALLOWED = {
+            "1":  ["01-spec"],
+            "2":  ["02-architecture"],
+            "3":  ["03-implement"],
+            "4":  ["04-tests"],
+            "5":  ["05-verify"],
+            "6":  ["06-quality"],
+            "7":  ["07-risk"],
+            "8":  ["08-config"],
+        }
+        
+        for feature_dir in sorted(impl_dir.glob("feature-*")):
+            if not feature_dir.is_dir():
+                continue
+            
+            # 檢查每個數字前綴的資料夾
+            for phase_num, strict_names in FEATURE_PHASE_ALLOWED.items():
+                # 找出所有以此 phase_num 開頭的資料夾
+                matching_dirs = [
+                    d.name for d in feature_dir.iterdir()
+                    if d.is_dir() and d.name.startswith(f"{phase_num:0>2}-")
+                ]
+                
+                if not matching_dirs:
+                    continue
+                
+                # 檢查 1: 有沒有非法的替代名稱
+                for folder in matching_dirs:
+                    if folder not in strict_names:
+                        all_errors.append(
+                            f"  {feature_dir.name}/{folder}: "
+                            f"Invalid folder name. Must be one of {strict_names}. "
+                            f"Found illegal variant '{folder}'."
+                        )
+                
+                # 檢查 2: 有沒有重複（多個資料夾都符合這個 phase）
+                valid = [d for d in matching_dirs if d in strict_names]
+                if len(valid) > 1:
+                    all_errors.append(
+                        f"  {feature_dir.name}: Phase {phase_num} has multiple folders: {valid}"
+                    )
+        
+        return {
+            "passed": len(all_errors) == 0,
+            "errors": all_errors,
+            "warnings": all_warnings
+        }
+
 class PhaseArtifactEnforcer:
     """
     階段產物強制執行器
@@ -318,6 +404,14 @@ class PhaseArtifactEnforcer:
     def __init__(self, project_root: str = "."):
         self.registry = PhaseArtifactRegistry(project_root)
     
+    def check_folder_structure(self) -> dict:
+        """
+        檢查所有 feature 資料夾的命名結構是否合法。
+        
+        每個 Phase 只能有一個資料夾，不允許重複或非法的替代名稱。
+        """
+        return self.registry.check_folder_structure()
+
     def can_proceed_to(self, phase_name: str) -> ArtifactCheckResult:
         """檢查是否可以進入指定 Phase"""
         try:
@@ -440,8 +534,16 @@ class PhaseArtifactEnforcer:
                 "message": result.message,
                 "missing_references": result.missing_references
             }
-            if not result.passed:
-                all_passed = False
+
+        # 5. Folder structure check - 每個 Phase 只能有一個資料夾
+        folder_result = self.check_folder_structure()
+        if not folder_result["passed"]:
+            all_passed = False
+            results["_folder_structure"] = {
+                "passed": False,
+                "message": f"Folder structure errors: {folder_result['errors']}",
+                "errors": folder_result["errors"]
+            }
 
         return {
             "passed": all_passed,
@@ -489,6 +591,11 @@ def main():
             print(f"{status} {phase.value}: {result.message}")
             if not result.passed:
                 all_passed = False
+        
+        # 5. Show folder structure errors
+        if "_folder_structure" in results:
+            fs = results["_folder_structure"]
+            print(f"❌ _folder_structure: {fs['message']}")
         
         exit(0 if all_passed else 1)
 
