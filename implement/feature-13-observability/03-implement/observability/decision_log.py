@@ -1,9 +1,9 @@
 """Decision log writer and reader for agent decisions."""
 
 from dataclasses import dataclass, field
-from datetime import datetime
 from pathlib import Path
-import os, hashlib, asyncio
+import os
+import asyncio
 from typing import Optional
 import yaml
 
@@ -102,7 +102,7 @@ class DecisionLogReader:
 
     def query_by_date(self, date: str) -> list[DecisionLogEntry]:
         """Return all decision log entries for a given date string (YYYY-MM-DD)."""
-        entries = []
+        entries: list[DecisionLogEntry] = []
         log_dir = self._data_dir / "decision_logs" / date
         if not log_dir.is_dir():
             return entries
@@ -117,7 +117,7 @@ class DecisionLogReader:
 
     def query_by_agent(self, agent_id: str) -> list[DecisionLogEntry]:
         """Scan all date directories and return entries for the given agent_id."""
-        entries = []
+        entries: list[DecisionLogEntry] = []
         logs_root = self._data_dir / "decision_logs"
         if not logs_root.is_dir():
             return entries

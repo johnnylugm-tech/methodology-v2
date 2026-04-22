@@ -3,7 +3,11 @@
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
-import sqlite3, threading, uuid, json
+import os
+import sqlite3
+import threading
+import uuid
+import json
 from typing import Optional
 
 
@@ -38,7 +42,6 @@ class EffortTracker:
     """
 
     def __init__(self, db_path: Optional[str] = None):
-        import os
         self._db_path = str(_data_dir(db_path))
         Path(self._db_path).parent.mkdir(parents=True, exist_ok=True)
         self._conn = sqlite3.connect(self._db_path, check_same_thread=False)
