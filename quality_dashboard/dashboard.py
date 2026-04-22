@@ -81,14 +81,21 @@ class CoverageEvaluator:
     weight = 0.20
     
     def _find_test_and_source_paths(self, project_path: str) -> tuple:
-        """Find test and source paths - supports both traditional and feature structures."""
+        """Find test and source paths - supports traditional, feature, and self-contained structures."""
         # Check for traditional 03-development structure
         tests_03 = Path(project_path) / "03-development" / "tests"
         src_03 = Path(project_path) / "03-development" / "src"
         if tests_03.exists():
-            return (str(tests_03), "src", "")
+            return (str(tests_03), "src", "traditional")
         
-        # Check for feature-level structure (implement/feature-XX/04-tests/)
+        # Check if project_path ITSELF is a self-contained feature directory
+        # (e.g., implement/feature-11-langfuse/04-tests + 03-implement)
+        self_tests = Path(project_path) / "04-tests"
+        self_src = Path(project_path) / "03-implement"
+        if self_tests.exists():
+            return (str(self_tests), str(self_src) if self_src.exists() else "", "self_contained")
+        
+        # Check for feature-level structure under implement/ (legacy multi-feature)
         impl_dir = Path(project_path) / "implement"
         if impl_dir.exists():
             feature_tests = []
@@ -101,8 +108,7 @@ class CoverageEvaluator:
                 if src_dir.exists():
                     feature_srcs.append(str(src_dir))
             if feature_tests:
-                # Use first feature as primary, add others with --cov-append or similar
-                return (feature_tests[0], feature_srcs[0] if feature_srcs else "", "feature")
+                return (feature_tests[0], feature_srcs[0] if feature_srcs else "", "multi_feature")
         
         # Fallback: try project_root/tests and project_root/src
         tests_root = Path(project_path) / "tests"
@@ -122,25 +128,35 @@ class CoverageEvaluator:
                                   True, "pytest-cov")
         
         # Build pytest command based on structure type
-        if structure_type == "feature":
-            # For feature structure, run pytest with PYTHONPATH set to find modules
+        if structure_type in ("self_contained", "multi_feature"):
             import os
-            impl_dir = Path(project_path) / "implement"
-            feature_dirs = [d for d in impl_dir.glob("feature-*") if (d / "03-implement").exists()]
-            
-            if feature_dirs:
-                # Build coverage targets using module paths (not symlinks)
-                # Feature modules: hunter, detection, gap_detector (under 03-implement/)
-                # Feature #9 (feature_09_risk_assessment) has no 03-implement, skip coverage
+            if structure_type == "self_contained":
+                # Single self-contained feature dir
+                impl_path = Path(project_path) / "03-implement"
+                cov_targets = []
+                if impl_path.exists():
+                    for item in impl_path.iterdir():
+                        if item.is_dir() and not item.name.startswith("_"):
+                            cov_targets.append(item.name)
+                cmd = ["python3", "-m", "pytest"]
+                for target in cov_targets:
+                    cmd.extend(["--cov=" + target])
+                cmd.extend(["--cov-report=term-missing"])
+                cmd.append(str(Path(project_path).resolve() / "04-tests" / "langfuse"))  # tests are in langfuse/ subdir
+                env = os.environ.copy()
+                env["PYTHONPATH"] = str(impl_path)  # point to 03-implement so ml_langfuse is importable
+                stdout, _, rc = run_tool(cmd, timeout=120, cwd=".", env=env)  # run from project root
+            else:
+                # Multi-feature (legacy)
+                impl_dir = Path(project_path) / "implement"
+                feature_dirs = [d for d in impl_dir.glob("feature-*") if (d / "03-implement").exists()]
                 cmd = ["python3", "-m", "pytest"]
                 cov_targets = []
                 for feat_dir in feature_dirs:
                     impl_path = feat_dir / "03-implement"
-                    # For features with 03-implement, find the module subdirectory
-                    # e.g., feature-06-hunter/03-implement/hunter -> implement.hunter
                     for item in impl_path.iterdir():
-                        if item.is_dir():
-                            cov_targets.append(f"implement.{item.name}")
+                        if item.is_dir() and not item.name.startswith("_"):
+                            cov_targets.append(item.name)
                 for target in cov_targets:
                     cmd.extend(["--cov=" + target])
                 cmd.extend(["--cov-report=term-missing"])
@@ -148,15 +164,16 @@ class CoverageEvaluator:
                     tests_dir = feat_dir / "04-tests"
                     if tests_dir.exists():
                         cmd.append(str(tests_dir))
-                # Set PYTHONPATH to project root (for conftest.py namespace redirects)
                 env = os.environ.copy()
                 env["PYTHONPATH"] = project_path
                 stdout, _, rc = run_tool(cmd, timeout=120, cwd=project_path, env=env)
-            else:
-                stdout, _, rc = "", "No feature directories found", 1
-        else:
+        elif structure_type == "traditional":
             # Traditional structure
             cmd = ["python3", "-m", "pytest", test_path, "--cov=src", "--cov-report=term-missing", "--tb=no", "-q"]
+            stdout, _, rc = run_tool(cmd, timeout=60, cwd=project_path)
+        else:
+            # Root structure
+            cmd = ["python3", "-m", "pytest", test_path, "--cov=" + src_path, "--cov-report=term-missing", "--tb=no", "-q"]
             stdout, _, rc = run_tool(cmd, timeout=60, cwd=project_path)
         
         coverage = 0
