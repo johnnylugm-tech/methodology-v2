@@ -11,7 +11,8 @@ import importlib
 from typing import Any, Callable, Type
 from copy import deepcopy
 
-from .config import NodeConfig, RetryPolicy
+from .builder import NodeConfig
+from .state import RetryPolicy
 
 # ----------------------------------------------------------------------
 # ID generation
@@ -188,12 +189,13 @@ def sanitize_node_name(name: str) -> str:
     """
     # Replace non-alphanumeric chars (except underscore) with underscore
     sanitized = re.sub(r"[^a-zA-Z0-9_]", "_", name)
-    # Ensure it doesn't start with a digit
-    if sanitized and sanitized[0].isdigit():
-        sanitized = "_" + sanitized
     # Collapse multiple underscores
     sanitized = re.sub(r"_+", "_", sanitized)
+    # Strip leading/trailing underscores
     sanitized = sanitized.strip("_")
+    # Ensure it doesn't start with a digit (prepend _ if needed)
+    if sanitized and sanitized[0].isdigit():
+        sanitized = "_" + sanitized
     if not sanitized:
         sanitized = "node"
     return sanitized
