@@ -12,6 +12,7 @@ from ml_langfuse.trace import (
     extract_trace_context,
     run_with_trace_context,
 )
+from ml_langfuse.client import get_langfuse_client
 
 
 class TestGetCurrentTraceContext:
@@ -98,7 +99,7 @@ class TestRunWithTraceContext:
     """Tests for run_with_trace_context()."""
 
     @pytest.mark.asyncio
-    async test_run_with_trace_context_executes_coro(self):
+    async def test_run_with_trace_context_executes_coro(self):
         """run_with_trace_context should execute the coroutine normally."""
         carrier = {
             "traceparent": "00-0af765e2cd75ef2d70dc673f96d12085-a21d4b1edb19f7a0-01"

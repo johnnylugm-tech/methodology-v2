@@ -104,8 +104,6 @@ class LangfuseConfig(BaseModel):
     # Sampling
     trace_sampling_rate: float = Field(
         default=1.0,
-        ge=0.0,
-        le=1.0,
         description="LANGFUSE_TRACE_SAMPLING_RATE — Fraction of spans to sample (0.0–1.0).",
     )
 

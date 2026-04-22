@@ -12,9 +12,9 @@ import logging
 from typing import Optional
 
 from opentelemetry import trace
-from opentelemetry.exporter.otlp.proto.http.trace_export import OTLPSpanExporter
+from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
 from opentelemetry.sdk.resources import Resource
-from opentelemetry.sdk.trace import SpanProcessor, TracerProvider
+from opentelemetry.sdk.trace import SpanProcessor, SpanLimits, TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 
 from ml_langfuse.config import LangfuseConfig, get_config, ConfigurationError
@@ -171,13 +171,12 @@ class LangfuseClient:
         # --- TracerProvider ---
         self._tracer_provider = TracerProvider(
             resource=resource,
-            span_processors=[span_processor],
-            # Active span limit (prevent runaway spans)
-            max_span_attrs_count=100,
+            active_span_processor=span_processor,
+            span_limits=SpanLimits(max_span_attributes=100),
         )
 
         # Register as global default
-        trace.set_tracer_provider(self._tracer_provider, log_warning=True)
+        trace.set_tracer_provider(self._tracer_provider)
 
         # --- Tracer for ml_langfuse own use ---
         self._tracer = self._tracer_provider.get_tracer("ml_langfuse")
@@ -187,8 +186,6 @@ class LangfuseClient:
         # 1. Explicit config / env var
         if self._config.otel_exporter_endpoint:
             return self._config.otel_exporter_endpoint
-        if self._config.otels_exporter_endpoint:  # typo-tolerant alias in config
-            return self._config.otels_exporter_endpoint
 
         # 2. Self-hosted host
         if self._config.mode == "self_hosted":
@@ -230,11 +227,10 @@ class LangfuseClient:
         """
         if self._tracer_provider is None:
             return
-        for processor in self._tracer_provider._span_processors:  # type: ignore[attr-defined]
-            try:
-                processor.force_flush()
-            except Exception as exc:  # noqa: BLE001
-                logger.warning("Error force-flushing span processor: %s", exc)
+        try:
+            self._tracer_provider.force_flush()
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("Error force-flushing tracer provider: %s", exc)
 
     @property
     def config(self) -> LangfuseConfig:

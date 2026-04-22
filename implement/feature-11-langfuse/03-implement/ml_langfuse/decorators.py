@@ -18,6 +18,7 @@ Each decorator:
 from __future__ import annotations
 
 import functools
+import inspect
 import logging
 import time
 from typing import Any, Callable, Coroutine, Optional, TypeVar, overload
@@ -128,7 +129,7 @@ def observe_llm_call(
                     raise
 
         import asyncio
-        if asyncio.iscoroutinefunction(func):
+        if inspect.iscoroutinefunction(func):
             return async_wrapper  # type: ignore[return-value]
         return sync_wrapper  # type: ignore[return-value]
 
@@ -346,7 +347,7 @@ def observe_tool_call(
                     raise
 
         import asyncio
-        if asyncio.iscoroutinefunction(func):
+        if inspect.iscoroutinefunction(func):
             return async_wrapper  # type: ignore[return-value]
         return sync_wrapper  # type: ignore[return-value]
 
@@ -409,7 +410,7 @@ def observe_span(
                     raise
 
         import asyncio
-        if asyncio.iscoroutinefunction(func):
+        if inspect.iscoroutinefunction(func):
             return async_wrapper  # type: ignore[return-value]
         return sync_wrapper  # type: ignore[return-value]
 

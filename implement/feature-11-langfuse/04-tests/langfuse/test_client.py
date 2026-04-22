@@ -63,8 +63,7 @@ class TestGetLangfuseClient:
         client = get_langfuse_client()
         tracer = client.get_tracer("test.scope")
         assert tracer is not None
-        # OTel Tracer has get_current_span method
-        assert hasattr(tracer, "get_current_span")
+        assert hasattr(tracer, "start_span")
 
     def test_client_flush(self):
         """flush() should not raise."""

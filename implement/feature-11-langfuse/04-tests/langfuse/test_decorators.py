@@ -22,7 +22,7 @@ class TestObserveLlmCall:
         os.environ["LANGFUSE_PUBLIC_KEY"] = "pk_test"
         os.environ["LANGFUSE_SECRET_KEY"] = "sk_test"
 
-    def test_observe_llm_call_async(self):
+    async def test_observe_llm_call_async(self):
         """@observe_llm_call on async function should not raise."""
         @observe_llm_call(model_name="claude-3-opus")
         async def dummy_llm(prompt: str) -> str:
@@ -40,7 +40,7 @@ class TestObserveLlmCall:
         result = dummy_llm_sync("hello")
         assert result == "sync response to: hello"
 
-    def test_observe_llm_call_propagates_exception(self):
+    async def test_observe_llm_call_propagates_exception(self):
         """@observe_llm_call should re-raise exceptions from wrapped function."""
         @observe_llm_call(model_name="claude-3-opus")
         async def failing_llm(prompt: str) -> str:
@@ -77,7 +77,7 @@ class TestObserveDecisionPoint:
         assert isinstance(result, dict)
         assert result["risk_score"] == 0.42
 
-    def test_observe_decision_point_async(self):
+    async def test_observe_decision_point_async(self):
         """@observe_decision_point_async on async function should work."""
         @observe_decision_point_async(point="uaf_check", phase="phase7")
         async def async_uaf_check(state: dict) -> dict:
@@ -90,6 +90,7 @@ class TestObserveDecisionPoint:
                 "decided_by": "agent",
                 "compliance_tags": ["SOX"],
             }
+
 
         result = await async_uaf_check({})
         assert result["hitl_gate"] == "pass"
@@ -130,7 +131,7 @@ class TestObserveToolCall:
         result = search_tool("LLM")
         assert "found" in result["result"]
 
-    def test_observe_tool_call_async(self):
+    async def test_observe_tool_call_async(self):
         """@observe_tool_call on async function should work."""
         @observe_tool_call(tool_name="db_query")
         async def db_query(sql: str) -> dict:
@@ -139,14 +140,14 @@ class TestObserveToolCall:
         result = await db_query("SELECT * FROM logs")
         assert result["rows"] == []
 
-    def test_observe_tool_call_propagates_exception(self):
+    async def test_observe_tool_call_propagates_exception(self):
         """Exceptions from tool calls should propagate."""
         @observe_tool_call(tool_name="fail_tool")
-        def failing_tool() -> dict:
+        async def failing_tool() -> dict:
             raise RuntimeError("tool failed")
 
         with pytest.raises(RuntimeError, match="tool failed"):
-            failing_tool()
+            await failing_tool()
 
 
 class TestObserveSpan:
@@ -166,7 +167,7 @@ class TestObserveSpan:
         result = custom_op(21)
         assert result == 42
 
-    def test_observe_span_async(self):
+    async def test_observe_span_async(self):
         """@observe_span on async function should work."""
         @observe_span(name="async_custom_op")
         async def async_custom_op(x: int) -> int:
@@ -175,11 +176,11 @@ class TestObserveSpan:
         result = await async_custom_op(41)
         assert result == 42
 
-    def test_observe_span_propagates_exception(self):
+    async def test_observe_span_propagates_exception(self):
         """Exceptions from @observe_span should propagate."""
         @observe_span(name="failing_op")
-        def failing_op() -> None:
+        async def failing_op() -> None:
             raise RuntimeError("op failed")
 
         with pytest.raises(RuntimeError, match="op failed"):
-            failing_op()
+            await failing_op()

@@ -16,7 +16,7 @@ from typing import Any, AsyncIterator, Callable, Coroutine, TYPE_CHECKING
 from opentelemetry import trace
 from opentelemetry.context import Context
 from opentelemetry.propagate import extract, inject
-from opentelemetry.trace import Format
+from opentelemetry.trace import TraceFlags
 
 if TYPE_CHECKING:
     from opentelemetry.sdk.trace import Span as SDKSpan
@@ -83,7 +83,7 @@ def inject_trace_context(carrier: dict[str, str]) -> dict[str, str]:
         inject_trace_context(headers)
         # headers == {"traceparent": "00-0af765e2...-01"}
     """
-    inject(carrier, format=Format.TRACEPARENT)
+    inject(carrier)
     return carrier
 
 
@@ -99,7 +99,7 @@ def extract_trace_context(carrier: dict[str, str]) -> Context:
         An OTel ``Context`` that can be passed to
         ``run_with_trace_context()`` or used as a parent context.
     """
-    ctx: Context = extract(carrier, format=Format.TRACEPARENT)
+    ctx: Context = extract(carrier)
     return ctx
 
 
@@ -149,7 +149,8 @@ async def run_with_trace_context(
 
     # Re-extract the parent span from ctx so we can make it current
     parent_span_ctx = None
-    for item in ctx.items:
+    items = ctx.items() if callable(getattr(ctx, 'items', None)) else []
+    for item in items:
         if item.__class__.__name__ == "SpanContext":
             parent_span_ctx = item
             break
