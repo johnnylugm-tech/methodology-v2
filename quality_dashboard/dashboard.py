@@ -142,9 +142,14 @@ class CoverageEvaluator:
                 for target in cov_targets:
                     cmd.extend(["--cov=" + target])
                 cmd.extend(["--cov-report=term-missing"])
-                cmd.append(str(Path(project_path).resolve() / "04-tests" / "langfuse"))  # tests are in langfuse/ subdir
+                tests_path = Path(project_path) / "04-tests"
+                test_dirs = [d for d in tests_path.iterdir() if d.is_dir() and not d.name.startswith("_")] if tests_path.exists() else []
+                if test_dirs:
+                    cmd.append(str(tests_path / test_dirs[0].name))
+                else:
+                    cmd.append(str(tests_path))
                 env = os.environ.copy()
-                env["PYTHONPATH"] = str(impl_path)  # point to 03-implement so ml_langfuse is importable
+                env["PYTHONPATH"] = str(impl_path)  # point to 03-implement so module is importable
                 stdout, _, rc = run_tool(cmd, timeout=120, cwd=".", env=env)  # run from project root
             else:
                 # Multi-feature (legacy)
@@ -268,7 +273,10 @@ class ErrorHandlingEvaluator:
     weight = 0.05
     
     def evaluate(self, project_path: str) -> DimensionScore:
-        stdout, _, rc = run_tool(["grep", "-r", "-c", "except", project_path, "--include=*.py"], timeout=30)
+        # Only scan source code (03-implement), not tests
+        source_path = Path(project_path) / "03-implement"
+        search_path = str(source_path) if source_path.exists() else project_path
+        stdout, _, rc = run_tool(["grep", "-r", "-c", "except", search_path, "--include=*.py"], timeout=30)
         catch_count = 0
         for line in stdout.split('\n'):
             if ':' in line:

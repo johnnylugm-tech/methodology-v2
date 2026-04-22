@@ -16,8 +16,8 @@ References:
 
 from dataclasses import dataclass, field
 from datetime import datetime
-from enum import Enum, auto
-from typing import Any, Optional
+from enum import Enum
+from typing import Any
 
 # NIST AI RMF Function identifiers
 class NISTFunction(Enum):
@@ -198,8 +198,7 @@ class NISTRMFMapper:
         "AU": "Audit and Accountability",
         "SI": "System and Information Integrity",
         "MA": "Maintenance",
-        "SC": "System and Communications Protection",
-        "SI": "System and Information Integrity"
+        "SC": "System and Communications Protection"
     }
 
     def __init__(self):

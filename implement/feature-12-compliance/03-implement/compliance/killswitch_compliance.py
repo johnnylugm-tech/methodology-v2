@@ -18,12 +18,11 @@ References:
     - ESMA Guidelines on Algorithmic Trading
 """
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime, timedelta
 from enum import Enum, auto
 from typing import Any, Callable, Optional
 
-import time
 
 
 class KillSwitchState(Enum):

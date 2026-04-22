@@ -13,13 +13,13 @@ References:
     - NIST AI RMF v1.0 (NIST AI 100-1)
 """
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime
-from enum import Enum, auto
+from enum import Enum
 from typing import Any, Optional
 
-from .eu_ai_act import ComplianceStatus
-from .nist_rmf import NISTRMFMapper, NISTFunction, NISTCategory
+from .eu_ai_act import ComplianceStatus, ComplianceAssessment
+from .nist_rmf import FunctionMapping
 
 
 class ASLLevel(Enum):
@@ -199,7 +199,6 @@ class ASLLevelDetector:
             Tuple of (ASLLevel, confidence, key_factors)
         """
         factors = []
-        confidence = 0.8  # Base confidence
 
         # ASL 1: Manual, no AI execution
         if exec_mode == "manual" and not has_ai:
