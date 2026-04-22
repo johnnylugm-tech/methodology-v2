@@ -22,7 +22,7 @@ Feature #10 delivers a first-class LangGraph integration layer (`ml_langgraph`) 
 | Phase 2 — Architecture | `02-architecture/ARCHITECTURE.md` | ✅ Complete | 978 |
 | Phase 3 — Implement | `03-implement/ml_langgraph/` (12 modules) | ✅ Complete | 5,064 |
 | Phase 4 — Tests | `04-tests/langgraph/` (9 test files) | ✅ Complete | 2,696 |
-| Phase 5 — Delivery | `05-delivery/DELIVERY_REPORT.md` | ✅ Complete (this doc) | — |
+| Phase 5 — Delivery | `05-verify/DELIVERY_REPORT.md` | ✅ Complete (this doc) | — |
 | **Total** | | | **9,667** |
 
 ### Module Inventory (Phase 3)

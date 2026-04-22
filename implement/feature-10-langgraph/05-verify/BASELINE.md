@@ -10,7 +10,7 @@
 | Architecture | 02-architecture/ARCHITECTURE.md |
 | Implementation | 03-implement/ml_langgraph/ |
 | Tests | 04-tests/langgraph/ |
-| Delivery | 05-delivery/DELIVERY_REPORT.md |
+| Delivery | 05-verify/DELIVERY_REPORT.md |
 
 ### Baseline Metrics
 
