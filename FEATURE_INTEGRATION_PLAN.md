@@ -1,661 +1,810 @@
-# Feature #1-13 整合評估報告 v2.0
+# Feature #1-13 整合評估報告 v3.0
 
 **Date:** 2026-04-23
-**Version:** 2.0
+**Version:** 3.0
 **Author:** Agent A (Reviewer/Main Agent)
-**Status:** Complete — Awaiting Decision
+**Status:** Complete — Pending Decision
 
 ---
 
-## CHANGELOG v1.0 → v2.0
+## CHANGELOG v2.0 → v3.0
 
-| 調整 | v1.0 | v2.0 |
-|------|------|------|
-| Stage 1 焦點 | Observability Foundation（被動/事後）| Foundation + **Phase Gate Enforcement（即時/強制）** |
-| Gap Detector 時機 | 只在 Phase 4 | **每個 Phase** 結束時跑簡單結構性檢查 |
-| Stage 2 內容 | Core Pipeline Wiring | **Governance Pipeline**（Governance 成為第一個防護層）|
-| Effort Metrics | 只在 Stage 1 附帶 | **整合進 Phase Gate**（每 Phase gate 檢查 effort 是否合理）|
-| Phase 1-2 約束 | 無 | **加入結構性強制要求**（SPEC.md 含所有 FR IDs、ARCHITECTURE.md 覆蓋所有 Module Designs）|
-| Risk Assessment | 每 Phase 結束 | **持續性風險監控**（非只在 Phase 完成時）|
-| Stage 數量 | 5 | **6**（拆出 Phase Gate Enforcement 成為獨立 Stage）|
+### 核心認知更新
+
+v2.0 的最大錯誤：**把 13 個 Feature 當成要新建的「Agent Runtime Pipeline」來整合。**
+
+**v3.0 的正確認知：** 13 個 Feature 必須全部鉤入現有的 `PhaseHooks` 框架。沒有任何一個 Feature 需要獨立的 runtime pipeline。整個整合是「PhaseHooks 擴展」，不是「新建 pipeline」。
 
 ---
 
-## 一、當前狀態：13 個 Feature 是「封閉套件」
-
-所有 Features #1-13 目前是獨立的 `implement/feature-XX-name/` 目錄（#1-5 在 `implement/{mcp,security,governance,kill_switch,llm_cascade}/`）。
-
-**尚未與 methodology-v2 主流程 wire 在一起。**
-
----
-
-## 二、完整 Layer 架構圖
+### 為什麼整合點是 PhaseHooks？
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│  LAYER 6: Compliance    ← #12 EU AI Act / NIST / RSP v3.0       │
-│  生成合規報告、audit trail、regulatory mapping                    │
-├─────────────────────────────────────────────────────────────────┤
-│  LAYER 5: Risk Assessment ← #9 8-維度風險評估引擎                │
-│  每 Phase 完成時主動識別/量化/追蹤風險                            │
-│  重要：Risk Assessment 也是持續性監控，不是只在 Phase 結束時       │
-├─────────────────────────────────────────────────────────────────┤
-│  LAYER 4: Executive Assurance ← #6 Hunter Agent               │
-│  Anomaly Detection + Self-Correction + MetaQA Baseline           │
-├─────────────────────────────────────────────────────────────────┤
-│  LAYER 3: Intelligence                                           │
-│  ┌──────────────┐ ┌──────────────┐ ┌────────────────────────┐  │
-│  │ UQLM (#7)    │ │ LangGraph    │ │ Gap Detector (#8)      │  │
-│  │ Hallucination│ │ (#10)        │ │ (Phase Gate trigger)   │  │
-│  │ Detection    │ │ 有狀態多步    │ │ 每 Phase 都跑！         │  │
-│  │ + CLAP Probe │ │ 驟規劃        │ └────────────────────────┘  │
-│  └──────────────┘ └──────────────┘                             │
-│  ┌──────────────────────────────────────────────────────────┐  │
-│  │ LLM Cascade (#5) — 多 provider 路由 + speculative debate │  │
-│  └──────────────────────────────────────────────────────────┘  │
-├─────────────────────────────────────────────────────────────────┤
-│  LAYER 2: Governance & Reliability                               │
-│  ┌──────────────┐ ┌──────────────┐                             │
-│  │ #3 HOTL/HITL│ │ #4 Kill-Switch│                            │
-│  │ Tiered Gov.  │ │ Circuit Breaker│                            │
-│  └──────────────┘ └──────────────┘                             │
-├─────────────────────────────────────────────────────────────────┤
-│  LAYER 1.7: Prompt Shields (#2) — Injection / PII detection     │
-├─────────────────────────────────────────────────────────────────┤
-│  LAYER 1.5: MCP + SAIF 2.0 (#1) — Identity propagation          │
-├─────────────────────────────────────────────────────────────────┤
-│  LAYER 0: Observability Foundation                               │
-│  ┌──────────────┐ ┌──────────────────────────────────────────┐ │
-│  │ Langfuse(#11)│ │ #13 UQLM metrics + Decision Log + Effort  │ │
-│  │ Trace/Capture│ │  (enriches Langfuse spans)                 │ │
-│  └──────────────┘ └──────────────────────────────────────────┘ │
-└─────────────────────────────────────────────────────────────────┘
+Johnny: 「執行 Phase 3」
+         ↓
+Agent: plan-phase --phase 3
+         ↓
+Agent: run-phase --phase 3
+         ↓
+┌──────────────────────────────────────────────────────────────┐
+│ PRE-FLIGHT (PhaseHooks.preflight_all)                       │
+│ FSM Check / Constitution / Tool Registry / Session Save      │
+└──────────────────────────────────────────────────────────────┘
+         ↓
+┌──────────────────────────────────────────────────────────────┐
+│ FR EXECUTION LOOP（核心運行機制）                             │
+│                                                              │
+│  for FR in FRs:                                             │
+│    sessions_spawn(developer) → JSON {files, status}          │
+│    sessions_spawn(reviewer) → JSON {review_status}           │
+│    if REJECT → re-do developer（最多 5 輪，HR-12）           │
+└──────────────────────────────────────────────────────────────┘
+         ↓
+┌──────────────────────────────────────────────────────────────┐
+│ POST-FLIGHT (PhaseHooks.postflight_all)                      │
+│ Constitution / state.json / Summary                          │
+└──────────────────────────────────────────────────────────────┘
+```
+
+**這個流程從 v6.102 到 v6.102 已經是事實標準。** 任何整合方案都必須在這個框架內。
+
+---
+
+### 13 個 Feature 對 PhaseHooks 的整合位置
+
+| Feature | 鉤入點 | 理由 |
+|---------|--------|------|
+| **#1 MCP + SAIF** | `monitoring_before_dev()` | Developer session 啟動前驗證 token |
+| **#2 Prompt Shields** | `monitoring_after_dev()` | Developer 返回的 code 在寫入磁碟前 scan |
+| **#3 Governance** | `monitoring_before_rev()` | Reviewer 開始前做 tier 分類（HOTL/HITL/HOOTL/LOOP）|
+| **#4 Kill-Switch** | `monitoring_hr12_check()` | HR-12 觸發（>5 輪）→ 熔斷 |
+| **#5 LLM Cascade** | `monitoring_before_rev()` | HOTL tier → 多個 Reviewer session 共識 |
+| **#6 Hunter Agent** | `monitoring_after_dev()` | Developer 輸出做 anomaly detection |
+| **#7 UQLM** | `monitoring_after_dev()` | Developer 輸出計算 uncertainty score |
+| **#8 Gap Detector** | `postflight_all()` | Phase 完成後掃描測試覆蓋缺口 |
+| **#9 Risk Assessment** | `preflight_all()` + `postflight_all()` | Phase 開始/結束時持續風險評估 |
+| **#10 LangGraph** | FR execution loop 外層 | Structured FR execution graph（可選增強）|
+| **#11 Langfuse** | 全程（所有鉤子）| 追蹤所有 PhaseHooks 呼叫的 trace |
+| **#12 Compliance** | `postflight_all()` | Phase 完成時生成 EU AI Act / NIST 報告 |
+| **#13 Observability** | 全程（所有鉤子）| Effort metrics + Decision Log 寫入每個環節 |
+
+---
+
+## 一、PhaseHooks 整合架構圖
+
+```
+PhaseHooks 現有的鉤子（7 個）：
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+preflight_all()
+monitoring_before_dev(fr_id)
+monitoring_after_dev(fr_id, result)
+monitoring_before_rev(fr_id)
+monitoring_after_rev(fr_id, result)
+monitoring_hr12_check(fr_id, iteration)
+postflight_all()
+
+擴展後的 PhaseHooks（整合 13 個 Feature）：
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+preflight_all()
+├── _preflight_fsm()
+├── _preflight_constitution()
+├── _preflight_tool_registry()
+├── _preflight_saif_token()          ← #1 SAIF
+├── _preflight_risk_assessment()       ← #9 Risk
+└── _preflight_langfuse_start()        ← #11 Langfuse
+
+monitoring_before_dev(fr_id)
+└── decision_log.write(agent="developer", decision="FR-XX 開始") ← #13
+
+monitoring_after_dev(fr_id, result)
+├── uqlm.compute(result.files)        ← #7 UQLM
+├── hunter.detect(result.files)        ← #6 Hunter Agent
+├── prompt_shield.scan(result.files)   ← #2 Prompt Shields
+├── saif.validate(result)              ← #1 SAIF（再一次驗證）
+└── decision_log.write(..., uaf_score, risk_score) ← #13
+
+monitoring_before_rev(fr_id)
+├── governance.classify(fr_id, uaf)    ← #3 Governance
+├── decision_log.write(tier=...)       ← #13
+└── 若 tier==HOTL → 多 reviewer sessions ← #5 LLM Cascade
+
+monitoring_after_rev(fr_id, result)
+├── governance.verify(result)           ← #3（確認有 tier decision）
+├── decision_log.write(reviewer APPROVE/REJECT)
+└── effort.increment(rev)              ← #13 Effort
+
+monitoring_hr12_check(fr_id, iteration)
+└── 若 iteration > 5 → kill_switch.trigger() ← #4 Kill-Switch
+
+postflight_all()
+├── gap_detector.scan()               ← #8 Gap Detector
+├── risk_assessment.phase_end()       ← #9 Risk
+├── compliance.generate_phase_report()  ← #12 Compliance
+├── effort.get_summary()               ← #13 Effort
+└── langfuse.close()                   ← #11 Langfuse
 ```
 
 ---
 
-## 三、Feature 現況對照表
+## 二、各 Feature 整合詳細設計
 
-| Feature | 名稱 | Layer | 目前位置 | 獨立 Package？ |
-|---------|------|-------|---------|--------------|
-| #1 | MCP + SAIF 2.0 | Layer 1.5 | `implement/mcp/` | 否，已模組化 |
-| #2 | Prompt Shields | Layer 1.7 | `implement/security/` | 否，已模組化 |
-| #3 | HOTL/HITL/HOOTL | Layer 2 | `implement/governance/` | 否，已模組化 |
-| #4 | Kill-Switch | Layer 2 | `implement/kill_switch/` | 否，已模組化 |
-| #5 | LLM Cascade | Layer 3 | `implement/llm_cascade/` | 否，已模組化 |
-| #6 | Hunter Agent | Layer 4 | `implement/feature-06-hunter/` | 是 |
-| #7 | UQLM Ensemble | Layer 3 | `implement/feature-07-uqlm/` | 是 |
-| #8 | Gap Detector | Phase Gate | `implement/feature-08-gap-detector/` | 是 |
-| #9 | Risk Assessment | Layer 5 | `implement/feature-09-risk-assessment/` | 是 |
-| #10 | LangGraph | Layer 3 | `implement/feature-10-langgraph/` | 是 |
-| #11 | Langfuse | Layer 0 | `implement/feature-11-langfuse/` | 是 |
-| #12 | EU AI Act / NIST | Layer 6 | `implement/feature-12-compliance/` | 是 |
-| #13 | UQLM metrics + Decision Log + Effort | Layer 0 | `implement/feature-13-observability/` | 是 |
+### Feature #1: MCP + SAIF 2.0
 
----
+**鉤入點**: `preflight_all()` + `monitoring_after_dev()`
 
-## 四、整合順序（6 個 Stage）
+**整合理由**: HR-01 要求 Developer 和 Reviewer 必須是不同 session。SAIF middleware 確保每次 session 啟動都有有效的 identity token。
 
-### 核心調整：防護機制要即時，不能等
-
-```
-v1.0 問題：Stage 1 只有 Observability，4 個核心問題（偷懶/走捷徑/幻覺/自我感覺良好）
-          要等到 Stage 2-4 才陸續被防護
-
-v2.0 解決：每個 Stage 都包含即時防護機制，不再有「完全無防護的空窗期」
-```
-
----
-
-### Stage 1：Foundation + Phase Gate Enforcement（最先做）
-
-**為什麼先做**：沒有基礎設施，後面的防護都沒有 evidence store；沒有 Phase Gate，Agent 在每個 Phase 結尾都可以偷懶
-
-| 順序 | Feature | 現況 | 整合目標 |
-|------|---------|------|---------|
-| **1-1** | Phase Gate Hook | 無 | 每個 Phase 完成時自動觸發品質檢查 |
-| **1-2** | #13 Decision Log | 獨立 package | 每個 Agent decision 寫 YAML，日後可審查 |
-| **1-3** | #11 Langfuse | 獨立 package | 成為 gateway plugin，寫入所有 span trace |
-| **1-4** | Phase 1-2 結構性檢查 | 無 | SPEC.md 含所有 FR IDs、ARCHITECTURE.md 覆蓋所有 Module Designs |
-
-**Phase Gate Hook 的即時防護**：
 ```python
-# Phase completion hook — 每個 Phase 結束時自動觸發
-def after_phase(phase_id: int, deliverables: list[str]):
-    # 1. 結構性檢查（所有 Phase 都做）
-    checks = {
-        "files_exist": _check_files_exist(phase_id, deliverables),
-        "effort_reasonable": effort.is_reasonable(phase_id),  # 不能太快（<1min = 疑似偷懶）
-        "decision_logged": decision_log.has_entry(phase_id),
-    }
+def _preflight_saif_token(self):
+    """Feature #1: SAIF token 驗證"""
+    token = SAIFMiddleware.get_current_token()
+    if not token or not token.is_valid():
+        raise PREFLIGHT_FAILED(
+            f"SAIF token 無效或缺失（HR-01 要求 Developer ≠ Reviewer）"
+        )
+    scopes = token.get_scopes()
+    if "developer" not in scopes and "reviewer" not in scopes:
+        raise PREFLIGHT_FAILED(f"SAIF token 缺少有效 scopes")
+    return token
+```
+
+**HR-01 強化**: 原本 HR-01 只要求 Developer ≠ Reviewer。整合 SAIF 後，每次 session 啟動都有密碼學驗證，無法偽造身份。
+
+---
+
+### Feature #2: Prompt Shields
+
+**鉤入點**: `monitoring_after_dev()`
+
+**整合理由**: Developer 返回的 `files` 在寫入磁碟之前必須通過 injection scan。這是最後的安全檢查點。
+
+```python
+def _scan_developer_output(self, fr_id: str, dev_result: dict):
+    """Feature #2: Developer 輸出在寫入磁碟前 scan injection"""
+    if "files" not in dev_result:
+        return
     
-    if not all(checks.values()):
-        raise PhaseGateFailed(f"Phase {phase_id} gate failed: {checks}")
+    for f in dev_result["files"]:
+        verdict = self.prompt_shield.scan(f["content"])
+        if verdict == Verdict.BLOCK:
+            raise PHASE_HOOK_FAILED(
+                f"FR-{fr_id}: Prompt Shield 阻擋 "
+                f"'{f['path']}' — injection pattern: {verdict.pattern}"
+            )
+        elif verdict == Verdict.WARN:
+            logger.warning(
+                f"FR-{fr_id}: '{f['path']}' — "
+                f"suspicious pattern: {verdict.pattern}"
+            )
     
-    # 2. Phase 特有的檢查
-    if phase_id == 1:
-        _check_spec_completeness()
-    elif phase_id == 2:
-        _check_architecture_coverage()
-    elif phase_id == 4:
-        # Gap Detector 只在 Phase 4 跑完整版
-        gaps = gap_detector.scan_full("04-tests/")
-        if gaps:
-            logger.warning(f"Coverage gaps: {len(gaps)}")
-    
-    return True
+    # 只有通過 scan 才寫入磁碟
+    self._write_files_to_disk(dev_result["files"])
 ```
 
-**Effort Metrics 的「太快」檢測**：
-```python
-# 如果一個 Phase 在 < 1 分鐘內完成，幾乎肯定是偷懶
-def is_effort_reasonable(phase_id: str) -> bool:
-    record = effort.get_record(phase_id)
-    if record.time_spent_ms < 60_000:  # < 1 分鐘
-        if phase_id in ("2-architecture", "3-implement"):
-            return False  # 這兩個 Phase 不可能 1 分鐘完成
-    return True
-```
-
-**Phase 1-2 的結構性強制要求**：
-```python
-# Phase 1 gate: SPEC.md 必須包含所有 FR IDs
-def check_spec_completeness():
-    spec = read("01-spec/SPEC.md")
-    fr_ids = extract_fr_ids(spec)  # 例如 FR-13-01, FR-13-02
-    module_names = extract_module_names("03-implement/")
-    # 每個 module 必須有對應的 FR ID
-    for module in module_names:
-        if module not in fr_ids:
-            raise PhaseGateFailed(f"Module {module} has no FR ID in SPEC.md")
-
-# Phase 2 gate: ARCHITECTURE.md 必須覆蓋所有 Module Designs
-def check_architecture_coverage():
-    arch = read("02-architecture/ARCHITECTURE.md")
-    module_names = extract_module_names("03-implement/")
-    for module in module_names:
-        if module not in arch:
-            raise PhaseGateFailed(f"Module {module} not covered in ARCHITECTURE.md")
-```
-
-**預期好處**：
-- Agent 知道「每個 Phase 結尾都會被自動檢查」，偷懶成本大幅提高
-- Decision Log 讓造假成本提高（事後可審查）
-- Phase 1-2 的結構性要求杜絕「規格寫一半」
-
-**預估工期**：2-3 天
-
-**風險**：低（新增 hook，不改現有邏輯）
+**對 4 個核心問題的幫助**: Injection code 要寫入磁碟會被阻擋。
 
 ---
 
-### Stage 2：Governance Pipeline（第二步）
+### Feature #3: Governance (HOTL/HITL/HOOTL/LOOP)
 
-**為什麼第二步**：Governance 是第一個「主動防護層」— 不是事後觀察，是即時阻擋
+**鉤入點**: `monitoring_before_rev()` + `monitoring_after_rev()`
 
-| 順序 | Feature | 現況 | 整合目標 |
-|------|---------|------|---------|
-| **2-1** | #3 Governance | `implement/governance/` 存在但未調用 | 每個 LLM decision 經過 `TierClassifier.classify()` → 輸出 HOTL/HITL/HOOTL |
-| **2-2** | #1 MCP + SAIF | 存在但未鉤入 | SAIF middleware 自動驗證 agent_id/token |
-| **2-3** | #2 Prompt Shields | 存在但獨立 | 在 LLM call 前自動 scan input/output |
-| **2-4** | #4 Kill-Switch | 存在但未觸發 | HealthMonitor + Governance 雙重觸發 |
+**整合理由**: 目前 Reviewer 靠直覺判斷是否需要 human approval。整合 Governance tier classifier 後，每個 FR 都有系統化的 risk tier decision，且可追蹤。
 
-**整合方法**：
 ```python
-# Agent runtime pipeline — 核心執行順序
-async def agent_run(agent_id: str, task: str, message: dict):
-    # ── Layer 1.5: Identity propagation ──
-    saif_token = SAIFMiddleware.extract_or_create(agent_id)
-    if not saif_token.is_valid():
-        raise UnauthorizedError("Invalid or missing SAIF token")
-    ctx = saif_token.to_context()
-
-    # ── Layer 1.7: Prompt Shield ──
-    shield_verdict = PromptShield.scan(message.get("content", ""))
-    if shield_verdict == Verdict.BLOCK:
-        decision_log.write(agent_id, "BLOCK", "Prompt injection detected")
-        raise InjectionBlockedError(shield_verdict.reason)
-
-    # ── Layer 2: Governance classification ──
-    gov_ctx = GovernanceContext(
-        agent_id=agent_id,
-        task=task,
-        identity_propagated=True,
-        shield_verdict=shield_verdict,
+def monitoring_before_rev(self, fr_id: str):
+    """Feature #3: Reviewer 執行前先做 Governance tier 分類"""
+    # 讀取 developer 輸出的 UAF 分數（如有）
+    uaf = self.langfuse.get_span_attribute(f"fr.{fr_id}.uaf_score")
+    
+    ctx = GovernanceContext(
+        phase=self.phase,
+        fr_id=fr_id,
+        uaf_score=uaf or 0.0,
+        previous_rejections=self._get_rejection_count(fr_id)
     )
-    tier = tier_classifier.classify(gov_ctx)
+    tier = self.governance.classify(ctx)
     
-    decision_log.write(agent_id, f"Tier={tier.value}", f"task={task[:50]}")
-    
-    if tier == Tier.BLOCK:
-        return {"status": "blocked", "reason": "Governance BLOCK"}
-    
-    if tier == Tier.HITL:
-        # 暫停，等人類批准
-        await wait_for_human_approval(task, timeout=300)
-    
-    # ── Layer 3: LLM Cascade（根據 tier 決定行為）──
-    require_consensus = (tier == Tier.HOTL)
-    result = await llm_cascade.execute(
-        task, 
-        require_consensus=require_consensus,
-        governance_tier=tier  # Cascade 知道這是 HOTL/HITL/LOOP
+    # 記錄 decision log
+    self.decision_log.write(
+        agent_id="governance",
+        fr_id=fr_id,
+        decision=f"tier={tier.value}",
+        reasoning=f"uaf={uaf:.3f}, rejections={ctx.previous_rejections}"
     )
     
-    # ── Kill-Switch monitoring ──
-    health_monitor.record_result(result)
-    if health_monitor.should_circuit_break():
-        await kill_switch.trigger(agent_id, reason="health_monitor_threshold")
+    # Tier 影響後續行為
+    if tier == Tier.HOOTL:
+        # 最高風險：需要人類直接批准，不能只靠 Reviewer
+        self._notify_human(f"FR-{fr_id}: HOOTL tier — 需要你直接批准")
+    elif tier == Tier.HITL:
+        # 中高風險：通知 Johnny 有 Reviewer 無法決定的 case
+        logger.info(f"FR-{fr_id}: HITL tier — Reviewer 需要完整審查")
+    
+    self._current_tier = tier
+    return tier
 
-    return result
+def monitoring_after_rev(self, fr_id: str, rev_result: dict):
+    """Feature #3: 驗證 Reviewer APPROVE 有對應的 tier decision"""
+    if rev_result.get("review_status") == "APPROVE":
+        tier = getattr(self, "_current_tier", None)
+        if tier is None:
+            raise PHASE_HOOK_FAILED(
+                f"FR-{fr_id}: Reviewer APPROVE 但沒有 Governance tier decision"
+            )
+        
+        self.decision_log.write(
+            agent_id="reviewer",
+            fr_id=fr_id,
+            decision=f"APPROVE (tier={tier.value})",
+            reasoning=rev_result.get("reason", "")
+        )
 ```
 
-**Governance Decision 如何影響後續**：
-
-| Tier | LLM Cascade 行為 | Kill-Switch 敏感度 |
-|------|----------------|-----------------|
-| **LOOP**（最低）| 單一模型，快速執行 | 低 |
-| **HOTL**（自動）| 多模型 consensus冗余驗證 | 中 |
-| **HITL**（人類）| 先通過再執行，紀錄人類批准 | 高 |
-| **BLOCK**（阻擋）| 不執行，直接返回錯誤 | N/A |
-
-**預期好處**：
-- **走捷徑被阻擋**：Governance 是第一個看到 request 的「裁判」，不是最後
-- **高風險決策（HOTL/HITL）被強化**：這些 tier 的 decision 會被多模型驗證
-- **Prompt injection 被 L1.7 + L2 雙重把關**
-
-**預估工期**：3-4 天
-
-**風險**：中（需要確保 Governance 不成為效能瓶頸 — TierClassifier 必須 < 10ms）
+**對 4 個核心問題的幫助**: 走捷徑（跳過高風險審查）被 Governance tier 系統化阻擋。
 
 ---
 
-### Stage 3：Intelligence Layer Activation（第三步）
+### Feature #4: Kill-Switch
 
-**為什麼第三步**：Intelligence Layer 是「第二層防護」— Governance 只決定「能不能做」，UQLM 判斷「做出來的東西對不對」
+**鉤入點**: `monitoring_hr12_check()`
 
-| 順序 | Feature | 現況 | 整合目標 |
-|------|---------|------|---------|
-| **3-1** | #7 UQLM | 存在 | 每個 LLM response 後跑 uncertainty score |
-| **3-2** | #6 Hunter Agent | 存在 | 訂閱 message bus；uncertainty > threshold 時介入 |
-| **3-3** | #10 LangGraph | 存在 | structured multi-step workflow，stateful |
+**整合理由**: HR-12 是「>5 輪 A/B → PAUSE」。整合 Kill-Switch 後，PAUSE 變成真的熔斷，不只是狀態改變。
 
-**整合方法**：
 ```python
-# LangGraph state machine with UQLM + Hunter
-class AgentState(TypedDict):
-    messages: list
-    uncertainty: Optional[UncertaintyScore]
-    governance_tier: Tier
-    hunter_flags: list[HuntingFlag]
+def monitoring_hr12_check(self, fr_id: str, iteration: int):
+    """Feature #4: HR-12 + Kill-Switch 整合"""
+    if iteration > 5:
+        # 本來的行為：通知 Johnny，專案 PAUSE
+        self._pause_project(f"FR-{fr_id}: A/B 審查超過 5 輪（HR-12）")
+        
+        # Kill-Switch 的額外行為：
+        # 1. 生成 EU AI Act Art.14 報告（合規要求）
+        self.compliance.report_hr12_event(
+            fr_id=fr_id,
+            iterations=iteration,
+            trigger="HR-12"
+        )
+        
+        # 2. 記風暴進 Risk Register
+        self.risk_assessor.register(
+            f"FR-{fr_id}: HR-12 triggered — iteration count exceeded",
+            severity=SEVERITY.HIGH,
+            type="process_risk"
+        )
+        
+        # 3. 觸發 Kill-Switch（停止這個 FR 的進一步迭代）
+        self.kill_switch.trigger(
+            target=f"fr-{fr_id}",
+            reason="hr12_max_iterations_exceeded"
+        )
+        
+        raise PHASE_HOOK_FAILED(f"FR-{fr_id}: HR-12 + Kill-Switch 觸發")
+```
 
-def planner_node(state: AgentState):
-    # 根據 Governance tier 決定如何執行
-    if state.governance_tier == Tier.HOTL:
-        response = llm_cascade.invoke(state.messages, multi_model=True)
+**對 4 個核心問題的幫助**: 偷懶（不斷 REJECT 但不認真修正）被 Kill-Switch 終結。
+
+---
+
+### Feature #5: LLM Cascade
+
+**鉤入點**: `monitoring_before_rev()` (tier==HOTL 時)
+
+**整合理由**: HOTL tier（高風險自動）需要多個 Reviewer session 的共識。目前只有一個 Reviewer。
+
+```python
+def monitoring_before_rev(self, fr_id: str):
+    # ... (Feature #3 的 tier 分類)
+    
+    tier = self._current_tier
+    
+    if tier == Tier.HOTL:
+        # Feature #5: HOTL → 多個 Reviewer 共識
+        # 使用不同 model 的 session 來增加 coverage
+        models = self.llm_cascade.get_alternative_models(count=3)
+        
+        for model in models:
+            # 每個 model 跑一次獨立的 Reviewer session
+            rev_result = self._sessions_spawn_reviewer(
+                fr_id=fr_id,
+                model=model,
+                prompt_suffix=f"[HOTL consensus — model={model}]"
+            )
+            
+            if rev_result.review_status == "REJECT":
+                # 共識：認為有問題
+                self.decision_log.write(
+                    agent_id=f"reviewer-{model}",
+                    fr_id=fr_id,
+                    decision="REJECT",
+                    reasoning=rev_result.reason
+                )
+                return {"status": "REJECT", "consensus": models}
+        
+        # 所有 model 都 APPROVE → 共識通過
+        self.decision_log.write(
+            agent_id="reviewer-consensus",
+            fr_id=fr_id,
+            decision="APPROVE (consensus)",
+            reasoning=f"all {len(models)} models agree"
+        )
+        return {"status": "APPROVE", "consensus": models}
+```
+
+**對 4 個核心問題的幫助**: Reviewer 單一模型的盲點被多模型共識補足。
+
+---
+
+### Feature #6: Hunter Agent
+
+**鉤入點**: `monitoring_after_dev()`
+
+**整合理由**: Developer 輸出是最後一個可以被自動檢查的點。Hunter Agent 在這裡做 anomaly detection。
+
+```python
+def monitoring_after_dev(self, fr_id: str, dev_result: dict):
+    """Feature #6: Hunter Agent — Developer 輸出的第二雙眼睛"""
+    # ... UQLM (#7) 先執行 ...
+    uaf = self.uqlm.compute(dev_result)
+    
+    # Hunter Agent anomaly detection
+    if "files" in dev_result:
+        anomaly = self.hunter.detect(
+            files=dev_result["files"],
+            context={"fr_id": fr_id, "phase": self.phase}
+        )
+        
+        if anomaly.is_confirmed:
+            # 確認 anomaly：直接 REJECT，不浪費一輪
+            self.decision_log.write(
+                agent_id="hunter",
+                fr_id=fr_id,
+                decision="CONFIRMED_ANOMALY",
+                reasoning=anomaly.reason
+            )
+            raise PHASE_HOOK_FAILED(
+                f"FR-{fr_id}: Hunter Agent 確認 anomaly — "
+                f"{anomaly.reason}"
+            )
+        
+        if anomaly.is_suspicious:
+            # 可疑但未確認：降低 tier（HOTL → 多模型共識）
+            if getattr(self, "_current_tier", None) == Tier.LOW:
+                self._current_tier = Tier.HOTL
+            
+            self.decision_log.write(
+                agent_id="hunter",
+                fr_id=fr_id,
+                decision=f"SUSPICIOUS — {anomaly.reason}",
+                reasoning=f"confidence={anomaly.confidence:.2f}"
+            )
+    
+    self.langfuse.set_span_attribute(f"fr.{fr_id}.hunter_status", anomaly.status)
+```
+
+**對 4 個核心問題的幫助**: 幻覺（輸出明顯偏離正常模式）被 Hunter Agent 發現。
+
+---
+
+### Feature #7: UQLM Ensemble
+
+**鉤入點**: `monitoring_after_dev()`
+
+**整合理由**: Developer 輸出後第一時間計算 uncertainty score，結果影響後續所有決策。
+
+```python
+def monitoring_after_dev(self, fr_id: str, dev_result: dict):
+    """Feature #7: UQLM — Developer 輸出的 uncertainty score"""
+    if "files" not in dev_result:
+        uaf = 0.0
     else:
-        response = llm_cascade.invoke(state.messages, multi_model=False)
+        code_content = "\n".join([f["content"] for f in dev_result["files"]])
+        uaf = self.uqlm.compute_code_uncertainty(code_content)
     
-    # UQLM: 計算這個 response 的 uncertainty
-    uncertainty = uqlm.compute(
-        prompt=state.messages,
-        response=response.content,
-        model_name=llm_cascade.current_model
+    # 寫入 Langfuse span（讚後續所有決策都能讀到）
+    self.langfuse.set_span_attribute(f"fr.{fr_id}.uaf_score", uaf)
+    
+    # 寫入 Decision Log
+    self.decision_log.write(
+        agent_id="uqlm",
+        fr_id=fr_id,
+        decision=f"uaf={uaf:.3f}",
+        reasoning=f"components={self.uqlm.get_components()}"
     )
     
-    decision_log.write(
-        agent_id=state.agent_id,
-        decision=f"UAF={uncertainty.uaf_score:.3f}",
-        reasoning=f"model={llm_cascade.current_model}, components={uncertainty.components}"
-    )
+    # UAF > 0.7 = 高 uncertainty → 直接升高 tier
+    if uaf > 0.7 and getattr(self, "_current_tier", None) in (Tier.LOW, None):
+        self._current_tier = Tier.HITL
+        self._notify_human(f"FR-{fr_id}: UAF={uaf:.3f} — tier 升至 HITL")
     
-    # UQLM 分數決定下一個 node
-    if uncertainty.uaf_score > 0.7:
-        return {"next": "hunter_review", "uncertainty": uncertainty}
-    elif uncertainty.uaf_score > 0.4:
-        return {"next": "debate_round_2", "uncertainty": uncertainty}
-    else:
-        return {"next": "execute", "uncertainty": uncertainty}
-
-def hunter_review_node(state: AgentState):
-    """Hunter Agent: 第二雙眼睛，檢查 LLM output 是否異常"""
-    anomaly = hunter.detect(
-        messages=state.messages,
-        response=state.response,
-        uncertainty=state.uncertainty
-    )
-    
-    if anomaly.is_confirmed:
-        # Hunter 確認 anomaly：要求重新生成
-        return {
-            "next": "regenerate",
-            "hunter_flags": state.hunter_flags + [anomaly],
-            "reason": anomaly.reason
-        }
-    
-    if anomaly.isSuspicious but not confirmed:
-        # 不確定，但值得注意：降級 tier，要求多模型共識
-        return {
-            "next": "debate_round_2",
-            "governance_tier": Tier.HOTL  # 升級 tier
-        }
-    
-    return {"next": "execute"}
-
-def debate_round_2_node(state: AgentState):
-    """Speculative debate: 第二個模型挑戰第一個模型的答案"""
-    second_model = llm_cascade.get_alternative_model()
-    challenge = llm_cascade.invoke(
-        state.messages + [state.response],
-        model=second_model,
-        system_prompt="你是一個批評者，挑戰前一個答案的弱點"
-    )
-    
-    alignment = uqlm.compute_alignment(state.response, challenge.content)
-    
-    decision_log.write(
-        agent_id=state.agent_id,
-        decision=f"debate alignment={alignment:.3f}",
-        reasoning=f"model_1={llm_cascade.current_model}, model_2={second_model}"
-    )
-    
-    if alignment < 0.3:
-        # 兩個模型結論差太多：觸發 Hunter + 通知人類
-        return {
-            "next": "hunter_review",
-            "uncertainty": UncertaintyScore(uaf_score=0.9)  # 人為提高
-        }
-    
-    return {"next": "execute", "consensus_score": alignment}
+    return uaf
 ```
 
-**即時防護效果**：
-
-| 問題 | 解決機制 |
-|------|---------|
-| **幻覺** | UQLM > 0.7 → hunter_review；多模型 debate 驗證共識 |
-| **自我感覺良好** | UQLM 外部客觀分數，Agent 看不見自己信心和分數的對比 |
-| **偷懶（不驗證）** | HOTL tier 強制多模型共識，偷懶者無法用單一模型矇混 |
-
-**預估工期**：4-5 天
-
-**風險**：高（LangGraph 可能破壞現有 Cascade；需要完整的 Stage 2 穩定後才能整合）
+**對 4 個核心問題的幫助**: 幻覺（高 UAF 分數代表答案不確定）被量化顯示。
 
 ---
 
-### Stage 4：Observability Enrichment（第四步）
+### Feature #8: Gap Detector
 
-**為什麼第四步**：Intelligence Layer 上線後，trace 數據變得更豐富；此時把 #13 的 enrichment 完整串進去
+**鉤入點**: `postflight_all()`
 
-| 順序 | Feature | 現況 | 整合目標 |
-|------|---------|------|---------|
-| **4-1** | #11 Langfuse | 部分整合（Stage 1 已有基礎）| 完整 enriched span：含 UQLM 分數、Governance tier、Hunter flags |
-| **4-2** | #13 Effort Metrics | Stage 1 已有鉤子 | 完整的 tokens/time/iteration 追蹤，並與 phase gate 掛鉤 |
-| **4-3** | #13 Decision Log | Stage 1 已有鉤子 | 完整的 decision reasoning 持久化，含 metadata |
+**整合理由**: Phase 完成後統一掃描測試覆蓋缺口。Phase 4 最關鍵，其他 Phase 也需要基礎結構檢查。
 
-**整合後的 enriched span**：
 ```python
-@observe
-async def agent_span(agent_id: str, task: str):
-    # 啟動時
-    effort.start(agent_id, trace_id=trace.id)
+def _postflight_gap_detection(self):
+    """Feature #8: Phase 完成後測試覆蓋缺口掃描"""
+    test_dir = self.project_path / "04-tests"
+    if not test_dir.exists():
+        logger.warning("04-tests/ 目錄不存在")
+        return
     
-    # 執行時（每個 step）
-    span.set_attribute("uqlm.uaf_score", uncertainty.uaf_score)
-    span.set_attribute("uqlm.components", uncertainty.components)
-    span.set_attribute("governance.tier", tier.value)
-    span.set_attribute("hunter.flags", hunter.flags)
-    
-    # 結束時
-    effort.stop(effort_id)
-    decision_log.write(agent_id, decision, reasoning, options_considered, chosen_action)
-```
-
-**Langfuse Dashboard 能看到**：
-- 每個 agent decision 的 UAF 分數
-- Governance tier 分布
-- Hunter Agent 介入頻率
-- Effort tokens/time per phase
-
-**預估工期**：2 天
-
-**風險**：低（強化現有基礎設施）
-
----
-
-### Stage 5：Quality Gates Full Automation（第五步）
-
-**為什麼第五步**：Stage 3 的 Intelligence 上線後，Agent 行為數據更完整；此時做完整的 Gap Detection 和 Risk Assessment
-
-| 順序 | Feature | 觸發時機 | 整合目標 |
-|------|---------|---------|---------|
-| **5-1** | #8 Gap Detector | 每個 Phase 完成 | 完整測試覆蓋掃描，不只是結構性檢查 |
-| **5-2** | #9 Risk Assessment | 每個 Phase 完成 | 量化風險評估，與 Governance tier 聯動 |
-| **5-3** | Effort Metrics | 每個 Phase 完成 | 測量每個 phase 的 tokens/time 是否合理 |
-
-**整合方法**：
-```python
-def full_phase_gate(phase_id: int, deliverables: dict):
-    # 1. Effort Metrics — 是否合理？
-    effort_record = effort.get(phase_id)
-    if effort_record.tokens_consumed < MIN_TOKENS_PER_PHASE.get(phase_id, 0):
-        risk.register(
-            f"Phase {phase_id} effort suspiciously low",
-            severity=HIGH,
-            type="偷懶"
-        )
-    
-    # 2. Gap Detector — 測試覆蓋缺口
-    if phase_id == 4:
-        gaps = gap_detector.scan_full("04-tests/")
+    if self.phase == 4:
+        # Phase 4：完整 Gap Detection
+        gaps = self.gap_detector.scan_full(test_dir)
+        
         if gaps:
-            risk.register_bulk(gaps)
-            deliver("GAP_REPORT.md", gaps)
+            self._deliver("GAP_REPORT.md", {
+                "phase": 4,
+                "gaps": gaps,
+                "total": len(gaps),
+                "coverage_estimate": self.gap_detector.estimate_coverage(test_dir)
+            })
+            
+            # 高嚴重性缺口 → 通知 Johnny
+            high_severity = [g for g in gaps if g.severity >= 0.8]
+            if high_severity:
+                self._notify_human(
+                    f"Phase 4: 發現 {len(high_severity)} 個高嚴重性測試缺口"
+                )
     
-    # 3. Risk Assessment — 量化評估
-    risk_score = risk_assessor.evaluate(phase_id, deliverables)
-    
-    # 4. Governance tier drift — tier 有沒有異常？
-    tier_drift = governance.get_tier_drift_since_last_phase()
-    if tier_drift > 2:  # 連續 2 個 phase tier 上升 = 風險信號
-        risk.register(
-            "Governance tier escalation pattern",
-            severity=MEDIUM,
-            type="架構風險"
-        )
-    
-    # 5. Hunter Agent flags — anomaly 頻率
-    hunter_freq = hunter.get_anomaly_rate_since_last_phase()
-    if hunter_freq > 0.3:  # > 30% 的 requests 被 flag = 系統性問題
-        risk.register(
-            f"Hunter anomaly rate elevated: {hunter_freq:.1%}",
-            severity=HIGH,
-            type="幻覺風險"
-        )
+    elif self.phase >= 3:
+        # Phase 3+：基礎結構性檢查
+        basic_gaps = self.gap_detector.scan_basic(test_dir)
+        if basic_gaps:
+            logger.warning(f"Phase {self.phase}: 基礎測試覆蓋不足 — {len(basic_gaps)} 項")
 ```
 
-**預期好處**：
-- **偷懶**：Effort 太低馬上被發現
-- **幻覺**：Hunter anomaly 頻率超標馬上預警
-- **走捷徑**：Governance tier drift 追蹤，發現捷徑傾向
-
-**預估工期**：2-3 天
-
-**風險**：低（鉤子系統已有，Stage 1-3 已建立基礎）
+**對 4 個核心問題的幫助**: 偷懶（沒寫該寫的測試）在 Phase 完成時被發現。
 
 ---
 
-### Stage 6：Compliance Enforcement（第六步）
+### Feature #9: Risk Assessment
 
-**為什麼最後做**：合規報告需要所有上層組件就位
+**鉤入點**: `preflight_all()` + `postflight_all()`
 
-| 順序 | Feature | 整合點 |
-|------|---------|--------|
-| **6-1** | #12 Compliance | Kill-Switch 觸發 → EU AI Act Art.14 report |
-| **6-2** | #12 Compliance | HITL 審批 → NIST AI RMF "Manage" 函數 |
-| **6-3** | #12 Compliance | Hunter Agent anomaly → NIST "Monitor" 函數 |
-| **6-4** | #12 Compliance | LLM Cascade routing → NIST "Measure" 函數 |
-| **6-5** | #6 Hunter Agent | MetaQA baseline → 合規的「系統正常行為基準」|
+**整合理由**: 風險評估是持續性的，不是只在 Phase 結束。PRE-FLIGHT 發現風險信號，POST-FLIGHT 更新風險狀態。
 
-**整合方法**：
 ```python
-# Kill-Switch → EU AI Act Art.14
-if circuit_breaker.should_trigger():
-    compliance.report(
-        event_type="circuit_break",
-        EU_article="14(4)(a)",  # Human oversight mechanism
-        NIST_function="Manage",
-        evidence={
-            "health_metrics": health_monitor.snapshot(),
-            "governance_tier": governance.current_tier,
-            "effort_record": effort.get_latest()
+def _preflight_risk_assessment(self):
+    """Feature #9: Phase 開始前風險評估"""
+    risk = self.risk_assessor.evaluate_phase_start(
+        phase=self.phase,
+        project_path=self.project_path
+    )
+    
+    # 記錄進合規報告
+    self.compliance.log_risk_event(
+        event_type="preflight",
+        phase=self.phase,
+        risk_score=risk.total_score,
+        findings=risk.findings
+    )
+    
+    # 極高風險 → PRE-FLIGHT 失敗
+    if risk.total_score > 0.9:
+        raise PREFLIGHT_FAILED(
+            f"Phase {self.phase}: 風險極高（{risk.total_score:.2f}），"
+            f"需要 Johnny 確認是否繼續"
+        )
+    
+    # 高風險 → 通知 Johnny
+    if risk.total_score > 0.7:
+        self._notify_human(
+            f"Phase {self.phase}: 風險偏高（{risk.total_score:.2f}），"
+            f"請確認繼續"
+        )
+
+def _postflight_risk_assessment(self):
+    """Feature #9: Phase 結束後風險評估"""
+    risk = self.risk_assessor.evaluate_phase_end(
+        phase=self.phase,
+        project_path=self.project_path,
+        effort_summary=self.effort.get_summary(self.phase)
+    )
+    
+    self._deliver("RISK_REGISTER.md", risk.to_document())
+    
+    # 新發現的高風險 → 通知 Johnny
+    high_risks = [r for r in risk.findings if r.severity >= 0.8]
+    if high_risks:
+        self._notify_human(
+            f"Phase {self.phase}: 發現 {len(high_risks)} 個高風險 — "
+            f"需制定緩解措施"
+        )
+```
+
+**對 4 個核心問題的幫助**: 自我感覺良好（Agent 認為沒問題但 Risk Assessor 說有風險）被量化顯示。
+
+---
+
+### Feature #10: LangGraph
+
+**整合方式**: 包裹 FR EXECUTION LOOP
+
+**整合理由**: 目前的 FR EXECUTION LOOP 是 stateless for loop。LangGraph 可以讓 FR execution 有狀態，知道每個 FR 的執行歷史。
+
+```python
+class FRExecutionGraph:
+    """Feature #10: LangGraph — 有狀態的 FR Execution"""
+    
+    def __init__(self, frs: list[str]):
+        # 定義 nodes
+        self.nodes = {
+            "preflight": self._preflight_node,
+            "developer": self._developer_node,
+            "reviewer": self._reviewer_node,
+            "hunter": self._hunter_node,
+            "governance": self._governance_node,
+            "postflight": self._postflight_node,
         }
-    )
+        
+        # 定義 edges（條件跳轉）
+        self.edges = {
+            "preflight": ["developer"],
+            "developer": ["hunter"],  # 總是經過 Hunter
+            "hunter": ["governance"],  # Hunter 輸出governance decision
+            "governance": {
+                "HOTL": ["reviewer", "reviewer"],  # 兩個 reviewer
+                "HITL": ["reviewer"],  # 通知 human
+                "LOOP": ["developer"],  # 重新 developer
+                "BLOCK": ["postflight"],  # 直接結束
+            },
+            "reviewer": {
+                "APPROVE": ["developer:next"],
+                "REJECT": ["developer:current"],
+            }
+        }
+    
+    def execute(self, frs: list[str]):
+        """執行有狀態的 FR graph"""
+        state = {"current_fr": 0, "fr_states": {}, "history": []}
+        
+        while state["current_fr"] < len(frs):
+            fr_id = frs[state["current_fr"]]
+            state = self._execute_fr(fr_id, state)
+            
+            # 根據 state 決定 next FR
+            if state["fr_states"][fr_id].get("next") == "developer:next":
+                state["current_fr"] += 1
+            # 其他情況保持在當前 FR（REJECT loop）
+        
+        return self._postflight_node(state)
+    
+    def _execute_fr(self, fr_id: str, state: dict):
+        """執行單個 FR，經過完整 node 流程"""
+        # ... 執行 preflight → developer → hunter → governance → reviewer
+        # ... 每個 node 的輸出寫入 state["fr_states"][fr_id]
+        return state
+```
 
-# HITL approval → NIST AI RMF Manage
-if human.approved(task):
-    compliance.record(
-        action="human_approval",
-        NIST_function="Manage",
-        EU_article="14(4)(b)",  # Human oversight for high-risk
-        approver=human.id,
-        evidence={"task": task, "governance_tier": Tier.HITL}
-    )
+**對 4 個核心問題的幫助**: FR execution 有完整歷史，不會忘記之前做過什麼。
 
-# Hunter anomaly → NIST Monitor
-if hunter.anomaly_detected:
-    compliance.log_monitoring_event(
-        event_type="anomaly_detected",
-        NIST_function="Monitor",
-        evidence=hunter.get_latest_anomaly()
-    )
+---
 
-# Auto-generated compliance report (quarterly)
-def generate_compliance_report():
-    return {
+### Feature #11: Langfuse
+
+**鉤入點**: 全程（所有鉤子）
+
+**整合理由**: Langfuse 是觀測基礎設施，所有其他 Feature 的 trace 都需要它。
+
+```python
+def preflight_all(self):
+    self.langfuse = LangfuseClient()
+    self.trace = self.langfuse.trace(
+        name=f"phase-{self.phase}",
+        metadata={"project": self.project_path}
+    )
+    
+    span = self.trace.span("preflight")
+    span.set_attribute("phase", self.phase)
+    span.set_attribute("fr_count", len(self.frs))
+    self._preflight_fsm()
+    # ... 其他 preflight checks ...
+    span.set_attribute("preflight_passed", True)
+    span.end()
+
+def monitoring_after_dev(self, fr_id: str, dev_result: dict):
+    span = self.trace.span(f"fr-{fr_id}-dev")
+    span.set_attribute("fr_id", fr_id)
+    span.set_attribute("uaf_score", uaf)
+    span.set_attribute("hunter_status", anomaly.status)
+    span.set_attribute("files_count", len(dev_result.get("files", [])))
+    span.end()
+
+def postflight_all(self):
+    span = self.trace.span("postflight")
+    # ... postflight operations ...
+    self.trace.end()
+```
+
+---
+
+### Feature #12: Compliance
+
+**鉤入點**: `postflight_all()` + `monitoring_hr12_check()`
+
+**整合理由**: EU AI Act Art.14 要求 human oversight 的 audit trail。HR-12 觸發和 Kill-Switch 觸發都必須記錄。
+
+```python
+def _postflight_compliance_report(self):
+    """Feature #12: Phase 完成時生成合規報告"""
+    report = {
+        "phase": self.phase,
         "EU_AI_Act_Art14": {
-            "total_humans_approved": human_approvals.count(),
-            "total_blocked": governance.get_blocked_count(),
-            "total_circuit_breaks": circuit_breaker.count(),
-            "anomaly_rate": hunter.get_anomaly_rate()
+            "total_frs": len(self.frs),
+            "humans_approved": self._count_humans_approved(),
+            "hotl_tiers": self._count_tier(Tier.HOTL),
+            "hitl_tiers": self._count_tier(Tier.HITL),
+            "blocked": self._count_tier(Tier.BLOCK),
         },
         "NIST_AI_RMF": {
-            "Govern": governance.get_govern_decisions(),
-            "Monitor": hunter.get_anomaly_events(),
-            "Measure": llm_cascade.get_model_distribution(),
-            "Map": gap_detector.get_coverage_map(),
-            "Manage": human_approvals.get_approvers()
+            "Govern": self._count_govern_decisions(),
+            "Monitor": self.hunter.get_anomaly_count(),
+            "Measure": self.llm_cascade.get_model_usage_count(),
+            "Manage": self._count_human_interventions(),
+        },
+        "Anthropic_RSP": {
+            "asl_level": self._determine_asl_level(),
+            "sign_offs": self._get_sign_offs(),
         }
     }
+    
+    self._deliver(f"COMPLIANCE_PHASE_{self.phase}.md", report)
+
+def monitoring_hr12_check(self, fr_id: str, iteration: int):
+    if iteration > 5:
+        self.compliance.report_event(
+            event_type="HR12_TRIGGERED",
+            EU_article="14(4)(a)",
+            NIST_function="Manage",
+            evidence={"fr": fr_id, "iterations": iteration}
+        )
 ```
 
-**預期好處**：
-- EU AI Act Art.14 合規 audit trail 自動生成
-- NIST AI RMF 五函數 100% mapped
-- Anthropic RSP v3.0 ASL-3 sign-off 有完整數據支持
-
-**預估工期**：2-3 天
-
-**風險**：低（合規層是新增，不修改任何現有功能）
-
 ---
 
-## 五、整合方式：6 種 Wire 類型
+### Feature #13: Observability (Effort + Decision Log)
 
-| 類型 | 適用場景 | 技術 | 範例 |
-|------|---------|------|------|
-| **Phase Gate Hook** | 每 Phase 完成時 | `after_phase(phase_id, callback)` | Stage 1, 5 |
-| **Plugin Registration** | Gateway 啟動時加載 | `gateway.register_plugin("shield", PromptShield())` | Stage 2 |
-| **Decorator Wrapper** | LLM call 前後 | `@observe` decorator 自動寫 Langfuse | Stage 4 |
-| **Event Bus Subscription** | Cross-layer 訊息 | `message_bus.subscribe(agent_id="*", callback=hunter.on_message)` | Stage 3 |
-| **State Pass-Through** | LangGraph node 間傳遞 | `state["uncertainty"]` / `state["governance_tier"]` | Stage 3 |
-| **Health Monitor Feed** | Kill-Switch 觸發條件 | `health_monitor.on_failure(provider)` → circuit breaker | Stage 2 |
+**鉤入點**: 全程（所有鉤子）
 
----
+**整合理由**: Effort metrics 和 Decision Log 追蹤每個環節，是其他 Feature 的數據基礎。
 
-## 六、對 4 個核心問題的即時防護覆蓋
+```python
+def __init__(self, project_path, phase):
+    self.decision_log = DecisionLogWriter(data_dir=f"{project_path}/data")
+    self.effort = EffortTracker(db_path=f"{project_path}/data/effort_metrics.db")
 
-| 問題 | 即時防護 Stage | 機制 |
-|------|--------------|------|
-| **偷懶** | Stage 1 + 5 | Phase Gate Effort 檢查（太快 = 疑似偷懶）；Gap Detector 發現測試覆蓋缺口 |
-| **走捷徑** | Stage 2 | Governance TierClassifier 是第一個看到 request 的裁判；BLOCK tier 直接阻擋 |
-| **幻覺/造假** | Stage 3 + 5 | UQLM uncertainty score > 0.7 → Hunter 介入；Hunter anomaly rate 超標 → Risk Assessment 預警；Decision Log 事後可審查 |
-| **自我感覺良好** | Stage 3 + 5 | UQLM 外部客觀分數（Agent 自己看不見自己的 UAF）；Risk Assessor 說「高風險」不等於 Agent 說了算 |
+def monitoring_before_dev(self, fr_id: str):
+    self.effort.start(
+        effort_id=f"dev-{fr_id}",
+        agent_id="developer",
+        trace_id=self.langfuse.trace_id
+    )
 
-**關鍵改善 vs v1.0**：每個 Stage 都有即時防護，不再有「完全無防護的空窗期」。
+def monitoring_after_dev(self, fr_id: str, dev_result: dict):
+    record = self.effort.stop(f"dev-{fr_id}")
+    
+    # 檢查「太快完成」= 疑似偷懶
+    if record.time_spent_ms < self._get_min_time(fr_id):
+        self.risk_assessor.register(
+            f"FR-{fr_id}: developer 完成時間異常短 "
+            f"({record.time_spent_ms/1000:.1f}s)",
+            severity=SEVERITY.MEDIUM,
+            type="偷懶信號"
+        )
 
----
+def monitoring_after_rev(self, fr_id: str, rev_result: dict):
+    self.effort.increment(f"rev-{fr_id}", tokens=rev_result.get("tokens_used", 0))
 
-## 七、風險與緩解
-
-| 風險 | 等級 | 緩解策略 |
-|------|------|---------|
-| Governance TierClassifier 成為效能瓶頸 | 高 | 測量延遲，目標 < 10ms；必要時 cache tier decisions |
-| LangGraph 破壞現有 LLM Cascade | 高 | Stage 2 確保 Cascade 完全整合後再包 LangGraph |
-| 迴圈依賴（Hunter ↔ UQLM ↔ Governance）| 中 | max iteration = 3 + explicit exit node |
-| Phase Gate 太多鉤子拖慢 development | 中 | Stage 1 只做關鍵檢查（effort 合理性 + decision_log）；完整檢查在 Stage 5 |
-| 13 個 Feature 啟動導致延遲增加 | 中 | UQLM/CLAP 只在高 uncertainty 時啟動（lazy evaluation）|
-| Effort Metrics 隱私問題 | 低 | 只記 tokens/time，不記 task 內容 |
-
----
-
-## 八、預估總工期
-
-| Stage | 天數 | 累計 | 即時防護 |
-|-------|------|------|---------|
-| Stage 1: Foundation + Phase Gate | 2-3 天 | 2-3 天 | 偷懶/造假 |
-| Stage 2: Governance Pipeline | 3-4 天 | 5-7 天 | 走捷徑 |
-| Stage 3: Intelligence Layer | 4-5 天 | 9-12 天 | 幻覺/自我感覺良好 |
-| Stage 4: Observability Enrichment | 2 天 | 11-14 天 | 追蹤能力強化 |
-| Stage 5: Quality Gates Full | 2-3 天 | 13-17 天 | 偷懶/幻覺 |
-| Stage 6: Compliance Enforcement | 2-3 天 | 15-20 天 | 合規 audit |
-
-**總計：15-20 個工作天**
-
----
-
-## 九、推薦執行順序
-
-```
-Stage 1 (2-3天) → Stage 2 (3-4天) → Stage 3 (4-5天) → Stage 4 (2天) → Stage 5 (2-3天) → Stage 6 (2-3天)
+def postflight_all(self):
+    summary = self.effort.get_phase_summary(self.phase)
+    
+    # 寫入 decision log 的尾端標記
+    self.decision_log.write(
+        agent_id="phasehooks",
+        decision=f"Phase {self.phase} completed",
+        reasoning=f"total_time={summary.total_time_ms}ms, "
+                  f"total_tokens={summary.total_tokens}"
+    )
 ```
 
-**Stage 1 最先做**：每個 Phase 結尾的 gate 是最低成本、最高效益的初期防護
+---
 
-**Stage 2 第二做**：Governance 是第一個主動阻擋層，在 Intelligence 之前就該就位
+## 三、整合後的 PhaseHooks 執行流程
 
-**Stage 3 第三做**：Intelligence Layer 是最複雜的，需要 Stage 1+2 穩定後才能整合
-
-**Stage 4-6 最後做**：基礎設施和防護層就位後，合規和 observability 的價值才完整
+```
+Johnny: 「執行 Phase 3」
+         ↓
+Agent: plan-phase --phase 3 --goal "FR-01~FR-08"
+         ↓
+Agent: run-phase --phase 3
+         ↓
+┌─────────────────────────────────────────────────────────────┐
+│ preflight_all() ← SAIF (#1) + Risk Assessment (#9)      │
+│                 ← Langfuse trace 開始 (#11)               │
+└─────────────────────────────────────────────────────────────┘
+         ↓
+┌─────────────────────────────────────────────────────────────┐
+│ FR LOOP（每個 FR 依次執行）                                 │
+│                                                             │
+│ for FR in FRs:                                             │
+│   monitoring_before_dev(FR) ← Decision Log (#13)           │
+│       ↓                                                    │
+│   sessions_spawn(developer) → files returned              │
+│       ↓                                                    │
+│   monitoring_after_dev(FR)                                 │
+│     ├── UQLM (#7) → uaf_score                            │
+│     ├── Hunter (#6) → anomaly detection                   │
+│     ├── Prompt Shields (#2) → injection scan               │
+│     ├── Effort (#13) → time/token record                  │
+│     └── Decision Log (#13) → uaf + anomaly                │
+│       ↓                                                    │
+│   monitoring_before_rev(FR)                                │
+│     ├── Governance (#3) → tier classification            │
+│     ├── Decision Log (#13) → tier decision                │
+│     └── 若 tier==HOTL → 多 Reviewer sessions (#5)         │
+│       ↓                                                    │
+│   sessions_spawn(reviewer) → review_status               │
+│       ↓                                                    │
+│   monitoring_after_rev(FR)                                │
+│     ├── Governance verify (#3)                            │
+│     ├── Effort increment (#13)                            │
+│     └── Decision Log (#13) → APPROVE/REJECT               │
+│       ↓                                                    │
+│   monitoring_hr12_check(FR, iteration)                    │
+│     └── 若 >5 → Kill-Switch (#4) + Compliance (#12)       │
+└─────────────────────────────────────────────────────────────┘
+         ↓
+┌─────────────────────────────────────────────────────────────┐
+│ postflight_all()                                           │
+│   ├── Gap Detector (#8) → GAP_REPORT.md                   │
+│   ├── Risk Assessment (#9) → RISK_REGISTER.md             │
+│   ├── Compliance (#12) → COMPLIANCE_PHASE_N.md            │
+│   ├── Effort Summary (#13)                               │
+│   └── Langfuse close (#11)                               │
+└─────────────────────────────────────────────────────────────┘
+```
 
 ---
 
-## 十、判斷完成標準
+## 四、對 4 個核心問題的即時防護覆蓋
 
-| Stage | 完成標準 |
-|-------|---------|
-| Stage 1 | Phase Gate hook 可攔截 < 1 分鐘完成的 Phase；Decision Log 每次 decision 有 record |
-| Stage 2 | Agent runtime 經過完整 5-layer pipeline；Governance tier decision 可追蹤 |
-| Stage 3 | LangGraph state 含 uncertainty；Hunter 可干預；speculative debate 可觸發 |
-| Stage 4 | Langfuse Dashboard 可見 enriched span（UQLM + Governance + Hunter）|
-| Stage 5 | Gap Detector 發現 > 10% 覆蓋缺口會被標記；Risk Assessor 每 Phase 更新 |
-| Stage 6 | EU AI Act + NIST AI RMF report 可自動生成 |
+| 問題 | 即時防護鉤子 | Feature |
+|------|------------|--------|
+| **偷懶** | `monitoring_after_dev()` — effort.time_spent < minimum | #13 Effort |
+| **偷懶** | `postflight_all()` — Gap Detector 發現測試覆蓋不足 | #8 Gap Detector |
+| **走捷徑** | `monitoring_before_rev()` — Governance tier 分類 | #3 Governance |
+| **走捷徑** | `monitoring_hr12_check()` — Kill-Switch 熔斷 | #4 Kill-Switch |
+| **幻覺** | `monitoring_after_dev()` — UQLM uaf_score > 0.7 | #7 UQLM |
+| **幻覺** | `monitoring_after_dev()` — Hunter Agent confirmed anomaly | #6 Hunter Agent |
+| **造假** | `monitoring_after_dev()` — Prompt Shields injection block | #2 Prompt Shields |
+| **造假** | `postflight_all()` — Decision Log 可事後審查 | #13 Decision Log |
+| **自我感覺良好** | `preflight_all()` + `postflight_all()` — Risk Assessment 量化分數 | #9 Risk Assessment |
+| **自我感覺良好** | `monitoring_after_dev()` — UQLM 外部客觀分數 | #7 UQLM |
+
+**關鍵改善**：每個問題有多個 Feature 同時制約，不再是單一防線。
 
 ---
 
-## 十一、v2.0 與 v1.0 的關鍵差異
+## 五、v2.0 vs v3.0 對照
 
-| 面向 | v1.0 | v2.0 |
+| 面向 | v2.0 | v3.0 |
 |------|------|------|
-| **第一個 Stage** | 被動的 Observability | 即時的 Phase Gate Enforcement |
-| **防護時機** | Stage 2-4 才陸續上線 | Stage 1 就有偷懶/造假檢測 |
-| **Governance 位置** | Stage 2，pipeline 中間 | Stage 2，但作為第一層主動阻擋 |
-| **UQLM 位置** | Stage 3 | Stage 3（Intelligence Layer）|
-| **Gap Detector** | 只在 Phase 4 | 每個 Phase 結尾都跑結構性檢查；Phase 4 跑完整版 |
-| **Effort Metrics** | Stage 1 被動收集 | Stage 1 主動參與 Phase Gate（太快 = 偷懶信號）|
-| **Phase 1-2 約束** | 無 | 有（SPEC.md 含 FR IDs、ARCHITECTURE.md 覆蓋所有 modules）|
-| **Risk Assessment** | 每 Phase 結束 | 每 Phase 結束 + 持續性監控（Hunter anomaly rate 等）|
-
----
-
-**Status:** Pending Johnny's decision on start Stage
+| **整合點** | 5 個新建 Stage | 7 個現有 PhaseHooks 鉤子 |
+| **架構假設** | 有獨立的 Agent Runtime Pipeline | 沒有獨立 pipeline，全部鉤入 PhaseHooks |
+| **Stage 1** | Observability Foundation | preflight_all() — 5 分鐘內可完成 |
+| **Governance** | Stage 2，pipeline 中間 | monitoring_before_rev()，是第一個裁判 |
+| **UQLM/Hunter** | Stage 3 Intelligence Layer | monitoring_after_dev()，第一時間檢查輸出 |
+| **LLM Cascade** | Stage 2-3，多模型路由 | monitoring_before_rev() tier==HOTL 時多 Reviewer sessions |
+| **Kill-Switch** | Stage 2，HealthMonitor 觸發 | monitoring_hr12_check()，HR-12 觸發時熔
