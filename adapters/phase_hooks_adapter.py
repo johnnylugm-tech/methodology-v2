@@ -90,9 +90,9 @@ DEFAULT_FEATURE_FLAGS = {
     "saif": True,            # #1 SAIF (identity propagation)
     "hunter": True,          # #6 Hunter (integrity validation)
     "governance": True,       # #3 Governance (tier classification)
-    # Wave 4: Assess & Comply
-    "risk": False,           # #9 Risk
-    "compliance": False,     # #12 Compliance
+    # Wave 4: Assess & Comply (Wave 4: all enabled)
+    "risk": True,           # #9 Risk (warn ≥7, freeze ≥9)
+    "compliance": True,     # #12 Compliance (ASPICE >80%)
     # Feature #10 LangGraph (selective extraction)
     "checkpoint": False,     # CheckpointManager for HITL resume
     "parallel": False,       # Parallel executor for Cascade
@@ -575,11 +575,16 @@ class PhaseHooksAdapter:
         self.hunter = None
         self.governance = None
         
+        # Wave 4 Features (lazy init)
+        self.risk = None       # RiskAssessor for 8-dimension assessment
+        self.compliance = None # ComplianceReporter for ASPICE tracking
+        
         # Runtime state
         self._uaf_scores: Dict[str, float] = {}  # fr_id -> uaf_score (for Wave 3)
         self._current_fr_id: Optional[str] = None
         self._cascade_consensus = False  # Track consensus for cascade skip logic
         self._governance_tier: Optional[str] = None  # Track current tier for governance
+        self._risk_profile: Optional[Dict[str, Any]] = None  # Last risk profile (Wave 4)
     
     def _init_wave2(self) -> None:
         """Lazy initialization of Wave 2 features."""
@@ -673,6 +678,24 @@ class PhaseHooksAdapter:
                 logger.info("[Wave3] Governance initialized")
             except Exception as e:
                 logger.warning(f"[Wave3] Governance init failed: {e}")
+    
+    def _init_wave4(self) -> None:
+        """Lazy initialization of Wave 4 features."""
+        if self.risk is None and self.feature_flags.get("risk", False):
+            try:
+                from adapters.wave4_features import RiskAssessmentWrapper
+                self.risk = RiskAssessmentWrapper(self.feature_flags, str(self.project_path))
+                logger.info("[Wave4] RiskAssessment initialized")
+            except Exception as e:
+                logger.warning(f"[Wave4] Risk init failed: {e}")
+        
+        if self.compliance is None and self.feature_flags.get("compliance", False):
+            try:
+                from adapters.wave4_features import ComplianceWrapper
+                self.compliance = ComplianceWrapper(self.feature_flags, str(self.project_path))
+                logger.info("[Wave4] Compliance initialized")
+            except Exception as e:
+                logger.warning(f"[Wave4] Compliance init failed: {e}")
     
     # =========================================================================
     # PRE-FLIGHT HOOKS
@@ -1063,6 +1086,10 @@ class PhaseHooksAdapter:
             # Feature #4: Kill-Switch trigger
             if triggered:
                 self.kill_switch.trigger(fr_id=fr_id, reason="hr12")
+                
+                # Feature #12: Compliance - record HR12 trigger event
+                if self.compliance:
+                    self.compliance.record_hr12_trigger(fr_id=fr_id, iteration=iteration)
             
             # Feature #4: HR-13 timeout check
             if self.estimated_time and self.phase_start_time:
@@ -1149,12 +1176,71 @@ class PhaseHooksAdapter:
             # Feature #11: Flush Langfuse spans
             all_spans = self.langfuse.flush()
             
+            # Feature #9: Risk Assessment (after gap_detector, before final result)
+            risk_result = None
+            if self.risk:
+                self._init_wave4()
+                risk_profile = self.risk.assess(phase=self.phase)
+                self._risk_profile = risk_profile
+                risk_result = risk_profile
+                
+                # Log risk level
+                risk_level = risk_profile.get("level", "OK")
+                risk_aggregate = risk_profile.get("aggregate", 0.0)
+                
+                if risk_level == "WARN":
+                    self.decision_log.write(
+                        agent_id="risk",
+                        fr_id=None,
+                        event="RISK_HIGH",
+                        trace_id=trace_id,
+                        metadata={"aggregate": risk_aggregate, "level": risk_level},
+                    )
+                    logger.warning(f"[Risk] ⚠️ RISK_HIGH: aggregate={risk_aggregate:.2f}")
+                elif risk_level == "FREEZE":
+                    self.decision_log.write(
+                        agent_id="risk",
+                        fr_id=None,
+                        event="RISK_FREEZE",
+                        trace_id=trace_id,
+                        metadata={"aggregate": risk_aggregate, "level": risk_level},
+                    )
+                    logger.error(f"[Risk] 🚫 RISK_FREEZE: aggregate={risk_aggregate:.2f}")
+                    
+                    # Generate RISK_REGISTER.md before raising
+                    register = self.risk.generate_register()
+                    
+                    # Check freeze - should block
+                    if self.risk.check_freeze():
+                        raise POSTFLIGHT_FAILED(f"RISK_CRITICAL: aggregate={risk_aggregate:.2f} >= 9.0")
+            
+            # Feature #12: Compliance - generate phase report
+            compliance_result = None
+            if self.compliance:
+                self._init_wave4()
+                compliance_result = self.compliance.generate_phase_report(phase=self.phase)
+                
+                # Log compliance warning if ASPICE rate below threshold
+                if compliance_result.get("warn"):
+                    aspice_rate = compliance_result.get("aspice_rate", 0) * 100
+                    self.decision_log.write(
+                        agent_id="compliance",
+                        fr_id=None,
+                        event="COMPLIANCE_WARN",
+                        trace_id=trace_id,
+                        metadata={"aspice_rate": aspice_rate},
+                    )
+                    logger.warning(f"[Compliance] ⚠️ ASPICE rate {aspice_rate:.1f}% below 80% threshold")
+            
             self.langfuse.end_span(
                 span,
                 metadata={
                     "phase": self.phase,
                     "effort_summary": effort_summary,
                     "span_count": len(all_spans),
+                    "risk_aggregate": risk_result.get("aggregate") if risk_result else None,
+                    "risk_level": risk_result.get("level") if risk_result else None,
+                    "aspice_rate": compliance_result.get("aspice_rate") if compliance_result else None,
                 },
             )
             
@@ -1163,11 +1249,15 @@ class PhaseHooksAdapter:
             self.effort.clear()
             self.decision_log.clear()
             self.kill_switch.reset()
+            if self.compliance:
+                self.compliance.reset_events()
             
             return {
                 **result,
                 "effort_summary": effort_summary,
                 "span_count": len(all_spans),
+                "risk_profile": risk_result,
+                "compliance_report": compliance_result,
             }
             
         except Exception as e:
