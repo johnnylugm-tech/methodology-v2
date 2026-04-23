@@ -1206,12 +1206,11 @@ class PhaseHooksAdapter:
                         metadata={"aggregate": risk_aggregate, "level": risk_level},
                     )
                     logger.error(f"[Risk] 🚫 RISK_FREEZE: aggregate={risk_aggregate:.2f}")
-                    
-                    # Generate RISK_REGISTER.md before raising
+                
+                # Generate RISK_REGISTER.md for all levels (OK/WARN/FREEZE)
+                if self.risk:
                     register = self.risk.generate_register()
-                    
-                    # Check freeze - should block
-                    if self.risk.check_freeze():
+                    if register.get("blocked"):
                         raise POSTFLIGHT_FAILED(f"RISK_CRITICAL: aggregate={risk_aggregate:.2f} >= 9.0")
             
             # Feature #12: Compliance - generate phase report
