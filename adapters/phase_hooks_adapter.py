@@ -37,6 +37,10 @@ from functools import wraps
 METHODOLOGY_ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(METHODOLOGY_ROOT))
 
+# Feature #10 LangGraph path
+LANGGRAPH_ROOT = METHODOLOGY_ROOT / "implement" / "feature-10-langgraph" / "03-implement"
+sys.path.insert(0, str(LANGGRAPH_ROOT))
+
 # Import existing PhaseHooks
 from phase_hooks import PhaseHooks
 
@@ -92,6 +96,7 @@ DEFAULT_FEATURE_FLAGS = {
     # Feature #10 LangGraph (selective extraction)
     "checkpoint": False,     # CheckpointManager for HITL resume
     "parallel": False,       # Parallel executor for Cascade
+    "routing": False,        # Router for conditional routing
 }
 
 
@@ -560,6 +565,11 @@ class PhaseHooksAdapter:
         self.gap_detector = None
         self.llm_cascade = None
         
+        # Feature #10 (selective extraction): checkpoint + parallel + routing
+        self.checkpoint_mgr = None  # CheckpointManager for HITL resume
+        self.graph_runner = None     # GraphRunner for parallel execution
+        self.router = None          # Router for conditional routing
+        
         # Wave 3 Features (lazy init)
         self.saif = None
         self.hunter = None
@@ -596,6 +606,47 @@ class PhaseHooksAdapter:
                 logger.info("[Wave2] LLMCascade initialized")
             except Exception as e:
                 logger.warning(f"[Wave2] LLMCascade init failed: {e}")
+    
+    def _init_feature_10(self) -> None:
+        """Lazy initialization of Feature #10 (LangGraph selective extraction)."""
+        if self.checkpoint_mgr is None and self.feature_flags.get("checkpoint", False):
+            try:
+                from ml_langgraph.checkpoint import CheckpointManager, MemoryCheckpointBackend
+                backend = MemoryCheckpointBackend()
+                self.checkpoint_mgr = CheckpointManager(backend)
+                logger.info("[Feature#10] CheckpointManager initialized")
+            except ImportError as e:
+                logger.warning(f"[Feature#10] CheckpointManager not available: {e}")
+        
+        if self.graph_runner is None and self.feature_flags.get("parallel", False):
+            try:
+                from ml_langgraph.executor import GraphRunner
+                from ml_langgraph.state import AgentState
+                # GraphRunner needs a compiled graph, so we create a simple one
+                from ml_langgraph.builder import GraphBuilder
+                state_schema = AgentState
+                builder = GraphBuilder(state_schema=state_schema)
+                self.graph_runner = GraphRunner(builder)
+                logger.info("[Feature#10] GraphRunner initialized")
+            except ImportError as e:
+                logger.warning(f"[Feature#10] GraphRunner not available: {e}")
+        
+        if self.router is None and self.feature_flags.get("routing", False):
+            try:
+                from ml_langgraph.routing import Router, RouteResult
+                # Default routes (can be customized via config)
+                self.router = Router({
+                    "dev": ["developer_node"],
+                    "rev": ["reviewer_node"],
+                    "gov": ["governance_node"],
+                })
+                # Set default routing function that routes based on 'step' key
+                def default_route_fn(state):
+                    return state.get("step", "dev")
+                self.router._routing_fn = default_route_fn
+                logger.info("[Feature#10] Router initialized")
+            except ImportError as e:
+                logger.warning(f"[Feature#10] Router not available: {e}")
     
     def _init_wave3(self) -> None:
         """Lazy initialization of Wave 3 features."""
