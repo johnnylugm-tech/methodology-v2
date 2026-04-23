@@ -1,6 +1,6 @@
-# Johnny 使用手冊 v6.102
+# Johnny 使用手冊 v9.1
 
-> **版本**: v6.102
+> **版本**: v9.1
 > **對象**: Johnny（Human-in-the-Loop）
 > **用途**: 快速上手 methodology-v2
 
@@ -21,6 +21,9 @@
 | v6.100 | Developer 返回 JSON，CLI 寫入磁碟 |
 | v6.101 | Markdown JSON 解析 |
 | v6.102 | **PhaseHooks 框架重構**（核心架構變更）|
+| v7.x-v8.x | Feature #1-13 分階段整合 |
+| v9.0 | PhaseHooks Adapter 完成（Wave 1-3）|
+| v9.1 | Wave 4 完成 + Feature #10 選擇性提取，全 13 Features 整合 |
 
 ### 三層文件架構
 
@@ -224,6 +227,73 @@ hooks.postflight_all()
 python phase_hooks.py --project /path --phase 3 --hook preflight-all
 python phase_hooks.py --project /path --phase 3 --hook postflight-all
 ```
+
+---
+
+## 6.5 Features 速查（v9.1 新增）
+
+### 什麼是 Features？
+PhaseHooks Adapter 在原有 7 個鉤子點上整合了 13 個 Feature，自動護盾。
+多數無需人工介入，祇在觸發 block/warn 時通知 Johnny。
+
+### Features 觸發時的通知
+
+| Feature | 觸發條件 | Johnny 動作 |
+|---------|----------|-------------|
+| #2 Shields | 發現 injection pattern | ⚠️ 警告，繼續執行 |
+| #4 KillSwitch | HR-12 (≥5輪) 或 HR-13 (超時) | 🚨 PAUSE，強制停下 |
+| #7 UQLM | uncertainty ≥ 0.8 | 🚫 BLOCK，Developer 重新執行 |
+| #8 Gap Detector | 發現 critical gap | ⚠️ warn / 統計 |
+| #9 Risk | aggregate ≥ 7 (warn) / ≥ 9 (freeze) | ⚠️ warn 或 🚫 freeze |
+| #12 Compliance | ASPICE < 80% | ⚠️ warn |
+| #6 Hunter | 發現 tampering | 🚫 BLOCK |
+
+### KillSwitch 緊急範例
+```
+[KillSwitch] 🚨 TRIGGERED: fr_id=FR-02, reason=hr12
+→ Agent 停止，Johnny 介入
+```
+
+### UQLM Block 範例
+```
+[UQLM] 🚫 BLOCKING FR-FR-01: uaf=0.80
+→ Developer 需重新產出，Reviewer 審查
+```
+
+### Risk Freeze 範例
+```
+[Risk] 🚫 RISK_FREEZE: aggregate=9.50 >= 9.0
+→ Phase 停止，生成 RISK_REGISTER.md
+→ Johnny 審核後決定是否繼續
+```
+
+### 查看 Feature 狀態
+```python
+from adapters.phase_hooks_adapter import PhaseHooksAdapter
+
+adapter = PhaseHooksAdapter("/path", phase=3)
+print(adapter.feature_flags)  # 顯示所有 Features 開/關狀態
+```
+
+### 關閉特定 Feature（暫時）
+```python
+adapter = PhaseHooksAdapter("/path", phase=3, feature_flags={
+    "uqlm": False,    # 暫時關閉 UQLM block
+    "gap_detector": False,
+})
+```
+
+### Features 與 Wave 對照
+
+| Wave | 名稱 | Features |
+|------|------|----------|
+| Wave 1 | Defend & Log | #11 Langfuse, #13 Decision Log, #2 Shields, #4 KillSwitch |
+| Wave 2 | Score & Detect | #7 UQLM, #8 Gap Detector, #5 LLM Cascade |
+| Wave 3 | Govern & Hunt | #1 SAIF, #6 Hunter, #3 Governance |
+| Wave 4 | Assess & Comply | #9 Risk, #12 Compliance |
+
+
+詳見：[FEATURES_GUIDE.md](FEATURES_GUIDE.md)
 
 ---
 
@@ -488,16 +558,19 @@ python cli.py integrity --project .
 
 | Component | Version | Status |
 |-----------|---------|--------|
-| cli.py | v6.102.0 | ✅ |
-| phase_hooks.py | v6.102 | ✅ |
-| SKILL.md | v6.102 | ✅ |
-| JOHNNY_HANDBOOK.md | v6.102 | ✅ |
-| CHANGELOG.md | v6.102 | ✅ |
+| adapters/phase_hooks_adapter.py | v9.1 | ✅ |
+| adapters/wave2_features.py | v9.1 | ✅ |
+| adapters/wave3_features.py | v9.1 | ✅ |
+| adapters/wave4_features.py | v9.1 | ✅ |
+| SKILL.md | v9.1 | ✅ |
+| JOHNNY_HANDBOOK.md | v9.1 | ✅ |
+| CHANGELOG.md | v9.1 | ✅ |
+| FEATURES_GUIDE.md | v9.1 | ✅ |
 
 ---
 
-*此手冊基於 methodology-v2 v6.102*
-*最後更新: 2026-04-09*
+*此手冊基於 methodology-v2 v9.1*
+*最後更新: 2026-04-24*
 
 ---
 
