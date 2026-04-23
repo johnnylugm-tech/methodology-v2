@@ -17,6 +17,11 @@ Wave 2: Score & Detect
   - #7 UQLM: hallucination detection (block mode)
   - #8 Gap Detector: test coverage gaps (warn→block on critical)
   - #5 LLM Cascade: simplified 2-model parallel review
+
+Wave 3: Govern & Hunt
+  - #1 SAIF: identity propagation (scope validation)
+  - #6 Hunter: integrity validation (tampering detection)
+  - #3 Governance: tier classification (HOTL/HITL/HOOTL)
 """
 
 import sys
@@ -77,10 +82,10 @@ DEFAULT_FEATURE_FLAGS = {
     "uqlm": True,           # #7 UQLM (block on high uncertainty)
     "gap_detector": True,    # #8 Gap Detector (warn→block on critical)
     "llm_cascade": True,    # #5 LLM Cascade (simplified 2-model)
-    # Wave 3: Govern & Hunt
-    "saif": False,           # #1 SAIF
-    "hunter": False,         # #6 Hunter
-    "governance": False,     # #3 Governance
+    # Wave 3: Govern & Hunt (Wave 3: all enabled)
+    "saif": True,            # #1 SAIF (identity propagation)
+    "hunter": True,          # #6 Hunter (integrity validation)
+    "governance": True,       # #3 Governance (tier classification)
     # Wave 4: Assess & Comply
     "risk": False,           # #9 Risk
     "compliance": False,     # #12 Compliance
@@ -555,10 +560,16 @@ class PhaseHooksAdapter:
         self.gap_detector = None
         self.llm_cascade = None
         
+        # Wave 3 Features (lazy init)
+        self.saif = None
+        self.hunter = None
+        self.governance = None
+        
         # Runtime state
         self._uaf_scores: Dict[str, float] = {}  # fr_id -> uaf_score (for Wave 3)
         self._current_fr_id: Optional[str] = None
         self._cascade_consensus = False  # Track consensus for cascade skip logic
+        self._governance_tier: Optional[str] = None  # Track current tier for governance
     
     def _init_wave2(self) -> None:
         """Lazy initialization of Wave 2 features."""
@@ -585,6 +596,32 @@ class PhaseHooksAdapter:
                 logger.info("[Wave2] LLMCascade initialized")
             except Exception as e:
                 logger.warning(f"[Wave2] LLMCascade init failed: {e}")
+    
+    def _init_wave3(self) -> None:
+        """Lazy initialization of Wave 3 features."""
+        if self.saif is None and self.feature_flags.get("saif", False):
+            try:
+                from adapters.wave3_features import SAIFWrapper
+                self.saif = SAIFWrapper(self.feature_flags, str(self.project_path))
+                logger.info("[Wave3] SAIF initialized")
+            except Exception as e:
+                logger.warning(f"[Wave3] SAIF init failed: {e}")
+        
+        if self.hunter is None and self.feature_flags.get("hunter", False):
+            try:
+                from adapters.wave3_features import HunterWrapper
+                self.hunter = HunterWrapper(self.feature_flags)
+                logger.info("[Wave3] Hunter initialized")
+            except Exception as e:
+                logger.warning(f"[Wave3] Hunter init failed: {e}")
+        
+        if self.governance is None and self.feature_flags.get("governance", False):
+            try:
+                from adapters.wave3_features import GovernanceWrapper
+                self.governance = GovernanceWrapper(self.feature_flags)
+                logger.info("[Wave3] Governance initialized")
+            except Exception as e:
+                logger.warning(f"[Wave3] Governance init failed: {e}")
     
     # =========================================================================
     # PRE-FLIGHT HOOKS
@@ -747,6 +784,31 @@ class PhaseHooksAdapter:
                     return_val["passed"] = False
                     return_val["uqlm_blocked"] = True
             
+            # Wave 3: Lazy init
+            self._init_wave3()
+            
+            # Feature #6: Hunter integrity validation
+            hunter_result = None
+            if self.hunter and content:
+                hunter_result = self.hunter.validate_content(content, context=f"FR-{fr_id}")
+                return_val["hunter_result"] = hunter_result
+                
+                if hunter_result.get("blocked"):
+                    logger.warning(f"[Hunter] 🚫 BLOCKING FR-{fr_id}: severity={hunter_result.get('severity')}")
+                    return_val["passed"] = False
+                    return_val["hunter_blocked"] = True
+            
+            # Feature #3: Governance tier classification
+            governance_tier = None
+            if self.governance:
+                governance_tier = self.governance.classify_operation(
+                    operation_type="code_generation",
+                    risk_level="routine",
+                    scope="single_agent",
+                )
+                self._governance_tier = governance_tier.get("tier")
+                return_val["governance_tier"] = governance_tier
+            
             self.langfuse.end_span(
                 span,
                 metadata={
@@ -754,6 +816,8 @@ class PhaseHooksAdapter:
                     "shield_result": shield_result.get("verdict"),
                     "tokens": tokens,
                     "uaf_score": uqlm_result.get("uaf_score") if uqlm_result else None,
+                    "hunter_severity": hunter_result.get("severity") if hunter_result else None,
+                    "governance_tier": governance_tier.get("tier") if governance_tier else None,
                 },
             )
             
