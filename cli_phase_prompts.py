@@ -171,6 +171,35 @@ TASK: {fr['fr']} {fr['title']}
 TASK_ID: task-{fr_num}
 ═══════════════════════════════════════
 
+【先決條件】
+cd {repo_path}
+pwd  # 確認在正確目錄
+
+【Phase Hooks 整合】（HR-09 強制執行）
+⚠️ 每個 FR 執行前後必須呼叫 PhaseHooksAdapter：
+import sys
+from pathlib import Path
+sys.path.insert(0, '{methodology_path}')
+from adapters.phase_hooks_adapter import PhaseHooksAdapter
+
+adapter = PhaseHooksAdapter(
+    project_path="{repo_path}",
+    phase={phase_num},
+    feature_flags={{"uqlm": True, "gap_detector": True, "hunter": True, "shields": True}}
+)
+# Preflight：只在第一個 FR 前執行一次
+adapter.preflight_all()
+
+# FR 前
+adapter.monitoring_before_dev("{fr_id}")
+
+# Developer 實作...
+
+# FR 後（developer result 傳入）
+hook_result = adapter.monitoring_after_dev("{fr_id}", result=dev_result)
+if not hook_result.get("passed"):
+    raise Exception(f"Hook blocked by Feature: {{hook_result}}")
+
 【階段目標】
 依據 SAD 實作指定模組，包含單元測試
 
@@ -202,23 +231,41 @@ SAD.md 只讀取：
 - ❌ ... 省略 → 任務失敗
 - ❌ 無 citations 或 citations 無行號 → HR-15 違規
 - ❌ citations 未寫入 code docstring → HR-15 違規
+- ❌ 未呼叫 PhaseHooks → HR-09 違規
 
 【OUTPUT_FORMAT】
 {{
- "status": "success|error|unable_to_proceed",
- "result": "實際產出（路徑）",
- "confidence": 1-10,
- "citations": ["{fr['fr']}", "SRS.md#L23-L45", "SAD.md#L50-L60"],
- "summary": "50字內"
+  "status": "success|error|unable_to_proceed",
+  "result": "實際產出（路徑）",
+  "confidence": 1-10,
+  "citations": ["{fr['fr']}", "SRS.md#L23-L45", "SAD.md#L50-L60"],
+  "hook_calls": {{
+    "monitoring_before_dev": {{ "blocked": False }},
+    "monitoring_after_dev": {{
+      "passed": True,
+      "shield_verdict": "{{shield_verdict}}",
+      "uqlm_score": {{uqlm_score}},
+      "hunter_severity": null
+    }}
+  }},
+  "summary": "50字內"
 }}
 
-HR-15 強制執行：citations 必須包含「檔名#L行號」格式，且需寫入 code docstring
+HR-15 強制執行：citations 必須包含「檔名#L行號」格式
+HR-09 強制執行：每個 FR 必須呼叫 Phase Hooks
 ═══════════════════════════════════════
 ```""",
         "reviewer": """```
 TASK: Review {fr['fr']} {fr['title']}
 TASK_ID: task-{fr_num}-review
 ═══════════════════════════════════════
+
+【先決條件】
+cd {repo_path}
+
+【Phase Hooks 整合】
+# Reviewer 執行前
+adapter.monitoring_before_rev("{fr_id}")
 
 【審查範圍】（只讀這些章節，❌ 禁止 dump 全文）
 
@@ -244,14 +291,22 @@ TASK_ID: task-{fr_num}-review
 - ❌ confidence < 6 → REJECT
 - ❌ 缺少 citations 或 citations 無行號 → REJECT（HR-15）
 - ❌ 覆蓋率 < 70% → REJECT
+- ❌ 未呼叫 PhaseHooks → HR-09 違規
+
+# Reviewer 完成後
+hook_result = adapter.monitoring_after_rev("{fr_id}", result=rev_result)
 
 【OUTPUT_FORMAT】
 {{
- "status": "APPROVE|REJECT",
- "confidence": 1-10,
- "violations": ["具體問題"],
- "coverage": "覆蓋率 %",
- "summary": "50字內"
+  "status": "APPROVE|REJECT",
+  "confidence": 1-10,
+  "violations": ["具體問題"],
+  "coverage": "覆蓋率 %",
+  "hook_calls": {{
+    "monitoring_before_rev": {{ "blocked": False }},
+    "monitoring_after_rev": {{ "passed": True }}
+  }},
+  "summary": "50字內"
 }}
 ═══════════════════════════════════════
 ```"""

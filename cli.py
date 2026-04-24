@@ -5178,14 +5178,21 @@ Full execution script is in templates/plan_phase_template.md Section 17.
             template = re.sub(r"\{fr\['fr'\]\}", fr.get("fr", f"FR-{fr_num}"), template)
             template = re.sub(r"\{fr\['title'\]\}", fr.get("title", ""), template)
             file_path = fr.get("file", f"app/processing/{fr_num}.py")
-            template = re.sub(r"\{fr\.get\('file'[^}]*\)", file_path, template)
-            # Inject project path for cwd verification
-            if repo_path:
-                cd_directive = f"\n\n【先決條件】先執行：\ncd {repo_path}\npwd  # 確認包含 \"tts-kokoro-v613\"\n"
-                template = template.replace(
-                    "【階段目標】",
-                    cd_directive + "\n【階段目標】"
-                )
+            # Fixed: simple string replace (original regex was broken)
+            # Search for template string AFTER fr_num substitution (with 01.py, etc.)
+            template = template.replace(
+                f"{{fr.get('file', 'app/processing/{fr_num}.py')}}",
+                file_path
+            )
+            # Phase 3: substitute all remaining placeholders for PhaseHooksAdapter
+            if phase == 3:
+                import re
+                fr_id = fr.get("fr", f"FR-{fr_num}")
+                methodology_path = str(Path(__file__).parent)
+                template = template.replace("{repo_path}", str(repo_path))
+                template = template.replace("{methodology_path}", methodology_path)
+                template = template.replace("{phase_num}", str(phase))
+                template = template.replace("{fr_id}", fr_id)
             return template
         
         return phase_prompts["developer"]
@@ -5203,13 +5210,14 @@ Full execution script is in templates/plan_phase_template.md Section 17.
             template = re.sub(r"\{fr_num\}", fr_num, template)
             template = re.sub(r"\{fr\['fr'\]\}", fr.get("fr", f"FR-{fr_num}"), template)
             template = re.sub(r"\{fr\['title'\]\}", fr.get("title", ""), template)
-            # Inject project path for cwd verification
-            if repo_path:
-                cd_directive = f"\n\n【先決條件】先執行：\ncd {repo_path}\npwd  # 確認包含 \"tts-kokoro-v613\"\n"
-                template = template.replace(
-                    "【審查範圍】",
-                    cd_directive + "\n【審查範圍】"
-                )
+            template = template.replace(f"{{fr.get('file', 'app/processing/{fr_num}.py')}}", fr.get("file", f"app/processing/{fr_num}.py"))
+            # Phase 3: substitute all PhaseHooksAdapter placeholders
+            fr_id = fr.get("fr", f"FR-{fr_num}")
+            methodology_path = str(Path(__file__).parent)
+            template = template.replace("{repo_path}", str(repo_path))
+            template = template.replace("{methodology_path}", methodology_path)
+            template = template.replace("{phase_num}", str(phase))
+            template = template.replace("{fr_id}", fr_id)
             return template
         
         return phase_prompts["reviewer"]
