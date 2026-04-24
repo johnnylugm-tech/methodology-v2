@@ -98,7 +98,11 @@ def parse_sad_modules(repo_path: Path) -> Dict:
         content = sad_path.read_text(encoding='utf-8')
         
         # Find FR to file mapping from table
-        simple_pattern = re.compile(r'FR-(\d+)[^\n]*?`?(?:app/|03-development/src/)([^\s`]+)`?', re.DOTALL)
+        # Use ^ anchor (MULTILINE) to avoid cross-line matching issues
+        simple_pattern = re.compile(
+            r'^\s*\|\s*\*\*FR-(\d+)\*\*[^*\n]*`((?:app/|03-development/src/)[^\s`]+)`',
+            re.MULTILINE
+        )
         modules = {}
         seen = set()
         
@@ -111,9 +115,11 @@ def parse_sad_modules(repo_path: Path) -> Dict:
             
             if '/' in file_path:
                 filename = file_path.split('/')[-1].replace('.py', '')
-                # Normalize path: ensure 03-development/src/ prefix
-                if not file_path.startswith('03-development'):
-                    file_path = f"03-development/src/{file_path}"
+                # Normalize path: ensure app/ prefix (project standard)
+                if file_path.startswith('03-development/src/'):
+                    file_path = file_path.replace('03-development/src/', 'app/')
+                elif not file_path.startswith('app/'):
+                    file_path = f"app/{file_path}"
                 modules[f"FR-{fr_num}"] = {
                     'module': filename,
                     'file': file_path
@@ -385,10 +391,12 @@ def generate_phase3_tasks(repo_path: Path, srs_path: Path) -> List[str]:
             lines.append("")
     
     lines.append("### Phase 3 交付物")
-    lines.append("- [ ] `03-development/src/processing/` - 處理模組")
-    lines.append("- [ ] `03-development/src/synth/` - 合成模組")
-    lines.append("- [ ] `03-development/src/infrastructure/` - 基礎設施模組")
-    lines.append("- [ ] `03-development/src/api/` - API 路由")
+    lines.append("- [ ] `app/processing/` - 處理模組")
+    lines.append("- [ ] `app/synth/` - 合成模組")
+    lines.append("- [ ] `app/infrastructure/` - 基礎設施模組")
+    lines.append("- [ ] `app/api/` - API 路由")
+    lines.append("- [ ] `app/cli/` - CLI 工具")
+    lines.append("- [ ] `app/backend/` - 後端整合")
     lines.append("- [ ] `tests/` - 單元測試")
     lines.append("")
     
