@@ -4769,11 +4769,7 @@ Full execution script is in templates/plan_phase_template.md Section 17.
         # 優先：解析 Markdown 表格格式（FR ID | 需求 | app/...）
         # 例如：| **FR-01** | TaiwanLexicon ≥ 50 詞映射 | `app/processing/lexicon_mapper.py` |
         # 支援 both 'app/' and '03-development/src/' paths（向後相容）
-        # 使用 ^ 匹配行首，避免 re.DOTALL 跨行錯誤匹配
-        simple_pattern = re.compile(
-            r'^\s*\|\s*\*\*FR-(\d+)\*\*[^*\n]*`((?:app/|03-development/src/)[^\s`]+)`',
-            re.MULTILINE
-        )
+        simple_pattern = re.compile(r'FR-(\d+)[^\n]*?`?(?:app/|03-development/src/)([^\s`]+)`?', re.DOTALL)
         modules = []
         seen_frs = set()
         for m in simple_pattern.finditer(content):
