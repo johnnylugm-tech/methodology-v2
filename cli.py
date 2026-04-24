@@ -4766,9 +4766,9 @@ Full execution script is in templates/plan_phase_template.md Section 17.
         content = sad_path.read_text()
         import re
         
-        # 優先：解析 Markdown 表格格式（FR ID | 需求 | 03-development/src/...）
-        # 例如：| **FR-01** | TaiwanLexicon ≥ 50 詞映射 | `03-development/src/processing/lexicon_mapper.py` |
-        # 支援 both 'app/' and '03-development/src/' paths
+        # 優先：解析 Markdown 表格格式（FR ID | 需求 | app/...）
+        # 例如：| **FR-01** | TaiwanLexicon ≥ 50 詞映射 | `app/processing/lexicon_mapper.py` |
+        # 支援 both 'app/' and '03-development/src/' paths（向後相容）
         simple_pattern = re.compile(r'FR-(\d+)[^\n]*?`?(?:app/|03-development/src/)([^\s`]+)`?', re.DOTALL)
         modules = []
         seen_frs = set()
@@ -4778,13 +4778,15 @@ Full execution script is in templates/plan_phase_template.md Section 17.
                 continue
             file_path = m.group(2) or ""
             seen_frs.add(fr_num)
-            # 從路徑推斷模組名：03-development/src/processing/lexicon_mapper.py → lexicon_mapper
+            # 從路徑推斷模組名：app/processing/lexicon_mapper.py → lexicon_mapper
             if '/' in file_path:
                 filename = file_path.split('/')[-1].replace('.py', '')
                 module_name = filename
-                # Normalize: ensure 03-development/src/ prefix
-                if not file_path.startswith('03-development'):
-                    file_path = f"03-development/src/{file_path}"
+                # Normalize: prefer app/ prefix（專案標準）
+                if file_path.startswith('03-development/src/'):
+                    file_path = file_path.replace('03-development/src/', 'app/')
+                elif not file_path.startswith('app/'):
+                    file_path = f"app/{file_path}"
             else:
                 module_name = f"Module{fr_num}"
             modules.append({
@@ -4852,9 +4854,11 @@ Full execution script is in templates/plan_phase_template.md Section 17.
         for m in modules:
             file_path = m.get('file', '')
             if '/' in file_path:
-                # Normalize: strip 03-development/src/ prefix for grouping
+                # Normalize: strip app/ or 03-development/src/ prefix for grouping
                 if file_path.startswith('03-development/src/'):
                     rel_path = file_path.replace('03-development/src/', '')
+                elif file_path.startswith('app/'):
+                    rel_path = file_path.replace('app/', '')
                 else:
                     rel_path = file_path
                 dir_name = '/'.join(rel_path.split('/')[:-1])
@@ -4863,7 +4867,7 @@ Full execution script is in templates/plan_phase_template.md Section 17.
                     dirs[dir_name] = []
                 dirs[dir_name].append(filename)
         
-        lines = ["03-development/src/"]
+        lines = ["app/"]
         for dir_name, files in sorted(dirs.items()):
             lines.append(f"├── {dir_name}/")
             for f in sorted(files):
@@ -4986,7 +4990,7 @@ Full execution script is in templates/plan_phase_template.md Section 17.
                 ("TH-06", "Constitution 測試覆蓋率", ">90%", "constitution/runner.py --type implementation"),
                 ("TH-08", "AgentEvaluator 嚴格", "≥90", "phase-verify"),
                 ("TH-10", "測試通過率", "=100%", "pytest tests/ -v"),
-                ("TH-11", "單元測試覆蓋率", "≥70%", "pytest --cov=03-development/src/ -v"),
+                ("TH-11", "單元測試覆蓋率", "≥70%", "pytest --cov=app/ -v"),
                 ("TH-15", "Phase Truth", ">90%", "phase-verify"),
                 ("TH-16", "代碼↔SAD 映射率", "=100%", "trace-check"),
             ],
@@ -4997,7 +5001,7 @@ Full execution script is in templates/plan_phase_template.md Section 17.
                 ("TH-05", "Constitution 可維護性", ">90%", "constitution/runner.py --type test_plan"),
                 ("TH-06", "Constitution 測試覆蓋率", ">90%", "constitution/runner.py --type test_plan"),
                 ("TH-10", "測試通過率", "=100%", "pytest tests/ -v"),
-                ("TH-12", "單元測試覆蓋率", "≥80%", "pytest --cov=03-development/src/ -v"),
+                ("TH-12", "單元測試覆蓋率", "≥80%", "pytest --cov=app/ -v"),
                 ("TH-13", "SRS FR 覆蓋率", "=100%", "trace-check"),
                 ("TH-15", "Phase Truth", ">90%", "phase-verify"),
                 ("TH-17", "FR↔測試映射率", "≥90%", "trace-check"),
@@ -5119,7 +5123,7 @@ Full execution script is in templates/plan_phase_template.md Section 17.
 - `{mod_match.get('file', 'N/A') if mod_match else 'N/A'}`
 
 **Forbidden**：
-- ❌ 03-development/src/infrastructure/
+- ❌ app/infrastructure/（Phase 3+ 請使用 03-development/infrastructure/）
 - ❌ @covers: L1 Error
 - ❌ @type: edge
 """)
@@ -5131,14 +5135,14 @@ Full execution script is in templates/plan_phase_template.md Section 17.
             3: [
                 ("# 1. TH-06 Constitution 測試覆蓋率 >90%", "python3 quality_gate/constitution/runner.py --type implementation"),
                 ("# 2. TH-10 測試通過率 =100%", "pytest tests/ -v"),
-                ("# 3. TH-11 覆蓋率 ≥70%", "pytest --cov=03-development/src/ -v"),
+                ("# 3. TH-11 覆蓋率 ≥70%", "pytest --cov=app/ -v"),
                 ("# 4. TH-16 代碼↔SAD =100%", "python3 cli.py trace-check"),
                 ("# 5. TH-15 Phase Truth >90%", "python3 cli.py phase-verify --phase 3"),
                 ("# 6. HR-08 stage-pass", "python3 cli.py stage-pass --phase 3"),
                 ("# 7. HR-02 FrameworkEnforcer BLOCK", "python3 cli.py enforce --level BLOCK"),
             ],
             4: [
-                ("# 1. TH-12 覆蓋率 ≥80%", "pytest --cov=03-development/src/ -v"),
+                ("# 1. TH-12 覆蓋率 ≥80%", "pytest --cov=app/ -v"),
                 ("# 2. TH-10 =100%", "pytest tests/ -v"),
                 ("# 3. TH-13 FR覆蓋率 =100%", "python3 cli.py trace-check"),
                 ("# 4. TH-17 FR↔測試 ≥90%", "python3 cli.py phase-verify --phase 4"),
@@ -5173,7 +5177,7 @@ Full execution script is in templates/plan_phase_template.md Section 17.
             template = re.sub(r"\{fr_num\}", fr_num, template)
             template = re.sub(r"\{fr\['fr'\]\}", fr.get("fr", f"FR-{fr_num}"), template)
             template = re.sub(r"\{fr\['title'\]\}", fr.get("title", ""), template)
-            file_path = fr.get("file", f"03-development/src/processing/{fr_num}.py")
+            file_path = fr.get("file", f"app/processing/{fr_num}.py")
             template = re.sub(r"\{fr\.get\('file'[^}]*\)", file_path, template)
             # Inject project path for cwd verification
             if repo_path:
@@ -5354,7 +5358,7 @@ Full execution script is in templates/plan_phase_template.md Section 17.
         phase_deliverables = {
             1: ["SRS.md", "SPEC_TRACKING.md", "TRACEABILITY_MATRIX.md"],
             2: ["SRS.md", "SAD.md", "ADR.md"],
-            3: ["SRS.md", "SAD.md", "03-development/src/processing/"],
+            3: ["SRS.md", "SAD.md", "app/processing/"],
             4: ["SRS.md", "SAD.md", "TEST_PLAN.md"],
             5: ["BASELINE.md", "MONITORING_PLAN.md"],
             6: ["QUALITY_REPORT.md"],
@@ -5487,7 +5491,7 @@ Full execution script is in templates/plan_phase_template.md Section 17.
             plan = plan.replace('{AGENT_B_UPPER}', agent_b.upper())
             
             # Enrich FR with module info from SAD
-            first_fr = frs[0] if frs else {'fr': 'FR-01', 'title': 'Task', 'module': 'module', 'file': '03-development/src/processing/01.py'}
+            first_fr = frs[0] if frs else {'fr': 'FR-01', 'title': 'Task', 'module': 'module', 'file': 'app/processing/01.py'}
             mod_match = next((m for m in modules if m.get("fr", "").upper() == first_fr["fr"].upper()), None)
             if mod_match:
                 first_fr['module'] = mod_match.get("module", first_fr.get('module', 'module'))
